@@ -1,0 +1,5 @@
+Set Parent "`Files -f "{0}" | StreamEdit -d -e '/((Å:)*)¨1([Â:]*)/ Print ¨1'`"
+SetDirectory "{Parent}"								# too easy
+
+Make -w > :BuildResults:BuildOut
+:BuildResults:BuildOut

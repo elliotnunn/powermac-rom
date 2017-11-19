@@ -1,0 +1,125 @@
+EDP						record	0,INCR
+
+						org		0x70
+IplValue				ds.w	1	; 070 ; 68k int level or -1
+
+						org		0x100
+ContextBlock			ds.b	768	; 100:300 ; Emulator Context Block, ECB; NKv2 ties this to blue task
+
+						org		0xf00
+BootstrapVersion		ds.b	16	; f00:f10 ; Bootstrap loader version info, from ConfigInfo
+
+						endr
+
+
+
+
+
+;	Lives in EDP. Keeping a separate record to EDP makes the code nicer.
+;	Gets called the "system context"
+ContextBlock			record	0,INCR
+
+EmpiricalCpuFeatures	ds.l	1	; 000 ; (SPAC) copied from kdp by CreateTask
+	
+						org		0x5c
+LA_EmulatorKernelTrapTable ds.l	1
+
+						org		0x84
+LA_EmulatorEntry		ds.l	1	; 084 ; Entry pt of emulator; set by NK Init.s
+
+						org		0x94
+LA_EmulatorData			ds.l	1
+
+						org		0x9c
+LA_DispatchTable		ds.l	1
+
+						org		0xa4
+MSR						ds.l	1	; 0a4 ; (SPAC) copied from kdp by CreateTask
+
+						org		0xc4
+MQ						ds.l	1	; 0c4 ; 601 only
+						ds.l	1
+PriorityShifty			ds.l	1	; 0cc ; if low nybble is empty, InitRDYQs sets this to 2
+
+						org		0xd4
+XER						ds.l	1
+VectorSaveArea			ds.l	1	; 0d8 ; AltiVec hack: vector registers don't fit in CB!
+
+						org		0xe0
+PageInSystemHeap		ds.l	1	; 0e0 ; these are set by StartInit.a:FiddleWithEmulator
+OtherPageInSystemHeap	ds.l	1	; 0e4
+FE000000				ds.l	1	; 0e8
+Zero					ds.l	1	; 0ec
+
+						org		0xfc
+CodePtr					ds.l	1	; 0fc ; probably goes in SRR0?
+
+						org		0x100
+						ds.l	1
+r0						ds.l	1	; 104
+						ds.l	1
+r1						ds.l	1	; 10c
+						ds.l	1
+r2						ds.l	1	; 114
+						ds.l	1
+r3						ds.l	1	; 11c
+						ds.l	1
+r4						ds.l	1	; 124
+						ds.l	1
+r5						ds.l	1	; 12c
+						ds.l	1
+r6						ds.l	1	; 134
+						ds.l	1
+r7						ds.l	1	; 13c
+						ds.l	1
+r8						ds.l	1	; 144
+						ds.l	1
+r9						ds.l	1	; 14c
+						ds.l	1
+r10						ds.l	1	; 154
+						ds.l	1
+r11						ds.l	1	; 15c
+						ds.l	1
+r12						ds.l	1	; 164
+						ds.l	1
+r13						ds.l	1	; 16c
+						ds.l	1
+r14						ds.l	1	; 174
+						ds.l	1
+r15						ds.l	1	; 17c
+						ds.l	1
+r16						ds.l	1	; 184
+						ds.l	1
+r17						ds.l	1	; 18c
+						ds.l	1
+r18						ds.l	1	; 194
+						ds.l	1
+r19						ds.l	1	; 19c
+						ds.l	1
+r20						ds.l	1	; 1a4
+						ds.l	1
+r21						ds.l	1	; 1ac
+						ds.l	1
+r22						ds.l	1	; 1b4
+						ds.l	1
+r23						ds.l	1	; 1bc
+						ds.l	1
+r24						ds.l	1	; 1c4
+						ds.l	1
+r25						ds.l	1	; 1cc
+						ds.l	1
+r26						ds.l	1	; 1d4
+						ds.l	1
+r27						ds.l	1	; 1dc
+						ds.l	1
+r28						ds.l	1	; 1e4
+						ds.l	1
+r29						ds.l	1	; 1ec
+						ds.l	1
+r30						ds.l	1	; 1f4
+						ds.l	1
+r31						ds.l	1	; 1fc
+
+FloatRegisters			ds.d	32	; 200:300
+
+						endr

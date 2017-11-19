@@ -1,0 +1,6 @@
+.DS_Store
+BuildResults/
+*.NJ
+*.tool
+RomMondo.bin.x
+*.dmg

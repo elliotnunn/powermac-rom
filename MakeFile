@@ -1,0 +1,60 @@
+ResultDir				=	:BuildResults:
+LinkerDir				=	:Linker:
+
+
+
+MainTarget				Ä	{ResultDir}PowerROM
+
+
+
+RomBin					=	:RomMondo.bin
+
+
+
+ExceptionTableBin		=	{ResultDir}PPCExceptionTable.x
+
+{ExceptionTableBin}		Ä	PPCExceptionTable.s
+	PPCAsm -o {Targ} {Deps}
+
+
+
+ConfigInfoBin			=	{ResultDir}ConfigInfo.x
+
+{ConfigInfoBin}			Ä	ConfigInfo.s
+	PPCAsm -o {Targ} {Deps}
+
+
+
+#### PowerPC NanoKernel ####
+NKDir					=	:NanoKernel:
+NKIncDir				=	:Internal:
+NKBin					=	{ResultDir}NanoKernel.x
+NKOpts					=
+#include "{NKDir}InnerMakeFile"
+
+
+
+EmulatorBin				=	Emulator.x
+
+
+
+{ResultDir}PowerROM		Ä	{RomBin} {ExceptionTableBin} {ConfigInfoBin} {NKBin} {EmulatorBin}
+	{LinkerDir}LinkPowerROM {Targ}						¶
+		RomTop:											¶
+			0x000000 Mac68kRomTop:						¶
+				{RomBin}								¶
+			Mac68kRomBtm:								¶
+														¶
+			0x300000 ExTblTop:							¶
+				{ExceptionTableBin}						¶
+														¶
+			0x30d000 ConfigInfoChecksum:				¶
+				{ConfigInfoBin}							¶
+														¶
+			0x310000 NKTop:								¶
+				{NKBin}									¶
+														¶
+			0x360000									¶
+				{EmulatorBin}							¶
+		0x400000 RomBtm:								¶
+		> {ResultDir}LinkerScript ; {ResultDir}LinkerScript

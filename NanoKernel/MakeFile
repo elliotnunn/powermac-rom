@@ -1,0 +1,9 @@
+# Lets you just run Make in this directory,
+# while ignoring the rest of the build system
+
+NKDir		= :
+NKIncDir	= {NKDir}:Internal:
+NKBin		= {NKDir}NanoKernel.s.x
+NKOpts		=
+
+#include "{NKDir}InnerMakeFile"

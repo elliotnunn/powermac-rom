@@ -1,0 +1,151 @@
+Set Streamer " | StreamEdit -d -e '/?≈/ Pr ∂∂∂"1∂∂∂"'"
+
+
+
+If {#} ∂< 2
+	Echo "USAGE: {0} DEST SRC ... > ShellScript"
+	Exit 1
+End
+
+
+
+Set DestFile "{1}"
+Shift
+
+
+
+Set TempPrepFile "{TempFolder}PPCROMLinkPrepCmds"
+Set TempCmdFile "{TempFolder}PPCROMLinkCmds"
+Echo -n "" > "{TempPrepFile}"
+
+Echo -n "PPCLink -xm library -codestart 0 -warn -o " > "{TempCmdFile}"
+Quote -n "{DestFile}.x" >> "{TempCmdFile}"
+
+
+Set OffsetSoFar 0
+Set NeedTool 1				# Always extract binary, so always need tool
+
+
+Loop					# over arguments
+	If !{#}
+		Break
+	End
+	
+	If "{1}" =~ /[0-9]+/ || "{1}" =~ /0x[0-9a-f]+/
+		# Move-to-offset argument (hex or decimal literal)
+
+		If `Evaluate {1} ∂< {OffsetSoFar}`
+			Echo "{0} failed: cannot pad to offset {1} because we are already past it!"
+			Exit 1
+		End
+
+		Set Delta `Evaluate -h {1} - {OffsetSoFar}`
+		
+		If {Delta}
+			Echo -n "Set F ∂"∂{TempFolder∂}Zeros_{Delta}.s∂";∂t"		>> "{TempPrepFile}"
+			Echo -n 'If !`Exists "{F}"'									>> "{TempPrepFile}"
+			Echo -n "{Streamer}"										>> "{TempPrepFile}"
+			Echo -n '`; '												>> "{TempPrepFile}"
+			Echo -n "Echo ∂∂tDCB.B {Delta}, 0" '> "{F}"; '				>> "{TempPrepFile}"
+			Echo -n 'PPCAsm "{F}"; '									>> "{TempPrepFile}"
+			Echo "End"													>> "{TempPrepFile}"
+
+			Echo -n "∂t∂∂∂n∂t" 											>> "{TempCmdFile}"
+			Echo -n "∂"∂{TempFolder∂}Zeros_{Delta}.s.o∂"" 				>> "{TempCmdFile}"
+			
+			Set OffsetSoFar {1}
+		End
+	Else If "{1}" =~ /([A-Za-z0-9]+)®1:/
+		# Label argument
+
+		Echo -n "Set F ∂"∂{TempFolder∂}{®1}.s∂";∂t"						>> "{TempPrepFile}"
+		Echo -n 'If !`Exists "{F}"'										>> "{TempPrepFile}"
+		Echo -n "{Streamer}"											>> "{TempPrepFile}"
+		Echo -n '`; '													>> "{TempPrepFile}"
+		Echo -n "Echo ∂∂tEXPORT {®1}∂∂n{®1}" '> "{F}"; '				>> "{TempPrepFile}"
+		Echo -n 'PPCAsm "{F}"; '										>> "{TempPrepFile}"
+		Echo "End"														>> "{TempPrepFile}"
+
+		Echo -n "∂t∂∂∂n∂t" 												>> "{TempCmdFile}"
+		Echo -n "∂"∂{TempFolder∂}{®1}.s.o∂"" 							>> "{TempCmdFile}"
+	Else
+		# Filename argument
+
+		If "{1}" !~ /≈.x/
+			Echo -n "Set F "											>> "{TempPrepFile}"
+			Quote -n "{1}"												>> "{TempPrepFile}"
+			Echo -n "; "												>> "{TempPrepFile}"
+			Echo -n 'If !`Exists "{F}.x"'								>> "{TempPrepFile}"
+			Echo -n "{Streamer}"										>> "{TempPrepFile}"
+			Echo -n '` || `Newer "{F}" "{F}.x"'							>> "{TempPrepFile}"
+			Echo -n "{Streamer}"										>> "{TempPrepFile}"
+			Echo -n '`; '												>> "{TempPrepFile}"
+			Quote -n "{0}.tool"											>> "{TempPrepFile}"
+			Echo -n ' tox "{F}" "{F}.x"; '								>> "{TempPrepFile}"
+			Echo "End"													>> "{TempPrepFile}"
+
+			Set NeedTool 1
+			Set TheXCOFF "{1}.x"
+			Set TextLen `Files -x b -n "{1}" | StreamEdit -d -e '/([0-9]+)®1b∞/ Print ®1'`
+		Else
+			Set TheXCOFF "{1}"
+			Set TextLen `DumpXCOFF -do h "{TheXCOFF}" | StreamEdit -d -e '/s_name≈∂".(≈)®1∂"/ Set CurSec ®1' -e '/s_size≈∂((≈)®1∂)/ Print CurSec " " ®1' | StreamEdit -d -e '/text (≈)®1/ Print ®1'`
+		End
+		
+		Echo -n "∂t∂∂∂n∂t" 												>> "{TempCmdFile}"
+		Quote -n "{TheXCOFF}" 											>> "{TempCmdFile}"
+
+		Set OffsetSoFar `Evaluate {OffsetSoFar} + {TextLen}`
+	End
+	
+	Shift
+End
+
+If {NeedTool}
+	Echo "# Compile a C program to create/extract basic XCOFFs"
+	Echo -n 'If !`Exists '
+	Quote -n "{0}.tool"
+	Echo -n "{Streamer}"
+	Echo '`'
+
+	Echo -n "∂tSC "
+	Echo -n '-o "{TempFolder}LinkPowerROM.o" '
+	Quote "{0}.c"
+
+	Echo -n "∂tILink -d -t MPST -c 'MPS ' -o "
+	Quote -n "{0}.tool"
+	Echo ' "{Libraries}Stubs.o" "{CLibraries}StdCLib.o" "{Libraries}MacRuntime.o" "{Libraries}IntEnv.o" "{Libraries}Interface.o" "{TempFolder}LinkPowerROM.o"'
+
+	Echo "End"
+	Echo
+End
+
+Echo "# Auto-generate some XCOFFs (padding and labels)"
+Catenate "{TempPrepFile}"
+
+Echo
+
+Echo "# Link whole-ROM XCOFF"
+Catenate "{TempCmdFile}"
+
+Echo
+Echo
+
+Echo "# Extract raw ROM binary"
+Quote -n "{0}.tool"
+Echo -n " fromx "
+Quote -n "{DestFile}.x"
+Echo -n " "
+Quote "{DestFile}"
+
+Echo
+
+Echo "# Checksum the ConfigInfo structure(s)"
+Echo -n 'Set CksumOffsets "`DumpXCOFF -do s '
+Quote -n "{DestFile}.x"
+Echo ' | StreamEdit -d -e "/C_EXT≈Addr≈(0x[A-Fa-f0-9]+)®1≈ConfigInfoChecksum/ Print ®1"`"'
+
+Quote -n "{0}.tool"
+Echo -n " cksum "
+Quote -n "{DestFile}"
+Echo ' {CksumOffsets}'
