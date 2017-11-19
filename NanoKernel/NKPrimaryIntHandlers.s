@@ -212,7 +212,7 @@ CommonPIHPath_0x168
 
 CommonPIHPath_0x1d0
 	mr		r8, r31
-	bl		major_0x13e4c
+	bl		DequeueTask
 	b		CommonPIHPath_0x218
 
 CommonPIHPath_0x1dc
@@ -232,7 +232,7 @@ CommonPIHPath_0x1dc
 
 CommonPIHPath_0x210
 	lwz		r16,  0x0e80(r1)
-	stw		r16, -0x08e4(r1)
+	stw		r16, PSA.OtherSystemContextPtr(r1)
 
 CommonPIHPath_0x218
 	li		r16,  0x00

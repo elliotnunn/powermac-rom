@@ -2189,63 +2189,73 @@ KCSetAreaAccess_0x1e4
 
 
 
-;	                     major_0x10cb8
+;	ARG		PTE r16, PTE r17, control r18
+;	RET		PTE r16, PTE r17
+;	CLOB	CR
 
-;	Xrefs:
-;	createarea
-;	KCSetAreaAccess
 
-major_0x10cb8	;	OUTSIDE REFERER
-	rlwinm	r16, r16,  0, 29, 24
-	rlwinm	r17, r17,  0, 27, 23
-	rlwinm	r16, r16,  0,  0, 29
-	rlwinm	r17, r17,  0, 31, 28
+major_0x10cb8
+
+	rlwinm	r16, r16,  0, 0xFFFFFF87		;	fill these in again...
+	rlwinm	r17, r17,  0, 0xFFFFFF1F		;	
+	rlwinm	r16, r16,  0, 0xFFFFFFFC		;	
+	rlwinm	r17, r17,  0, 0xFFFFFFF9		;	
+
+
+	;	Load control argument into condition register
+	;	Note: this is a pretty expensive operation, not in hot path
+
 	mtcr	r18
-	bge-	cr6, major_0x10cb8_0x20
-	ori		r17, r17,  0x80
-	ori		r16, r16,  0x08
 
-major_0x10cb8_0x20
-	ble-	cr6, major_0x10cb8_0x2c
-	ori		r16, r16,  0x40
-	b		major_0x10cb8_0x30
 
-major_0x10cb8_0x2c
-	ori		r17, r17,  0x20
+	bge-	cr6, @80_not_set				;	if(control & 0x80) {
+	ori		r17, r17, 0x80					;		PTE2 |= 0x80; //set referenced bit
+	ori		r16, r16, 0x08					;		PTE1 |= 0x08; //set guard bit
+@80_not_set									;	}
 
-major_0x10cb8_0x30
-	bne-	cr6, major_0x10cb8_0x3c
-	ori		r17, r17,  0x40
-	ori		r16, r16,  0x20
 
-major_0x10cb8_0x3c
-	ble-	cr7, major_0x10cb8_0x40
+	ble-	cr6, @40_not_set				;	if(control & 0x40) {
+	ori		r16, r16, 0x40					;		PTE1 |= 0x40; //set change bit
+	b		@40_endif						;	} else {
+@40_not_set
+	ori		r17, r17, 0x20					;		PTE2 |= 0x20; //set W bit
+@40_endif									;	}
 
-major_0x10cb8_0x40
-	bge-	cr7, major_0x10cb8_0x50
-	ori		r17, r17,  0x06
-	ori		r16, r16,  0x01
-	b		major_0x10cb8_0x78
 
-major_0x10cb8_0x50
-	bne-	cr7, major_0x10cb8_0x60
-	ori		r17, r17,  0x00
-	ori		r16, r16,  0x02
-	b		major_0x10cb8_0x78
+	bne-	cr6, @20_not_set				;	if(control & 0x20) {
+	ori		r17, r17,  0x40					;		PTE2 |= 0x40; //set change bit
+	ori		r16, r16,  0x20					;		PTE1 |= 0x20; //set W bit
+@20_not_set									;	}
 
-major_0x10cb8_0x60
-	bns-	cr7, major_0x10cb8_0x70
-	ori		r17, r17,  0x04
-	ori		r16, r16,  0x03
-	b		major_0x10cb8_0x78
 
-major_0x10cb8_0x70
-	ori		r17, r17,  0x02
-	ori		r16, r16,  0x00
+	ble-	cr7, @04_not_set				;	if(control & 0x04) {
+@04_not_set									;	}
 
-major_0x10cb8_0x78
-	ori		r16, r16,  0x10
-	blr
+
+	bge-	cr7, @08_not_set				;	if(control & 0x08) {
+	ori		r17, r17, 0x06					;		PTE2 |= 0x06; //set leftmost protection bit and reserved bit
+	ori		r16, r16, 0x01					;		PTE1 |= 0x01; //set rightmost protection bit
+	b		@block_endif					;	}
+@08_not_set
+	bne-	cr7, @02_not_set				;	else if(control & 0x02) {
+	ori		r17, r17, 0x00					;		PTE2 |= 0x00; //useless instruction?
+	ori		r16, r16, 0x02					;		PTE1 |= 0x02; //set second protection bit
+	b		@block_endif					;	}
+@02_not_set
+	bns-	cr7, @01_not_set				;	else if(control & 0x01) {
+	ori		r17, r17, 0x04					;		PTE2 |= 0x04; //set reserved bit.
+	ori		r16, r16, 0x03					;		PTE1 |= 0x03: //set both protection bits
+	b		@block_endif					;	}
+@01_not_set									;	else {
+	ori		r17, r17, 0x02					;		PTE2 |= 0x02; //set second protection bit
+	ori		r16, r16, 0x00					;		PTE1 |= 0x00; //useless instruction?
+@block_endif								;	}
+
+
+	ori		r16, r16,  0x10					;	PTE1 |= 0x10; //set M bit
+
+
+	blr										;	return (PTE1, PTE2);
 
 
 

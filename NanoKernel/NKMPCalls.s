@@ -1178,7 +1178,7 @@ MPCall_6_0x78	;	OUTSIDE REFERER
 
 MPCall_6_0xb4
 	mr		r8, r31
-	bl		major_0x13e4c
+	bl		DequeueTask
 	li		r16,  0x02
 	stb		r16,  0x0019(r31)
 	bl		TaskReadyAsPrev
@@ -1222,7 +1222,7 @@ KCYieldWithHint	;	OUTSIDE REFERER
 	cmpwi	r16,  0x02
 	bge-	KCYieldWithHint_0x7c
 	mr		r8, r31
-	bl		major_0x13e4c
+	bl		DequeueTask
 	li		r16,  0x02
 	stb		r16,  0x0019(r31)
 	bl		TaskReadyAsNext
@@ -1230,7 +1230,7 @@ KCYieldWithHint	;	OUTSIDE REFERER
 
 KCYieldWithHint_0x68
 	mr		r8, r31
-	bl		major_0x13e4c
+	bl		DequeueTask
 	li		r16,  0x02
 	stb		r16,  0x0019(r31)
 	bl		TaskReadyAsPrev
@@ -1255,12 +1255,13 @@ KCYieldWithHint_0xa0
 	DeclareMPCall	33, MPCall_33
 
 MPCall_33	;	OUTSIDE REFERER
-	rlwinm.	r8, r7,  0, 10, 10
+	rlwinm.	r8, r7,  0, 10, 10						;	Contains CpuFlags
 	bne+	ReturnMPCallBlueBlocking
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
 	b		MPCall_55_0x60
+
 
 
 
@@ -1274,52 +1275,61 @@ MPCall_33	;	OUTSIDE REFERER
 
 MPCall_55	;	OUTSIDE REFERER
 	rlwinm.	r8, r7,  0, 10, 10
-	lwz		r16,  0x0e80(r1)
+	lwz		r16, KDP.NanoKernelInfo + NKNanoKernelInfo.ExternalIntCount(r1)
 	beq-	MPCall_55_0x60
-	lwz		r17, -0x08e4(r1)
-	lwz		r18,  0x0658(r1)
+
+	lwz		r17, PSA.OtherSystemContextPtr(r1)
+	lwz		r18, KDP.PA_ECB(r1)
 	cmpw	r16, r17
-	stw		r16, -0x08e4(r1)
+	stw		r16, PSA.OtherSystemContextPtr(r1)
 	bne+	ReturnZeroFromMPCall
-	lwz		r8,  0x00cc(r18)
-	rlwinm	r8, r8,  0, 24, 21
-	oris	r8, r8,  0x8000
-	stw		r8,  0x00cc(r18)
+
+	lwz		r8, ContextBlock.PriorityShifty(r18)
+	rlwinm	r8, r8, 0, 24, 21
+	oris	r8, r8, 0x8000
+	stw		r8, ContextBlock.PriorityShifty(r18)
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
+	;	if(-0x0410(r1) == -1) {-0x0410(r1) = 0; return 0;}
 	lwz		r16, -0x0410(r1)
 	cmpwi	r16, -0x01
 	li		r16,  0x00
 	bne-	MPCall_55_0x60
 	stw		r16, -0x0410(r1)
-
-;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall
+
+
 
 MPCall_55_0x60	;	OUTSIDE REFERER
 	mfsprg	r16, 0
-	li		r17,  0x01
-	lwz		r31, -0x0008(r16)
+	li		r17, 1
+
+	lwz		r31, EWA.PA_CurTask(r16)
 	addi	r16, r31,  0x20
-	stb		r17,  0x0014(r16)
-	clrlwi	r3, r3,  0x01
-	stw		r3,  0x0038(r16)
-	stw		r4,  0x003c(r16)
-	stw		r31,  0x0018(r16)
+
+	stb		r17, Timer.Byte0(r16)
+
+	;	High bit is possibly suspect? Or a flag?
+	clrlwi	r3, r3, 1
+	stw		r3, Timer.Time(r16)
+	stw		r4, Timer.Time+4(r16)
+
+	stw		r31, Timer.ParentTaskPtr(r16)
+
 	mr		r8, r16
-	bl		called_by_init_tmrqs
+	bl		EnqueueTimer
+
 	mr		r8, r31
-	bl		major_0x13e4c
-	addi	r16, r1, -0xa44
-	addi	r17, r31,  0x08
-	stw		r16,  0x0000(r17)
-	stw		r16,  0x0008(r17)
-	lwz		r18,  0x000c(r16)
-	stw		r18,  0x000c(r17)
-	stw		r17,  0x0008(r18)
-	stw		r17,  0x000c(r16)
-	li		r3,  0x00
+	bl		DequeueTask
+
+	addi	r16, r1, PSA.DelayQueue
+	addi	r17, r31, Timer.QueueLLL
+	stw		r16, LLL.Freeform(r17)
+
+	InsertAsPrev	r17, r16, scratch=r18
+
+	li		r3, 0
 	b		AlternateMPCallReturnPath
 
 
@@ -1958,7 +1968,7 @@ KCStopScheduling	;	OUTSIDE REFERER
 	oris	r17, r17,  0x80
 	stw		r17,  0x0064(r31)
 	mr		r8, r31
-	bl		major_0x13e4c
+	bl		DequeueTask
 	li		r17,  0x00
 	stb		r17,  0x0019(r31)
 	mr		r8, r31
@@ -2364,7 +2374,7 @@ NKSetClockStep_0xec
 	stw		r8,  0x0038(r31)
 	stw		r9,  0x003c(r31)
 	mr		r8, r31
-	bl		called_by_init_tmrqs
+	bl		EnqueueTimer
 
 ;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall
@@ -2439,7 +2449,7 @@ NKSetClockDriftCorrection_0x6c
 	stw		r8,  0x0038(r31)
 	stw		r9,  0x003c(r31)
 	mr		r8, r31
-	bl		called_by_init_tmrqs
+	bl		EnqueueTimer
 
 ;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall

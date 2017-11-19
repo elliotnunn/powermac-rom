@@ -638,43 +638,60 @@ Save_v0_v31_0x1b8
 
 
 
-major_0x13e4c
-	lwz     r17,  0x0010( r8)
-	lbz     r18,  0x0018( r8)
-	addi    r16,  r8,  0x08
-	cmpwi    cr1, r18,  0x00
-	cmpwi   r17,  0x00
-	beq+     cr1, Local_Panic
-	beq-    major_0x13e4c_0x74
-	lwz     r17,  0x0008(r16)
-	lwz     r18,  0x000c(r16)
-	stw     r17,  0x0008(r18)
-	stw     r18,  0x000c(r17)
-	li      r17,  0x00
-	stw     r17,  0x0008(r16)
-	stw     r17,  0x000c(r16)
-	lwz     r17,  0x0000(r16)
-	lwz     r16,  0x001c( r8)
-	lwz     r18,  0x0014(r17)
-	subf    r18, r16, r18
-	stw     r18,  0x0014(r17)
-	lwz     r18,  0x0010(r17)
-	addi    r18, r18, -0x01
-	stw     r18,  0x0010(r17)
-	cmpwi   r18,  0x00
-	lwz     r16, -0x0970( r1)
-	blt+    Local_Panic
-	bne-    major_0x13e4c_0x74
-	lwz     r18,  0x0000(r17)
-	andc    r16, r16, r18
-	stw     r16, -0x0970( r1)
+;	Remove a task from a queue, cleaning up the queue structures behind me.
+;	If a queue is empty, unset the priority flag of the queue in
+;	PSA.PriorityFlags (presumably has no effect with non-ready queues).
+;	Also set the mysterious EWA.BinaryFlag to 1.
 
-major_0x13e4c_0x74
-	li      r16,  0x00
-	stb     r16,  0x0018( r8)
+;	ARG		Task *r8
+;	CLOB	r16, r17, r18
+
+DequeueTask
+
+	lwz		r17, Task.QueueMember + LLL.Next( r8)
+	lbz		r18, Task.MysteryByte1( r8)
+
+	addi	r16, r8, Task.QueueMember
+
+	;	Panic if MysteryByte1==0, return early if this task is not enqueued (i.e. LLL.Next==0)
+	cmpwi	cr1, r18, 0
+	cmpwi	r17, 0
+	beq+	cr1, Local_Panic
+	beq-	@return_early
+
+	RemoveFromList	r16, scratch1=r17, scratch2=r18
+
+	;	The queue of which this task was formerly a member
+	lwz		r17, LLL.Freeform(r16)
+
+	;	Tidy up by subtracting this tasks weight from the Q weight
+	lwz		r16, Task.Weight(r8)
+	lwz		r18, ReadyQueue.TotalWeight(r17)
+	subf	r18, r16, r18
+	stw		r18, ReadyQueue.TotalWeight(r17)
+
+	;	Decrement the Q counter
+	lwz		r18, ReadyQueue.Counter(r17)
+	subi	r18, r18, 1
+	stw		r18, ReadyQueue.Counter(r17)
+
+	;	Optimised below: a bit confusing
+
+	cmpwi	r18, 0						;	Crash if we popped from an empty queue!
+	lwz		r16, PSA.PriorityFlags(r1)
+	blt+	Local_Panic
+	bne-	@return_early
+	lwz		r18, ReadyQueue.LLL + LLL.Freeform(r17)
+	andc	r16, r16, r18				;	If this queue is empty then unset the corresponding
+	stw		r16, PSA.PriorityFlags(r1)	;	bit in PSA.PriorityFlags
+@return_early
+
+	li		r16, 0
+	stb		r16, Task.MysteryByte1(r8)
+
 	mfsprg  r17, 0
-	li      r16,  0x01
-	stb     r16, -0x0118(r17)
+	li		r16, 1
+	stb		r16, EWA.BinaryFlag(r17)
 	blr
 
 
@@ -1073,7 +1090,7 @@ SetAddrSpcRegisters_0x314:
 ;	skeleton_key
 
 major_0x142a8	;	OUTSIDE REFERER
-	lbz		r8, -0x0118(r1)
+	lbz		r8, EWA.BinaryFlag(r1)
 	rlwinm.	r9, r7,  0, 16, 16
 	lwz		r1, -0x0004(r1)
 	cmpwi	cr1, r8,  0x00
@@ -1119,7 +1136,7 @@ major_0x142a8	;	OUTSIDE REFERER
 major_0x142dc	;	OUTSIDE REFERER
 	mfsprg	r14, 0
 	li		r8,  0x00
-	stb		r8, -0x0118(r14)
+	stb		r8, EWA.BinaryFlag(r14)
 	lwz		r31, -0x0008(r14)
 	lwz		r1, -0x0004(r14)
 	lwz		r9,  0x0ee4(r1)
@@ -1136,7 +1153,7 @@ major_0x142dc_0x38
 	cmpw	r27, r26
 	mr		r8, r31
 	beq-	major_0x142dc_0x58
-	bl		major_0x13e4c
+	bl		DequeueTask
 	stb		r26,  0x0019(r31)
 	mr		r8, r31
 	bl		TaskReadyAsPrev
@@ -1387,7 +1404,7 @@ major_0x14548_0x58
 major_0x14548_0xd4
 	mfsprg	r19, 0
 	li		r8,  0x00
-	stb		r8, -0x0118(r19)
+	stb		r8, EWA.BinaryFlag(r19)
 	lhz		r8, -0x0116(r19)
 	lwz		r6,  0x0088(r30)
 	lwz		r28, -0x0340(r19)
@@ -1667,7 +1684,7 @@ major_0x148ec_0xc8
 	mtxer	r20
 	li		r16,  0x01
 	stb		r16, -0x0309(r21)
-	b		major_0x13060_0xc
+	b		AdjustDecForTMRQGivenCurTime
 
 
 
@@ -1903,7 +1920,7 @@ major_0x14af8_0x78
 
 major_0x14af8_0x94
 	li		r16,  0x01
-	stb		r16, -0x0118(r15)
+	stb		r16, EWA.BinaryFlag(r15)
 	blr
 
 
@@ -1985,7 +2002,7 @@ major_0x14bcc
 	mfsprg	r14, 0
 	lwz		r31,  0x001c(r3)
 	li		r8,  0x00
-	stb		r8, -0x0118(r14)
+	stb		r8, EWA.BinaryFlag(r14)
 	lwz		r6,  0x0088(r31)
 	stw		r31, -0x0008(r14)
 	stw		r6, -0x0014(r14)
@@ -2155,7 +2172,7 @@ StopProcessor
 	lwz		r8,  0x001c(r31)
 	li		r9,  0x00
 	stw		r9,  0x001c(r31)
-	bl		major_0x13e4c
+	bl		DequeueTask
 	addi	r16, r1, -0xa44
 	addi	r17, r8,  0x08
 	stw		r16,  0x0000(r17)

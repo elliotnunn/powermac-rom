@@ -147,7 +147,7 @@ NoIdeaR23				ds.l	1	; -900 ; r23 copies here... replated to RTAS?
 PA_BlueTask				ds.l	1	; -8f0 ; set at the same time as the one below
 						ds.l	1	; -8ec
 						ds.l	1	; -8e8
-						ds.l	1	; -8e4
+OtherSystemContextPtr	ds.l	1	; -8e4 ; sometimes set to PA_ECB
 VectorRegInitWord		ds.l	1	; -8e0 ; task vector regs get inited with this word x 4
 SevenFFFDead2			ds.l	1	; -8dc
 SevenFFFDead3			ds.l	1	; -8d8
@@ -172,7 +172,7 @@ SystemAddressSpaceID	ds.l	1	; -424
 blueProcessPtr			ds.l	1	; -41c ; physical ptr to first type-1 struct created
 ThermalHandlerID		ds.l	1	; -418 ; is a Note struct
 PMFHandlerID			ds.l	1	; -414 ; also a Note struct
-						ds.l	1	; -410
+SomeEvtGrpID			ds.l	1	; -410
 						ds.l	1	; -40c
 						ds.l	1	; -408
 						ds.l	1	; -404
@@ -266,7 +266,10 @@ Base								; used when init'ed as part of the enclosing CPU struct
 
 TimeList				ds.l	4	; -320:-310, cpu+020
 						ds.l	1	; -310, cpu+030
-						ds.l	1	; -30c, cpu+034
+						ds.b	1	; -30c, cpu+034
+						ds.b	1	; -30b, cpu+035
+						ds.b	1	; -30a, cpu+036
+GlobalTimeIsValid		ds.b	1	; -309, cpu+037
 						ds.l	1	; -308, cpu+038
 						ds.l	1	; -304, cpu+03c
 						ds.l	1	; -300, cpu+040
@@ -275,8 +278,7 @@ TimeList				ds.l	4	; -320:-310, cpu+020
 						ds.l	1	; -2f4, cpu+04c
 						ds.l	1	; -2f0, cpu+050
 						ds.l	1	; -2ec, cpu+054
-						ds.l	1	; -2e8, cpu+058
-						ds.l	1	; -2e4, cpu+05c
+GlobalTime				ds.l	2	; -2e8, cpu+058
 ThudSavedR29			ds.l	1	; -2e0, cpu+060
 ThudSavedR30			ds.l	1	; -2dc, cpu+064
 ThudSavedR31			ds.l	1	; -2d8, cpu+068
@@ -391,7 +393,7 @@ SpacesDeferredAreaPtr	ds.l	1	; -26c, cpu+0d4
 						ds.l	1	; -124, cpu+21c
 						ds.l	1	; -120, cpu+220
 						ds.l	1	; -11c, cpu+224
-						ds.l	1	; -118, cpu+228
+BinaryFlag				ds.l	1	; -118, cpu+228 ; 1 or 0, actually a byte!
 						ds.l	1	; -114, cpu+22c
 						ds.l	1	; -110, cpu+230
 						ds.l	1	; -10c, cpu+234

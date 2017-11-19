@@ -457,7 +457,7 @@ major_0x02ccc_0x2a4	;	OUTSIDE REFERER
 	_Lock			PSA.SchLock, scratch1=r28, scratch2=r29
 
 	mr		r8, r31
-	bl		major_0x13e4c
+	bl		DequeueTask
 	lwz		r16,  0x0064(r31)
 	srwi	r8, r7, 24
 	rlwinm.	r16, r16,  0,  9,  9
@@ -489,7 +489,7 @@ major_0x02ccc_0x310	;	OUTSIDE REFERER
 	_Lock			PSA.SchLock, scratch1=r28, scratch2=r29
 
 	mr		r8, r31
-	bl		major_0x13e4c
+	bl		DequeueTask
 	lwz		r16,  0x0064(r31)
 	srwi	r8, r7, 24
 	rlwinm.	r16, r16,  0,  9,  9
@@ -2520,7 +2520,7 @@ IntExternalYellow	;	OUTSIDE REFERER
 	
 	mfsprg	r9, 0
 	li		r8,  0x01
-	stb		r8, -0x0118(r9)
+	stb		r8, EWA.BinaryFlag(r9)
 	b		skeleton_key
 
 

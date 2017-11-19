@@ -366,7 +366,7 @@ MPCall_18_0x9c
 
 MPCall_18_0xc4
 	mr		r8, r19
-	bl		major_0x13e4c
+	bl		DequeueTask
 	lwz		r19, -0x0008(r30)
 	addi	r16, r31,  0x00
 	addi	r17, r19,  0x08
@@ -406,7 +406,7 @@ MPCall_18_0xc4
 	stw		r8,  0x0038(r30)
 	stw		r9,  0x003c(r30)
 	mr		r8, r30
-	bl		called_by_init_tmrqs
+	bl		EnqueueTimer
 
 MPCall_18_0x154
 	b		AlternateMPCallReturnPath
@@ -517,7 +517,7 @@ MPCall_23_0x44
 	b		ReleaseAndReturnMPCallBlueBlocking
 
 MPCall_23_0x68
-	bl		major_0x13e4c
+	bl		DequeueTask
 	addi	r16, r31,  0x00
 	addi	r17, r8,  0x08
 	stw		r16,  0x0000(r17)
@@ -555,7 +555,7 @@ MPCall_23_0x68
 	stw		r8,  0x0038(r30)
 	stw		r9,  0x003c(r30)
 	mr		r8, r30
-	bl		called_by_init_tmrqs
+	bl		EnqueueTimer
 
 MPCall_23_0xec
 	li		r3,  0x00
@@ -829,7 +829,7 @@ MPCall_27_0x78
 
 MPCall_27_0xb4
 	mr		r8, r30
-	bl		major_0x13e4c
+	bl		DequeueTask
 	lis		r16,  0x7fff
 	addi	r18, r30,  0x08
 	ori		r16, r16,  0xffff
@@ -866,7 +866,7 @@ MPCall_27_0xb4
 	stw		r8,  0x0038(r29)
 	stw		r9,  0x003c(r29)
 	mr		r8, r29
-	bl		called_by_init_tmrqs
+	bl		EnqueueTimer
 
 MPCall_27_0x138
 	b		AlternateMPCallReturnPath
@@ -1036,9 +1036,39 @@ MPCall_26_0x98
 
 
 
-	DeclareMPCall	49, NKCreateEventGroupForThisTask
+;_______________________________________________________________________
+;	EVENT GROUP MP CALLS (49-54)
+;
+;	Corresponding with MPLibrary functions, although signatures differ
+;
+;	49*		MPCreateEvent
+;	50		MPDeleteEvent
+;	51		MPSetEvent
+;	52*		MPWaitForEvent
+;	53		MPQueryEvent
+;	54*		MPSetSWIEvent
+;	* also called using the FE1F trap by the 68k ROM
+;
+;	Lifted from docs:
+;	An event group is essentially a group of binary semaphores. You can use
+;	event groups to indicate a number of simple events. For example, a task
+;	running on a server may need to be aware of multiple message queues.
+;	Instead of trying to poll each one in turn, the server task can wait on
+;	an event group. Whenever a message is posted on a queue, the poster can
+;	also set the bit corresponding to that queue in the event group. Doing
+;	so notifies the task, and it then knows which queue to access to extract
+;	the message. In Multiprocessing Services, an event group consists of
+;	thirty-two 1-bit flags, each of which may be set independently. When a
+;	task receives an event group, it receives all 32-bits at once (that is,
+;	it cannot poll individual bits), and all the bits in the event group are
+;	subsequently cleared.
+;_______________________________________________________________________
 
-NKCreateEventGroupForThisTask
+	DeclareMPCall	49, MPCreateEvent
+
+;	RET		OSStatus r3, MPEventID r4
+
+MPCreateEvent
 
 	li		r8, EventGroup.Size
 	bl		PoolAlloc
@@ -1072,9 +1102,12 @@ NKCreateEventGroupForThisTask
 
 
 
-	DeclareMPCall	50, MPCall_50
+	DeclareMPCall	50, MPDeleteEvent
 
-MPCall_50	;	OUTSIDE REFERER
+;	ARG		MPEventID r3
+;	RET		OSStatus r3
+
+MPDeleteEvent
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
@@ -1083,28 +1116,28 @@ MPCall_50	;	OUTSIDE REFERER
 ;	r8 = id
  	bl		LookupID
 	cmpwi	r9, EventGroup.kIDClass
-
 	mr		r31, r8
 	bne+	ReleaseAndReturnMPCallInvalidIDErr
+
 	mr		r8, r3
 	bl		major_0x0dce8
 
-MPCall_50_0x34
+MPDeleteEvent_0x34
 	addi	r30, r31,  0x00
 	lwz		r16,  0x0008(r31)
 	cmpw	r16, r30
 	addi	r8, r16, -0x08
-	beq-	MPCall_50_0x98
+	beq-	MPDeleteEvent_0x98
 	lwz		r17,  0x0088(r8)
 	li		r18, -0x726f
 	stw		r18,  0x011c(r17)
 	lbz		r17,  0x0037(r8)
 	cmpwi	r17,  0x01
-	bne-	MPCall_50_0x68
+	bne-	MPDeleteEvent_0x68
 	addi	r8, r8,  0x20
 	bl		major_0x136c8
 
-MPCall_50_0x68
+MPDeleteEvent_0x68
 	lwz		r16,  0x0008(r31)
 	lwz		r17,  0x0008(r16)
 	lwz		r18,  0x000c(r16)
@@ -1116,9 +1149,9 @@ MPCall_50_0x68
 	addi	r8, r16, -0x08
 	bl		TaskReadyAsPrev
 	bl		major_0x14af8
-	b		MPCall_50_0x34
+	b		MPDeleteEvent_0x34
 
-MPCall_50_0x98
+MPDeleteEvent_0x98
 	mr		r8, r31
 	bl		PoolFree
 	mr		r8, r3
@@ -1129,20 +1162,21 @@ MPCall_50_0x98
 
 
 
-	DeclareMPCall	51, MPCall_51
+	DeclareMPCall	51, MPSetEvent
 
-MPCall_51	;	OUTSIDE REFERER
+;	ARG		MPEventID r3, MPEventFlags r4
+;	RET		OSStatus r3
+
+MPSetEvent
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
 	mr		r8, r3
-
-;	r8 = id
  	bl		LookupID
 	cmpwi	r9, EventGroup.kIDClass
-
 	mr		r31, r8
 	bne+	ReleaseAndReturnMPCallInvalidIDErr
+
 	mr		r8, r4
 	bl		major_0x0d35c
 
@@ -1286,38 +1320,43 @@ major_0x0d35c_0x1a0
 
 
 
-	DeclareMPCall	52, MPCall_52
+	DeclareMPCall	52, MPWaitForEvent
 
-MPCall_52	;	OUTSIDE REFERER
+;	ARG		MPEventID r3, Duration r5
+;	RET		OSStatus r3, MPEventFlags r4
+
+MPWaitForEvent
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
 	mr		r8, r3
 
-;	r8 = id
- 	bl		LookupID
+	;	Check that the Event Group ID in r3 is valid.
+	bl		LookupID
 	cmpwi	r9, EventGroup.kIDClass
-
 	bne+	ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
-	lwz		r16,  0x0010(r31)
-	cmpwi	r16,  0x00
-	beq-	MPCall_52_0xc0
+
+	lwz		r16, 0x0010(r31)
+	cmpwi	r16, 0
+	beq-	MPWaitForEvent_field_10_was_zero
+
 	mr		r4, r16
-	li		r16,  0x00
+
+	li		r16, 0
 	stw		r16,  0x0010(r31)
+
 	lwz		r16,  0x0018(r31)
-	lwz		r17,  0x0658(r1)
+	lwz		r17, KDP.PA_ECB(r1)
 	rlwinm.	r18, r16,  0, 27, 27
 	rlwinm	r16, r16,  2, 26, 29
-
-;	r1 = kdp
 	beq+	ReleaseAndReturnZeroFromMPCall
+
 	lwz		r18,  0x00c8(r17)
 	lwz		r9,  0x0634(r1)
 	cmpwi	r18,  0x00
 	add		r18, r18, r9
-	bne-	MPCall_52_0x84
+	bne-	MPWaitForEvent_0x84
 	lwz		r18,  0x00d0(r17)
 	cmpw	r18, r3
 	li		r18,  0x00
@@ -1329,7 +1368,7 @@ MPCall_52	;	OUTSIDE REFERER
 ;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall
 
-MPCall_52_0x84
+MPWaitForEvent_0x84
 	lwzx	r19, r16, r18
 	cmpw	r19, r3
 	li		r19,  0x00
@@ -1340,82 +1379,87 @@ MPCall_52_0x84
 	li		r19,  0x1c
 	li		r9,  0x04
 
-MPCall_52_0xa0
+MPWaitForEvent_0xa0
 	lwzx	r8, r19, r18
 	cmpwi	r8,  0x00
-	bne-	MPCall_52_0xb4
+	bne-	MPWaitForEvent_0xb4
 	subf.	r19, r9, r19
-	bgt+	MPCall_52_0xa0
+	bgt+	MPWaitForEvent_0xa0
 
-MPCall_52_0xb4
+MPWaitForEvent_0xb4
 	srwi	r19, r19,  2
 	stw		r19,  0x00d0(r17)
 
 ;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall
 
-MPCall_52_0xc0
+MPWaitForEvent_field_10_was_zero
 	mfsprg	r30, 0
-	cmpwi	r5,  0x00
-	lwz		r19, -0x0008(r30)
+	cmpwi	r5, 0
+	lwz		r19, EWA.PA_CurTask(r30)
 	beq+	ReleaseAndTimeoutMPCall
-	lwz		r16,  0x0064(r19)
-	rlwinm.	r16, r16,  0, 15, 15
-	beq-	MPCall_52_0xe4
-	stw		r3, -0x0410(r1)
-	b		ReleaseAndReturnMPCallBlueBlocking
+	lwz		r16, Task.ThingThatAlignVecHits(r19)
+	rlwinm.	r16, r16, 0, 15, 15
 
-MPCall_52_0xe4
+	beq-	@bit_15_was_unset
+	stw		r3, PSA.SomeEvtGrpID(r1)
+	b		ReleaseAndReturnMPCallBlueBlocking
+@bit_15_was_unset
+
+	;	MOVE TASK OUT OF QUEUE AND INTO EVENT GROUP
 	mr		r8, r19
-	bl		major_0x13e4c
-	lwz		r19, -0x0008(r30)
-	addi	r16, r31,  0x00
-	addi	r17, r19,  0x08
-	stw		r16,  0x0000(r17)
-	stw		r16,  0x0008(r17)
-	lwz		r18,  0x000c(r16)
-	stw		r18,  0x000c(r17)
-	stw		r17,  0x0008(r18)
-	stw		r17,  0x000c(r16)
-	lwz		r18,  0x001c(r31)
-	addi	r18, r18,  0x01
-	stw		r18,  0x001c(r31)
-	lis		r16,  0x7fff
-	ori		r16, r16,  0xffff
-	addi	r30, r19,  0x20
+	bl		DequeueTask
+
+	lwz		r19, EWA.PA_CurTask(r30)
+	addi	r16, r31, EventGroup.LLL
+	addi	r17, r19, Task.QueueMember
+	stw		r16, LLL.FreeForm(r17)
+
+	InsertAsPrev	r17, r16, scratch=r18
+
+	lwz		r18, EventGroup.Counter(r31)
+	addi	r18, r18, 1
+	stw		r18, EventGroup.Counter(r31)
+
+	lisori	r16, 0x7fffffff				;	LONG_MAX
+	addi	r30, r19, Task.Timer
 	cmpw	r5, r16
-	li		r16,  0x02
-	beq-	MPCall_52_0x170
-	stb		r16,  0x0014(r30)
-	stw		r19,  0x0018(r30)
+	li		r16, 2
+	beq-	@wait_forever				;	never trigger max-wait timers
+
+	stb		r16, Timer.Byte0(r30)
+	stw		r19, Timer.ParentTaskPtr(r30)
 	mr		r8, r5
 
-;	r1 = kdp
-;	r8 = multiple (pos: /250; neg: /250000)
 	bl		TimebaseTicksPerPeriod
-;	r8 = hi
-;	r9 = lo
-
 	mr		r27, r8
 	mr		r28, r9
+
 	bl		GetTime
 	mfxer	r16
 	addc	r9, r9, r28
 	adde	r8, r8, r27
 	mtxer	r16
-	stw		r8,  0x0038(r30)
-	stw		r9,  0x003c(r30)
-	mr		r8, r30
-	bl		called_by_init_tmrqs
 
-MPCall_52_0x170
+	stw		r8, Timer.Time(r30)
+	stw		r9, Timer.Time+4(r30)
+
+	mr		r8, r30
+	bl		EnqueueTimer
+
+@wait_forever
 	b		AlternateMPCallReturnPath
 
 
 
-	DeclareMPCall	53, MPCall_53
+	DeclareMPCall	53, MPQueryEvent
 
-MPCall_53	;	OUTSIDE REFERER
+;	Returns Timeout if no flags are set, otherwise NoErr
+
+;	ARG		MPEventID r3
+;	RET		OSStatus r3
+
+MPQueryEvent
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
@@ -1424,8 +1468,8 @@ MPCall_53	;	OUTSIDE REFERER
 ;	r8 = id
  	bl		LookupID
 	cmpwi	r9, EventGroup.kIDClass
-
 	bne+	ReleaseAndReturnMPCallInvalidIDErr
+
 	mr		r31, r8
 	lwz		r16,  0x0010(r31)
 	cmpwi	r16,  0x00
@@ -1436,16 +1480,17 @@ MPCall_53	;	OUTSIDE REFERER
 
 
 
-	DeclareMPCall	54, MPCall_54
+	DeclareMPCall	54, MPSetSWIEvent
 
-MPCall_54	;	OUTSIDE REFERER
+;	ARG		MPEventID r3, int r4 swi
+
+MPSetSWIEvent
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
 	mr		r8, r3
  	bl		LookupID
 	cmpwi	r9, EventGroup.kIDClass
-
 	bne+	ReleaseAndReturnMPCallInvalidIDErr
 
 	mr		r31, r8
@@ -1454,7 +1499,7 @@ MPCall_54	;	OUTSIDE REFERER
 	cmpwi	r4, 0
 	cmplwi	cr1, r4, 8
 
-	lwz		r16,  0x0018(r31)
+	lwz		r16, EventGroup.SWI(r31)
 
 	beq-	@use_1
 	bgt-	cr1, @use_1
@@ -1464,18 +1509,29 @@ MPCall_54	;	OUTSIDE REFERER
 
 	;	r17 = 1 if outside 1-8 (inc) range
 
-	ori		r16, r16,  0x10
-	rlwimi	r16, r17,  0, 28, 31
-	stw		r16,  0x0018(r31)
+	ori		r16, r16, 0x10
+	rlwimi	r16, r17, 0, 28, 31
+	stw		r16, EventGroup.SWI(r31)
 
 ;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall
 
 
 
-	DeclareMPCall	40, MPCall_40
 
-MPCall_40	;	OUTSIDE REFERER
+
+
+
+
+
+
+
+
+
+
+	DeclareMPCall	40, NKCreateTimer
+
+NKCreateTimer	;	OUTSIDE REFERER
 	li		r8,  0x40
 
 ;	r1 = kdp
@@ -1495,12 +1551,12 @@ MPCall_40	;	OUTSIDE REFERER
 ;	r9 = kind
 	bl		MakeID
 	cmpwi	r8,  0x00
-	bne-	MPCall_40_0x48
+	bne-	NKCreateTimer_0x48
 	mr		r8, r31
 	bl		PoolFree
 	b		major_0x0af60
 
-MPCall_40_0x48
+NKCreateTimer_0x48
 	mfsprg	r30, 0
 	stw		r8,  0x0000(r31)
 	lwz		r30, -0x0008(r30)
@@ -1523,9 +1579,9 @@ MPCall_40_0x48
 
 
 
-	DeclareMPCall	41, MPCall_41
+	DeclareMPCall	41, NKDeleteTimer
 
-MPCall_41	;	OUTSIDE REFERER
+NKDeleteTimer	;	OUTSIDE REFERER
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
@@ -1541,20 +1597,20 @@ MPCall_41	;	OUTSIDE REFERER
 	bl		DeleteID
 	lwz		r16,  0x0008(r31)
 	cmpwi	r16,  0x00
-	beq-	MPCall_41_0x48
+	beq-	NKDeleteTimer_0x48
 	mr		r8, r31
 	bl		major_0x136c8
 
-MPCall_41_0x48
+NKDeleteTimer_0x48
 	sync
 	lwz		r16, PSA.SchLock + Lock.Count(r1)
 	cmpwi	cr1, r16,  0x00
 	li		r16,  0x00
-	bne+	cr1, MPCall_41_0x64
+	bne+	cr1, NKDeleteTimer_0x64
 	mflr	r16
 	bl		panic
 
-MPCall_41_0x64
+NKDeleteTimer_0x64
 	stw		r16, PSA.SchLock + Lock.Count(r1)
 	lwz		r8,  0x001c(r31)
 	cmpwi	r8,  0x00
@@ -1565,9 +1621,9 @@ MPCall_41_0x64
 
 
 
-	DeclareMPCall	30, MPCall_30
+	DeclareMPCall	30, NKSetTimerNotify
 
-MPCall_30	;	OUTSIDE REFERER
+NKSetTimerNotify	;	OUTSIDE REFERER
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
@@ -1589,9 +1645,9 @@ MPCall_30	;	OUTSIDE REFERER
 	cmpwi	r9, Semaphore.kIDClass
 
 	cmpwi	cr2, r9,  0x04
-	beq-	MPCall_30_0x80
+	beq-	NKSetTimerNotify_0x80
 	cmpwi	r9,  0x09
-	beq-	cr2, MPCall_30_0x64
+	beq-	cr2, NKSetTimerNotify_0x64
 	bne+	ReleaseAndReturnMPCallInvalidIDErr
 	stw		r4,  0x002c(r31)
 	stw		r5,  0x0030(r31)
@@ -1599,7 +1655,7 @@ MPCall_30	;	OUTSIDE REFERER
 ;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall
 
-MPCall_30_0x64
+NKSetTimerNotify_0x64
 	stw		r4,  0x0018(r31)
 	lwz		r16,  0x0134(r6)
 	lwz		r17,  0x013c(r6)
@@ -1610,7 +1666,7 @@ MPCall_30_0x64
 ;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall
 
-MPCall_30_0x80
+NKSetTimerNotify_0x80
 	stw		r4,  0x0034(r31)
 
 ;	r1 = kdp
@@ -1709,7 +1765,7 @@ MPCall_31_0xdc
 MPCall_31_0xf8
 	stb		r17,  0x0016(r31)
 	mr		r8, r31
-	bl		called_by_init_tmrqs
+	bl		EnqueueTimer
 
 ;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall
@@ -2050,7 +2106,7 @@ MPCall_128_0x58
 ;	MPCall_21
 ;	MPCall_28
 ;	MPCall_26
-;	MPCall_50
+;	MPDeleteEvent
 ;	major_0x0d35c
 
 major_0x0dce8	;	OUTSIDE REFERER

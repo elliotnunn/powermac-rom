@@ -68,39 +68,46 @@ InitTMRQs_0x7c
 	mtlr	r30
 
 InitTMRQs_0xb4
-	lwz		r30,  0x0630(r1)
-	lhz		r31,  0x0378(r30)
-	cmplwi	r31,  0x101
-	blt-	InitTMRQs_0x140
-	lwz		r31,  0x0388(r30)
-	clrlwi.	r8, r31,  0x1f
-	beq-	InitTMRQs_0x140
-	lwz		r8,  0x0edc(r1)
-	ori		r8, r8,  0x02
-	stw		r8,  0x0edc(r1)
+
+
+;	Activate the NanoDebugger (whatever that is...)
+
+	lwz		r30, KDP.PA_ConfigInfo(r1)
+	lhz		r31, NKConfigurationInfo.Debug(r30)
+	cmplwi	r31, NKConfigurationInfo.DebugThreshold
+	blt-	@nodebug
+
+	lwz		r31, NKConfigurationInfo.DebugFlags(r30)
+	rlwinm.	r8, r31, 0, NKConfigurationInfo.NanodbgrFlagBit, NKConfigurationInfo.NanodbgrFlagBit
+	beq-	@nodebug
+
+	lwz		r8, KDP.NanoKernelInfo + NKNanoKernelInfo.ConfigFlags(r1)
+	_bset	r8, r8, NKNanoKernelInfo.NanodbgrFlagBit
+	stw		r8, KDP.NanoKernelInfo + NKNanoKernelInfo.ConfigFlags(r1)
+
 	mflr	r30
-	li		r8,  0x40
 
-;	r1 = kdp
-;	r8 = size
-	bl		PoolAlloc
-;	r8 = ptr
-
+	li		r8, Timer.Size
+	bl		PoolAlloc					;	one of those weird queue structures
 	mr.		r31, r8
 	beq+	Local_Panic
+
 	li		r9,  0x06
 	stb		r9,  0x0014(r31)
 	li		r9,  0x01
 	stb		r9,  0x0016(r31)
-	bl		GetTime
-	stw		r8,  0x0038(r31)
-	stw		r9,  0x003c(r31)
-	mr		r8, r31
-	bl		called_by_init_tmrqs
-	_log	'Nanodebugger activated.^n'
-	mtlr	r30
 
-InitTMRQs_0x140
+	bl		GetTime
+	stw		r8, Timer.Time(r31)
+	stw		r9, Timer.Time+4(r31)
+
+	mr		r8, r31
+	bl		EnqueueTimer
+
+	_log	'Nanodebugger activated.^n'
+
+	mtlr	r30
+@nodebug
 	blr
 
 
@@ -234,7 +241,7 @@ TimerDispatch_0x180:
 TimerDispatch_0x188
 	lwz		r19, -0x0258(r18)
 	mtlr	r19
-	b		major_0x13060_0x18
+	b		AdjustDecForTMRQGivenCurTimeAndTripTime
 
 
 
@@ -259,63 +266,83 @@ StartTimeslicing	;	OUTSIDE REFERER
 
 
 
-;	                     major_0x13060
 
-;	Xrefs:
-;	TimerDispatch
-;	StartTimeslicing
-;	called_by_init_tmrqs
-;	major_0x136c8
-;	major_0x148ec
+;	CLOB	r8/r9, r16-r21
 
-major_0x13060	;	OUTSIDE REFERER
+AdjustDecForTMRQ
+
 	mflr	r19
 	bl		GetTime
 	mtlr	r19
 
-major_0x13060_0xc	;	OUTSIDE REFERER
-	lwz		r18, -0x0a7c(r1)
-	lwz		r16,  0x0038(r18)
-	lwz		r17,  0x003c(r18)
 
-major_0x13060_0x18	;	OUTSIDE REFERER
+
+
+;	ARG		TimeBase r8/r9 curTime
+;	CLOB	r16-r21
+
+AdjustDecForTMRQGivenCurTime
+
+;	This should get the most distant time???
+	lwz		r18, PSA.TimerQueue + Queue.LLL + LLL.Next(r1)
+	lwz		r16, Timer.Time(r18)
+	lwz		r17, Timer.Time+4(r18)
+
+
+
+
+;	ARG		TimeBase r8/r9 curTime, TimeBase r16/r17 TripTime
+;	CLOB	r18-r21
+
+AdjustDecForTMRQGivenCurTimeAndTripTime
+
 	mfxer	r20
 	mfsprg	r19, 0
-	lis		r21,  0x7fff
-	lbz		r18, -0x0309(r19)
-	ori		r21, r21,  0xffff
-	cmpwi	r18,  0x01
-	bne-	major_0x13060_0x58
-	lwz		r18, -0x02e8(r19)
-	lwz		r19, -0x02e4(r19)
+
+	lis		r21, 0x7fff
+	lbz		r18, EWA.GlobalTimeIsValid(r19)
+	ori		r21, r21, 0xffff
+	cmpwi	r18, 1
+
+	;	r16/r17 = soonest(last timer, global PSA time if available)
+
+	bne-	@global_time_invalid
+	lwz		r18, EWA.GlobalTime(r19)
+	lwz		r19, EWA.GlobalTime+4(r19)
+
 	cmpw	r16, r18
 	cmplw	cr1, r17, r19
-	blt-	major_0x13060_0x58
-	bgt-	major_0x13060_0x50
-	ble-	cr1, major_0x13060_0x58
-
-major_0x13060_0x50
+	blt-	@last_timer_fires_sooner
+	bgt-	@global_time_sooner
+	ble-	cr1, @last_timer_fires_sooner
+@global_time_sooner
 	mr		r17, r19
 	mr		r16, r18
+@last_timer_fires_sooner
+@global_time_invalid
 
-major_0x13060_0x58
+
+	;	Subtract the current time (or what we were passed in r8/r9) from that time
 	subfc	r17, r9, r17
 	subfe.	r16, r8, r16
 	mtxer	r20
-	blt-	major_0x13060_0x84
-	bne-	major_0x13060_0x7c
-	cmplw	r16, r21
-	bgt-	major_0x13060_0x7c
+
+	blt-	@that_time_has_passed				;	hi bit of r16 = 1
+	bne-	@that_time_is_in_future				;	
+	cmplw	r16, r21							;	typo? should be r17???
+	bgt-	@that_time_is_in_future				;	will never be taken...
+
+;	When the times are roughly equal?
 	mtspr	dec, r17
 	blr
 
-major_0x13060_0x7c
+@that_time_is_in_future
 	mtspr	dec, r21
 	blr
 
-major_0x13060_0x84
+@that_time_has_passed
 	mtspr	dec, r21
-	mtspr	dec, r16
+	mtspr	dec, r16							;	this makes nearly no sense!
 	blr
 
 
@@ -531,7 +558,7 @@ major_0x132e8_0x10	;	OUTSIDE REFERER
 	mfsprg	r28, 0
 	lwz		r29, -0x0008(r28)
 	mr		r8, r29
-	bl		major_0x13e4c
+	bl		DequeueTask
 	lbz		r17,  0x0019(r29)
 	cmpwi	r17,  0x02
 	bge-	major_0x132e8_0x64
@@ -639,7 +666,7 @@ major_0x134bc	;	OUTSIDE REFERER
 	stw		r17,  0x003c(r30)
 	mtxer	r19
 	mr		r8, r30
-	bl		called_by_init_tmrqs
+	bl		EnqueueTimer
 	b		TimerDispatch_0x144
 
 
@@ -685,7 +712,7 @@ major_0x13524	;	OUTSIDE REFERER
 	stw		r17,  0x003c(r30)
 	mtxer	r20
 	mr		r8, r30
-	bl		called_by_init_tmrqs
+	bl		EnqueueTimer
 
 major_0x13524_0x1c	;	OUTSIDE REFERER
 	b		TimerDispatch_0x144
@@ -747,7 +774,7 @@ major_0x135b8_0x4	;	OUTSIDE REFERER
 	mtxer	r20
 	beq+	cr1, TimerDispatch_0x144
 	mr		r8, r30
-	bl		called_by_init_tmrqs
+	bl		EnqueueTimer
 	b		TimerDispatch_0x144
 
 
@@ -767,7 +794,7 @@ major_0x135b8_0x4	;	OUTSIDE REFERER
 	stw		r17,  0x003c(r30)
 	mtxer	r19
 	mr		r8, r30
-	bl		called_by_init_tmrqs
+	bl		EnqueueTimer
 	bl		getchar
 	cmpwi	r8, -0x01
 	beq+	TimerDispatch_0x144
@@ -776,7 +803,7 @@ major_0x135b8_0x4	;	OUTSIDE REFERER
 
 
 
-;	                  called_by_init_tmrqs
+;	                  EnqueueTimer
 
 ;	Xrefs:
 ;	MPCall_55
@@ -789,63 +816,77 @@ major_0x135b8_0x4	;	OUTSIDE REFERER
 ;	MPCall_31
 ;	InitTMRQs
 
-;	ARG		KernelData *r1, TimerQueueStruct *r8
+;	ARG		Timer *r8
+;	CLOB	r16-r20
 
-called_by_init_tmrqs	;	OUTSIDE REFERER
-	lwz		r16,  0x0038(r8)
-	lwz		r17,  0x003c(r8)
+EnqueueTimer	;	OUTSIDE REFERER
+
+	;	Keep the trip-time of this timer in r16/r17
+	lwz		r16, Timer.Time(r8)
+	lwz		r17, Timer.Time+4(r8)
+
+	;	r20 = timer being considered
+	;	r18/r19 = trip-time of timer being condidered
 	lwz     r20, PSA.TimerQueue + TimerQueueStruct.LLL + LLL.Next(r1)
-	lwz		r18,  0x0038(r20)
-	lwz		r19,  0x003c(r20)
+	lwz		r18, Timer.Time(r20)
+	lwz		r19, Timer.Time+4(r20)
+
+	;	First try to insert at head of global TMRQ
 	cmpw	r16, r18
 	cmplw	cr1, r17, r19
-	bgt-	called_by_init_tmrqs_0x5c
-	blt-	called_by_init_tmrqs_0x28
-	bge-	cr1, called_by_init_tmrqs_0x5c
+	bgt-	@insert_further_ahead
+	blt-	@insert_at_tail
+	bge-	cr1, @insert_further_ahead
 
-called_by_init_tmrqs_0x28
-	addi	r20, r1, -0xa84
-	li		r18,  0x01
-	stb		r18,  0x0017(r8)
-	lwz		r19,  0x0000(r8)
-	lwz		r9,  0x0000(r20)
-	stw		r9,  0x0000(r8)
-	lwz		r9,  0x0008(r20)
-	stw		r9,  0x0008(r8)
-	stw		r20,  0x000c(r8)
-	stw		r8,  0x000c(r9)
-	stw		r8,  0x0008(r20)
-	stw		r19,  0x0000(r8)
-	b		major_0x13060
+@insert_at_tail
+	addi	r20, r1, PSA.TimerQueue + TimerQueueStruct.LLL
 
-called_by_init_tmrqs_0x5c
-	lwz		r20, -0x0a78(r1)
+	li		r18, 1
+	stb		r18, Timer.Byte3(r8)
 
-called_by_init_tmrqs_0x60
-	lwz		r18,  0x0038(r20)
-	lwz		r19,  0x003c(r20)
+	;	Insert at the very back of the queue
+	lwz		r19, LLL.Freeform(r8)
+	lwz		r9, LLL.Freeform(r20)
+	stw		r9, LLL.Freeform(r8)				;	my freeform = considered freeform
+	lwz		r9, LLL.Next(r20)
+	stw		r9, LLL.Next(r8)					;	my next = next of considered
+	stw		r20, LLL.Prev(r8)					;	my prev = considered
+	stw		r8, LLL.Prev(r9)					;	prev of next of considered = me
+	stw		r8, LLL.Next(r20)					;	next of considered = me
+	stw		r19, LLL.Freeform(r8)				;	my freeform = my original freeform
+
+	b		AdjustDecForTMRQ
+
+@insert_further_ahead
+	lwz		r20, PSA.TimerQueue + TimerQueueStruct.LLL + LLL.Prev(r1)
+
+@searchloop
+	lwz		r18, Timer.Time(r20)
+	lwz		r19, Timer.Time+4(r20)
 	cmpw	r16, r18
 	cmplw	cr1, r17, r19
-	bgt-	called_by_init_tmrqs_0x84
-	blt-	called_by_init_tmrqs_0x7c
-	bge-	cr1, called_by_init_tmrqs_0x84
+	bgt-	@insert_after_this_one
+	blt-	@next
+	bge-	cr1, @insert_after_this_one
 
-called_by_init_tmrqs_0x7c
-	lwz		r20,  0x000c(r20)
-	b		called_by_init_tmrqs_0x60
+@next
+	lwz		r20, LLL.Prev(r20)
+	b		@searchloop
 
-called_by_init_tmrqs_0x84
-	li		r18,  0x01
-	stb		r18,  0x0017(r8)
-	lwz		r19,  0x0000(r8)
-	lwz		r9,  0x0000(r20)
-	stw		r9,  0x0000(r8)
-	lwz		r9,  0x0008(r20)
-	stw		r9,  0x0008(r8)
-	stw		r20,  0x000c(r8)
-	stw		r8,  0x000c(r9)
-	stw		r8,  0x0008(r20)
-	stw		r19,  0x0000(r8)
+@insert_after_this_one
+	li		r18, 1
+	stb		r18, Timer.Byte3(r8)
+
+	lwz		r19, LLL.Freeform(r8)
+	lwz		r9, LLL.Freeform(r20)
+	stw		r9, LLL.Freeform(r8)				;	my freeform = considered freeform
+	lwz		r9, LLL.Next(r20)
+	stw		r9, LLL.Next(r8)					;	my next = next of considered
+	stw		r20, LLL.Prev(r8)					;	my prev = considered
+	stw		r8, LLL.Prev(r9)					;	prev of next of considered = me
+	stw		r8, LLL.Next(r20)					;	next of considered = me
+	stw		r19, LLL.Freeform(r8)				;	my freeform = my original freeform
+
 	blr
 
 
@@ -889,7 +930,7 @@ major_0x136c8	;	OUTSIDE REFERER
 	li		r16,  0x00
 	cmpw	r18, r8
 	stb		r16,  0x0017(r8)
-	beq+	major_0x13060
+	beq+	AdjustDecForTMRQ
 	blr
 
 
@@ -948,7 +989,7 @@ TimebaseTicksPerPeriod
 ;	MPCall_32
 ;	CreateTask
 ;	InitTMRQs
-;	major_0x13060
+;	AdjustDecForTMRQ
 ;	major_0x142dc
 ;	major_0x14548
 

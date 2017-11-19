@@ -79,24 +79,11 @@ MysteryByte1			ds.b	1	; 018 ; CreateTask sets 0 by default (blue = 2)
 Priority				ds.b	1	; 019 ; CreateTask sets 2 by default
 MysteryHalf				ds.w	1	; 01a
 Weight					ds.l	1	; 01c ; default is 100, blue gets 200, idle gets 1
-						ds.l	1	; 020
-						ds.l	1	; 024
-						ds.l	1	; 028
-						ds.l	1	; 02c
-						ds.l	1	; 030
-						ds.l	1	; 034
-						ds.l	1	; 038
-						ds.l	1	; 03c
-						ds.l	1	; 040
-						ds.l	1	; 044
-						ds.l	1	; 048
-						ds.l	1	; 04c
-						ds.l	1	; 050
-						ds.l	1	; 054
-						ds.l	1	; 058
-						ds.l	1	; 05c
+
+Timer					ds.b	64	; 020:060
+
 ProcessID				ds.l	1	; 060
-ThingThatAlignVecHits	ds.l	1	; 064 ; IntAlignment is interested in bit 9, MPCall 116 in bit 15
+ThingThatAlignVecHits	ds.l	1	; 064 ; IntAlignment is interested in bit 9, MPCalls 52/116 in bit 15
 						ds.l	1	; 068
 OwningProcessPtr		ds.l	1	; 06c
 AddressSpacePtr			ds.l	1	; 070 ; borrowed from PROC argument to CreateTask
@@ -141,6 +128,7 @@ Size					equ		*
 ;	ID CLASS 3: TIMER
 ;	(size: 64b, thud command: id -tm)
 ;
+;	"Prev" is actually the next timer to fire!
 ;_______________________________________________________________________
 
 Timer					record	0,INCR
@@ -152,22 +140,24 @@ kSignature				equ		'TIME'
 ;	Fields
 ;_______________________
 
-ID						ds.l	1	; 00
-Signature				ds.l	1	; 04
-						ds.l	1	; 08
-						ds.l	1	; 0c
-ProcessID				ds.l	1	; 10
-						ds.l	1	; 14
-						ds.l	1	; 18
-						ds.l	1	; 1c
-						ds.l	1	; 20
-						ds.l	1	; 24
-						ds.l	1	; 28
-						ds.l	1	; 2c
-						ds.l	1	; 30
-						ds.l	1	; 34
-						ds.l	1	; 38
-						ds.l	1	; 3c
+ID						ds.l	1	; 00 ; task+20
+Signature				ds.l	1	; 04 ; task+24
+QueueLLL				ds.l	1	; 08 ; task+28 ; overlaps with the below bytefields, as a union?
+						ds.l	1	; 0c ; task+2c
+ProcessID				ds.l	1	; 10 ; task+30
+Byte0					ds.b	1	; 14 ; task+34 ; InitTMRQs sets to 6, MPCall 55 to 1, MPCall 52 to 2
+Byte1					ds.b	1	; 15 ; task+35
+Byte2					ds.b	1	; 16 ; task+36 ; InitTMRQs sets to 1
+Byte3					ds.b	1	; 17 ; task+37 ; called_by_init_tmrqs sets to 1
+ParentTaskPtr			ds.l	1	; 18 ; task+38 ; MPCall 55 sets
+						ds.l	1	; 1c ; task+3c
+						ds.l	1	; 20 ; task+40
+						ds.l	1	; 24 ; task+44
+						ds.l	1	; 28 ; task+48
+						ds.l	1	; 2c ; task+4c
+						ds.l	1	; 30 ; task+50
+						ds.l	1	; 34 ; task+54
+Time					ds.l	2	; 38 ; task+58 ; set from first two args to MPCall 55
 
 Size					equ		*
 						endr
@@ -204,8 +194,8 @@ Size					equ		*
 
 ReadyQueue				record	0,INCR
 
-LLL						ds.l	4	; 00:10 ; nothing fancy
-Counter					ds.l	1	; 10 ; InitRDYQs sets, TaskReadyAsNext bumps
+LLL						ds.l	4	; 00:10 ; nothing fancy, freeform contains priority flag
+Counter					ds.l	1	; 10 ; InitRDYQs sets, TaskReadyAsNext bumps, major_0x13e4c decs
 TotalWeight				ds.l	1	; 14 ; divide available time by these
 Timecake				ds.d	1	; 18 ; period of ~1ms, 8ms, 64ms, 512ms
 
@@ -379,10 +369,10 @@ kSignature				equ		'EVNT'
 ;_______________________
 
 LLL						ds.l	4	; 00:10 ; first field is ID
-						ds.l	1	; 10
+Flags					ds.l	1	; 10
 ProcessID				ds.l	1	; 14
-						ds.l	1	; 18 ; contains 1-8 +/- 16
-						ds.l	1	; 1c
+SWI						ds.l	1	; 18 ; contains 1-8 +/- 16
+Counter					ds.l	1	; 1c
 
 Size					equ		*
 						endr

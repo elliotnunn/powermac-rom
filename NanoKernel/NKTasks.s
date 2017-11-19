@@ -437,7 +437,7 @@ MPCall_9_0xe0
 	ori		r16, r16,  0x02
 	stw		r16,  0x0064(r31)
 	mr		r8, r31
-	bl		major_0x13e4c
+	bl		DequeueTask
 
 MPCall_9_0xf0
 	lwz		r17,  0x009c(r31)
@@ -708,7 +708,7 @@ KCThrowException_0x70
 	stw		r4,  0x00f8(r31)
 	stw		r16,  0x0064(r31)
 	mr		r8, r31
-	bl		major_0x13e4c
+	bl		DequeueTask
 	addi	r16, r1, -0xa34
 	addi	r17, r31,  0x08
 	stw		r16,  0x0000(r17)
@@ -1536,7 +1536,7 @@ MPCall_114	;	OUTSIDE REFERER
 	rlwinm.	r8, r16,  0, 26, 26
 	mr		r8, r31
 	bne-	MPCall_114_0x90
-	bl		major_0x13e4c
+	bl		DequeueTask
 	bl		TaskReadyAsPrev
 
 MPCall_114_0x90
