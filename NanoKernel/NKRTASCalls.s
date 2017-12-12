@@ -172,16 +172,7 @@ kcRTASDispatch_0x190
 	lwz		r29,  0x01ec(r6)
 	lwz		r30,  0x01f4(r6)
 	lwz		r31,  0x01fc(r6)
-	sync
-	lwz		r8, -0x0b10(r1)
-	cmpwi	cr1, r8,  0x00
-	li		r8,  0x00
-	bne+	cr1, kcRTASDispatch_0x268
-	mflr	r8
-	bl		panic
-
-kcRTASDispatch_0x268
-	stw		r8, -0x0b10(r1)
+	_AssertAndRelease	PSA.RTASLock, scratch=r8
 	li		r3,  0x00
 	b		skeleton_key
 

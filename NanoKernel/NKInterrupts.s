@@ -588,16 +588,7 @@ major_0x02ccc_0x430
 major_0x02ccc_0x4a8
 	mr		r8, r31
 	bl		TaskReadyAsPrev
-	sync
-	lwz		r31, PSA.SchLock + Lock.Count(r1)
-	cmpwi	cr1, r31,  0x00
-	li		r31,  0x00
-	bne+	cr1, major_0x02ccc_0x4cc
-	mflr	r31
-	bl		panic
-
-major_0x02ccc_0x4cc
-	stw		r31, PSA.SchLock + Lock.Count(r1)
+	_AssertAndRelease	PSA.SchLock, scratch=r31
 	mtcr	r28
 	bns-	cr6, major_0x02ccc_0x504
 	lwz		r8,  0x0064(r6)
@@ -688,16 +679,7 @@ IntDecrementer_0x54
 	addi	r8, r8,  0x01
 	stw		r8,  0x0e8c(r1)
 	bl		TimerDispatch
-	sync
-	lwz		r8, PSA.SchLock + Lock.Count(r1)
-	cmpwi	cr1, r8,  0x00
-	li		r8,  0x00
-	bne+	cr1, IntDecrementer_0x9c
-	mflr	r8
-	bl		panic
-
-IntDecrementer_0x9c
-	stw		r8, PSA.SchLock + Lock.Count(r1)
+	_AssertAndRelease	PSA.SchLock, scratch=r8
 
 ;	r6 = ewa
 	bl		Restore_r14_r31
@@ -1115,16 +1097,7 @@ IntDSIOtherOther_0x1c8
 	_Lock			PSA.HTABLock, scratch1=r28, scratch2=r31
 
 	bl		PagingFunc1
-	sync
-	lwz		r28, -0x0b90(r1)
-	cmpwi	cr1, r28,  0x00
-	li		r28,  0x00
-	bne+	cr1, IntDSIOtherOther_0x208
-	mflr	r28
-	bl		panic
-
-IntDSIOtherOther_0x208
-	stw		r28, -0x0b90(r1)
+	_AssertAndRelease	PSA.HTABLock, scratch=r28
 	mfsprg	r28, 2
 	mtlr	r28
 	beq+	IntDSIOtherOther_0x19c
@@ -1195,16 +1168,7 @@ IntMachineCheckMemRetry	;	OUTSIDE REFERER
 IntMachineCheckMemRetry_0x124
 	sync
 	isync
-	sync
-	lwz		r28, -0x0b90(r1)
-	cmpwi	cr1, r28,  0x00
-	li		r28,  0x00
-	bne+	cr1, IntMachineCheckMemRetry_0x148
-	mflr	r28
-	bl		panic
-
-IntMachineCheckMemRetry_0x148
-	stw		r28, -0x0b90(r1)
+	_AssertAndRelease	PSA.HTABLock, scratch=r28
 
 IntMachineCheckMemRetry_0x14c	;	OUTSIDE REFERER
 	cmplw	r10, r19
@@ -1249,16 +1213,7 @@ IntISI	;	OUTSIDE REFERER
 
 	mr		r27, r10
 	bl		PagingFunc1
-	sync
-	lwz		r28, -0x0b90(r1)
-	cmpwi	cr1, r28,  0x00
-	li		r28,  0x00
-	bne+	cr1, IntISI_0x50
-	mflr	r28
-	bl		panic
-
-IntISI_0x50
-	stw		r28, -0x0b90(r1)
+	_AssertAndRelease	PSA.HTABLock, scratch=r28
 	mfsprg	r8, 0
 	bne-	major_0x039dc
 	mfsprg	r24, 3
@@ -1392,16 +1347,7 @@ IntDSIOther	;	OUTSIDE REFERER
 
 	mfspr	r27, dar
 	bl		PagingFunc1
-	sync
-	lwz		r28, -0x0b90(r1)
-	cmpwi	cr1, r28,  0x00
-	li		r28,  0x00
-	bne+	cr1, IntDSIOther_0x58
-	mflr	r28
-	bl		panic
-
-IntDSIOther_0x58
-	stw		r28, -0x0b90(r1)
+	_AssertAndRelease	PSA.HTABLock, scratch=r28
 	mfsprg	r8, 0
 	bne+	major_0x039dc
 	lmw		r14,  0x0038(r8)
@@ -1898,16 +1844,7 @@ IntPerfMonitor	;	OUTSIDE REFERER
 	bl		major_0x0db04
 
 IntPerfMonitor_0x88
-	sync
-	lwz		r8, PSA.SchLock + Lock.Count(r1)
-	cmpwi	cr1, r8,  0x00
-	li		r8,  0x00
-	bne+	cr1, IntPerfMonitor_0xa4
-	mflr	r8
-	bl		panic
-
-IntPerfMonitor_0xa4
-	stw		r8, PSA.SchLock + Lock.Count(r1)
+	_AssertAndRelease	PSA.SchLock, scratch=r8
 
 ;	r6 = ewa
 	bl		Restore_r14_r31
@@ -1944,16 +1881,7 @@ IntThermalEvent	;	OUTSIDE REFERER
 	bl		major_0x0db04
 
 IntThermalEvent_0x68
-	sync
-	lwz		r8, PSA.SchLock + Lock.Count(r1)
-	cmpwi	cr1, r8,  0x00
-	li		r8,  0x00
-	bne+	cr1, IntThermalEvent_0x84
-	mflr	r8
-	bl		panic
-
-IntThermalEvent_0x84
-	stw		r8, PSA.SchLock + Lock.Count(r1)
+	_AssertAndRelease	PSA.SchLock, scratch=r8
 
 ;	r6 = ewa
 	bl		Restore_r14_r31

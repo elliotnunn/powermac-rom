@@ -134,17 +134,7 @@ MPCallBad	;	OUTSIDE REFERER
 ;	MPCall_75
 
 ReleaseAndMPCallWasBad	;	OUTSIDE REFERER
-	sync
-	lwz		r16, PSA.SchLock + Lock.Count(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-
-	bne+	cr1, @dont_panic
-	mflr	r16
-	bl		panic
-@dont_panic
-
-	stw		r16, PSA.SchLock + Lock.Count(r1)
+	_AssertAndRelease	PSA.SchLock, scratch=r16
 	b		MPCallBad
 
 
@@ -241,17 +231,7 @@ ReleaseAndMPCallWasBad	;	OUTSIDE REFERER
 ;	> r1    = kdp
 
 ReleaseAndReturnZeroFromMPCall	;	OUTSIDE REFERER
-	sync
-	lwz		r16, PSA.SchLock + Lock.Count(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-
-	bne+	cr1, @dont_panic
-	mflr	r16
-	bl		panic
-@dont_panic
-
-	stw		r16, PSA.SchLock + Lock.Count(r1)
+	_AssertAndRelease	PSA.SchLock, scratch=r16
 
 
 
@@ -347,17 +327,7 @@ ReturnZeroFromMPCall	;	OUTSIDE REFERER
 ;	MPCall_95
 
 major_0x0af60	;	OUTSIDE REFERER
-	sync
-	lwz		r16, PSA.SchLock + Lock.Count(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-
-	bne+	cr1, @dont_panic
-	mflr	r16
-	bl		panic
-@dont_panic
-
-	stw		r16, PSA.SchLock + Lock.Count(r1)
+	_AssertAndRelease	PSA.SchLock, scratch=r16
 
 
 
@@ -391,51 +361,21 @@ major_0x0af60_0x20	;	OUTSIDE REFERER
 
 
 ReleaseAndTimeoutMPCall	;	OUTSIDE REFERER
-	sync
-	lwz		r16, PSA.SchLock + Lock.Count(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-
-	bne+	cr1, @dont_panic
-	mflr	r16
-	bl		panic
-@dont_panic
-
-	stw		r16, PSA.SchLock + Lock.Count(r1)
+	_AssertAndRelease	PSA.SchLock, scratch=r16
 	li		r3, kMPTimeOutErr
 	b		CommonMPCallReturnPath
 
 
 
 ReleaseAndReturnMPCallTaskAborted	;	OUTSIDE REFERER
-	sync
-	lwz		r16, PSA.SchLock + Lock.Count(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-
-	bne+	cr1, @dont_panic
-	mflr	r16
-	bl		panic
-@dont_panic
-
-	stw		r16, PSA.SchLock + Lock.Count(r1)
+	_AssertAndRelease	PSA.SchLock, scratch=r16
 	li		r3, kMPTaskAbortedErr
 	b		CommonMPCallReturnPath
 
 
 
 ReleaseAndReturnMPCallOOM	;	OUTSIDE REFERER
-	sync
-	lwz		r16, PSA.SchLock + Lock.Count(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-
-	bne+	cr1, @dont_panic
-	mflr	r16
-	bl		panic
-@dont_panic
-
-	stw		r16, PSA.SchLock + Lock.Count(r1)
+	_AssertAndRelease	PSA.SchLock, scratch=r16
 
 
 
@@ -472,16 +412,7 @@ ReturnMPCallOOM	;	OUTSIDE REFERER
 ;	MPCall_52
 
 ReleaseAndReturnMPCallBlueBlocking	;	OUTSIDE REFERER
-	sync
-	lwz		r16, PSA.SchLock + Lock.Count(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-	bne+	cr1, major_0x0b02c_0x1c
-	mflr	r16
-	bl		panic
-
-major_0x0b02c_0x1c
-	stw		r16, PSA.SchLock + Lock.Count(r1)
+	_AssertAndRelease	PSA.SchLock + Lock.Count, scratch=r16
 
 
 
@@ -526,16 +457,7 @@ ReturnMPCallBlueBlocking	;	OUTSIDE REFERER
 ;	MPCall_129
 
 major_0x0b054	;	OUTSIDE REFERER
-	sync
-	lwz		r16, PSA.SchLock + Lock.Count(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-	bne+	cr1, major_0x0b054_0x1c
-	mflr	r16
-	bl		panic
-
-major_0x0b054_0x1c
-	stw		r16, PSA.SchLock + Lock.Count(r1)
+	_AssertAndRelease	PSA.SchLock + Lock.Count, scratch=r16
 
 
 
@@ -643,34 +565,14 @@ ReturnParamErrFromMPCall	;	OUTSIDE REFERER
 ;	MPCall_129
 
 ReleaseAndReturnMPCallPrivilegedErr	;	OUTSIDE REFERER
-	sync
-	lwz		r16, PSA.SchLock + Lock.Count(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-
-	bne+	cr1, @dont_panic
-	mflr	r16
-	bl		panic
-@dont_panic
-
-	stw		r16, PSA.SchLock + Lock.Count(r1)
+	_AssertAndRelease	PSA.SchLock, scratch=r16
 	li		r3, kMPPrivilegedErr
 	b		CommonMPCallReturnPath
 
 
 
 ReleaseAndReturnMPCallInvalidIDErr	;	OUTSIDE REFERER
-	sync
-	lwz		r16, PSA.SchLock + Lock.Count(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-
-	bne+	cr1, @dont_panic
-	mflr	r16
-	bl		panic
-@dont_panic
-
-	stw		r16, PSA.SchLock + Lock.Count(r1)
+	_AssertAndRelease	PSA.SchLock, scratch=r16
 
 
 
@@ -705,16 +607,7 @@ ReturnMPCallInvalidIDErr	;	OUTSIDE REFERER
 ;	KCUnholdPages
 
 major_0x0b0cc	;	OUTSIDE REFERER
-	sync
-	lwz		r16, PSA.SchLock + Lock.Count(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-	bne+	cr1, major_0x0b0cc_0x1c
-	mflr	r16
-	bl		panic
-
-major_0x0b0cc_0x1c
-	stw		r16, PSA.SchLock + Lock.Count(r1)
+	_AssertAndRelease	PSA.SchLock + Lock.Count, scratch=r16
 	li		r3, -0x725a
 	b		CommonMPCallReturnPath
 
@@ -757,17 +650,7 @@ AlternateMPCallReturnPath	;	OUTSIDE REFERER
 	b		TrulyCommonMPCallReturnPath
 
 ReleaseAndReturnMPCall	;	OUTSIDE REFERER
-	sync
-	lwz		r16, PSA.SchLock + Lock.Count(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-
-	bne+	cr1, @dont_panic
-	mflr	r16
-	bl		panic
-@dont_panic
-
-	stw		r16, PSA.SchLock + Lock.Count(r1)
+	_AssertAndRelease	PSA.SchLock, scratch=r16
 
 
 
@@ -852,16 +735,7 @@ MPCall_0	;	OUTSIDE REFERER
 	bl		VMDoSomeIO
 	mr		r7, r30
 	mr		r6, r29
-	sync
-	lwz		r16, -0x0b90(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-	bne+	cr1, MPCall_0_0x8c
-	mflr	r16
-	bl		panic
-
-MPCall_0_0x8c
-	stw		r16, -0x0b90(r1)
+	_AssertAndRelease	PSA.HTABLock, scratch=r16
 
 	_Lock			PSA.PoolLock, scratch1=r16, scratch2=r17
 
@@ -872,31 +746,13 @@ MPCall_0_0x8c
 ;	r8 = anywhere in new page (phys)
 ;	r9 = page_virt
 	bl		ExtendPool
-	sync
-	lwz		r16, -0x0ad0(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-	bne+	cr1, MPCall_0_0xd0
-	mflr	r16
-	bl		panic
-
-MPCall_0_0xd0
-	stw		r16, -0x0ad0(r1)
+	_AssertAndRelease	PSA.PoolLock, scratch=r16
 	b		ReturnZeroFromMPCall
 
 MPCall_0_0xd8
 	mr		r7, r30
 	mr		r6, r29
-	sync
-	lwz		r16, -0x0b90(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-	bne+	cr1, MPCall_0_0xfc
-	mflr	r16
-	bl		panic
-
-MPCall_0_0xfc
-	stw		r16, -0x0b90(r1)
+	_AssertAndRelease	PSA.HTABLock, scratch=r16
 	b		ReturnMPCallOOM
 
 
@@ -1148,16 +1004,7 @@ MPCall_6	;	OUTSIDE REFERER
 	bne+	cr1, ReleaseAndReturnMPCallOOM
 	mr		r8, r3
 	bl		DeleteID
-	sync
-	lwz		r16, PSA.SchLock + Lock.Count(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-	bne+	cr1, MPCall_6_0x68
-	mflr	r16
-	bl		panic
-
-MPCall_6_0x68
-	stw		r16, PSA.SchLock + Lock.Count(r1)
+	_AssertAndRelease	PSA.SchLock + Lock.Count, scratch=r16
 	mr		r8, r31
 	bl		PoolFree
 	b		ReturnZeroFromMPCall
@@ -1184,16 +1031,7 @@ MPCall_6_0xb4
 	bl		TaskReadyAsPrev
 	mr		r8, r31
 	bl		major_0x14af8
-	sync
-	lwz		r16, PSA.SchLock + Lock.Count(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-	bne+	cr1, MPCall_6_0xec
-	mflr	r16
-	bl		panic
-
-MPCall_6_0xec
-	stw		r16, PSA.SchLock + Lock.Count(r1)
+	_AssertAndRelease	PSA.SchLock + Lock.Count, scratch=r16
 	b		CommonMPCallReturnPath
 
 
@@ -1238,16 +1076,7 @@ KCYieldWithHint_0x68
 KCYieldWithHint_0x7c
 	mr		r8, r31
 	bl		major_0x14af8
-	sync
-	lwz		r16, PSA.SchLock + Lock.Count(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-	bne+	cr1, KCYieldWithHint_0xa0
-	mflr	r16
-	bl		panic
-
-KCYieldWithHint_0xa0
-	stw		r16, PSA.SchLock + Lock.Count(r1)
+	_AssertAndRelease	PSA.SchLock + Lock.Count, scratch=r16
 	b		CommonMPCallReturnPath
 
 
@@ -1872,21 +1701,8 @@ KCStartCPU	;	OUTSIDE REFERER
 	andi.	r8, r8,  0xbfcf
 	stw		r8, Task.ContextBlock + ContextBlock.MSR(r31)
 
-	sync	;	flush pending lwarxen?
 
-
-;	This feels like cheating with the Sch lock
-
-	lwz		r16, PSA.SchLock + Lock.Count(r1)
-	cmpwi	cr1, r16, 0
-	li		r16, 0
-
-	bne+	cr1, @do_not_panic
-	mflr	r16
-	bl		panic
-@do_not_panic
-
-	stw		r16, PSA.SchLock + Lock.Count(r1)
+	_AssertAndRelease	PSA.SchLock, scratch=r16
 
 
 	;	Some EWA/KDP stuff I do not understand
@@ -1982,16 +1798,7 @@ KCStopScheduling	;	OUTSIDE REFERER
 	stw		r8,  0x01fc(r31)
 
 KCStopScheduling_0x94
-	sync
-	lwz		r16, PSA.SchLock + Lock.Count(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-	bne+	cr1, KCStopScheduling_0xb0
-	mflr	r16
-	bl		panic
-
-KCStopScheduling_0xb0
-	stw		r16, PSA.SchLock + Lock.Count(r1)
+	_AssertAndRelease	PSA.SchLock + Lock.Count, scratch=r16
 	b		MPCall_6_0x78
 
 
@@ -2508,16 +2315,7 @@ MPCall_115_0x64
 	cmpwi	r16,  0x00
 	beq+	MPCall_115_0x54
 	stw		r30,  0x000c(r31)
-	sync
-	lwz		r16, -0x0af0(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-	bne+	cr1, MPCall_115_0x90
-	mflr	r16
-	bl		panic
-
-MPCall_115_0x90
-	stw		r16, -0x0af0(r1)
+	_AssertAndRelease	PSA.DbugLock, scratch=r16
 
 MPCall_115_0x94
 	cmpwi	r5,  0x00

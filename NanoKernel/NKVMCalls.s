@@ -188,16 +188,7 @@ VMReturn	;	OUTSIDE REFERER
 	lwz		r16,  0x0040(r8)
 	lwz		r7, -0x0010(r8)
 	lwz		r6, -0x0014(r8)
-	sync	
-	lwz		r8, -0x0b90(r1)
-	cmpwi	cr1, r8,  0x00
-	li		r8,  0x00
-	bne+	cr1, VMReturn_0x4c
-	mflr	r8
-	bl		panic
-
-VMReturn_0x4c
-	stw		r8, -0x0b90(r1)
+	_AssertAndRelease	PSA.HTABLock, scratch=r8
 	b		skeleton_key
 
 

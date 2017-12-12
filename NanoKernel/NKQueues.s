@@ -1602,16 +1602,7 @@ NKDeleteTimer	;	OUTSIDE REFERER
 	bl		major_0x136c8
 
 NKDeleteTimer_0x48
-	sync
-	lwz		r16, PSA.SchLock + Lock.Count(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-	bne+	cr1, NKDeleteTimer_0x64
-	mflr	r16
-	bl		panic
-
-NKDeleteTimer_0x64
-	stw		r16, PSA.SchLock + Lock.Count(r1)
+	_AssertAndRelease	PSA.SchLock, scratch=r16
 	lwz		r8,  0x001c(r31)
 	cmpwi	r8,  0x00
 	bnel-	PoolFree

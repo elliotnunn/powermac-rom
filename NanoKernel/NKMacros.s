@@ -163,6 +163,19 @@ HalfLoadedReg	set					(&reg)
 	ENDM
 
 	MACRO
+	_AssertAndRelease		&lockoffset, &scratch==r18
+		sync
+		lwz		&scratch, &lockoffset(r1)
+		cmpwi	cr1, &scratch, 0
+		li		&scratch, 0
+		bne+	cr1, @okay
+		mflr	&scratch
+		bl		panic
+
+@okay	stw		&scratch, &lockoffset(r1)
+	ENDM
+
+	MACRO
 	_bset			&dest, &src, &bit
 
 	IF &bit < 16

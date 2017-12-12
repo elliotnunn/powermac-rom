@@ -266,17 +266,8 @@ PoolFree	;	OUTSIDE REFERER
 
 PoolCommonReturn	;	OUTSIDE REFERER
 	mfsprg	r18, 0
-	sync
 
-	lwz		r15, PSA.PoolLock + Lock.Count(r1)
-	cmpwi	cr1, r15, 0
-	li		r15, 0
-	bne+	cr1, @no_panic
-	mflr	r15
-	bl		panic
-@no_panic
-
-	stw		r15, PSA.PoolLock + Lock.Count(r1)
+	_AssertAndRelease	PSA.PoolLock, scratch=r15
 	
 	lwz		r17, EWA.PoolSavedLR(r18)
 	mtlr	r17

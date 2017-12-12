@@ -398,16 +398,7 @@ MPCall_9	;	OUTSIDE REFERER
 	stb		r17,  0x0019(r31)
 	mr		r8, r31
 	bl		major_0x14af8_0xa0
-	sync
-	lwz		r16, PSA.SchLock + Lock.Count(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-	bne+	cr1, MPCall_9_0x8c
-	mflr	r16
-	bl		panic
-
-MPCall_9_0x8c
-	stw		r16, PSA.SchLock + Lock.Count(r1)
+	_AssertAndRelease	PSA.SchLock, scratch=r16
 	subi	r10, r10, 4
 	b		MPCall_6_0x78
 
@@ -728,16 +719,7 @@ KCThrowException_0xb8
 	stb		r17,  0x0019(r31)
 	mr		r8, r31
 	bl		major_0x14af8_0xa0
-	sync
-	lwz		r16, PSA.SchLock + Lock.Count(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-	bne+	cr1, KCThrowException_0xf0
-	mflr	r16
-	bl		panic
-
-KCThrowException_0xf0
-	stw		r16, PSA.SchLock + Lock.Count(r1)
+	_AssertAndRelease	PSA.SchLock, scratch=r16
 	subi	r10, r10, 4
 	b		MPCall_6_0x78
 

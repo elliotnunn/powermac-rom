@@ -1267,16 +1267,7 @@ major_0x142dc_0x1bc
 	lbz		r28,  0x0019(r31)
 	stb		r27,  0x0018(r31)
 	stb		r28, -0x0117(r14)
-	sync
-	lwz		r27, PSA.SchLock + Lock.Count(r1)
-	cmpwi	cr1, r27,  0x00
-	li		r27,  0x00
-	bne+	cr1, major_0x142dc_0x1e8
-	mflr	r27
-	bl		panic
-
-major_0x142dc_0x1e8
-	stw		r27, PSA.SchLock + Lock.Count(r1)
+	_AssertAndRelease	PSA.SchLock, scratch=r27
 
 ;	r6 = ewa
 	bl		Restore_r14_r31
@@ -1587,16 +1578,7 @@ major_0x14548_0x24c
 	lfd		f31,  0x02f8(r6)
 
 major_0x14548_0x380
-	sync
-	lwz		r8, PSA.SchLock + Lock.Count(r1)
-	cmpwi	cr1, r8,  0x00
-	li		r8,  0x00
-	bne+	cr1, major_0x14548_0x39c
-	mflr	r8
-	bl		panic
-
-major_0x14548_0x39c
-	stw		r8, PSA.SchLock + Lock.Count(r1)
+	_AssertAndRelease	PSA.SchLock, scratch=r8
 
 ;	sprg0 = for r1 and r6
 ;	r1 = kdp
@@ -2182,16 +2164,7 @@ StopProcessor
 	stw		r17,  0x0008(r18)
 	stw		r17,  0x000c(r16)
 	bl		TasksFuncThatIsNotAMPCall
-	sync	
-	lwz		r16, PSA.SchLock + Lock.Count(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-	bne+	cr1, StopProcessor_0xa0
-	mflr	r16
-	bl		panic
-
-StopProcessor_0xa0
-	stw		r16, PSA.SchLock + Lock.Count(r1)
+	_AssertAndRelease	PSA.SchLock, scratch=r16
 	_log	'SIGP kStopProcessor^n'
 	li		r3,  0x03
 	lhz		r4,  0x022a(r31)

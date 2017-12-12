@@ -465,16 +465,7 @@ MPCall_70	;	OUTSIDE REFERER
 	rlwinm.	r16, r16,  0, 30, 30
 	bne+	ReleaseAndReturnMPCallOOM
 	bl		NKCreateAddressSpaceSub
-	sync
-	lwz		r16, PSA.SchLock + Lock.Count(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-	bne+	cr1, MPCall_70_0x54
-	mflr	r16
-	bl		panic
-
-MPCall_70_0x54
-	stw		r16, PSA.SchLock + Lock.Count(r1)
+	_AssertAndRelease	PSA.SchLock, scratch=r16
 	mr.		r3, r8
 	li		r4,  0x00
 	bne+	CommonMPCallReturnPath
@@ -825,13 +816,7 @@ MPCall_72_0x38
 	stw		r8, Area.LogicalBase(r31)
 	mr		r8, r31
 	bl		createarea
-	sync
-	lwz		r16, PSA.SchLock + Lock.Count(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-	bne+	cr1, MPCall_72_0x90
-	mflr	r16
-	bl		panic
+	_AssertAndRelease	PSA.SchLock, scratch=r16
 
 MPCall_72_0x90
 	stw		r16, PSA.SchLock + Lock.Count(r1)
@@ -1305,16 +1290,7 @@ createarea_0x5f0
 	bgt+	createarea_0x5f0
 
 createarea_0x62c
-	sync
-	lwz		r16, -0x0ad0(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-	bne+	cr1, createarea_0x648
-	mflr	r16
-	bl		panic
-
-createarea_0x648
-	stw		r16, -0x0ad0(r1)
+	_AssertAndRelease	PSA.PoolLock, scratch=r16
 
 createarea_0x64c
 	lwz		r16, Area.TwoFiftySix(r31)
@@ -1386,16 +1362,7 @@ major_0x102a8_0xc
 ;	createarea
 
 major_0x102c8	;	OUTSIDE REFERER
-	sync
-	lwz		r16, -0x0ad0(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-	bne+	cr1, major_0x102c8_0x1c
-	mflr	r16
-	bl		panic
-
-major_0x102c8_0x1c
-	stw		r16, -0x0ad0(r1)
+	_AssertAndRelease	PSA.PoolLock, scratch=r16
 	addi	r30, r8,  0x08
 	lwz		r8, -0x0420(r1)
 
@@ -1548,13 +1515,7 @@ MPCall_73	;	OUTSIDE REFERER
 	stw		r8, Area.TwoFiftySix(r31)
 	mr		r8, r31
 	bl		createarea
-	sync
-	lwz		r16, PSA.SchLock + Lock.Count(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-	bne+	cr1, MPCall_73_0xb0
-	mflr	r16
-	bl		panic
+	_AssertAndRelease	PSA.SchLock, scratch=r16
 
 MPCall_73_0xb0
 	stw		r16, PSA.SchLock + Lock.Count(r1)
@@ -1623,16 +1584,7 @@ MPCall_74_0x5c
 	stw		r17,  0x000c(r16)
 
 MPCall_74_0xbc
-	sync
-	lwz		r18, -0x0b90(r1)
-	cmpwi	cr1, r18,  0x00
-	li		r18,  0x00
-	bne+	cr1, MPCall_74_0xd8
-	mflr	r18
-	bl		panic
-
-MPCall_74_0xd8
-	stw		r18, -0x0b90(r1)
+	_AssertAndRelease	PSA.HTABLock, scratch=r18
 	lwz		r8,  0x0040(r31)
 	rlwinm.	r16, r29,  0, 25, 25
 	cmpwi	cr1, r8,  0x00
@@ -1668,16 +1620,7 @@ MPCall_74_0x14c
 ;	r1 = kdp
 ;	r8 = maybe the page
 	bl		free_list_add_page
-	sync
-	lwz		r18, -0x0ad0(r1)
-	cmpwi	cr1, r18,  0x00
-	li		r18,  0x00
-	bne+	cr1, MPCall_74_0x16c
-	mflr	r18
-	bl		panic
-
-MPCall_74_0x16c
-	stw		r18, -0x0ad0(r1)
+	_AssertAndRelease	PSA.PoolLock, scratch=r18
 	b		MPCall_74_0x178
 
 MPCall_74_0x174
@@ -1717,16 +1660,7 @@ MPCall_74_0x1e0
 ;	r1 = kdp
 ;	r8 = maybe the page
 	bl		free_list_add_page
-	sync
-	lwz		r18, -0x0ad0(r1)
-	cmpwi	cr1, r18,  0x00
-	li		r18,  0x00
-	bne+	cr1, MPCall_74_0x200
-	mflr	r18
-	bl		panic
-
-MPCall_74_0x200
-	stw		r18, -0x0ad0(r1)
+	_AssertAndRelease	PSA.PoolLock, scratch=r18
 	b		MPCall_74_0x20c
 
 MPCall_74_0x208
@@ -1835,16 +1769,7 @@ MPCall_75_0x100
 	ble+	MPCall_75_0x100
 
 MPCall_75_0x138
-	sync
-	lwz		r8, -0x0b90(r1)
-	cmpwi	cr1, r8,  0x00
-	li		r8,  0x00
-	bne+	cr1, MPCall_75_0x154
-	mflr	r8
-	bl		panic
-
-MPCall_75_0x154
-	stw		r8, -0x0b90(r1)
+	_AssertAndRelease	PSA.HTABLock, scratch=r8
 	lwz		r16, Area.TwoFiftySix(r31)
 	rlwinm.	r8, r16,  0, 25, 25
 	bne-	MPCall_75_0x16c
@@ -1852,16 +1777,7 @@ MPCall_75_0x154
 	bne-	MPCall_75_0x16c
 
 MPCall_75_0x16c
-	sync
-	lwz		r8, -0x0ad0(r1)
-	cmpwi	cr1, r8,  0x00
-	li		r8,  0x00
-	bne+	cr1, MPCall_75_0x188
-	mflr	r8
-	bl		panic
-
-MPCall_75_0x188
-	stw		r8, -0x0ad0(r1)
+	_AssertAndRelease	PSA.PoolLock, scratch=r8
 	b		MPCall_75_0x190
 
 MPCall_75_0x190
@@ -1946,16 +1862,7 @@ MPCall_130	;	OUTSIDE REFERER
 
 	mr		r8, r29
 	bl		MPCall_95_0x1e4
-	sync
-	lwz		r14, -0x0b90(r1)
-	cmpwi	cr1, r14,  0x00
-	li		r14,  0x00
-	bne+	cr1, MPCall_130_0xcc
-	mflr	r14
-	bl		panic
-
-MPCall_130_0xcc
-	stw		r14, -0x0b90(r1)
+	_AssertAndRelease	PSA.HTABLock, scratch=r14
 	beq+	Local_Panic
 	rlwinm	r8, r16,  0, 29, 30
 	lwz		r16,  0x0000(r30)
@@ -2023,16 +1930,7 @@ MPCall_130_0x19c
 	li		r16,  0x06
 	rlwimi	r17, r16,  0, 29, 30
 	stw		r17,  0x0000(r30)
-	sync
-	lwz		r14, -0x0b90(r1)
-	cmpwi	cr1, r14,  0x00
-	li		r14,  0x00
-	bne+	cr1, MPCall_130_0x1c8
-	mflr	r14
-	bl		panic
-
-MPCall_130_0x1c8
-	stw		r14, -0x0b90(r1)
+	_AssertAndRelease	PSA.HTABLock, scratch=r14
 
 ;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall
@@ -2128,16 +2026,7 @@ KCSetAreaAccess_0x118
 	add		r29, r29, r19
 	subf.	r8, r29, r28
 	bge+	KCSetAreaAccess_0x9c
-	sync
-	lwz		r14, -0x0b90(r1)
-	cmpwi	cr1, r14,  0x00
-	li		r14,  0x00
-	bne+	cr1, KCSetAreaAccess_0x14c
-	mflr	r14
-	bl		panic
-
-KCSetAreaAccess_0x14c
-	stw		r14, -0x0b90(r1)
+	_AssertAndRelease	PSA.HTABLock, scratch=r14
 
 ;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall
@@ -2173,16 +2062,7 @@ KCSetAreaAccess_0x1bc
 	add		r29, r29, r27
 	subf.	r8, r29, r28
 	bge+	KCSetAreaAccess_0x1a4
-	sync
-	lwz		r14, -0x0b90(r1)
-	cmpwi	cr1, r14,  0x00
-	li		r14,  0x00
-	bne+	cr1, KCSetAreaAccess_0x1e4
-	mflr	r14
-	bl		panic
-
-KCSetAreaAccess_0x1e4
-	stw		r14, -0x0b90(r1)
+	_AssertAndRelease	PSA.HTABLock, scratch=r14
 
 ;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall
@@ -2370,16 +2250,7 @@ MPCall_123	;	OUTSIDE REFERER
 	bltl-	cr5, MPCall_95_0x2e0
 	bltl-	cr5, MPCall_95_0x348
 	lwz		r17,  0x0000(r30)
-	sync
-	lwz		r14, -0x0b90(r1)
-	cmpwi	cr1, r14,  0x00
-	li		r14,  0x00
-	bne+	cr1, MPCall_123_0xa4
-	mflr	r14
-	bl		panic
-
-MPCall_123_0xa4
-	stw		r14, -0x0b90(r1)
+	_AssertAndRelease	PSA.HTABLock, scratch=r14
 	bl		major_0x10d38
 	mr		r5, r18
 
@@ -2670,16 +2541,7 @@ MPCall_81_0x70
 	rlwimi	r5, r4,  0, 20, 31
 
 MPCall_81_0xa4
-	sync
-	lwz		r8, -0x0b90(r1)
-	cmpwi	cr1, r8,  0x00
-	li		r8,  0x00
-	bne+	cr1, MPCall_81_0xc0
-	mflr	r8
-	bl		panic
-
-MPCall_81_0xc0
-	stw		r8, -0x0b90(r1)
+	_AssertAndRelease	PSA.HTABLock, scratch=r8
 	b		ReleaseAndReturnMPCall
 
 MPCall_81_0xc8
@@ -2771,16 +2633,7 @@ MPCall_98_0x10c
 
 MPCall_98_0x118
 	stw		r16,  0x013c(r6)
-	sync
-	lwz		r8, -0x0b90(r1)
-	cmpwi	cr1, r8,  0x00
-	li		r8,  0x00
-	bne+	cr1, MPCall_98_0x138
-	mflr	r8
-	bl		panic
-
-MPCall_98_0x138
-	stw		r8, -0x0b90(r1)
+	_AssertAndRelease	PSA.HTABLock, scratch=r8
 	b		ReleaseAndReturnMPCall
 
 MPCall_98_0x140
@@ -2846,16 +2699,7 @@ MPCall_83	;	OUTSIDE REFERER
 	_Lock			PSA.PoolLock, scratch1=r16, scratch2=r17
 
 	bl		MPCall_83_0x90
-	sync
-	lwz		r16, -0x0ad0(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-	bne+	cr1, MPCall_83_0x38
-	mflr	r16
-	bl		panic
-
-MPCall_83_0x38
-	stw		r16, -0x0ad0(r1)
+	_AssertAndRelease	PSA.PoolLock, scratch=r16
 	mr.		r4, r8
 	bne+	ReturnZeroFromMPCall
 
@@ -2939,16 +2783,7 @@ MPCall_84_0x3c
 	li		r3,  0x00
 
 MPCall_84_0x48
-	sync
-	lwz		r16, -0x0ad0(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-	bne+	cr1, MPCall_84_0x64
-	mflr	r16
-	bl		panic
-
-MPCall_84_0x64
-	stw		r16, -0x0ad0(r1)
+	_AssertAndRelease	PSA.PoolLock, scratch=r16
 	b		CommonMPCallReturnPath
 
 
@@ -3065,16 +2900,7 @@ KCMapPage_0x8c
 	bl		MPCall_95_0x1e4
 	beq+	Local_Panic
 	lwz		r29,  0x0000(r30)
-	sync
-	lwz		r14, -0x0b90(r1)
-	cmpwi	cr1, r14,  0x00
-	li		r14,  0x00
-	bne+	cr1, KCMapPage_0xd0
-	mflr	r14
-	bl		panic
-
-KCMapPage_0xd0
-	stw		r14, -0x0b90(r1)
+	_AssertAndRelease	PSA.HTABLock, scratch=r14
 	clrlwi.	r8, r29,  0x1f
 	bne+	ReleaseAndReturnMPCallOOM
 	lwz		r17,  0x0134(r6)
@@ -3084,16 +2910,7 @@ KCMapPage_0xd0
 	_Lock			PSA.PoolLock, scratch1=r16, scratch2=r17
 
 	bl		MPCall_83_0x90
-	sync
-	lwz		r16, -0x0ad0(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-	bne+	cr1, KCMapPage_0x120
-	mflr	r16
-	bl		panic
-
-KCMapPage_0x120
-	stw		r16, -0x0ad0(r1)
+	_AssertAndRelease	PSA.PoolLock, scratch=r16
 	mr.		r5, r8
 	beq+	MPCall_83_0x5c
 
@@ -3246,29 +3063,11 @@ KCUnmapPages_0x148
 	stw		r28, Area.Length2(r31)
 
 KCUnmapPages_0x158
-	sync
-	lwz		r14, -0x0b90(r1)
-	cmpwi	cr1, r14,  0x00
-	li		r14,  0x00
-	bne+	cr1, KCUnmapPages_0x174
-	mflr	r14
-	bl		panic
-
-KCUnmapPages_0x174
-	stw		r14, -0x0b90(r1)
+	_AssertAndRelease	PSA.HTABLock, scratch=r14
 
 ;	r1 = kdp
 	bne+	cr3, ReleaseAndReturnZeroFromMPCall
-	sync
-	lwz		r14, -0x0ad0(r1)
-	cmpwi	cr1, r14,  0x00
-	li		r14,  0x00
-	bne+	cr1, KCUnmapPages_0x198
-	mflr	r14
-	bl		panic
-
-KCUnmapPages_0x198
-	stw		r14, -0x0ad0(r1)
+	_AssertAndRelease	PSA.PoolLock, scratch=r14
 
 ;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall
@@ -3329,31 +3128,13 @@ NKMakePhysicallyContiguous_0xac
 	add		r28, r28, r29
 	subf.	r8, r27, r5
 	bge+	NKMakePhysicallyContiguous_0x80
-	sync
-	lwz		r14, -0x0b90(r1)
-	cmpwi	cr1, r14,  0x00
-	li		r14,  0x00
-	bne+	cr1, NKMakePhysicallyContiguous_0xd8
-	mflr	r14
-	bl		panic
-
-NKMakePhysicallyContiguous_0xd8
-	stw		r14, -0x0b90(r1)
+	_AssertAndRelease	PSA.HTABLock, scratch=r14
 
 ;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall
 
 NKMakePhysicallyContiguous_0xe0
-	sync
-	lwz		r14, -0x0b90(r1)
-	cmpwi	cr1, r14,  0x00
-	li		r14,  0x00
-	bne+	cr1, NKMakePhysicallyContiguous_0xfc
-	mflr	r14
-	bl		panic
-
-NKMakePhysicallyContiguous_0xfc
-	stw		r14, -0x0b90(r1)
+	_AssertAndRelease	PSA.HTABLock, scratch=r14
 
 	_Lock			PSA.PoolLock, scratch1=r16, scratch2=r17
 
@@ -3373,29 +3154,11 @@ NKMakePhysicallyContiguous_0xfc
 	dc.l	0x4bff9554
 
 NKMakePhysicallyContiguous_0x150
-	sync
-	lwz		r16, -0x0b90(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-	bne+	cr1, NKMakePhysicallyContiguous_0x16c
-	mflr	r16
-	bl		panic
-
-NKMakePhysicallyContiguous_0x16c
-	stw		r16, -0x0b90(r1)
+	_AssertAndRelease	PSA.HTABLock, scratch=r16
 	b		ReleaseAndReturnMPCallOOM
 
 NKMakePhysicallyContiguous_0x174
-	sync
-	lwz		r16, -0x0ad0(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-	bne+	cr1, NKMakePhysicallyContiguous_0x190
-	mflr	r16
-	bl		panic
-
-NKMakePhysicallyContiguous_0x190
-	stw		r16, -0x0ad0(r1)
+	_AssertAndRelease	PSA.PoolLock, scratch=r16
 	b		ReleaseAndReturnMPCallOOM
 
 
@@ -3459,16 +3222,7 @@ KCLockPages_0x94
 	stw		r16, PSA.UnheldFreePageCount(r1)
 
 KCLockPages_0xc8
-	sync
-	lwz		r16, -0x0ad0(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-	bne+	cr1, KCLockPages_0xe4
-	mflr	r16
-	bl		panic
-
-KCLockPages_0xe4
-	stw		r16, -0x0ad0(r1)
+	_AssertAndRelease	PSA.PoolLock, scratch=r16
 	ble+	ReleaseAndReturnMPCallOOM
 	mr		r27, r4
 
@@ -3566,16 +3320,7 @@ KCUnlockPages_0xc4
 	lwz		r16, PSA.UnheldFreePageCount(r1)
 	add		r16, r16, r28
 	stw		r16, PSA.UnheldFreePageCount(r1)
-	sync
-	lwz		r16, -0x0ad0(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-	bne+	cr1, KCUnlockPages_0x114
-	mflr	r16
-	bl		panic
-
-KCUnlockPages_0x114
-	stw		r16, -0x0ad0(r1)
+	_AssertAndRelease	PSA.PoolLock, scratch=r16
 
 ;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall
@@ -3646,16 +3391,7 @@ KCHoldPages_0x90
 	stw		r16, PSA.UnheldFreePageCount(r1)
 
 KCHoldPages_0xc4
-	sync
-	lwz		r16, -0x0ad0(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-	bne+	cr1, KCHoldPages_0xe0
-	mflr	r16
-	bl		panic
-
-KCHoldPages_0xe0
-	stw		r16, -0x0ad0(r1)
+	_AssertAndRelease	PSA.PoolLock, scratch=r16
 	ble+	ReleaseAndReturnMPCallOOM
 	mr		r27, r4
 
@@ -3753,16 +3489,7 @@ KCUnholdPages_0xc4
 	lwz		r16, PSA.UnheldFreePageCount(r1)
 	add		r16, r16, r28
 	stw		r16, PSA.UnheldFreePageCount(r1)
-	sync
-	lwz		r16, -0x0ad0(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-	bne+	cr1, KCUnholdPages_0x114
-	mflr	r16
-	bl		panic
-
-KCUnholdPages_0x114
-	stw		r16, -0x0ad0(r1)
+	_AssertAndRelease	PSA.PoolLock, scratch=r16
 
 ;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall
@@ -3799,16 +3526,7 @@ MPCall_91	;	OUTSIDE REFERER
 	bltl-	cr5, MPCall_95_0x2e0
 	bltl-	cr5, MPCall_95_0x348
 	lwz		r29,  0x0000(r30)
-	sync
-	lwz		r14, -0x0b90(r1)
-	cmpwi	cr1, r14,  0x00
-	li		r14,  0x00
-	bne+	cr1, MPCall_91_0x94
-	mflr	r14
-	bl		panic
-
-MPCall_91_0x94
-	stw		r14, -0x0b90(r1)
+	_AssertAndRelease	PSA.HTABLock, scratch=r14
 	mr		r8, r4
 	bl		MPCall_95_0x254
 	li		r19,  0x00
@@ -3832,16 +3550,7 @@ MPCall_91_0xac
 	b		ReleaseAndReturnZeroFromMPCall
 
 MPCall_91_0xcc
-	sync
-	lwz		r14, -0x0b90(r1)
-	cmpwi	cr1, r14,  0x00
-	li		r14,  0x00
-	bne+	cr1, MPCall_91_0xe8
-	mflr	r14
-	bl		panic
-
-MPCall_91_0xe8
-	stw		r14, -0x0b90(r1)
+	_AssertAndRelease	PSA.HTABLock, scratch=r14
 	b		ReleaseAndReturnMPCallOOM
 
 
@@ -3893,31 +3602,13 @@ MPCall_92_0x9c
 	or		r16, r16, r8
 	and		r16, r16, r9
 	stw		r16,  0x0000(r30)
-	sync
-	lwz		r14, -0x0b90(r1)
-	cmpwi	cr1, r14,  0x00
-	li		r14,  0x00
-	bne+	cr1, MPCall_92_0xd0
-	mflr	r14
-	bl		panic
-
-MPCall_92_0xd0
-	stw		r14, -0x0b90(r1)
+	_AssertAndRelease	PSA.HTABLock, scratch=r14
 
 ;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall
 
 MPCall_92_0xd8
-	sync
-	lwz		r14, -0x0b90(r1)
-	cmpwi	cr1, r14,  0x00
-	li		r14,  0x00
-	bne+	cr1, MPCall_92_0xf4
-	mflr	r14
-	bl		panic
-
-MPCall_92_0xf4
-	stw		r14, -0x0b90(r1)
+	_AssertAndRelease	PSA.HTABLock, scratch=r14
 	b		ReleaseAndReturnMPCallOOM
 
 
@@ -4000,16 +3691,7 @@ MPCall_94	;	OUTSIDE REFERER
 	bltl-	cr5, MPCall_95_0x348
 
 MPCall_94_0xa0
-	sync
-	lwz		r16, -0x0b90(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-	bne+	cr1, MPCall_94_0xbc
-	mflr	r16
-	bl		panic
-
-MPCall_94_0xbc
-	stw		r16, -0x0b90(r1)
+	_AssertAndRelease	PSA.HTABLock, scratch=r16
 
 ;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall
@@ -4149,16 +3831,7 @@ MPCall_95_0xe0
 	mr		r8, r29
 	bl		MPCall_95_0x1e4
 	beq+	Local_Panic
-	sync
-	lwz		r16, -0x0b90(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-	bne+	cr1, MPCall_95_0x134
-	mflr	r16
-	bl		panic
-
-MPCall_95_0x134
-	stw		r16, -0x0b90(r1)
+	_AssertAndRelease	PSA.HTABLock, scratch=r16
 	lwz		r16,  0x0000(r30)
 	clrlwi.	r8, r16,  0x1f
 	beq-	MPCall_95_0x180

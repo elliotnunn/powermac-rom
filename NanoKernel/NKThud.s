@@ -513,16 +513,9 @@ panic_common
 	_log	' - wish me luck.^n'
 	bl		prereturn
 	lwz		r8,  0x0904(r1)
-	sync
 
-	lwz		r9, PSA.ThudLock + Lock.Count(r1)
-	cmpwi	cr1, r9,  0x00
-	li		r9,  0x00
-	bne+	cr1, @0x7b4
-	mflr	r9
-	bl		panic
-@0x7b4
-	stw		r9, PSA.ThudLock + Lock.Count(r1)
+	_AssertAndRelease	PSA.ThudLock, scratch=r9
+
 	mtlr	r8
 	blr
 

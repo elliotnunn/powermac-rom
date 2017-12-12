@@ -98,31 +98,12 @@ CommonPIHPath_0xc	;	OUTSIDE REFERER
 	and		r13, r13, r29
 
 @negative
-	sync
-	lwz		r8, PSA.PIHLock(r1)
-	cmpwi	cr1, r8, 0
-	li		r8, 0
-
-	bne+	cr1, @pih_unlocked
-	mflr	r8
-	bl		panic
-@pih_unlocked
-
-	stw		r8, PSA.PIHLock(r1)		;	redundant
+	_AssertAndRelease	PSA.PIHLock, scratch=r8
 	bl		Restore_r20_r31
 	b		skeleton_key
 
 CommonPIHPath_0x78
-	sync
-	lwz		r8, -0x0b70(r1)
-	cmpwi	cr1, r8,  0x00
-	li		r8,  0x00
-	bne+	cr1, CommonPIHPath_0x94
-	mflr	r8
-	bl		panic
-
-CommonPIHPath_0x94
-	stw		r8, -0x0b70(r1)
+	_AssertAndRelease	PSA.PIHLock, scratch=r8
 	bl		Save_r14_r19
 
 	_Lock			PSA.SchLock, scratch1=r8, scratch2=r9
@@ -139,16 +120,7 @@ CommonPIHPath_0x94
 	stw		r9,  0x0010(r30)
 	stw		r22,  0x0014(r30)
 	bl		major_0x0db04
-	sync
-	lwz		r8, PSA.SchLock + Lock.Count(r1)
-	cmpwi	cr1, r8,  0x00
-	li		r8,  0x00
-	bne+	cr1, CommonPIHPath_0xf4
-	mflr	r8
-	bl		panic
-
-CommonPIHPath_0xf4
-	stw		r8, PSA.SchLock + Lock.Count(r1)
+	_AssertAndRelease	PSA.SchLock, scratch=r8
 
 ;	r6 = ewa
 	bl		Restore_r14_r31
@@ -158,16 +130,7 @@ CommonPIHPath_0x100
 	li		r27,  0x00
 	lwz		r23,  0x067c(r1)
 	stw		r27, -0x0428(r1)
-	sync
-	lwz		r8, PSA.SchLock + Lock.Count(r1)
-	cmpwi	cr1, r8,  0x00
-	li		r8,  0x00
-	bne+	cr1, CommonPIHPath_0x128
-	mflr	r8
-	bl		panic
-
-CommonPIHPath_0x128
-	stw		r8, PSA.SchLock + Lock.Count(r1)
+	_AssertAndRelease	PSA.SchLock, scratch=r8
 	bl		Restore_r14_r19
 
 	_Lock			PSA.PIHLock, scratch1=r8, scratch2=r9
@@ -175,18 +138,7 @@ CommonPIHPath_0x128
 	b		CommonPIHPath_0xc
 
 CommonPIHPath_0x14c
-	sync
-	lwz		r8, -0x0b70(r1)
-	cmpwi	cr1, r8,  0x00
-	li		r8,  0x00
-	bne+	cr1, CommonPIHPath_0x168
-	mflr	r8
-	bl		panic
-
-CommonPIHPath_0x168
-
-	;	This is where we have some real fun...
-	stw		r8, -0x0b70(r1)
+	_AssertAndRelease	PSA.PIHLock, scratch=r8
 	bl		Save_r14_r19
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
@@ -245,16 +197,7 @@ CommonPIHPath_0x218
 CommonPIHPath_0x230
 	mr		r8, r31
 	bl		major_0x14af8
-	sync
-	lwz		r16, PSA.SchLock + Lock.Count(r1)
-	cmpwi	cr1, r16,  0x00
-	li		r16,  0x00
-	bne+	cr1, CommonPIHPath_0x254
-	mflr	r16
-	bl		panic
-
-CommonPIHPath_0x254
-	stw		r16, PSA.SchLock + Lock.Count(r1)
+	_AssertAndRelease	PSA.SchLock, scratch=r16
 
 ;	r6 = ewa
 	bl		Restore_r14_r31

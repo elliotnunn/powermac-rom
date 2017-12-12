@@ -207,16 +207,7 @@ print_common_0x80
 	mtspr	srr1, r27
 
 print_common_0x8c
-	sync
-	lwz		r30, -0x0af0(r1)
-	cmpwi	cr1, r30,  0x00
-	li		r30,  0x00
-	bne+	cr1, print_common_0xa8
-	mflr	r30
-	bl		panic
-
-print_common_0xa8
-	stw		r30, -0x0af0(r1)
+	_AssertAndRelease	PSA.DbugLock, scratch=r30
 
 
 
