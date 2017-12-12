@@ -777,58 +777,83 @@ KCSetTaskAddressSpace	;	OUTSIDE REFERER
 
 
 
-	DeclareMPCall	72, MPCall_72
+;	This MP call does some of the heavy lifting for the MPLibrary function
+;	of the same name. No pages are mapped into the Area.
 
-MPCall_72	;	OUTSIDE REFERER
+;	ARG		AddressSpaceID r3 (optional)
+;			long r4 PTEConfig
+;			long r5 length
+;			long r6 LogicalSeparation
+;			long r7 flagsAndMinAlign
+;			char *r8 LogicalBase
+;	RET		r3 OSErr
+;			char *r8 LogicalBase
+;			AreaID r9
+
+;	Hint: in the 9.2.2 System MPLibrary, MPCreateArea calls a syscall
+;	wrapper function at code offset 0x7fa8, with arguments pointing to save
+;	locations for r8 and r9.
+
+	DeclareMPCall	72, MPCreateArea
+
+MPCreateArea
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
+	;	If !r3 then use the current address space
 	mr.		r8, r3
 	mfsprg	r28, 0
 	lwz		r30, EWA.PA_CurAddressSpace(r28)
-	beq-	MPCall_72_0x38
+	beq-	@use_current_space
 
-;	r8 = id
+	;	... else use the one specified.
  	bl		LookupID
 	cmpwi	r9, AddressSpace.kIDClass
-
 	mr		r30, r8
 	bne+	ReleaseAndReturnMPCallInvalidIDErr
+@use_current_space
 
-MPCall_72_0x38
-	li		r8, 160
-
-;	r1 = kdp
-;	r8 = size
+	;	Allocate the new Area
+	li		r8, Area.Size
 	bl		PoolAlloc
-;	r8 = ptr
-
 	mr.		r31, r8
 	beq+	major_0x0af60
+
+	;	Populate
 	stw		r30, Area.AddressSpacePtr(r31)
-	stw		r4,  0x001c(r31)
+
+	stw		r4, Area.PTEConfig(r31)
+
 	stw		r5, Area.Length(r31)
-	lwz		r8,  0x0134(r6)
+
+	lwz		r8, ContextBlock.r6(r6)
 	stw		r8, Area.LogicalSeparation(r31)
-	lwz		r8,  0x013c(r6)
-	stw		r8,  0x0020(r31)
-	lwz		r8,  0x0144(r6)
+
+	lwz		r8, ContextBlock.r7(r6)
+	stw		r8, Area.FlagsAndMinAlign(r31)
+
+	lwz		r8, ContextBlock.r8(r6)
 	stw		r8, Area.LogicalBase(r31)
+
+	;	"Create" the area
 	mr		r8, r31
 	bl		createarea
+
 	_AssertAndRelease	PSA.SchLock, scratch=r16
 
-MPCall_72_0x90
-	stw		r16, PSA.SchLock + Lock.Count(r1)
 	mr.		r3, r9
-	bne-	MPCall_72_0xb0
+	bne-	@error
+
+	;	CreateArea returned successfully
 	lwz		r8, Area.LogicalBase(r31)
-	stw		r8,  0x0144(r6)
+	stw		r8, ContextBlock.r8(r6)
+
 	lwz		r8, Area.ID(r31)
-	stw		r8,  0x014c(r6)
+	stw		r8, ContextBlock.r9(r6)
+
 	b		CommonMPCallReturnPath
 
-MPCall_72_0xb0
+@error
 	bl		PoolFree
 	b		CommonMPCallReturnPath
 
@@ -1475,9 +1500,28 @@ FindAreaAbove	;	OUTSIDE REFERER
 
 
 
-	DeclareMPCall	73, MPCall_73
+;	This MP call does most of the work for the same-named MPLibrary
+;	function. An "alias" Area is created from a template. This code is very
+;	similar to regular MPCreateArea above, so differences are commented.
 
-MPCall_73	;	OUTSIDE REFERER
+;	ARG		AreaID r3										; Alias-specific
+;			long r4 PTEConfig
+;			long r5 length
+;			long r6 LogicalSeparation
+;			long r7 flagsAndMinAlign
+;			char *r8 LogicalBase
+;			long r9 unknown									; Alias-specific
+;	RET		r3 OSErr
+;			char *r8 LogicalBase
+;			AreaID r10										; Alias-specific
+
+;	Hint: in the 9.2.2 System MPLibrary, MPCreateAliasArea calls a syscall
+;	wrapper function at code offset 0x7fe8, with arguments pointing to save
+;	locations for r8 and r10.
+
+	DeclareMPCall	73, MPCreateAliasArea
+
+MPCreateAliasArea
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
@@ -1486,193 +1530,263 @@ MPCall_73	;	OUTSIDE REFERER
 	cmpwi	r9, Area.kIDClass
 	bne+	ReleaseAndReturnMPCallInvalidIDErr
 
+	;	Confirm that the template Area is not itself an alias
 	mr		r30, r8
-	lwz		r16,  0x0008(r30)
-	rlwinm.	r8, r16,  0, 28, 28
+	lwz		r16, Area.Flags(r30)
+	rlwinm.	r8, r16, 0, Area.kAliasFlag, Area.kAliasFlag
 	bne+	major_0x0b054
 
+	;	Allocate the new Area
 	li		r8, Area.Size
 	bl		PoolAlloc
 	mr.		r31, r8
 	beq+	major_0x0af60
 
+	;	Populate
 	mfsprg	r28, 0
 	lwz		r8, EWA.PA_CurAddressSpace(r28)
 	stw		r8, Area.AddressSpacePtr(r31)
-	stw		r3,  0x0014(r31)
-	stw		r30,  0x0044(r31)
-	stw		r4,  0x001c(r31)
+
+	stw		r3, Area.ParentAreaID(r31)						; Alias-specific
+
+	stw		r30, Area.AliasLLL + LLL.Freeform(r31)			; Alias-specific
+
+	stw		r4, Area.PTEConfig(r31)
+
 	stw		r5, Area.Length(r31)
-	lwz		r8,  0x0134(r6)
+
+	lwz		r8, ContextBlock.r6(r6)
 	stw		r8, Area.LogicalSeparation(r31)
-	lwz		r8,  0x013c(r6)
-	stw		r8,  0x0020(r31)
-	lwz		r8,  0x0144(r6)
+
+	lwz		r8, ContextBlock.r7(r6)
+	stw		r8, Area.FlagsAndMinAlign(r31)
+
+	lwz		r8, ContextBlock.r8(r6)
 	stw		r8, Area.LogicalBase(r31)
-	lwz		r8,  0x014c(r6)
+
+	lwz		r8, ContextBlock.r9(r6)							; Alias-specific
 	stw		r8,  0x0080(r31)
-	li		r8,  0x08
+
+	li		r8, 1 << (31 - Area.kAliasFlag)					; Alias-specific
 	stw		r8, Area.Flags(r31)
+
+	;	"Create" the area (everything after here is identical to MPCreateArea)
 	mr		r8, r31
 	bl		createarea
+
 	_AssertAndRelease	PSA.SchLock, scratch=r16
 
-MPCall_73_0xb0
-	stw		r16, PSA.SchLock + Lock.Count(r1)
 	mr.		r3, r9
-	bne-	MPCall_73_0xd0
+	bne-	@error
+
+	;	CreateArea returned successfully
 	lwz		r8, Area.LogicalBase(r31)
-	stw		r8,  0x0144(r6)
+	stw		r8, ContextBlock.r8(r6)
+
 	lwz		r8, Area.ID(r31)
-	stw		r8,  0x0154(r6)
+	stw		r8, ContextBlock.r10(r6)						; Alias-specific
+
 	b		CommonMPCallReturnPath
 
-MPCall_73_0xd0
+	;	...or not
+@error
 	bl		PoolFree
 	b		CommonMPCallReturnPath
 
 
 
-	DeclareMPCall	74, MPCall_74
+;	Delete an Area: the eponymous MPLibrary function is a simple wrapper
 
-MPCall_74	;	OUTSIDE REFERER
+;	1. Only works on unprivileged Areas with no mapped pages.
+;	2. Remove from parent address space.
+;	3. Remove from template Area's alias list if applicable.
+;	4. Delete the "PageMap" array if present.
+;	5. Delete the "Fault Counter" array if present.
+;	6. Delete the structure from the pool.
+
+;	ARG		AreaID r3
+;	RET		OSErr r3
+
+	DeclareMPCall	74, MPDeleteArea
+
+MPDeleteArea
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
+	;	Look up and validate
 	mr		r8, r3
-
-;	r8 = id
  	bl		LookupID
 	cmpwi	r9, Area.kIDClass
-
 	bne+	ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
+
+	;	If pages are still mapped in, fail with OOM
+	;	If area is privileged, fail with privileged
 	lwz		r17, Area.BytesMapped(r31)
 	lwz		r29, Area.Flags(r31)
-	cmpwi	cr1, r17,  0x00
-	rlwinm.	r8, r29,  0, 29, 29
+	cmpwi	cr1, r17, 0
+	rlwinm.	r8, r29, 0, Area.kPrivilegedFlag, Area.kPrivilegedFlag
 	bne+	cr1, ReleaseAndReturnMPCallOOM
 	bne+	ReleaseAndReturnMPCallPrivilegedErr
-	rlwinm.	r8, r29,  0, 28, 28
-	lwz		r16,  0x004c(r31)
-	bne-	MPCall_74_0x5c
-	addi	r17, r31,  0x44
+
+	;	If is alias area and is not at back of queue (???), fail with OOM
+	rlwinm.	r8, r29, 0, Area.kAliasFlag, Area.kAliasFlag
+	lwz		r16, Area.AliasLLL + LLL.Next(r31)
+	bne-	@dont_check_for_nonempty_alias
+	addi	r17, r31, Area.AliasLLL
 	cmpw	r16, r17
 	bne+	ReleaseAndReturnMPCallOOM
+@dont_check_for_nonempty_alias
 
-MPCall_74_0x5c
+	;	HTAB lock wraps around all Address Space structures?
 
 	_Lock			PSA.HTABLock, scratch1=r18, scratch2=r9
 
-	addi	r16, r31,  0x54
-	lwz		r17,  0x0008(r16)
-	lwz		r18,  0x000c(r16)
-	stw		r17,  0x0008(r18)
-	stw		r18,  0x000c(r17)
-	li		r17,  0x00
-	stw		r17,  0x0008(r16)
-	stw		r17,  0x000c(r16)
-	rlwinm.	r8, r29,  0, 28, 28
-	addi	r16, r31,  0x44
-	beq-	MPCall_74_0xbc
-	lwz		r17,  0x0008(r16)
-	lwz		r18,  0x000c(r16)
-	stw		r17,  0x0008(r18)
-	stw		r18,  0x000c(r17)
-	li		r17,  0x00
-	stw		r17,  0x0008(r16)
-	stw		r17,  0x000c(r16)
+	;	Remove from parent address space
+	addi	r16, r31, Area.LLL
+	RemoveFromList	r16, scratch1=r17, scratch2=r18
 
-MPCall_74_0xbc
+	;	Remove from template area's list of aliases, if necessary
+	rlwinm.	r8, r29, 0, Area.kAliasFlag, Area.kAliasFlag
+	addi	r16, r31, Area.AliasLLL
+	beq-	@not_alias_so_dont_remove_from_alias_list
+	RemoveFromList	r16, scratch1=r17, scratch2=r18
+@not_alias_so_dont_remove_from_alias_list
+
 	_AssertAndRelease	PSA.HTABLock, scratch=r18
-	lwz		r8,  0x0040(r31)
-	rlwinm.	r16, r29,  0, 25, 25
-	cmpwi	cr1, r8,  0x00
-	bne-	MPCall_74_0x178
-	rlwinm.	r16, r29,  0, 27, 27
-	beq-	cr1, MPCall_74_0x178
-	bne-	MPCall_74_0x174
 
+
+	;	DELETE PAGEMAP (array of [array of] per-page data)
+	;	There are a few cases here...
+
+	lwz		r8, Area.PageMapArrayPtr(r31)
+	rlwinm.	r16, r29, 0, Area.kDontOwnPageMapArray, Area.kDontOwnPageMapArray
+	cmpwi	cr1, r8, 0
+	bne-	@no_pagemap
+	rlwinm.	r16, r29, 0, Area.kPageMapArrayInPool, Area.kPageMapArrayInPool
+	beq-	cr1, @no_pagemap
+	bne-	@pagemap_in_pool
+
+
+	;	If PageMap occupies whole pages then return those pages
+	;	directly to the free list without bothering the pool
+
+	;	(Pool lock still protects free list)
 	_Lock			PSA.PoolLock, scratch1=r18, scratch2=r9
 
-	rlwinm.	r16, r29,  0, 26, 26
-	beq-	MPCall_74_0x14c
+	rlwinm.	r16, r29, 0, Area.kPageMapArrayIs2D, Area.kPageMapArrayIs2D
+	beq-	@pagemap_is_1d
+
+
+	;	CASE: 2D array, all in whole pages
+
+	;	r19 := size of ptr array in primary page
 	lwz		r19, Area.Length(r31)
 	mr		r20, r8
 	srwi	r19, r19, 12
-	addi	r19, r19,  0x3ff
+	addi	r19, r19, 0x3ff
 	srwi	r19, r19, 10
-	slwi	r19, r19,  2
-	subi	r19, r19, 4
+	slwi	r19, r19, 2
 
-MPCall_74_0x134
+	;	Free every second-level page
+	subi	r19, r19, 4
+@2d_pagemap_delete_loop
 	lwzx	r8, r19, r20
-
-;	r1 = kdp
-;	r8 = maybe the page
 	bl		free_list_add_page
-	cmpwi	r19,  0x00
+	cmpwi	r19, 0
 	subi	r19, r19, 4
-	bgt+	MPCall_74_0x134
+	bgt+	@2d_pagemap_delete_loop
+
 	mr		r8, r20
 
-MPCall_74_0x14c
-;	r1 = kdp
-;	r8 = maybe the page
-	bl		free_list_add_page
-	_AssertAndRelease	PSA.PoolLock, scratch=r18
-	b		MPCall_74_0x178
 
-MPCall_74_0x174
+	;	COMMON CASE: single first-level page of 2D or 1D-in-whole-page case
+
+@pagemap_is_1d
+	bl		free_list_add_page
+
+	_AssertAndRelease	PSA.PoolLock, scratch=r18
+
+	b		@pagemap_deleted
+
+
+	;	CASE: 1D array in pool block (not whole page)
+
+@pagemap_in_pool
 	bl		PoolFree
 
-MPCall_74_0x178
-	lwz		r8,  0x003c(r31)
-	clrlwi.	r16, r29,  0x1f
-	cmpwi	cr1, r8,  0x00
-	beq-	cr1, MPCall_74_0x20c
-	bne-	MPCall_74_0x208
 
+@pagemap_deleted
+@no_pagemap
+
+
+	;	DELETE FAULT COUNTER ARRAY
+	;	Again, the code to manage the cases is tricky.
+
+	lwz		r8, Area.FaultCtrArrayPtr(r31)
+	rlwinm.	r16, r29, 0, Area.kFaultCtrArrayInPool, Area.kFaultCtrArrayInPool
+	cmpwi	cr1, r8, 0
+	beq-	cr1, @no_faultctr
+	bne-	@faultctr_in_pool
+
+
+	;	Whole-page cases require us to get the Pool lock manually (for free list)
 	_Lock			PSA.PoolLock, scratch1=r18, scratch2=r9
 
-	rlwinm.	r16, r29,  0, 30, 30
-	beq-	MPCall_74_0x1e0
+	rlwinm.	r16, r29, 0, Area.kFaultCtrArrayIs2D, Area.kFaultCtrArrayIs2D
+	beq-	@faultctr_is_1d
+
+
+	;	CASE: 2D array, all in whole pages
+
+	;	Once again, r19 = the size of the primary array
 	lwz		r19, Area.Length(r31)
 	mr		r20, r8
 	srwi	r19, r19, 12
-	addi	r19, r19,  0x7ff
+	addi	r19, r19, 0x7ff
 	srwi	r19, r19, 11
-	slwi	r19, r19,  2
-	subi	r19, r19, 4
+	slwi	r19, r19, 2
 
-MPCall_74_0x1c8
+	;	Free every second-level page
+	subi	r19, r19, 4
+@2d_faultctr_delete_loop
 	lwzx	r8, r19, r20
-
-;	r1 = kdp
-;	r8 = maybe the page
 	bl		free_list_add_page
-	cmpwi	r19,  0x00
+	cmpwi	r19, 0
 	subi	r19, r19, 4
-	bgt+	MPCall_74_0x1c8
+	bgt+	@2d_faultctr_delete_loop
+
 	mr		r8, r20
 
-MPCall_74_0x1e0
-;	r1 = kdp
-;	r8 = maybe the page
-	bl		free_list_add_page
-	_AssertAndRelease	PSA.PoolLock, scratch=r18
-	b		MPCall_74_0x20c
 
-MPCall_74_0x208
+	;	COMMON CASE: single first-level page of 2D or 1D-in-whole-page case
+
+@faultctr_is_1d
+	bl		free_list_add_page
+
+	_AssertAndRelease	PSA.PoolLock, scratch=r18
+
+	b		@faultctr_deleted
+
+
+	;	CASE: 1D array in pool block (not whole page)
+
+@faultctr_in_pool
 	bl		PoolFree
 
-MPCall_74_0x20c
+
+@faultctr_deleted
+@no_faultctr
+
+
+	;	Delete the struct from the pool
 	lwz		r8, Area.ID(r31)
 	bl		DeleteID
 	mr		r8, r31
 	bl		PoolFree
 
-;	r1 = kdp
+
+	;	Return noErr
 	b		ReleaseAndReturnZeroFromMPCall
 
 
@@ -1937,12 +2051,12 @@ MPCall_130_0x19c
 
 
 
-;	                    KCSetAreaAccess
+;	                    MPSetAreaAccess
 
 
-	DeclareMPCall	76, KCSetAreaAccess
+	DeclareMPCall	76, MPSetAreaAccess
 
-KCSetAreaAccess	;	OUTSIDE REFERER
+MPSetAreaAccess	;	OUTSIDE REFERER
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
@@ -1975,21 +2089,21 @@ KCSetAreaAccess	;	OUTSIDE REFERER
 	cmplw	cr2, r28, r19
 	blt+	cr1, major_0x0b054
 	bgt+	cr2, major_0x0b054
-	bne-	KCSetAreaAccess_0x154
+	bne-	MPSetAreaAccess_0x154
 
 	_Lock			PSA.HTABLock, scratch1=r14, scratch2=r15
 
 
-KCSetAreaAccess_0x9c
+MPSetAreaAccess_0x9c
 	mr		r8, r29
 	bl		MPCall_95_0x1e4
 	beq+	Local_Panic
 	bl		MPCall_95_0x2b0
-	bns-	cr7, KCSetAreaAccess_0xb8
+	bns-	cr7, MPSetAreaAccess_0xb8
 	bltl-	cr5, MPCall_95_0x2e0
 	bltl-	cr5, MPCall_95_0x348
 
-KCSetAreaAccess_0xb8
+MPSetAreaAccess_0xb8
 	lwz		r17,  0x0000(r30)
 	bl		major_0x10d38
 	and		r8, r4, r5
@@ -1998,40 +2112,40 @@ KCSetAreaAccess_0xb8
 	and		r18, r18, r9
 	lwz		r17,  0x0000(r30)
 	rlwinm.	r8, r18,  0, 26, 26
-	bns-	cr7, KCSetAreaAccess_0x118
-	bgt-	cr6, KCSetAreaAccess_0x118
-	beq-	KCSetAreaAccess_0x118
+	bns-	cr7, MPSetAreaAccess_0x118
+	bgt-	cr6, MPSetAreaAccess_0x118
+	beq-	MPSetAreaAccess_0x118
 	rlwinm	r9, r17,  0,  0, 19
 	lwz		r8,  0x0068(r31)
 
-KCSetAreaAccess_0xec
+MPSetAreaAccess_0xec
 	addi	r8, r8, -0x20
 	dcbf	r8, r9
 	cmpwi	r8,  0x00
-	bgt+	KCSetAreaAccess_0xec
+	bgt+	MPSetAreaAccess_0xec
 	sync
 	lwz		r8,  0x0068(r31)
 
-KCSetAreaAccess_0x104
+MPSetAreaAccess_0x104
 	addi	r8, r8, -0x20
 	icbi	r8, r9
 	cmpwi	r8,  0x00
-	bgt+	KCSetAreaAccess_0x104
+	bgt+	MPSetAreaAccess_0x104
 	isync
 
-KCSetAreaAccess_0x118
+MPSetAreaAccess_0x118
 	bl		major_0x10cb8
 	lwz		r19,  0x0068(r31)
 	stw		r17,  0x0000(r30)
 	add		r29, r29, r19
 	subf.	r8, r29, r28
-	bge+	KCSetAreaAccess_0x9c
+	bge+	MPSetAreaAccess_0x9c
 	_AssertAndRelease	PSA.HTABLock, scratch=r14
 
 ;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall
 
-KCSetAreaAccess_0x154
+MPSetAreaAccess_0x154
 	bne+	cr1, major_0x0b054
 	lwz		r18,  0x001c(r31)
 	and		r8, r4, r5
@@ -2050,18 +2164,18 @@ KCSetAreaAccess_0x154
 	lwz		r27,  0x0068(r31)
 	mr		r28, r19
 
-KCSetAreaAccess_0x1a4
+MPSetAreaAccess_0x1a4
 	mr		r8, r29
 	lwz		r9, Area.AddressSpacePtr(r31)
 	bl		MPCall_95_0x45c
-	beq-	KCSetAreaAccess_0x1bc
+	beq-	MPSetAreaAccess_0x1bc
 	bl		MPCall_95_0x2e0
 	bl		MPCall_95_0x348
 
-KCSetAreaAccess_0x1bc
+MPSetAreaAccess_0x1bc
 	add		r29, r29, r27
 	subf.	r8, r29, r28
-	bge+	KCSetAreaAccess_0x1a4
+	bge+	MPSetAreaAccess_0x1a4
 	_AssertAndRelease	PSA.HTABLock, scratch=r14
 
 ;	r1 = kdp
@@ -2259,34 +2373,39 @@ MPCall_123	;	OUTSIDE REFERER
 
 
 
-	DeclareMPCall	77, MPCall_77
+;	Does the blue task always get these notifications?
 
-MPCall_77	;	OUTSIDE REFERER
+;	(MPLibrary function is a simple wrapper.)
+
+;	ARG		AreaID r3, NotificationID r4, long r5
+;	RET		OSErr r3
+
+	DeclareMPCall	77, MPSetAreaBackingProvider
+
+MPSetAreaBackingProvider
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
+	;	Expect Area ID in r3
 	mr		r8, r3
-
-;	r8 = id
  	bl		LookupID
 	cmpwi	r9, Area.kIDClass
-
 	bne+	ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
-	mr.		r8, r4
-	beq-	MPCall_77_0x40
 
-;	r8 = id
+	;	r4 optionally contains...
+	mr.		r8, r4
+	beq-	@no_notification
+
+	;	a Notification ID
  	bl		LookupID
 	cmpwi	r9, Notification.kIDClass
-
 	bne+	ReleaseAndReturnMPCallInvalidIDErr
+@no_notification
 
-MPCall_77_0x40
-	stw		r4,  0x0018(r31)
-	stw		r5,  0x0084(r31)
+	stw		r4, Area.BackingProviderID(r31)
+	stw		r5, Area.BackingProviderMisc(r31)
 
-;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall
 
 
