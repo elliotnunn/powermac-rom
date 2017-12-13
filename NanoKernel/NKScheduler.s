@@ -1205,13 +1205,7 @@ major_0x142dc_0xd8	;	OUTSIDE REFERER
 	cmpwi	r28,  0x00
 	lwz		r26,  0x0008(r30)
 	beq-	major_0x142dc_0x140
-	lwz		r28,  0x0008(r29)
-	lwz		r27,  0x000c(r29)
-	stw		r28,  0x0008(r27)
-	stw		r27,  0x000c(r28)
-	li		r28,  0x00
-	stw		r28,  0x0008(r29)
-	stw		r28,  0x000c(r29)
+	RemoveFromList		r29, scratch1=r28, scratch2=r27
 	lwz		r27,  0x001c(r30)
 	lwz		r28,  0x0014(r26)
 	subf	r28, r27, r28
@@ -1239,11 +1233,7 @@ major_0x142dc_0x140
 	addi	r25, r1, -0xa34
 	addi	r26, r30,  0x08
 	stw		r25,  0x0000(r26)
-	stw		r25,  0x0008(r26)
-	lwz		r27,  0x000c(r25)
-	stw		r27,  0x000c(r26)
-	stw		r26,  0x0008(r27)
-	stw		r26,  0x000c(r25)
+	InsertAsPrev	r26, r25, scratch=r27
 	b		major_0x142dc_0x58
 
 major_0x142dc_0x184
@@ -2012,13 +2002,7 @@ major_0x14bcc
 	bl		Printw
 	_log	'^n'
 	addi	r16, r31,  0x08
-	lwz		r17,  0x0008(r16)
-	lwz		r18,  0x000c(r16)
-	stw		r17,  0x0008(r18)
-	stw		r18,  0x000c(r17)
-	li		r17,  0x00
-	stw		r17,  0x0008(r16)
-	stw		r17,  0x000c(r16)
+	RemoveFromList		r16, scratch1=r17, scratch2=r18
 	li		r16,  0x02
 	stb		r16,  0x0018(r31)
 	lwz		r16,  0x0064(r31)
@@ -2158,11 +2142,7 @@ StopProcessor
 	addi	r16, r1, -0xa44
 	addi	r17, r8,  0x08
 	stw		r16,  0x0000(r17)
-	stw		r16,  0x0008(r17)
-	lwz		r18,  0x000c(r16)
-	stw		r18,  0x000c(r17)
-	stw		r17,  0x0008(r18)
-	stw		r17,  0x000c(r16)
+	InsertAsPrev	r17, r16, scratch=r18
 	bl		TasksFuncThatIsNotAMPCall
 	_AssertAndRelease	PSA.SchLock, scratch=r16
 	_log	'SIGP kStopProcessor^n'

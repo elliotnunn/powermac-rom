@@ -1122,19 +1122,11 @@ createarea_0x374
 createarea_0x39c
 	addi	r19, r31,  0x54
 	stw		r20,  0x0000(r19)
-	stw		r20,  0x000c(r19)
-	lwz		r16,  0x0008(r20)
-	stw		r16,  0x0008(r19)
-	stw		r19,  0x000c(r16)
-	stw		r19,  0x0008(r20)
+	InsertAsNext	r19, r20, scratch=r16
 
 createarea_0x3b8
 	addi	r16, r31,  0x90
-	lis		r17,  0x6665
-	stw		r16,  0x0008(r16)
-	ori		r17, r17,  0x6e63
-	stw		r16,  0x000c(r16)
-	stw		r17,  0x0004(r16)
+	InitList	r16, 'fenc', scratch=r17
 	lwz		r16,  0x0020(r31)
 	lwz		r17, Area.Flags(r31)
 	rlwinm.	r8, r16,  0, 16, 16
@@ -1240,13 +1232,7 @@ createarea_0x4e8
 	mr.		r18, r27
 	beq-	createarea_0x5a0
 	lwz		r16, -0x0448(r1)
-	lwz		r17,  0x0008(r16)
-	lwz		r19,  0x000c(r16)
-	stw		r17,  0x0008(r19)
-	stw		r19,  0x000c(r17)
-	li		r17,  0x00
-	stw		r17,  0x0008(r16)
-	stw		r17,  0x000c(r16)
+	RemoveFromList		r16, scratch1=r17, scratch2=r19
 	addi	r18, r18, -0x01
 	stw		r16,  0x0040(r31)
 	cmpwi	r18,  0x00
@@ -1259,13 +1245,7 @@ createarea_0x4e8
 	b		createarea_0x5a0
 
 createarea_0x564
-	lwz		r19,  0x0008(r17)
-	lwz		r20,  0x000c(r17)
-	stw		r19,  0x0008(r20)
-	stw		r20,  0x000c(r19)
-	li		r19,  0x00
-	stw		r19,  0x0008(r17)
-	stw		r19,  0x000c(r17)
+	RemoveFromList		r17, scratch1=r19, scratch2=r20
 	addi	r18, r18, -0x01
 	stwu	r17,  0x0004(r16)
 	mr		r8, r17
@@ -1279,13 +1259,7 @@ createarea_0x5a0
 	mr.		r18, r29
 	beq-	createarea_0x62c
 	lwz		r16, -0x0448(r1)
-	lwz		r17,  0x0008(r16)
-	lwz		r19,  0x000c(r16)
-	stw		r17,  0x0008(r19)
-	stw		r19,  0x000c(r17)
-	li		r17,  0x00
-	stw		r17,  0x0008(r16)
-	stw		r17,  0x000c(r16)
+	RemoveFromList		r16, scratch1=r17, scratch2=r19
 	addi	r18, r18, -0x01
 	stw		r16,  0x003c(r31)
 	cmpwi	r18,  0x00
@@ -1298,13 +1272,7 @@ createarea_0x5a0
 	b		createarea_0x62c
 
 createarea_0x5f0
-	lwz		r19,  0x0008(r17)
-	lwz		r20,  0x000c(r17)
-	stw		r19,  0x0008(r20)
-	stw		r20,  0x000c(r19)
-	li		r19,  0x00
-	stw		r19,  0x0008(r17)
-	stw		r19,  0x000c(r17)
+	RemoveFromList		r17, scratch1=r19, scratch2=r20
 	addi	r18, r18, -0x01
 	stwu	r17,  0x0004(r16)
 	mr		r8, r17
@@ -1324,20 +1292,12 @@ createarea_0x64c
 	lwz		r16,  0x0044(r31)
 	addi	r17, r31,  0x44
 	stw		r16,  0x0000(r17)
-	stw		r16,  0x0008(r17)
-	lwz		r18,  0x000c(r16)
-	stw		r18,  0x000c(r17)
-	stw		r17,  0x0008(r18)
-	stw		r17,  0x000c(r16)
+	InsertAsPrev	r17, r16, scratch=r18
 	b		major_0x10320_0x94
 
 createarea_0x67c
 	addi	r16, r31,  0x44
-	lis		r17,  0x414b
-	stw		r16,  0x0008(r16)
-	ori		r17, r17,  0x4120
-	stw		r16,  0x000c(r16)
-	stw		r17,  0x0004(r16)
+	InitList	r16, 'AKA ', scratch=r17
 	b		major_0x10320_0x94
 
 
@@ -1433,13 +1393,7 @@ major_0x10320	;	OUTSIDE REFERER
 
 major_0x10320_0x20	;	OUTSIDE REFERER
 	addi	r19, r31,  0x54
-	lwz		r16,  0x0008(r19)
-	lwz		r17,  0x000c(r19)
-	stw		r16,  0x0008(r17)
-	stw		r17,  0x000c(r16)
-	li		r16,  0x00
-	stw		r16,  0x0008(r19)
-	stw		r16,  0x000c(r19)
+	RemoveFromList		r19, scratch1=r16, scratch2=r17
 	lwz		r16, Area.Flags(r31)
 	lwz		r8,  0x0040(r31)
 	rlwinm.	r16, r16,  0, 25, 25
@@ -2016,11 +1970,7 @@ MPCall_130_0x11c
 	ori		r17, r17,  0x4e43
 	stw		r17,  0x0004(r16)
 	stw		r18,  0x0000(r16)
-	stw		r18,  0x0008(r16)
-	lwz		r19,  0x000c(r18)
-	stw		r19,  0x000c(r16)
-	stw		r16,  0x0008(r19)
-	stw		r16,  0x000c(r18)
+	InsertAsPrev	r16, r18, scratch=r19
 	li		r8,  0x00
 	addi	r9, r16,  0x14
 
@@ -2851,13 +2801,7 @@ MPCall_83_0x90	;	OUTSIDE REFERER
 	lwz		r8, -0x0448(r1)
 	cmpw	r8, r18
 	beq-	MPCall_83_0xec
-	lwz		r16,  0x0008(r8)
-	lwz		r17,  0x000c(r8)
-	stw		r16,  0x0008(r17)
-	stw		r17,  0x000c(r16)
-	li		r16,  0x00
-	stw		r16,  0x0008(r8)
-	stw		r16,  0x000c(r8)
+	RemoveFromList		r8, scratch1=r16, scratch2=r17
 	lwz		r16, -0x0430(r1)
 	addi	r16, r16, -0x01
 	stw		r16, -0x0430(r1)

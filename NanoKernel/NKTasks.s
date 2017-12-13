@@ -342,13 +342,7 @@ MPCall_8	;	OUTSIDE REFERER
 	stw		r16,  0x0090(r31)
 	stw		r17,  0x0094(r31)
 	addi	r16, r31,  0x08
-	lwz		r17,  0x0008(r16)
-	lwz		r18,  0x000c(r16)
-	stw		r17,  0x0008(r18)
-	stw		r18,  0x000c(r17)
-	li		r17,  0x00
-	stw		r17,  0x0008(r16)
-	stw		r17,  0x000c(r16)
+	RemoveFromList		r16, scratch1=r17, scratch2=r18
 	mr		r8, r31
 	bl		TaskReadyAsPrev
 	bl		CalculateTimeslice
@@ -415,13 +409,7 @@ MPCall_9_0xb4
 	ori		r16, r16,  0x02
 	stw		r16,  0x0064(r31)
 	addi	r16, r31,  0x08
-	lwz		r17,  0x0008(r16)
-	lwz		r18,  0x000c(r16)
-	stw		r17,  0x0008(r18)
-	stw		r18,  0x000c(r17)
-	li		r17,  0x00
-	stw		r17,  0x0008(r16)
-	stw		r17,  0x000c(r16)
+	RemoveFromList		r16, scratch1=r17, scratch2=r18
 	b		MPCall_9_0xf0
 
 MPCall_9_0xe0
@@ -439,11 +427,7 @@ MPCall_9_0xfc
 	addi	r16, r1, -0xa44
 	addi	r17, r31,  0x08
 	stw		r16,  0x0000(r17)
-	stw		r16,  0x0008(r17)
-	lwz		r18,  0x000c(r16)
-	stw		r18,  0x000c(r17)
-	stw		r17,  0x0008(r18)
-	stw		r17,  0x000c(r16)
+	InsertAsPrev	r17, r16, scratch=r18
 	lbz		r8,  0x0037(r31)
 	cmpwi	r8,  0x01
 	bne-	MPCall_9_0x130
@@ -505,13 +489,7 @@ TasksFuncThatIsNotAMPCall
 	mflr	r27
 	mr		r26, r8
 	addi	r16, r26,  0x08
-	lwz		r17,  0x0008(r16)
-	lwz		r18,  0x000c(r16)
-	stw		r17,  0x0008(r18)
-	stw		r18,  0x000c(r17)
-	li		r17,  0x00
-	stw		r17,  0x0008(r16)
-	stw		r17,  0x000c(r16)
+	RemoveFromList		r16, scratch1=r17, scratch2=r18
 	lwz		r8,  0x0000(r26)
 	bl		DeleteID
 	lwz		r8,  0x00a0(r26)
@@ -703,11 +681,7 @@ KCThrowException_0x70
 	addi	r16, r1, -0xa34
 	addi	r17, r31,  0x08
 	stw		r16,  0x0000(r17)
-	stw		r16,  0x0008(r17)
-	lwz		r18,  0x000c(r16)
-	stw		r18,  0x000c(r17)
-	stw		r17,  0x0008(r18)
-	stw		r17,  0x000c(r16)
+	InsertAsPrev	r17, r16, scratch=r18
 	li		r3, -0x726c
 	b		ReleaseAndReturnMPCall
 
@@ -791,13 +765,7 @@ MPCall_58_0x88
 
 MPCall_58_0xb4
 	addi	r16, r31,  0x08
-	lwz		r17,  0x0008(r16)
-	lwz		r18,  0x000c(r16)
-	stw		r17,  0x0008(r18)
-	stw		r18,  0x000c(r17)
-	li		r17,  0x00
-	stw		r17,  0x0008(r16)
-	stw		r17,  0x000c(r16)
+	RemoveFromList		r16, scratch1=r17, scratch2=r18
 	mr		r8, r31
 	bl		TaskReadyAsPrev
 	bl		major_0x14af8
@@ -812,11 +780,7 @@ FuncExportedFromTasks	;	OUTSIDE REFERER
 	addi	r16, r1, -0xa34
 	addi	r17, r31,  0x08
 	stw		r16,  0x0000(r17)
-	stw		r16,  0x0008(r17)
-	lwz		r18,  0x000c(r16)
-	stw		r18,  0x000c(r17)
-	stw		r17,  0x0008(r18)
-	stw		r17,  0x000c(r16)
+	InsertAsPrev	r17, r16, scratch=r18
 	li		r8,  0x1c
 	bl		PoolAlloc_with_crset
 	lwz		r29,  0x0064(r31)
@@ -853,13 +817,7 @@ MPCall_58_0x158
 	mr.		r8, r28
 	bnel-	PoolFree
 	addi	r16, r31,  0x08
-	lwz		r17,  0x0008(r16)
-	lwz		r18,  0x000c(r16)
-	stw		r17,  0x0008(r18)
-	stw		r18,  0x000c(r17)
-	li		r17,  0x00
-	stw		r17,  0x0008(r16)
-	stw		r17,  0x000c(r16)
+	RemoveFromList		r16, scratch1=r17, scratch2=r18
 	b		MPCall_9_0x98
 
 MPCall_58_0x184

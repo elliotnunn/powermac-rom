@@ -169,13 +169,7 @@ CommonPIHPath_0x1d0
 
 CommonPIHPath_0x1dc
 	addi	r16, r31,  0x08
-	lwz		r17,  0x0008(r16)
-	lwz		r18,  0x000c(r16)
-	stw		r17,  0x0008(r18)
-	stw		r18,  0x000c(r17)
-	li		r17,  0x00
-	stw		r17,  0x0008(r16)
-	stw		r17,  0x000c(r16)
+	RemoveFromList		r16, scratch1=r17, scratch2=r18
 	lbz		r17,  0x0037(r31)
 	cmpwi	r17,  0x01
 	bne-	CommonPIHPath_0x210

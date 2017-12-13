@@ -68,13 +68,7 @@ MPCall_16_0x2c
 	lwz		r8,  0x0018(r31)
 	cmpw	r8, r30
 	beq-	MPCall_16_0x60
-	lwz		r16,  0x0008(r8)
-	lwz		r17,  0x000c(r8)
-	stw		r16,  0x0008(r17)
-	stw		r17,  0x000c(r16)
-	li		r16,  0x00
-	stw		r16,  0x0008(r8)
-	stw		r16,  0x000c(r8)
+	RemoveFromList		r8, scratch1=r16, scratch2=r17
 	bl		PoolFree
 	b		MPCall_16_0x2c
 
@@ -109,13 +103,7 @@ MPCall_16_0x80
 
 MPCall_16_0xb4
 	lwz		r16,  0x0008(r31)
-	lwz		r17,  0x0008(r16)
-	lwz		r18,  0x000c(r16)
-	stw		r17,  0x0008(r18)
-	stw		r18,  0x000c(r17)
-	li		r17,  0x00
-	stw		r17,  0x0008(r16)
-	stw		r17,  0x000c(r16)
+	RemoveFromList		r16, scratch1=r17, scratch2=r18
 	addi	r8, r16, -0x08
 	bl		TaskReadyAsPrev
 	bl		major_0x14af8
@@ -253,11 +241,7 @@ MPCall_17_0x6c
 major_0x0c8b4	;	OUTSIDE REFERER
 	addi	r17, r31,  0x10
 	stw		r17,  0x0000(r8)
-	stw		r17,  0x0008(r8)
-	lwz		r16,  0x000c(r17)
-	stw		r16,  0x000c(r8)
-	stw		r8,  0x0008(r16)
-	stw		r8,  0x000c(r17)
+	InsertAsPrev	r8, r17, scratch=r16
 	lwz		r18,  0x0030(r31)
 	addi	r18, r18,  0x01
 	stw		r18,  0x0030(r31)
@@ -280,13 +264,7 @@ major_0x0c8b4	;	OUTSIDE REFERER
 
 major_0x0c8b4_0x68
 	lwz		r16,  0x0008(r31)
-	lwz		r17,  0x0008(r16)
-	lwz		r18,  0x000c(r16)
-	stw		r17,  0x0008(r18)
-	stw		r18,  0x000c(r17)
-	li		r17,  0x00
-	stw		r17,  0x0008(r16)
-	stw		r17,  0x000c(r16)
+	RemoveFromList		r16, scratch1=r17, scratch2=r18
 	lwz		r18,  0x002c(r31)
 	addi	r18, r18, -0x01
 	stw		r18,  0x002c(r31)
@@ -325,13 +303,7 @@ MPCall_18	;	OUTSIDE REFERER
 	lwz		r5,  0x0014(r16)
 	lwz		r17,  0x0018(r16)
 	stw		r17,  0x0134(r6)
-	lwz		r17,  0x0008(r16)
-	lwz		r18,  0x000c(r16)
-	stw		r17,  0x0008(r18)
-	stw		r18,  0x000c(r17)
-	li		r17,  0x00
-	stw		r17,  0x0008(r16)
-	stw		r17,  0x000c(r16)
+	RemoveFromList		r16, scratch1=r17, scratch2=r18
 	lwz		r18,  0x0030(r31)
 	addi	r18, r18, -0x01
 	stw		r18,  0x0030(r31)
@@ -371,11 +343,7 @@ MPCall_18_0xc4
 	addi	r16, r31,  0x00
 	addi	r17, r19,  0x08
 	stw		r16,  0x0000(r17)
-	stw		r16,  0x0008(r17)
-	lwz		r18,  0x000c(r16)
-	stw		r18,  0x000c(r17)
-	stw		r17,  0x0008(r18)
-	stw		r17,  0x000c(r16)
+	InsertAsPrev	r17, r16, scratch=r18
 	lwz		r18,  0x002c(r31)
 	addi	r18, r18,  0x01
 	stw		r18,  0x002c(r31)
@@ -446,11 +414,7 @@ MPCall_20	;	OUTSIDE REFERER
 	bl		PoolAlloc_with_crset
 	mr.		r31, r8
 	beq+	major_0x0af60_0x20
-	lis		r16,  0x5345
-	stw		r31,  0x0008(r31)
-	ori		r16, r16,  0x4d41
-	stw		r31,  0x000c(r31)
-	stw		r16,  0x0004(r31)
+	InitList	r31, Semaphore.kSignature, scratch=r16
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
@@ -521,11 +485,7 @@ MPCall_23_0x68
 	addi	r16, r31,  0x00
 	addi	r17, r8,  0x08
 	stw		r16,  0x0000(r17)
-	stw		r16,  0x0008(r17)
-	lwz		r18,  0x000c(r16)
-	stw		r18,  0x000c(r17)
-	stw		r17,  0x0008(r18)
-	stw		r17,  0x000c(r16)
+	InsertAsPrev	r17, r16, scratch=r18
 	lwz		r18,  0x001c(r31)
 	addi	r18, r18,  0x01
 	stw		r18,  0x001c(r31)
@@ -628,13 +588,7 @@ major_0x0ccf4	;	OUTSIDE REFERER
 
 major_0x0ccf4_0x30
 	lwz		r16,  0x0008(r31)
-	lwz		r17,  0x0008(r16)
-	lwz		r18,  0x000c(r16)
-	stw		r17,  0x0008(r18)
-	stw		r18,  0x000c(r17)
-	li		r17,  0x00
-	stw		r17,  0x0008(r16)
-	stw		r17,  0x000c(r16)
+	RemoveFromList		r16, scratch1=r17, scratch2=r18
 	lwz		r18,  0x001c(r31)
 	addi	r18, r18, -0x01
 	stw		r18,  0x001c(r31)
@@ -696,13 +650,7 @@ MPCall_21_0x34
 
 MPCall_21_0x68
 	lwz		r16,  0x0008(r31)
-	lwz		r17,  0x0008(r16)
-	lwz		r18,  0x000c(r16)
-	stw		r17,  0x0008(r18)
-	stw		r18,  0x000c(r17)
-	li		r17,  0x00
-	stw		r17,  0x0008(r16)
-	stw		r17,  0x000c(r16)
+	RemoveFromList		r16, scratch1=r17, scratch2=r18
 	addi	r8, r16, -0x08
 	bl		TaskReadyAsPrev
 	bl		major_0x14af8
@@ -726,11 +674,7 @@ MPCall_25	;	OUTSIDE REFERER
 	bl		PoolAlloc_with_crset
 	mr.		r31, r8
 	beq+	major_0x0af60_0x20
-	lis		r16,  0x4352
-	stw		r31,  0x0008(r31)
-	ori		r16, r16,  0x474e
-	stw		r31,  0x000c(r31)
-	stw		r16,  0x0004(r31)
+	InitList	r31, CriticalRegion.kSignature, scratch=r16
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
@@ -834,11 +778,7 @@ MPCall_27_0xb4
 	addi	r18, r30,  0x08
 	ori		r16, r16,  0xffff
 	stw		r31,  0x0000(r18)
-	stw		r31,  0x0008(r18)
-	lwz		r19,  0x000c(r31)
-	stw		r19,  0x000c(r18)
-	stw		r18,  0x0008(r19)
-	stw		r18,  0x000c(r31)
+	InsertAsPrev	r18, r31, scratch=r19
 	lwz		r18,  0x0020(r31)
 	addi	r18, r18,  0x01
 	stw		r18,  0x0020(r31)
@@ -953,13 +893,7 @@ MPCall_28	;	OUTSIDE REFERER
 
 MPCall_28_0x94
 	lwz		r16,  0x0008(r31)
-	lwz		r17,  0x0008(r16)
-	lwz		r18,  0x000c(r16)
-	stw		r17,  0x0008(r18)
-	stw		r18,  0x000c(r17)
-	li		r17,  0x00
-	stw		r17,  0x0008(r16)
-	stw		r17,  0x000c(r16)
+	RemoveFromList		r16, scratch1=r17, scratch2=r18
 	lwz		r18,  0x0020(r31)
 	addi	r18, r18, -0x01
 	stw		r18,  0x0020(r31)
@@ -1013,13 +947,7 @@ MPCall_26_0x34
 
 MPCall_26_0x68
 	lwz		r16,  0x0008(r31)
-	lwz		r17,  0x0008(r16)
-	lwz		r18,  0x000c(r16)
-	stw		r17,  0x0008(r18)
-	stw		r18,  0x000c(r17)
-	li		r17,  0x00
-	stw		r17,  0x0008(r16)
-	stw		r17,  0x000c(r16)
+	RemoveFromList		r16, scratch1=r17, scratch2=r18
 	addi	r8, r16, -0x08
 	bl		TaskReadyAsPrev
 	bl		major_0x14af8
@@ -1139,13 +1067,7 @@ MPDeleteEvent_0x34
 
 MPDeleteEvent_0x68
 	lwz		r16,  0x0008(r31)
-	lwz		r17,  0x0008(r16)
-	lwz		r18,  0x000c(r16)
-	stw		r17,  0x0008(r18)
-	stw		r18,  0x000c(r17)
-	li		r17,  0x00
-	stw		r17,  0x0008(r16)
-	stw		r17,  0x000c(r16)
+	RemoveFromList		r16, scratch1=r17, scratch2=r18
 	addi	r8, r16, -0x08
 	bl		TaskReadyAsPrev
 	bl		major_0x14af8
@@ -1215,13 +1137,7 @@ major_0x0d35c	;	OUTSIDE REFERER
 
 major_0x0d35c_0x4c
 	lwz		r16,  0x0008(r31)
-	lwz		r17,  0x0008(r16)
-	lwz		r18,  0x000c(r16)
-	stw		r17,  0x0008(r18)
-	stw		r18,  0x000c(r17)
-	li		r17,  0x00
-	stw		r17,  0x0008(r16)
-	stw		r17,  0x000c(r16)
+	RemoveFromList		r16, scratch1=r17, scratch2=r18
 	lwz		r18,  0x001c(r31)
 	addi	r18, r18, -0x01
 	stw		r18,  0x001c(r31)
@@ -1288,13 +1204,7 @@ major_0x0d35c_0x118
 	cmpwi	r19,  0x00
 	addi	r16, r26,  0x08
 	bne-	major_0x0d35c_0x198
-	lwz		r17,  0x0008(r16)
-	lwz		r18,  0x000c(r16)
-	stw		r17,  0x0008(r18)
-	stw		r18,  0x000c(r17)
-	li		r17,  0x00
-	stw		r17,  0x0008(r16)
-	stw		r17,  0x000c(r16)
+	RemoveFromList		r16, scratch1=r17, scratch2=r18
 	lbz		r17,  0x0037(r26)
 	cmpwi	r17,  0x01
 	bne-	major_0x0d35c_0x17c
@@ -2112,13 +2022,7 @@ major_0x0dce8	;	OUTSIDE REFERER
 	cmpwi	r17,  0x00
 	addi	r16, r19,  0x08
 	bne-	major_0x0dce8_0x70
-	lwz		r17,  0x0008(r16)
-	lwz		r18,  0x000c(r16)
-	stw		r17,  0x0008(r18)
-	stw		r18,  0x000c(r17)
-	li		r17,  0x00
-	stw		r17,  0x0008(r16)
-	stw		r17,  0x000c(r16)
+	RemoveFromList		r16, scratch1=r17, scratch2=r18
 	lbz		r17,  0x0037(r19)
 	cmpwi	r17,  0x01
 	bne-	major_0x0dce8_0x60

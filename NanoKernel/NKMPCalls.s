@@ -1509,11 +1509,7 @@ KCCreateCpuStruct_0x68
 	stw		r17,  0x0020(r30)
 	addi	r16, r31,  0x08
 	stw		r30,  0x0000(r16)
-	stw		r30,  0x0008(r16)
-	lwz		r17,  0x000c(r30)
-	stw		r17,  0x000c(r16)
-	stw		r16,  0x0008(r17)
-	stw		r16,  0x000c(r30)
+	InsertAsPrev	r16, r30, scratch=r17
 
 	lisori	r8, 11
 	lisori	r8, 6
@@ -1600,13 +1596,7 @@ MPCall_43	;	OUTSIDE REFERER
 	lwz		r18,  0x0020(r17)
 	addi	r18, r18, -0x01
 	stw		r18,  0x0020(r17)
-	lwz		r17,  0x0008(r16)
-	lwz		r18,  0x000c(r16)
-	stw		r17,  0x0008(r18)
-	stw		r18,  0x000c(r17)
-	li		r17,  0x00
-	stw		r17,  0x0008(r16)
-	stw		r17,  0x000c(r16)
+	RemoveFromList		r16, scratch1=r17, scratch2=r18
 	mr		r8, r31
 	bl		PoolFree
 	mr		r8, r3

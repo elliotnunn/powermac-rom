@@ -195,13 +195,7 @@ TimerDispatch_0xcc
 	bgt-	cr1, TimerDispatch_0x188
 
 TimerDispatch_0xec
-	lwz		r19,  0x0008(r30)
-	lwz		r20,  0x000c(r30)
-	stw		r19,  0x0008(r20)
-	stw		r20,  0x000c(r19)
-	li		r19,  0x00
-	stw		r19,  0x0008(r30)
-	stw		r19,  0x000c(r30)
+	RemoveFromList		r30, scratch1=r19, scratch2=r20
 	lwz		r19,  0x064c(r1)
 	lbz		r20,  0x0014(r30)
 	rlwimi	r19, r20,  2, 23, 29
@@ -376,13 +370,7 @@ major_0x13120	;	OUTSIDE REFERER
 	stw		r16,  0x011c(r19)
 	bne-	major_0x13120_0x64
 	addi	r16, r8,  0x08
-	lwz		r17,  0x0008(r16)
-	lwz		r19,  0x000c(r16)
-	stw		r17,  0x0008(r19)
-	stw		r19,  0x000c(r17)
-	li		r17,  0x00
-	stw		r17,  0x0008(r16)
-	stw		r17,  0x000c(r16)
+	RemoveFromList		r16, scratch1=r17, scratch2=r19
 	li		r17,  0x01
 	stb		r17,  0x0019(r8)
 	bl		TaskReadyAsPrev
@@ -454,13 +442,7 @@ major_0x1318c_0x8c
 major_0x1318c_0x98
 	lwz		r8,  0x0018(r30)
 	addi	r16, r8,  0x08
-	lwz		r17,  0x0008(r16)
-	lwz		r18,  0x000c(r16)
-	stw		r17,  0x0008(r18)
-	stw		r18,  0x000c(r17)
-	li		r17,  0x00
-	stw		r17,  0x0008(r16)
-	stw		r17,  0x000c(r16)
+	RemoveFromList		r16, scratch1=r17, scratch2=r18
 	bl		TaskReadyAsPrev
 
 
@@ -920,13 +902,7 @@ major_0x136c8	;	OUTSIDE REFERER
 	cmpwi	r16,  0x00
 	lwz		r18, -0x0a7c(r1)
 	beq+	Local_Panic
-	lwz		r16,  0x0008(r8)
-	lwz		r17,  0x000c(r8)
-	stw		r16,  0x0008(r17)
-	stw		r17,  0x000c(r16)
-	li		r16,  0x00
-	stw		r16,  0x0008(r8)
-	stw		r16,  0x000c(r8)
+	RemoveFromList		r8, scratch1=r16, scratch2=r17
 	li		r16,  0x00
 	cmpw	r18, r8
 	stb		r16,  0x0017(r8)

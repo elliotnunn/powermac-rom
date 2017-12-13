@@ -533,11 +533,7 @@ major_0x02ccc_0x3d4
 	addi	r17, r31,  0x08
 	addi	r18, r31, 160
 	stw		r18,  0x0000(r17)
-	stw		r18,  0x0008(r17)
-	lwz		r19,  0x000c(r18)
-	stw		r19,  0x000c(r17)
-	stw		r17,  0x0008(r19)
-	stw		r17,  0x000c(r18)
+	InsertAsPrev	r17, r18, scratch=r19
 	li		r17,  0x01
 	ori		r16, r16,  0x2000
 	stw		r17,  0x00b0(r31)
@@ -563,11 +559,7 @@ major_0x02ccc_0x430
 	addi	r17, r31,  0x08
 	addi	r18, r31, 160
 	stw		r18,  0x0000(r17)
-	stw		r18,  0x0008(r17)
-	lwz		r19,  0x000c(r18)
-	stw		r19,  0x000c(r17)
-	stw		r17,  0x0008(r19)
-	stw		r17,  0x000c(r18)
+	InsertAsPrev	r17, r18, scratch=r19
 	li		r17,  0x01
 	stw		r17,  0x00b0(r31)
 	lwz		r27,  0x0000(r29)
