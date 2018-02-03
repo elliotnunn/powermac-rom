@@ -591,7 +591,7 @@ PageAttributeInit		ds.l	1	; 688 ; defaults for page table entries (see ConfigInf
 						ds.l	1	; 69c
 PTEGMask				ds.l	1	; 6a0
 HTABORG					ds.l	1	; 6a4
-UsablePhysicalPages		ds.l	1	; 6a8 ; does take MacOS into account
+PrimaryAddrRangePages	ds.l	1	; 6a8 ; set at init and changed by VMInit
 TotalPhysicalPages		ds.l	1	; 6ac ; does not take into acct maximum MacOS memory
 FlatPageListPtr			ds.l	1	; 6b0
 VMMaxVirtualPages		ds.l	1	; 6b4 ; size of main contiguous segment?
@@ -600,8 +600,8 @@ CpuSpecificByte1		ds.b	1	; 6b8 ; seems to contain flags (set from PVR & tbl by I
 CpuSpecificByte2		ds.b	1	; 6b9 ; probably not flags (set in same way)
 						ds.b	1	; 6ba
 						ds.b	1	; 6bb
-FlatPageListSegPtrs		ds.l	16	; 6bc
-						ds.l	1	; 6fc
+						ds.l	1	; 6bc
+FlatPageListSegPtrs		ds.l	16	; 6c0
 
 StartOfPanicArea					; PROTECTED BY THUD LOCK
 ThudSavedR0				ds.l	1	; 700

@@ -93,7 +93,7 @@ VMDispatchTableEnd
 @noalt
 
 	lwzx	r8, r8, r7
-	lwz		r9, KDP.UsablePhysicalPages(r1)
+	lwz		r9, KDP.PrimaryAddrRangePages(r1)
 	add		r8, r8, r7
 	mtlr	r8
 	bltlr-	
@@ -230,7 +230,7 @@ VMFinalInit	;	OUTSIDE REFERER
 
 @loop
 	srwi	r4, r31, 12
-	lwz		r9, KDP.UsablePhysicalPages(r1)
+	lwz		r9, KDP.PrimaryAddrRangePages(r1)
 	bl		VeryPopularFunction
 	bge-	cr4, @skip
 	bltl-	cr5, VMDoSomethingWithTLB
@@ -260,17 +260,21 @@ VMInit	;	OUTSIDE REFERER
 	mr		r8, r5
 	bl		printw
 	_log	'^n'
-	lwz		r7,  KDP.FlatPageListPtr(r1)
-	lwz		r8,  0x06c0(r1)
+
+	lwz		r7, KDP.FlatPageListPtr(r1)			; check that zero seg isn't empty
+	lwz		r8, KDP.FlatPageListSegPtrs + 0(r1)
 	cmpw	r7, r8
 	bne+	VMReturn1
-	stw		r4,  0x06a8(r1)
-	stw		r5,  KDP.FlatPageListPtr(r1)
+
+	stw		r4, KDP.PrimaryAddrRangePages(r1)	; resize PAR
+
+	stw		r5, KDP.FlatPageListPtr(r1)			; where did NK find this???
+
 	lwz		r6,  0x05e8(r1)
 	li		r5,  0x00
 	li		r4,  0x00
 
-VMInit_0x60
+VMInit_BigLoop
 	lwz		r8,  0x0000(r6)
 	addi	r6, r6,  0x08
 	lhz		r3,  0x0000(r8)
@@ -297,7 +301,7 @@ VMInit_0xa8
 	beql+	Local_Panic
 	andi.	r3, r16,  0x800
 	beq-	VMInit_0x100
-	lwz		r14,  0x06a4(r1)
+	lwz		r14, KDP.HTABORG(r1)
 	rlwinm	r3, r16, 23,  9, 28
 	lwzux	r8, r14, r3
 	lwz		r9,  0x0004(r14)
@@ -321,35 +325,46 @@ VMInit_0x100
 	bne+	VMInit_0xa8
 
 VMInit_0x110
-	lwz		r7,  0x06b4(r1)
+	lwz		r7, KDP.VMMaxVirtualPages(r1)
 	addi	r5, r5,  0x01
 	addi	r7, r7, -0x01
 	srwi	r7, r7, 16
 	cmpw	r5, r7
-	ble+	VMInit_0x60
-	lwz		r7,  0x06ac(r1)
+	ble+	VMInit_BigLoop
+
+
+
+	lwz		r7, KDP.TotalPhysicalPages(r1)
 	cmpw	r4, r7
 	bnel+	Local_Panic
 	lwz		r5,  KDP.FlatPageListPtr(r1)
-	lwz		r4,  0x06a8(r1)
+	lwz		r4, KDP.PrimaryAddrRangePages(r1)
 	andi.	r7, r5,  0xfff
+
 	li		r3,  0x02
-	bne-	VMInit_0x374
-	lwz		r7,  0x06b4(r1)
+	bne-	VMInit_Fail
+
+	lwz		r7, KDP.VMMaxVirtualPages(r1)
 	cmplw	r7, r4
+
 	li		r3,  0x03
-	blt-	VMInit_0x374
+	blt-	VMInit_Fail
+
 	addi	r7, r4,  0x3ff
 	srwi	r6, r7, 10
 	srwi	r8, r5, 12
 	add		r8, r8, r6
-	lwz		r9,  0x06ac(r1)
+	lwz		r9, KDP.TotalPhysicalPages(r1)
 	cmplw	r8, r9
+
 	li		r3,  0x04
-	bgt-	VMInit_0x374
+	bgt-	VMInit_Fail
+
 	cmplw	r4, r9
+
 	li		r3,  0x05
-	blt-	VMInit_0x374
+	blt-	VMInit_Fail
+
 	srwi	r7, r5, 12
 	bl		major_0x09c9c
 	stw		r9,  KDP.FlatPageListPtr(r1)
@@ -362,9 +377,11 @@ VMInit_0x110
 	srwi	r9, r9, 12
 	addi	r9, r9,  0x01
 	cmpw	r9, r6
+
 	li		r3,  0x06
-	bne-	VMInit_0x374
-	stw		r4,  0x06a8(r1)
+	bne-	VMInit_Fail
+
+	stw		r4, KDP.PrimaryAddrRangePages(r1)
 	lwz		r8, -0x0020(r1)
 	slwi	r7, r4, 12
 	stw		r7,  0x0dc8(r8)
@@ -376,7 +393,7 @@ VMInit_0x1d4
 	cmpwi	r7,  0x00
 	stwx	r8, r15, r7
 	bne+	VMInit_0x1d4
-	lwz		r7,  0x06ac(r1)
+	lwz		r7, KDP.TotalPhysicalPages(r1)
 	slwi	r6, r7,  2
 
 VMInit_0x1ec
@@ -390,7 +407,7 @@ VMInit_0x1ec
 	lwz		r15,  KDP.FlatPageListPtr(r1)
 	srwi	r7, r5, 10
 	add		r15, r15, r7
-	lwz		r5,  0x06a8(r1)
+	lwz		r5, KDP.PrimaryAddrRangePages(r1)
 
 VMInit_0x218
 	lwz		r16,  0x0000(r15)
@@ -402,7 +419,7 @@ VMInit_0x218
 	cmpwi	r5,  0x00
 	addi	r15, r15,  0x04
 	bgt+	VMInit_0x218
-	lwz		r9,  0x06b4(r1)
+	lwz		r9, KDP.VMMaxVirtualPages(r1)
 	lwz		r6,  0x05e8(r1)
 	addi	r9, r9, -0x01
 	li		r8,  0xa00
@@ -421,7 +438,7 @@ VMInit_0x250
 	sth		r9,  0x0002(r3)
 	sth		r9,  0x000a(r3)
 	lwz		r6,  0x05e8(r1)
-	lwz		r9,  0x06a8(r1)
+	lwz		r9, KDP.PrimaryAddrRangePages(r1)
 	lwz		r15,  KDP.FlatPageListPtr(r1)
 
 VMInit_0x288
@@ -441,48 +458,53 @@ VMInit_0x29c
 	addis	r15, r15,  0x04
 	addi	r6, r6,  0x08
 	bne+	VMInit_0x288
+
 	mfsprg	r9, 0
-	lwz		r6, -0x0014(r9)
 
-;	r6 = ewa
-	bl		Save_r14_r31
-;	r8 = sprg0 (not used by me)
+	lwz		r6, EWA.PA_ContextBlock(r9)
+	bl		Save_r14_r31 ; need some registers
 
-	lwz		r8, -0x001c(r9)
-	li		r9,  0x00
-	bl		FindAreaAbove
-	lwz		r16,  0x0024(r8)
-	cmpwi	r16,  0x00
-	bne+	Local_Panic
-	li		r16,  0x00
-	stw		r16,  0x003c(r8)
-	lwz		r16,  KDP.FlatPageListPtr(r1)
-	stw		r16,  0x0040(r8)
-	lwz		r16,  0x06a8(r1)
+	lwz		r8, EWA.PA_CurAddressSpace(r9)
+	li		r9, 0
+	bl		FindAreaAbove ; find the PAR
+
+	lwz		r16, Area.LogicalBase(r8)
+	cmpwi	r16, 0
+	bne+	Local_Panic ; better be at address 0
+
+	li		r16, 0
+	stw		r16, Area.FaultCtrArrayPtr(r8)
+
+	lwz		r16, KDP.FlatPageListPtr(r1)
+	stw		r16, Area.PageMapArrayPtr(r8)
+
+	lwz		r16, KDP.PrimaryAddrRangePages(r1)
 	slwi	r16, r16, 12
-	stw		r16,  0x002c(r8)
-	addi	r16, r16, -0x01
-	stw		r16,  0x0028(r8)
+	stw		r16, Area.Length(r8)
+	subi	r16, r16, 1
+	stw		r16, Area.LogicalEnd(r8)
+
 	mr		r17, r8
 	_log	'Adjusting area '
-	lwz		r8,  0x0000(r17)
+	lwz		r8, Area.ID(r17)
 	mr		r8, r8
 	bl		printw
 	_log	'to size '
-	lwz		r8,  0x002c(r17)
+	lwz		r8, Area.Length(r17)
 	mr		r8, r8
 	bl		printw
 	_log	'^n'
 
-;	r6 = ewa
 	bl		Restore_r14_r31
+
 	b		VMReturn0
 
-VMInit_0x374
-	lwz		r7,  0x06ac(r1)
-	lwz		r8,  0x06c0(r1)
-	stw		r7,  0x06a8(r1)
-	stw		r8,  KDP.FlatPageListPtr(r1)
+VMInit_Fail
+	lwz		r7, KDP.TotalPhysicalPages(r1)
+	lwz		r8, KDP.FlatPageListSegPtrs + 0(r1)
+	stw		r7, KDP.PrimaryAddrRangePages(r1)
+	stw		r8, KDP.FlatPageListPtr(r1)
+
 	b		VMReturn
 
 
@@ -503,7 +525,7 @@ VMExchangePages	;	OUTSIDE REFERER
 	mr		r6, r15
 	mr		r4, r5
 	mr		r5, r16
-	lwz		r9,  0x06a8(r1)
+	lwz		r9, KDP.PrimaryAddrRangePages(r1)
 	bl		VeryPopularFunction
 	bge+	cr4, VMReturnMinus1
 	bgt+	cr5, VMReturnMinus1
@@ -553,7 +575,7 @@ VMGetPhysicalPage	;	OUTSIDE REFERER
 VMGetPhysicalPage_0x28
 ;	r6 = ewa
 	bl		Restore_r14_r31
-	lwz		r9,  0x06a8(r1)
+	lwz		r9, KDP.PrimaryAddrRangePages(r1)
 
 VMGetPhysicalPage_0x30
 	bl		VeryPopularFunction
@@ -596,7 +618,7 @@ getPTEntryGivenPage_0x3c
 getPTEntryGivenPage_0x48
 ;	r6 = ewa
 	bl		Restore_r14_r31
-	lwz		r9,  0x06a8(r1)
+	lwz		r9, KDP.PrimaryAddrRangePages(r1)
 
 getPTEntryGivenPage_0x50
 	bl		VeryPopularFunction
@@ -721,7 +743,7 @@ VMIsResident	;	OUTSIDE REFERER
 VMIsResident_0x28
 ;	r6 = ewa
 	bl		Restore_r14_r31
-	lwz		r9,  0x06a8(r1)
+	lwz		r9, KDP.PrimaryAddrRangePages(r1)
 
 VMIsResident_0x30
 	bl		VeryPopularFunction
@@ -754,7 +776,7 @@ VMIsUnmodified	;	OUTSIDE REFERER
 VMLRU	;	OUTSIDE REFERER
 	rlwinm.	r9, r9,  2,  0, 29
 	lwz		r15,  KDP.FlatPageListPtr(r1)
-	lwz		r14,  0x06a4(r1)
+	lwz		r14, KDP.HTABORG(r1)
 	add		r15, r15, r9
 	srwi	r4, r9,  2
 	li		r5,  0x100
@@ -834,7 +856,7 @@ VMMakePageCacheable_0x4
 	bgel-	cr5, VMSecondLastExportedFunc
 	rlwinm	r16, r16,  0, 27, 24
 	rlwinm	r9, r9,  0, 27, 24
-	lwz		r7,  0x0688(r1)
+	lwz		r7, KDP.PageAttributeInit(r1)
 	rlwimi	r9, r7,  0, 27, 28
 	ori		r16, r16,  0x20
 	bl		VMDoSomeIO
@@ -909,7 +931,7 @@ VMMakePageWriteThrough_0x4
 	bgel-	cr5, VMSecondLastExportedFunc
 	rlwinm	r16, r16,  0, 27, 24
 	rlwinm	r9, r9,  0, 27, 24
-	lwz		r7,  0x0688(r1)
+	lwz		r7, KDP.PageAttributeInit(r1)
 	rlwimi	r9, r7,  0, 27, 28
 	ori		r9, r9,  0x40
 	bl		VMDoSomeIO
@@ -974,8 +996,8 @@ VMMakePageWriteThrough_0xec
 ;	VMMakePageNonCacheable
 
 PageSetCommon	;	OUTSIDE REFERER
-	lwz		r15,  0x06a0(r1)
-	lwz		r14,  0x06a4(r1)
+	lwz		r15, KDP.PTEGMask(r1)
+	lwz		r14, KDP.HTABORG(r1)
 	slwi	r6, r4, 12
 	mfsrin	r6, r6
 	rlwinm	r8, r6,  7,  0, 20
@@ -1012,8 +1034,8 @@ PageSetCommon_0x2c
 	beq-	cr3, PageSetCommon_0xc0
 	beq-	cr4, PageSetCommon_0xbc
 	crnot	2, 2
-	lwz		r15,  0x06a0(r1)
-	lwz		r14,  0x06a4(r1)
+	lwz		r15, KDP.PTEGMask(r1)
+	lwz		r14, KDP.HTABORG(r1)
 	slwi	r6, r4, 12
 	mfsrin	r6, r6
 	xor		r6, r6, r4
@@ -1059,7 +1081,7 @@ VMMakePageNonCacheable_0x4
 	bltl-	cr5, VMDoSomethingWithTLB
 	bgel-	cr5, VMSecondLastExportedFunc
 	rlwinm	r9, r9,  0, 27, 24
-	lwz		r7,  0x0688(r1)
+	lwz		r7, KDP.PageAttributeInit(r1)
 	rlwimi	r9, r7,  0, 27, 28
 	ori		r16, r16,  0x60
 	ori		r9, r9,  0x20
@@ -1175,7 +1197,7 @@ VMMarkBacking_0x30
 VMMarkBacking_0x50
 ;	r6 = ewa
 	bl		Restore_r14_r31
-	lwz		r9,  0x06a8(r1)
+	lwz		r9, KDP.PrimaryAddrRangePages(r1)
 
 VMMarkBacking_0x58
 	bl		VeryPopularFunction
@@ -1278,7 +1300,7 @@ VMMarkResident	;	OUTSIDE REFERER
 VMMarkResident_0x50
 ;	r6 = ewa
 	bl		Restore_r14_r31
-	lwz		r9,  0x06a8(r1)
+	lwz		r9, KDP.PrimaryAddrRangePages(r1)
 
 VMMarkResident_0x58
 	bl		VeryPopularFunction
@@ -1354,7 +1376,7 @@ setPTEntryGivenPage_0x34
 setPTEntryGivenPage_0x5c
 ;	r6 = ewa
 	bl		Restore_r14_r31
-	lwz		r9,  0x06a8(r1)
+	lwz		r9, KDP.PrimaryAddrRangePages(r1)
 
 setPTEntryGivenPage_0x64
 	mr		r6, r4
@@ -1418,13 +1440,13 @@ VMShouldClean_0x34
 
 VMAllocateMemory	;	OUTSIDE REFERER
 	lwz		r7,  KDP.FlatPageListPtr(r1)
-	lwz		r8,  0x06c0(r1)
+	lwz		r8, KDP.FlatPageListSegPtrs + 0(r1)
 	cmpwi	cr6, r5,  0x00
 	cmpw	cr7, r7, r8
 	or		r7, r4, r6
 	rlwinm.	r7, r7,  0,  0, 11
 	ble+	cr6, VMReturnMinus1
-	lwz		r9,  0x06a8(r1)
+	lwz		r9, KDP.PrimaryAddrRangePages(r1)
 	bne+	cr7, VMReturnMinus1
 	mr		r7, r4
 	bne+	VMReturnMinus1
@@ -1446,7 +1468,7 @@ VMAllocateMemory	;	OUTSIDE REFERER
 	b		VMAllocateMemory_0xc0
 
 VMAllocateMemory_0x6c
-	lwz		r9,  0x06a8(r1)
+	lwz		r9, KDP.PrimaryAddrRangePages(r1)
 	addi	r5, r5, -0x01
 
 VMAllocateMemory_0x74
@@ -1454,7 +1476,7 @@ VMAllocateMemory_0x74
 	bl		VeryPopularFunction
 	bltl-	cr5, VMDoSomethingWithTLB
 	bltl-	cr5, major_0x09b40
-	lwz		r9,  0x06a8(r1)
+	lwz		r9, KDP.PrimaryAddrRangePages(r1)
 	subf	r8, r4, r9
 	cmplw	cr7, r5, r8
 	and.	r8, r16, r6
@@ -1472,7 +1494,7 @@ VMAllocateMemory_0x74
 
 VMAllocateMemory_0xc0
 	slwi	r4, r7, 12
-	lwz		r9,  0x06b4(r1)
+	lwz		r9, KDP.VMMaxVirtualPages(r1)
 	cmplw	cr7, r7, r9
 	rlwinm.	r9, r7,  0,  0, 11
 	blt+	cr7, VMReturnMinus1
@@ -1518,19 +1540,19 @@ VMAllocateMemory_0xf4
 	b		VMAllocateMemory_0x1a4
 
 VMAllocateMemory_0x164
-	lwz		r7,  0x06ac(r1)
+	lwz		r7, KDP.TotalPhysicalPages(r1)
 	subf	r7, r5, r7
-	stw		r7,  0x06ac(r1)
-	stw		r7,  0x06a8(r1)
+	stw		r7, KDP.TotalPhysicalPages(r1)
+	stw		r7, KDP.PrimaryAddrRangePages(r1)
 	lwz		r5, -0x0020(r1)
 	slwi	r8, r7, 12
 	stw		r8,  0x0dc4(r5)
 	stw		r8,  0x0dc8(r5)
 	mr		r5, r14
-	lwz		r7,  0x06b4(r1)
+	lwz		r7, KDP.VMMaxVirtualPages(r1)
 	li		r8,  0xa00
 	bl		VMAllocateMemory_0x33c
-	lwz		r7,  0x06ac(r1)
+	lwz		r7, KDP.TotalPhysicalPages(r1)
 	li		r8,  0xc00
 	bl		VMAllocateMemory_0x33c
 	mr		r14, r5
@@ -1598,7 +1620,7 @@ VMAllocateMemory_0x1a4
 	lwz		r16,  0x0024(r8)
 	cmpwi	r16,  0x00
 	bne+	Local_Panic
-	lwz		r16,  0x06a8(r1)
+	lwz		r16, KDP.PrimaryAddrRangePages(r1)
 	lwz		r17,  0x002c(r8)
 	slwi	r16, r16, 12
 	cmpw	r17, r16
@@ -1614,7 +1636,7 @@ VMAllocateMemory_0x2e0
 
 VMAllocateMemory_0x2e8
 	lwz		r16,  0x0000(r15)
-	lwz		r7,  0x06ac(r1)
+	lwz		r7, KDP.TotalPhysicalPages(r1)
 	lwz		r8,  KDP.FlatPageListPtr(r1)
 	slwi	r7, r7,  2
 	add		r7, r7, r8
@@ -1693,7 +1715,7 @@ VeryPopularFunction	;	OUTSIDE REFERER
 
 VeryPopularFunction_0x10
 	lwzux	r16, r15, r8
-	lwz		r14,  0x06a4(r1)
+	lwz		r14, KDP.HTABORG(r1)
 	mtcrf	 0x07, r16
 	rlwinm	r8, r16, 23,  9, 28
 	rlwinm	r9, r16,  0,  0, 19
@@ -1706,7 +1728,7 @@ VeryPopularFunction_0x10
 	bl		Local_Panic
 
 VeryPopularFunction_0x40
-	lwz		r9,  0x06b4(r1)
+	lwz		r9, KDP.VMMaxVirtualPages(r1)
 	cmplw	cr4, r4, r9
 	rlwinm.	r9, r4,  0,  0, 11
 	blt+	cr4, VMReturnMinus1
@@ -1864,7 +1886,7 @@ major_0x09b40	;	OUTSIDE REFERER
 	b		VMDoSomeIO
 
 VMSecondLastExportedFunc	;	OUTSIDE REFERER
-	lwz		r8,  0x06a0(r1)
+	lwz		r8, KDP.PTEGMask(r1)
 
 
 
@@ -1875,7 +1897,7 @@ VMSecondLastExportedFunc	;	OUTSIDE REFERER
 
 
 VMLastExportedFunc
-	lwz		r14,  0x06a4(r1)
+	lwz		r14, KDP.HTABORG(r1)
 	slwi	r9, r4, 12
 	mfsrin	r6, r9
 	xor		r9, r6, r4
@@ -1921,7 +1943,7 @@ VMLastExportedFunc_0x87
 	addi	r9, r9,  0x01
 	stw		r9,  0x0e94(r1)
 	rlwimi	r8, r4, 22, 26, 31
-	lwz		r9,  0x0688(r1)
+	lwz		r9, KDP.PageAttributeInit(r1)
 	oris	r8, r8,  0x8000
 	rlwimi	r9, r16,  0,  0, 19
 	ori		r9, r9,  0x100
@@ -1931,7 +1953,7 @@ VMLastExportedFunc_0x87
 	rlwimi	r9, r16,  1, 25, 25
 	xori	r9, r9,  0x40
 	rlwimi	r9, r16, 30, 31, 31
-	lwz		r7,  0x06a4(r1)
+	lwz		r7, KDP.HTABORG(r1)
 	ori		r16, r16,  0x801
 	subf	r7, r7, r14
 	rlwimi	r16, r7,  9,  0, 19
@@ -1954,7 +1976,7 @@ VMLastExportedFunc_0xd7
 	mr		r31, r5
 	mr		r28, r16
 	mr		r26, r14
-	lwz		r9,  0x06a8(r1)
+	lwz		r9, KDP.PrimaryAddrRangePages(r1)
 	bl		VeryPopularFunction
 	mtlr	r6
 	b		VMDoSomethingWithTLB
@@ -1968,7 +1990,7 @@ VMLastExportedFunc_0xd7
 
 major_0x09c9c	;	OUTSIDE REFERER
 	addi	r8, r1,  0x6c0
-	lwz		r9,  0x06ac(r1)
+	lwz		r9, KDP.TotalPhysicalPages(r1)
 	rlwimi	r8, r7, 18, 26, 29
 	cmplw	r7, r9
 	lwz		r8,  0x0000(r8)

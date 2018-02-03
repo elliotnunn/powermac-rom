@@ -1772,9 +1772,9 @@ ReconcileMemory
 
 	;	The above, divided by 4096
 	srwi	r19, r19, 12
-	stw		r19, KDP.UsablePhysicalPages(r1)
+	stw		r19, KDP.PrimaryAddrRangePages(r1)
 
-	addi	r29, r1, KDP.FlatPageListSegPtrs
+	addi	r29, r1, KDP.FlatPageListSegPtrs - 4
 	addi	r19, r1, KDP.SegMaps - 8
 
 
@@ -1802,7 +1802,7 @@ ReconcileMemory
 	;	Number of pages in that last segment
 	sth		r22, 0x0002(r8)
 
-	lwz		r17, KDP.UsablePhysicalPages(r1)
+	lwz		r17, KDP.PrimaryAddrRangePages(r1)
 	lwz		r18, KDP.TotalPhysicalPages(r1)
 	stw		r17, KDP.TotalPhysicalPages(r1)
 
