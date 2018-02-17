@@ -327,7 +327,7 @@ VMDispatchCountTblPtr	ds.l	1			; 128, kdp+ee8
 						ds.l	1
 						ds.l	1
 MPDispatchCountTblPtr	ds.l	1			; 134, kdp+ef4 ; ???????
-AddrSpcSetCtr			ds.l	1			; 138, kdp+ef8 ; incremented by SetAddrSpcRegisters
+AddrSpcSetCtr			ds.l	1			; 138, kdp+ef8 ; incremented by SetSpaceSRsAndBATs
 IDCtr					ds.l	1			; 13c, kdp+efc
 
 						org		0x160

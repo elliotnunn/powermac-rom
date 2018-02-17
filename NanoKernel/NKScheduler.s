@@ -3,19 +3,33 @@ Local_Panic		set		*
 
 
 
-;	Called by setup only
-;	Each queue has a 64-bit time value (measured in implementation-dependent ticks).
-;	Critical queue has ~1ms, other queues increase this by 8x.
+#### ##    ## #### ######## ########  ########  ##    ##  #######   ######  
+ ##  ###   ##  ##     ##    ##     ## ##     ##  ##  ##  ##     ## ##    ## 
+ ##  ####  ##  ##     ##    ##     ## ##     ##   ####   ##     ## ##       
+ ##  ## ## ##  ##     ##    ########  ##     ##    ##    ##     ##  ######  
+ ##  ##  ####  ##     ##    ##   ##   ##     ##    ##    ##  ## ##       ## 
+ ##  ##   ###  ##     ##    ##    ##  ##     ##    ##    ##    ##  ##    ## 
+#### ##    ## ####    ##    ##     ## ########     ##     ##### ##  ######  
+
+;	Create the queues that hold unblocked tasks ready to be run.
+
+;	There are four ready queues (RDYQs), all in the PSA:
+;	1. critical
+;	2. latency protection (newly unblocked tasks)
+;	3. nominal
+;	4. idle
+
+;	Each one has a "time cake" that gets divided among its tasks.
+;	For critical it is ~1ms, successively multiplying by 8.
 
 InitRDYQs
 
 	li		r16, 0
 	stw		r16, KDP.NanoKernelInfo + NKNanoKernelInfo.TaskCount(r1)
 
-
-	;	Get a time doubleword approximating 1ms (for critical priority)
 	mflr	r20
 
+	;	Get a time doubleword approximating 1ms (for critical priority)
 	li		r8, -1042			; negative args are in usec
 	bl		TimebaseTicksPerPeriod
 	mr		r16, r8				; hi
@@ -23,41 +37,36 @@ InitRDYQs
 
 	mtlr	r20
 
-
-	;	Zero out the KDP priority flags (a full value would be 0xf0000000)
+	;	These priority flags (top 4 bits) denote the state of each queue
 	li		r23, 0
 	stw		r23, PSA.PriorityFlags(r1)
+
+
+	;	Populate one RDYQ for each of the four task priorities
 	addi	r9, r1, PSA.ReadyQueues
 
-
-
-;	Populate one RDYQ for each of the four task priorities
-
+	;	r23 = index of queue, r16/r17 = time cake
 @loop
+
+	;	Empty linked list
 	lisori	r8, ReadyQueue.kSignature
 	stw		r8, LLL.Signature(r9)
-
 	stw		r9, LLL.Next(r9)
 	stw		r9, LLL.Prev(r9)
 
-
-	;	Set one word in the structure in the format of KDP PriorityFlags,
-	;	with the bit SET that corresponds with this queue
+	;	... with a priority flag in its freeform field!
 	lis		r8, 0x8000 ; ...0000
 	srw		r8, r8, r23
 	stw		r8, LLL.Freeform(r9)
 
-
 	;	Zero some shit
 	li		r8, 0
-	stw		r8, ReadyQueue.Counter(r9)		; incremented by TaskReadyAsNext
+	stw		r8, ReadyQueue.Counter(r9)		; incremented by TaskReadyAsPrev/Next
 	stw		r8, ReadyQueue.TotalWeight(r9)	
 
-
-	;	Save the doubleword (1ms, 8ms...) for this priority
+	;	1ms for critical, successively 8x for other queues
 	stw		r16, ReadyQueue.Timecake(r9)
 	stw		r17, ReadyQueue.Timecake + 4(r9)
-
 
 	;	Show off a bit
 	mflr	r20
@@ -67,7 +76,7 @@ InitRDYQs
 	mr		r8, r23				; the priority (1,2,3,4)
 	bl		printw
 
-	mr		r8, r16				; the Timeslice
+	mr		r8, r16				; the time cake
 	bl		printw
 
 	mr		r8, r17
@@ -77,8 +86,7 @@ InitRDYQs
 
 	mtlr	r20
 
-
-	;	Multiply Timeslice by 8 for the next iteration
+	;	Multiply time by 8 for the next iteration
 	slwi	r16, r16, 3
 	rlwimi	r16, r17, 3, 29, 31
 	slwi	r17, r17, 3
@@ -89,11 +97,10 @@ InitRDYQs
 	addi	r9, r9, 32 ;ReadyQueue.Size
 	blt+	@loop
 
-
 	;	If the low nybble is empty, set ContextBlock.PriorityShifty to 2.
 	lwz		r16, KDP.PA_ECB(r1)
 	lwz		r17, ContextBlock.PriorityShifty(r16)
-	andi.	r9, r17, (1<<4)-1
+	andi.	r9, r17, 0xF
 	li		r17, 2
 	bnelr-
 
@@ -101,6 +108,14 @@ InitRDYQs
 	blr
 
 
+
+ ######     ###    ##     ## ########     ######   ########  ########   ######  
+##    ##   ## ##   ##     ## ##          ##    ##  ##     ## ##     ## ##    ## 
+##        ##   ##  ##     ## ##          ##        ##     ## ##     ## ##       
+ ######  ##     ## ##     ## ######      ##   #### ########  ########   ######  
+      ## #########  ##   ##  ##          ##    ##  ##        ##   ##         ## 
+##    ## ##     ##   ## ##   ##          ##    ##  ##        ##    ##  ##    ## 
+ ######  ##     ##    ###    ########     ######   ##        ##     ##  ######  
 
 ;	...to (ECB *)r6
 ;	(and also copy SPRG0 to r8)
@@ -144,6 +159,14 @@ Save_r24_r31
 
 
 
+##        #######     ###    ########      ######   ########  ########   ######  
+##       ##     ##   ## ##   ##     ##    ##    ##  ##     ## ##     ## ##    ## 
+##       ##     ##  ##   ##  ##     ##    ##        ##     ## ##     ## ##       
+##       ##     ## ##     ## ##     ##    ##   #### ########  ########   ######  
+##       ##     ## ######### ##     ##    ##    ##  ##        ##   ##         ## 
+##       ##     ## ##     ## ##     ##    ##    ##  ##        ##    ##  ##    ## 
+########  #######  ##     ## ########      ######   ##        ##     ##  ######  
+
 ;	...from (ECB *)r6
 
 Restore_r14_r31
@@ -183,6 +206,14 @@ Restore_r24_r31
 	blr
 
 
+
+ ######     ###    ##     ## ########    ######## ########  ########   ######  
+##    ##   ## ##   ##     ## ##          ##       ##     ## ##     ## ##    ## 
+##        ##   ##  ##     ## ##          ##       ##     ## ##     ## ##       
+ ######  ##     ## ##     ## ######      ######   ########  ########   ######  
+      ## #########  ##   ##  ##          ##       ##        ##   ##         ## 
+##    ## ##     ##   ## ##   ##          ##       ##        ##    ##  ##    ## 
+ ######  ##     ##    ###    ########    ##       ##        ##     ##  ######  
 
 ;	...to (ECB *)r6
 ;	(but first set the MSR_FP bit in MSR, but *unset* it in r11)
@@ -246,6 +277,13 @@ Save_f0_f31
 
 
 
+##        #######     ###    ########     ##     ## ########   ######  
+##       ##     ##   ## ##   ##     ##    ##     ## ##     ## ##    ## 
+##       ##     ##  ##   ##  ##     ##    ##     ## ##     ## ##       
+##       ##     ## ##     ## ##     ##    ##     ## ########   ######  
+##       ##     ## ######### ##     ##     ##   ##  ##   ##         ## 
+##       ##     ## ##     ## ##     ##      ## ##   ##    ##  ##    ## 
+########  #######  ##     ## ########        ###    ##     ##  ######  
 
 Restore_v0_v31	;	OUTSIDE REFERER
 	li		r8,  0x200
@@ -452,6 +490,14 @@ major_0x13988_0x2f8
 
 
 
+ ######     ###    ##     ## ########    ##     ## ########   ######  
+##    ##   ## ##   ##     ## ##          ##     ## ##     ## ##    ## 
+##        ##   ##  ##     ## ##          ##     ## ##     ## ##       
+ ######  ##     ## ##     ## ######      ##     ## ########   ######  
+      ## #########  ##   ##  ##           ##   ##  ##   ##         ## 
+##    ## ##     ##   ## ##   ##            ## ##   ##    ##  ##    ## 
+ ######  ##     ##    ###    ########       ###    ##     ##  ######  
+
 ;	                     Save_v0_v31
 
 ;	Xrefs:
@@ -638,15 +684,22 @@ Save_v0_v31_0x1b8
 
 
 
-;	Remove a task from a queue, cleaning up the queue structures behind me.
+########    ###     ######  ##    ##    ##     ## ##    ## ########  ########  ##    ## 
+   ##      ## ##   ##    ## ##   ##     ##     ## ###   ## ##     ## ##     ##  ##  ##  
+   ##     ##   ##  ##       ##  ##      ##     ## ####  ## ##     ## ##     ##   ####   
+   ##    ##     ##  ######  #####       ##     ## ## ## ## ########  ##     ##    ##    
+   ##    #########       ## ##  ##      ##     ## ##  #### ##   ##   ##     ##    ##    
+   ##    ##     ## ##    ## ##   ##     ##     ## ##   ### ##    ##  ##     ##    ##    
+   ##    ##     ##  ######  ##    ##     #######  ##    ## ##     ## ########     ##    
+
+;	Remove a task from its RDYQ, cleaning up the queue structures behind me.
 ;	If a queue is empty, unset the priority flag of the queue in
-;	PSA.PriorityFlags (presumably has no effect with non-ready queues).
-;	Also set the mysterious EWA.BinaryFlag to 1.
+;	PSA.PriorityFlags. Also set the mysterious EWA.SchEvalFlag to 1.
 
 ;	ARG		Task *r8
 ;	CLOB	r16, r17, r18
 
-DequeueTask
+TaskUnready
 
 	lwz		r17, Task.QueueMember + LLL.Next( r8)
 	lbz		r18, Task.MysteryByte1( r8)
@@ -691,32 +744,18 @@ DequeueTask
 
 	mfsprg  r17, 0
 	li		r16, 1
-	stb		r16, EWA.BinaryFlag(r17)
+	stb		r16, EWA.SchEvalFlag(r17)
 	blr
 
 
 
-
-
-;	                     TaskReadyAsNext
-
-;	Xrefs:
-;	major_0x02ccc
-;	MPCall_6
-;	KCYieldWithHint
-;	MPCall_55
-;	KCStopScheduling
-;	MPCall_18
-;	MPCall_23
-;	MPCall_27
-;	MPCall_52
-;	MPCall_9
-;	KCThrowException
-;	MPCall_114
-;	major_0x130f0
-;	major_0x142dc
-;	CommonPIHPath
-
+########    ###     ######  ##    ##    ########  ########  ##    ## 
+   ##      ## ##   ##    ## ##   ##     ##     ## ##     ##  ##  ##  
+   ##     ##   ##  ##       ##  ##      ##     ## ##     ##   ####   
+   ##    ##     ##  ######  #####       ########  ##     ##    ##    
+   ##    #########       ## ##  ##      ##   ##   ##     ##    ##    
+   ##    ##     ## ##    ## ##   ##     ##    ##  ##     ##    ##    
+   ##    ##     ##  ######  ##    ##    ##     ## ########     ##    
 
 ;	These two entry cases specify different directions of queue insertion
 
@@ -787,6 +826,13 @@ TaskReadyCommonPath
 
 
 
+ ######  ########         ########     ###    ########     ######  ######## ######## 
+##    ## ##     ##   ##   ##     ##   ## ##      ##       ##    ## ##          ##    
+##       ##     ##   ##   ##     ##  ##   ##     ##       ##       ##          ##    
+ ######  ########  ###### ########  ##     ##    ##        ######  ######      ##    
+      ## ##   ##     ##   ##     ## #########    ##             ## ##          ##    
+##    ## ##    ##    ##   ##     ## ##     ##    ##       ##    ## ##          ##    
+ ######  ##     ##        ########  ##     ##    ##        ######  ########    ##    
 
 ;	Set the segment and block allocation table registers according to the 
 ;	SPAC structure passed in. On non-601 machines, unset the "guarded" bit
@@ -796,7 +842,7 @@ TaskReadyCommonPath
 
 ;	ARG		AddressSpace *r8, AddressSpace *r9 (can be zero?)
 
-SetAddrSpcRegisters
+SetSpaceSRsAndBATs
 
 	;	This is the only function that hits this counter
 	lwz		r17, KDP.NanoKernelInfo + NKNanoKernelInfo.AddrSpcSetCtr(r1)
@@ -1084,59 +1130,41 @@ SetAddrSpcRegisters_0x314:
 	
 
 
-;	                     major_0x142a8
+########  ######## ########    ##          ###    ##    ## ##    ## 
+##     ## ##          ##        ##        ## ##   ###   ##  ##  ##  
+##     ## ##          ##         ##      ##   ##  ####  ##   ####   
+########  ######      ##          ##    ##     ## ## ## ##    ##    
+##   ##   ##          ##         ##     ######### ##  ####    ##    
+##    ##  ##          ##        ##      ##     ## ##   ###    ##    
+##     ## ########    ##       ##       ##     ## ##    ##    ##    
 
-;	Xrefs:
-;	skeleton_key
-
-major_0x142a8	;	OUTSIDE REFERER
-	lbz		r8, EWA.BinaryFlag(r1)
-	rlwinm.	r9, r7,  0, 16, 16
-	lwz		r1, -0x0004(r1)
+ReturnToAnyTask	;	OUTSIDE REFERER
+	lbz		r8, EWA.SchEvalFlag(r1)
+	rlwinm.	r9, r7, 0, 16, 16
+	lwz		r1, EWA.PA_KDP(r1)
 	cmpwi	cr1, r8,  0x00
 
-;	sprg0 = for r1 and r6
-;	r1 = kdp
-;	r6 = register restore area
-;	r7 = flag to insert into XER
-;	r10 = new srr0 (return location)
-;	r11 = new srr1
-;	r12 = lr restore
-;	r13 = cr restore
-	bne-	int_teardown
+	bne-	ReturnFromInterrupt
+	beq+	cr1, ReturnFromInterrupt
 
-;	sprg0 = for r1 and r6
-;	r1 = kdp
-;	r6 = register restore area
-;	r7 = flag to insert into XER
-;	r10 = new srr0 (return location)
-;	r11 = new srr1
-;	r12 = lr restore
-;	r13 = cr restore
-	beq+	cr1, int_teardown
-
-;	r6 = ewa
 	bl		Save_r14_r31
-;	r8 = sprg0 (not used by me)
-
-
-	_Lock			PSA.SchLock, scratch1=r27, scratch2=r28
+	_Lock		PSA.SchLock, scratch1=r27, scratch2=r28
 
 
 
 
-;	                     major_0x142dc
+########  ######## ########    ##        #######  ######## ##     ## ######## ########  
+##     ## ##          ##        ##      ##     ##    ##    ##     ## ##       ##     ## 
+##     ## ##          ##         ##     ##     ##    ##    ##     ## ##       ##     ## 
+########  ######      ##          ##    ##     ##    ##    ######### ######   ########  
+##   ##   ##          ##         ##     ##     ##    ##    ##     ## ##       ##   ##   
+##    ##  ##          ##        ##      ##     ##    ##    ##     ## ##       ##    ##  
+##     ## ########    ##       ##        #######     ##    ##     ## ######## ##     ## 
 
-;	Xrefs:
-;	major_0x02ccc
-;	CommonMPCallReturnPath
-;	major_0x142a8
-;	major_0x14bcc
-
-major_0x142dc	;	OUTSIDE REFERER
+RescheduleAndReturn	;	OUTSIDE REFERER
 	mfsprg	r14, 0
 	li		r8,  0x00
-	stb		r8, EWA.BinaryFlag(r14)
+	stb		r8, EWA.SchEvalFlag(r14)
 	lwz		r31, -0x0008(r14)
 	lwz		r1, -0x0004(r14)
 	lwz		r9,  0x0ee4(r1)
@@ -1153,7 +1181,7 @@ major_0x142dc_0x38
 	cmpw	r27, r26
 	mr		r8, r31
 	beq-	major_0x142dc_0x58
-	bl		DequeueTask
+	bl		TaskUnready
 	stb		r26,  0x0019(r31)
 	mr		r8, r31
 	bl		TaskReadyAsPrev
@@ -1174,7 +1202,7 @@ major_0x142dc_0x5c
 	addi	r30, r29, -0x08
 
 major_0x142dc_0x80
-	lhz		r28, -0x0116(r14)
+	lhz		r28, EWA.CPUIndex(r14)
 	lwz		r24,  0x0064(r30)
 	lhz		r25,  0x001a(r30)
 	rlwinm.	r8, r24,  0, 25, 26
@@ -1264,7 +1292,15 @@ major_0x142dc_0x1bc
 
 
 
-;	                      int_teardown
+########  ######## #### 
+##     ## ##        ##  
+##     ## ##        ##  
+########  ######    ##  
+##   ##   ##        ##  
+##    ##  ##        ##  
+##     ## ##       #### 
+
+;	                      ReturnFromInterrupt
 
 ;	All MPCalls get here?
 ;	r0,7,8,9,10,11,12,13 restored from r6 area
@@ -1276,8 +1312,8 @@ major_0x142dc_0x1bc
 
 ;	Xrefs:
 ;	non_skeleton_reset_trap
-;	major_0x142a8
-;	major_0x142dc
+;	ReturnToAnyTask
+;	RescheduleAndReturn
 ;	major_0x14548
 
 ;	> sprg0 = for r1 and r6
@@ -1289,20 +1325,20 @@ major_0x142dc_0x1bc
 ;	> r12   = lr restore
 ;	> r13   = cr restore
 
-int_teardown	;	OUTSIDE REFERER
+ReturnFromInterrupt	;	OUTSIDE REFERER
 	lwz		r8,  0x0edc(r1)
 	mfsprg	r1, 0
 	mtlr	r12
 	mtspr	srr0, r10
 	mtspr	srr1, r11
 	rlwinm.	r8, r8,  0, 27, 27
-	beq-	int_teardown_0x2c
+	beq-	ReturnFromInterrupt_0x2c
 	mfxer	r8
 	rlwinm	r8, r8,  0, 23, 21
 	rlwimi	r8, r7, 19, 23, 23
 	mtxer	r8
 
-int_teardown_0x2c
+ReturnFromInterrupt_0x2c
 	mtcr	r13
 	lwz		r10,  0x0154(r6)
 	lwz		r11,  0x015c(r6)
@@ -1323,7 +1359,7 @@ int_teardown_0x2c
 ;	                     major_0x14548
 
 ;	Xrefs:
-;	major_0x142dc
+;	RescheduleAndReturn
 
 major_0x14548	;	OUTSIDE REFERER
 	lwz		r16,  0x0064(r31)
@@ -1381,12 +1417,12 @@ major_0x14548_0x58
 	cmpwi	r16,  0x00
 	mr		r8, r31
 	beql+	TaskReadyAsPrev
-
 major_0x14548_0xd4
+
 	mfsprg	r19, 0
 	li		r8,  0x00
-	stb		r8, EWA.BinaryFlag(r19)
-	lhz		r8, -0x0116(r19)
+	stb		r8, EWA.SchEvalFlag(r19)
+	lhz		r8, EWA.CPUIndex(r19)
 	lwz		r6,  0x0088(r30)
 	lwz		r28, -0x0340(r19)
 	sth		r8,  0x001a(r30)
@@ -1411,7 +1447,7 @@ major_0x14548_0xd4
 	cmpw	r18, r9
 	beq-	major_0x14548_0x148
 	mr		r8, r18
-	bl		SetAddrSpcRegisters
+	bl		SetSpaceSRsAndBATs
 
 major_0x14548_0x148
 	mfsprg	r19, 0
@@ -1430,7 +1466,7 @@ major_0x14548_0x148
 	bsol+	cr6, Local_Panic
 	clrlwi	r8, r7,  0x08
 	stw		r8,  0x0000(r6)
-	lwz		r6,  0x0658(r1)
+	lwz		r6, KDP.PA_ECB(r1)
 	addi	r26, r1,  0x360
 	mtsprg	3, r26
 	stw		r26,  0x00f0(r30)
@@ -1449,9 +1485,9 @@ major_0x14548_0x148
 	stw		r7, -0x0010(r19)
 
 major_0x14548_0x1cc
-	lwz		r17,  0x00cc(r6)
+	lwz		r17, ContextBlock.PriorityShifty(r6)
 	ori		r17, r17,  0x100
-	stw		r17,  0x00cc(r6)
+	stw		r17, ContextBlock.PriorityShifty(r6)
 	lhz		r17, -0x043c(r1)
 	lwz		r18,  0x067c(r1)
 	cmplwi	r17,  0xffff
@@ -1578,14 +1614,14 @@ major_0x14548_0x380
 ;	r11 = new srr1
 ;	r12 = lr restore
 ;	r13 = cr restore
-	b		int_teardown
+	b		ReturnFromInterrupt
 
 
 
 ;	                     major_0x148ec
 
 ;	Xrefs:
-;	major_0x142dc
+;	RescheduleAndReturn
 ;	major_0x14548
 
 major_0x148ec	;	OUTSIDE REFERER
@@ -1666,17 +1702,19 @@ major_0x148ec_0xc8
 ;	setup
 ;	KCStopScheduling
 ;	major_0x0c8b4
-;	major_0x0ccf4
+;	SignalSemaphore
 ;	MPCall_28
-;	major_0x0d35c
+;	SetEvent
 ;	MPCall_8
 ;	major_0x130f0
-;	major_0x142dc
+;	RescheduleAndReturn
 ;	major_0x14bcc
 ;	CommonPIHPath
 
 ;	Almost certain this was hand-written. Has a typo, and some
 ;	instructions the compiler rarely touched, and is in hot path.
+
+;	ARG		Task *r8
 
 major_0x149d4	;	OUTSIDE REFERER
 	crset	cr1_eq
@@ -1688,61 +1726,58 @@ CalculateTimeslice	;	OUTSIDE REFERER
 major_0x149d4_0xc:
 
 
+	;	CALCULATE TASK'S TIMESLICE
+
+	;	Get task info
 	lwz		r18, Task.QueueMember + LLL.Next(r8)
 	lwz		r16, Task.QueueMember + LLL.Freeform(r8)		; points to RDYQ
 	cmpwi	r18, 0
 	lwz		r17, Task.Weight(r8)
 	beq+	Local_Panic
 
-
+	;	Get queue info
 	lwz		r18, ReadyQueue.TotalWeight(r16)
-
 	lwz		r19, ReadyQueue.Timecake(r16)
 	lwz		r20, ReadyQueue.Timecake + 4(r16)
 
-	;	Skip some stuff if this task accounts for all of the weight in this queue
+	;	Skip calculation if only task in queue
 	cmpw	r18, r17
-	rlwinm	r17, r17, 10, 0, 22			; looks like a typo; should multiply wt by 1024
+	rlwinm	r17, r17, 10, 0, 22		; r17 *= 1024, but with minor masking typo?
 	beq-	@is_only_weighted_task
 
-	divw.	r18, r17, r18				; how many slices do I get in 1024?
+	divw.	r18, r17, r18			; r8 = my share of this queue's weight, out of 1024
+	ble-	@no_time				; if not specified, fall back on 1/1024
 
-	ble-	@no_time					; fall back on one slice worth of ticks per 1024 slices
-
-	;	r19 || r20 = (r19 || r20) * r18 = ticks owed to this task in 1024 slices
+	;	t = t * r18 = my share of queue's time, out of 1024
 	mulhw	r17, r20, r18
 	mullw	r19, r19, r18
 	mullw	r20, r20, r18
 	add		r19, r19, r17
 @no_time
 
-	;	Set r19 || r20 to ticks owed to this task per RoundRobinTime
-
+	;	t = t / 1024 = my share of queue's time
 	srwi	r20, r20, 10
 	rlwimi	r20, r19, 22, 0, 9
 	srwi	r19, r19, 10
 @is_only_weighted_task
 
+	;	NOW: r19 || r20 == task's slice of queue Timecake, in TB/DEC units
 
-
-	;	Now r19 || r20 contains something meaningful
 
 	lbz		r18, Task.Priority(r8)
 	cmpwi	r18, Task.kNominalPriority
-
 	ori		r20, r20, 1						; why make this odd?
+	bge-	@nominal_or_idle
 
-	bge-	@priority_nominal_or_idle
-
-	;	Critical or latency protection: save the low word of (ticks per round)
+;critical or latency protected
 	stw		r20, 0x00fc(r8)
 	blr
 
-@priority_nominal_or_idle
-
+@nominal_or_idle
 	lwz		r16, 0x00d8(r8)
 	lwz		r17, 0x00dc(r8)
-	beq-	cr1, @definitely_do_the_thing
+	bc		BO_IF, cr1_eq, @definitely_do_the_thing
+
 	cmpwi	r16, 0
 	cmplwi	cr2, r17, 0
 	blt-	@definitely_do_the_thing
@@ -1750,6 +1785,7 @@ major_0x149d4_0xc:
 	bgtlr-	cr2
 
 @definitely_do_the_thing
+;double-int is negative or zero
 	mfxer	r18
 	addc	r20, r20, r17
 	adde	r19, r19, r16
@@ -1780,130 +1816,114 @@ clear_cr0_lt	;	OUTSIDE REFERER
 
 ;	Xrefs:
 ;	IntDecrementer
-;	major_0x142dc
+;	RescheduleAndReturn
 
 major_0x14a98	;	OUTSIDE REFERER
 	rlwinm	r8, r7, 10,  0,  0
-	lwz		r18,  0x0658(r1)
+	lwz		r18, KDP.PA_ECB(r1)
 	nand.	r8, r8, r8
-	lwz		r17,  0x00cc(r18)
+	lwz		r17, ContextBlock.PriorityShifty(r18)
 	bltlr-
-	cmpwi	r17,  0x00
+	cmpwi	r17, 0
 	rlwinm	r9, r17,  0, 22, 22
 	blt-	major_0x14a98_0x54
 	cmpwi	r9,  0x200
-	lwz		r16,  0x01cc(r18)
+	lwz		r16, ContextBlock.r25(r18)
 	beq-	major_0x14a98_0x48
-	clrlwi	r8, r16,  0x1d
-	clrlwi	r9, r17,  0x1c
-	cmpwi	r8,  0x06
+	clrlwi	r8, r16, 29
+	clrlwi	r9, r17, 28
+	cmpwi	r8, 6
 	bgt-	major_0x14a98_0x48
 	cmpw	r8, r9
 	bltlr-
 	cmpw	r8, r8
 
 major_0x14a98_0x48
-	ori		r17, r17,  0x100
-	stw		r17,  0x00cc(r18)
+	ori		r17, r17, 0x100
+	stw		r17, ContextBlock.PriorityShifty(r18)
 	blr
 
 major_0x14a98_0x54
-	clrlwi	r17, r17,  0x01
-	stw		r17,  0x00cc(r18)
+	clrlwi	r17, r17, 1
+	stw		r17, ContextBlock.PriorityShifty(r18)
 	blr
 
 
 
-;	                     major_0x14af8
+######## ##          ###     ######      ######## ##     ##    ###    ##       
+##       ##         ## ##   ##    ##     ##       ##     ##   ## ##   ##       
+##       ##        ##   ##  ##           ##       ##     ##  ##   ##  ##       
+######   ##       ##     ## ##   ####    ######   ##     ## ##     ## ##       
+##       ##       ######### ##    ##     ##        ##   ##  ######### ##       
+##       ##       ##     ## ##    ##     ##         ## ##   ##     ## ##       
+##       ######## ##     ##  ######      ########    ###    ##     ## ######## 
 
-;	Xrefs:
-;	setup
-;	major_0x02ccc
-;	MPCall_6
-;	KCYieldWithHint
-;	KCStopScheduling
-;	KCMarkPMFTask
-;	MPCall_16
-;	major_0x0c8b4
-;	major_0x0ccf4
-;	MPCall_21
-;	MPCall_28
-;	MPCall_26
-;	MPCall_50
-;	major_0x0d35c
-;	major_0x0dce8
-;	MPCall_8
-;	MPCall_9
-;	MPCall_14
-;	KCThrowException
-;	MPCall_58
-;	MPCall_114
-;	major_0x130f0
-;	CommonPIHPath
-
-major_0x14af8	;	OUTSIDE REFERER
-	lwz		r16,  0x0064(r8)
+FlagSchEvaluationIfTaskRequires	;	OUTSIDE REFERER
+	lwz		r16, Task.Flags(r8)
 	mfsprg	r15, 0
-	rlwinm.	r16, r16,  0, 25, 26
+	rlwinm.	r16, r16,  0, Task.kFlag25, Task.kFlag26
 	bne-	major_0x14af8_0xa0
-	addi	r16, r15, -0x340
-	lbz		r17,  0x0019(r8)
-	lwz		r19,  0x0008(r16)
-	lwz		r14,  0x0024(r19)
-	cmpwi	r14,  0x02
-	blt-	major_0x14af8_0xa0
-	lwz		r14,  0x0020(r19)
-	mr		r18, r16
-	b		major_0x14af8_0x3c
 
-major_0x14af8_0x34
+	addi	r16, r15, EWA.CPUBase
+	lbz		r17,  0x0019(r8)
+	lwz		r19, CPU.LLL + LLL.Freeform(r16)
+	lwz		r14, CoherenceGroup.ScheduledCpuCount(r19)
+	cmpwi	r14, 2
+	blt-	major_0x14af8_0xa0
+
+;multiprocessor
+	lwz		r14, CoherenceGroup.CpuCount(r19)
+	mr		r18, r16
+	b		@loopentry
+
+@34
 	lwz		r16,  0x0008(r19)
 
-major_0x14af8_0x38
+@38
 	addi	r16, r16, -0x08
 
-major_0x14af8_0x3c
+@loopentry
 	addi	r14, r14, -0x01
 	lbz		r20,  0x0229(r16)
 	lwz		r21,  0x0018(r16)
 	cmpw	cr1, r17, r20
 	rlwinm.	r21, r21,  0, 28, 28
-	bge-	cr1, major_0x14af8_0x60
-	beq-	major_0x14af8_0x60
+	bge-	cr1, @60
+	beq-	@60
 	mr		r17, r20
 	mr		r18, r16
 
-major_0x14af8_0x60
+@60
 	lwz		r16,  0x0010(r16)
 	cmpwi	cr1, r14,  0x00
 	cmpw	r16, r19
-	ble-	cr1, major_0x14af8_0x78
-	beq+	major_0x14af8_0x34
-	b		major_0x14af8_0x38
+	ble-	cr1, @78
+	beq+	@34
+	b		@38
 
-major_0x14af8_0x78
+@78
 	lbz		r16,  0x0019(r8)
 	cmpw	r17, r16
 	blelr-
-	lhz		r17, -0x0116(r15)
-	lhz		r18,  0x022a(r18)
+	lhz		r17, EWA.CPUIndex(r15)
+	lhz		r18, CPU.EWA + EWA.CPUIndex(r18)
 	cmpw	r18, r17
-	bne-	major_0x14af8_0xb4
+	bne-	BEFOUR
 
-major_0x14af8_0x94
+NINETYFOUR
 	li		r16,  0x01
-	stb		r16, EWA.BinaryFlag(r15)
+	stb		r16, EWA.SchEvalFlag(r15)
 	blr
 
 
-major_0x14af8_0xa0	;	OUTSIDE REFERER
+major_0x14af8_0xa0
 	mfsprg	r15, 0
-	lhz		r18, Task.MysteryHalf(r8)
-	lhz		r17, -0x0116(r15)		; somewhere in EWA
+	lhz		r18, Task.CPUIndex(r8)
+	lhz		r17, EWA.CPUIndex(r15)
 	cmpw	r17, r18
-	beq+	major_0x14af8_0x94
+	beq+	NINETYFOUR
 
-major_0x14af8_0xb4
+BEFOUR
 	lwz		r9,  0x0ee0(r1)
 	addi	r9, r9,  0x01
 	stw		r9,  0x0ee0(r1)
@@ -1945,7 +1965,7 @@ major_0x14bcc
 
 	_log	'Sch: Symmetric Multiprocessing^n'
 	_log	'Sch: On CPU '
-	lhz		r8,  0x022a(r3)
+	lhz		r8, CPU.EWA + EWA.CPUIndex(r3)
 	bl		Printh
 	_log	' ID-'
 	lwz		r8, -0x0340(r3)
@@ -1967,75 +1987,101 @@ major_0x14bcc
 
 	bl		PagingFlushTLB
 	
+
+	;	This is important to figure out:
+
 	_log	'Sch: Starting SMP idle task^n'
 
 	_Lock			PSA.SchLock, scratch1=r27, scratch2=r28
 
 	mfsprg	r14, 0
-	lwz		r31,  0x001c(r3)
-	li		r8,  0x00
-	stb		r8, EWA.BinaryFlag(r14)
-	lwz		r6,  0x0088(r31)
-	stw		r31, -0x0008(r14)
-	stw		r6, -0x0014(r14)
-	lwz		r7,  0x0000(r6)
-	lwz		r28,  0x0004(r6)
-	stw		r7, -0x0010(r14)
-	stw		r28, -0x000c(r14)
-	lwz		r8,  0x00f0(r31)
+	lwz		r31, CPU.IdleTaskPtr(r3)
+
+	li		r8, 0
+	stb		r8, EWA.SchEvalFlag(r14)
+
+	lwz		r6, Task.ContextBlockPtr(r31)
+
+	stw		r31, EWA.PA_CurTask(r14)
+
+	stw		r6, EWA.PA_ContextBlock(r14)
+
+	lwz		r7, ContextBlock.Flags(r6)
+	lwz		r28, ContextBlock.Enables(r6)
+	stw		r7, EWA.Flags(r14)
+	stw		r28, EWA.Enables(r14)
+
+	lwz		r8, Task.YellowVecTblPtr(r31)
 	mtsprg	3, r8
-	lwz		r10,  0x00fc(r6)
-	lwz		r11,  0x00a4(r6)
-	lwz		r13,  0x00dc(r6)
-	lwz		r12,  0x00ec(r6)
+
+	lwz		r10, ContextBlock.CodePtr(r6)
+	lwz		r11, ContextBlock.MSR(r6)
+	lwz		r13, 0x00dc(r6)
+	lwz		r12, 0x00ec(r6)
+
 	_log	'EWA '
 	mr		r8, r14
 	bl		Printw
+
 	_log	'ContextPtr '
 	mr		r8, r6
 	bl		Printw
+
 	_log	'Flags '
 	mr		r8, r7
 	bl		Printw
+
 	_log	'Enables '
 	mr		r8, r28
 	bl		Printw
 	_log	'^n'
-	addi	r16, r31,  0x08
+
+	addi	r16, r31, Task.QueueMember
 	RemoveFromList		r16, scratch1=r17, scratch2=r18
-	li		r16,  0x02
-	stb		r16,  0x0018(r31)
-	lwz		r16,  0x0064(r31)
-	ori		r16, r16,  0x20
-	stw		r16,  0x0064(r31)
+
+	li		r16, 2
+	stb		r16, Task.MysteryByte1(r31)
+
+	lwz		r16, Task.Flags(r31)
+	ori		r16, r16, 0x20
+	stw		r16, Task.Flags(r31)
+
 	mfsprg	r14, 0
-	lbz		r8,  0x0019(r31)
-	stb		r8, -0x0117(r14)
-	lwz		r8,  0x0070(r31)
-	li		r9,  0x00
-	bl		SetAddrSpcRegisters
+
+	lbz		r8, Task.Priority(r31)
+	stb		r8, EWA.TaskPriority(r14)
+
+	lwz		r8, Task.AddressSpacePtr(r31)
+	li		r9, 0
+	bl		SetSpaceSRsAndBATs
+
 	_log	'Adding idle task 0x'
 	mr		r8, r31
 	bl		Printw
 	_log	'to the ready queue^n'
+
 	mr		r8, r31
 	bl		TaskReadyAsPrev
 	bl		CalculateTimeslice
-	lwz		r16,  0x0018(r3)
-	ori		r16, r16,  0x08
-	stw		r16,  0x0018(r3)
-	lwz		r17,  0x0008(r3)
+	lwz		r16, CPU.Eff(r3)
+	ori		r16, r16, 8
+	stw		r16, CPU.Eff(r3)
+
+	lwz		r17, Task.QueueMember + LLL.Freeform(r3)
 	lwz		r16,  0x0024(r17)
 	addi	r16, r16,  0x01
 	stw		r16,  0x0024(r17)
-	li		r8,  0x01
+
+	li		r8, 1
 	mtspr	dec, r8
+
 	_log	'Sch: Going to '
-	mr		r8, r11
+	mr		r8, r11					; MSR
 	bl		Printw
-	mr		r8, r10
+	mr		r8, r10					; PC
 	bl		Printw
 	_log	'^n'
+
 	mr		r30, r31
 	b		major_0x142dc_0xd8
 	b		major_0x142dc_0x58
@@ -2138,7 +2184,7 @@ StopProcessor
 	lwz		r8,  0x001c(r31)
 	li		r9,  0x00
 	stw		r9,  0x001c(r31)
-	bl		DequeueTask
+	bl		TaskUnready
 	addi	r16, r1, -0xa44
 	addi	r17, r8,  0x08
 	stw		r16,  0x0000(r17)
@@ -2147,7 +2193,7 @@ StopProcessor
 	_AssertAndRelease	PSA.SchLock, scratch=r16
 	_log	'SIGP kStopProcessor^n'
 	li		r3,  0x03
-	lhz		r4,  0x022a(r31)
+	lhz		r4, CPU.EWA + EWA.CPUIndex(r31)
 	li		r0,  0x2e
 	twi		31, r31,  0x08
 	_log	'Stop didn''t work - going to sleep.^n'

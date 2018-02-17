@@ -19,7 +19,8 @@ BootstrapVersion		ds.b	16	; f00:f10 ; Bootstrap loader version info, from Config
 ;	Gets called the "system context"
 ContextBlock			record	0,INCR
 
-EmpiricalCpuFeatures	ds.l	1	; 000 ; (SPAC) copied from kdp by CreateTask
+Flags					ds.l	1	; 000 ; (SPAC) copied from kdp by CreateTask
+Enables					ds.l	1	; 004
 	
 						org		0x5c
 LA_EmulatorKernelTrapTable ds.l	1

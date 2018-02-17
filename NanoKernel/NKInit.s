@@ -213,7 +213,7 @@ FinishInitBuiltin
 		mtspr	mq, r8
 		li		r8, 0
 		mfspr	r8, mq
-		stw		r8, PSA.EmpiricalCpuFeatures(r1)
+		stw		r8, PSA.GlobalCPUFlags(r1)
 
 		;	Add AV and save that in scratch field
 		oris	r9, r8, 1 << (15 - PSA.AVFeatureBit)
@@ -230,11 +230,11 @@ FinishInitBuiltin
 		stvewx	v0, 0, r9
 
 		;	Scratch field now contains AltiVec and MQ flags.
-		;	Copy it to EmpiricalCpuFeatures
+		;	Copy it to GlobalCPUFlags
 		lwz		r8, EWA.r0(r1)
-		stw		r8, PSA.EmpiricalCpuFeatures(r1)
+		stw		r8, PSA.GlobalCPUFlags(r1)
 
-		;	AllCpuFeatures = EmpiricalCpuFeatures | 0x00a00000
+		;	current flags = tested flags | CPU flag 8 | CPU flag 9
 		oris	r7, r8, 0xa0
 		stw		r7, EWA.Flags(r1)
 
@@ -300,7 +300,7 @@ ResetBuiltinKernel
 ;			r5 = SystemInfo
 ;			r6 = PA_ECB
 ;			r7 = AllCpuFeatures
-;			r8 = EmpiricalCpuFeatures
+;			r8 = GlobalCPUFlags
 ;			r9 = even more altivec crud
 ;		r10 = LA_EmulatorKernelTrapTable
 ;		r11 = MSR
@@ -1105,13 +1105,13 @@ SetProcessorFlags
 
 	lwz		r8, EWA.PA_CurAddressSpace(r1)
 	li		r9, 0
-	bl		SetAddrSpcRegisters
+	bl		SetSpaceSRsAndBATs
 
 
 
 ;	Create the Blue MacOS task
 
-	;	ARG		EmpiricalCpuFeatures r7, Process *r8
+	;	ARG		GlobalCPUFlags r7, Process *r8
 	;	RET		Task *r8
 
 	lwz		r8, PSA.blueProcessPtr(r1)
@@ -1140,8 +1140,8 @@ SetProcessorFlags
 	li		r8, 2
 	stb		r8, Task.MysteryByte1(r31)
 
-	lisori	r8,	0x00030028
-	stw		r8, 0x0064(r31)
+	lisori	r8,	0x30028 ; (Z>>Task.kFlag14) | (Z>>Task.kFlagBlue) | (Z>>Task.kFlag26) | (Z>>Task.kFlag28)
+	stw		r8, Task.Flags(r31)
 
 	li		r8, 200
 	stw		r8, Task.Weight(r31)
@@ -1149,7 +1149,7 @@ SetProcessorFlags
 	li		r8, Task.kNominalPriority
 	stb		r8, Task.Priority(r31)
 
-	lhz		r8, -0x0116(r1)			;	zero??????
+	lhz		r8, EWA.CPUIndex(r1)			;	zero??????
 	sth		r8, 0x001a(r31)
 
 	lwz		r8, EWA.CPUBase + CPU.ID(r1)
@@ -1209,20 +1209,20 @@ SetProcessorFlags
 
 ;	Create the idle task for the first CPU
 
-	;	Unset the AV bit in EmpiricalCpuFeatures so that
+	;	Unset the AV bit in GlobalCPUFlags so that
 	;	idle task vector registers are not saved/restored
 	;	(Leave the old value in r31)
 av	set		PSA.AVFeatureBit
 	mr		r31, r7
 	rlwinm	r7, r7, 0, av + 1, av - 1
 
-	;	ARG		EmpiricalCpuFeatures r7, Process *r8
+	;	ARG		GlobalCPUFlags r7, Process *r8
 	;	RET		Task *r8
 
 	lwz		r8, PSA.blueProcessPtr(r1)
 	bl		CreateTask
 
-	;	Restore EmpiricalCpuFeatures
+	;	Restore GlobalCPUFlags
 	mr		r7, r31
 
 	;	Check
@@ -1234,9 +1234,8 @@ av	set		PSA.AVFeatureBit
 	stw		r8, Task.Name(r31)
 
 
-	;	Blue has 0x00030028
-	lisori	r8, 0x000a0040
-	stw		r8, Task.ThingThatAlignVecHits(r31)
+	lisori	r8, 0xA0040 ; (Z>>Task.kFlag12) | (Z>>Task.kFlag14) | (Z>>Task.kFlag25)
+	stw		r8, Task.Flags(r31)
 
 	;	For the scheduler
 	li		r8, 1
@@ -1253,9 +1252,9 @@ av	set		PSA.AVFeatureBit
 	stw		r8, Task.CpuID(r31)
 
 	;	Add a feature!?!?!?!
-	lwz		r8, Task.ContextBlock + ContextBlock.EmpiricalCpuFeatures(r31)
+	lwz		r8, Task.ContextBlock + ContextBlock.Flags(r31)
 	oris	r8, r8, 0x40
-	stw		r8, Task.ContextBlock + ContextBlock.EmpiricalCpuFeatures(r31)
+	stw		r8, Task.ContextBlock + ContextBlock.Flags(r31)
 
 	;	Point task ECB at the idle loop within the nanokernel code
 	lwz		r8, KDP.PA_NanoKernelCode(r1)

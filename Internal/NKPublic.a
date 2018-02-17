@@ -125,13 +125,13 @@ QueueRelatedZero2		ds.l	1	; -9fc ; same again
 						ds.l	1	; -9f8
 						ds.l	1	; -9f4
 ReadyQueues
-CriticalReadyQ			ds.l	8	; -9f0:-9d0
-LatencyProtectReadyQ	ds.l	8	; -9d0:-9b0
-NominalReadyQ			ds.l	8	; -9b0:-990
-IdleReadyQ				ds.l	8	; -990:-970
+CriticalReadyQ			ds.l	8	; -9f0:-9d0 ; unblocked tasks with priority 0
+LatencyProtectReadyQ	ds.l	8	; -9d0:-9b0 ; unblocked tasks with priority 1
+NominalReadyQ			ds.l	8	; -9b0:-990 ; unblocked tasks with priority 2
+IdleReadyQ				ds.l	8	; -990:-970 ; unblocked tasks with priority 3
 PriorityFlags			ds.l	1	; -970 ; bit 0 is 0, bit 1 is 1, etc...
 ScrambledMPCallTime		ds.l	1	; -96c ; by MP call return
-EmpiricalCpuFeatures	ds.l	1	; -968 ; Init.s saves MQ (should be possible) here
+GlobalCPUFlags			ds.l	1	; -968 ; Init.s saves MQ (should be possible) here
 MQFeatureBit			equ		13	; equals 0x00040000
 AVFeatureBit			equ		12	; equals 0x00080000
 ;								8	         0x00800000
@@ -172,7 +172,7 @@ SystemAddressSpaceID	ds.l	1	; -424
 blueProcessPtr			ds.l	1	; -41c ; physical ptr to first type-1 struct created
 ThermalHandlerID		ds.l	1	; -418 ; is a Note struct
 PMFHandlerID			ds.l	1	; -414 ; also a Note struct
-SomeEvtGrpID			ds.l	1	; -410
+BlueSpinningOn	ds.l	1	; -410 ; ID or 0 or -1
 						ds.l	1	; -40c
 						ds.l	1	; -408
 						ds.l	1	; -404
@@ -313,7 +313,7 @@ SpacesDeferredAreaPtr	ds.l	1	; -26c, cpu+0d4
 						ds.l	1	; -264, cpu+0dc
 						ds.l	1	; -260, cpu+0e0
 						ds.l	1	; -25c, cpu+0e4
-						ds.l	1	; -258, cpu+0e8
+TimerDispatchLR			ds.l	1	; -258, cpu+0e8
 						ds.l	1	; -254, cpu+0ec
 						ds.l	1	; -250, cpu+0f0
 						ds.l	1	; -24c, cpu+0f4
@@ -393,7 +393,9 @@ SpacesDeferredAreaPtr	ds.l	1	; -26c, cpu+0d4
 						ds.l	1	; -124, cpu+21c
 						ds.l	1	; -120, cpu+220
 						ds.l	1	; -11c, cpu+224
-BinaryFlag				ds.l	1	; -118, cpu+228 ; 1 or 0, actually a byte!
+SchEvalFlag				ds.b	1	; -118, cpu+228
+TaskPriority			ds.b	1	; -117, cpu+229
+CPUIndex				ds.w	1	; -116, cpu+22a
 						ds.l	1	; -114, cpu+22c
 						ds.l	1	; -110, cpu+230
 						ds.l	1	; -10c, cpu+234
@@ -460,7 +462,7 @@ PA_CurAddressSpace		ds.l	1	; -01c, cpu+324
 PA_PSA					ds.l	1	; -018, cpu+328
 PA_ContextBlock			ds.l	1	; -014, cpu+32c
 Flags					ds.l	1	; -010, cpu+330
-						ds.l	1	; -00c, cpu+334
+Enables					ds.l	1	; -00c, cpu+334
 PA_CurTask				ds.l	1	; -008, cpu+338
 PA_KDP					ds.l	1	; -004, cpu+33c
 

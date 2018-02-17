@@ -8,6 +8,9 @@ Local_Panic		set		*
 
 
 
+;	ARG		ProcessID r3
+;	RET		OSStatus r3, TaskID r10
+
 	DeclareMPCall	7, MPCall_7
 
 MPCall_7	;	OUTSIDE REFERER
@@ -17,61 +20,70 @@ MPCall_7	;	OUTSIDE REFERER
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
 	mr		r8, r3
-
-;	r8 = id
  	bl		LookupID
 	cmpwi	r9, Process.kIDClass
-
 	mr		r30, r8
 	bne+	ReleaseAndReturnMPCallInvalidIDErr
-	lwz		r16,  0x0008(r30)
-	rlwinm.	r17, r16,  0, 30, 30
+
+	lwz		r16, Process.Flags(r30)
+	rlwinm.	r17, r16, 0, 30, 30
 	bne+	ReleaseAndReturnMPCallOOM
+
+	;	ARG		CPUFlags r7, Process *r8
 	bl		CreateTask
+	;	RET		Task *r8
+
 	mr.		r31, r8
-	beq+	major_0x0af60
+	beq+	ReleaseAndScrambleMPCall
+
+
 	mfsprg	r15, 0
-	lwz		r17,  0x0000(r31)
-	stw		r17,  0x0154(r6)
-	lhz		r16, -0x0116(r15)
-	sth		r16,  0x001a(r31)
-	addi	r16, r31,  0x100
-	lwz		r17,  0x013c(r6)
-	stw		r17,  0x0164(r16)
-	lwz		r17,  0x0144(r6)
-	stw		r17,  0x00fc(r16)
-	lwz		r17,  0x014c(r6)
-	stw		r17,  0x0114(r16)
+
+	lwz		r17, Task.ID(r31)
+	stw		r17, ContextBlock.r10(r6)
+
+	lhz		r16, EWA.CPUIndex(r15)
+	sth		r16, Task.CPUIndex(r31)
+
+
+	addi	r16, r31, Task.ContextBlock
+
+	lwz		r17, ContextBlock.r7(r6)
+	stw		r17, ContextBlock.r12(r16)
+
+	lwz		r17, ContextBlock.r8(r6)
+	stw		r17, ContextBlock.CodePtr(r16)
+
+	lwz		r17, ContextBlock.r9(r6)
+	stw		r17, ContextBlock.r2(r16)
+
 	stw		r4,  0x0098(r31)
-	lwz		r17,  0x0134(r6)
+
+	lwz		r17,  ContextBlock.r6(r6)
 	stw		r17,  0x00ec(r31)
-	lwz		r16,  0x0064(r28)
-	rlwinm.	r8, r5,  0, 30, 30
-	beq-	MPCall_7_0x98
-	oris	r16, r16,  0x40
 
-MPCall_7_0x98
-	rlwinm.	r8, r5,  0, 29, 29
-	beq-	MPCall_7_0xa4
-	oris	r16, r16,  0x02
 
-MPCall_7_0xa4
-	stw		r16,  0x0064(r28)
+	lwz		r16, Task.Flags(r28)
 
-;	r1 = kdp
+	rlwinm.	r8, r5, 0, 30, 30
+	beq-	@noflag
+	oris	r16, r16, 0x40 ; Task.kFlag9
+@noflag
+
+	rlwinm.	r8, r5, 0, 29, 29
+	beq-	@noflag2
+	oris	r16, r16, 0x02 ; Task.kFlag14
+@noflag2
+
+	stw		r16, Task.Flags(r28)
+
+
 	b		ReleaseAndReturnZeroFromMPCall
 
 
 
-;Xrefs:
-;setup
-;major_0x0bb20
-;major_0x0e284
-
-
-;	ARG		EmpiricalCpuFeatures r7, Process *r8
+;	ARG		GlobalCPUFlags r7, Process *r8
 ;	RET		Task *r8
-
 
 CreateTask
 
@@ -122,9 +134,9 @@ CreateTask
 ;	(NOT a semaphore queue)
 
 	addi				r16, r28, Task.SemaphoreLLL
-	StartLoadingWord	r17, 'SEMA'
+	_lstart				r17, 'SEMA'
 	stw					r16, LLL.Next(r16)
-	FinishLoadingWord
+	_lfinish
 	stw					r16, LLL.Prev(r16)
 	stw					r17, LLL.Signature(r16)
 
@@ -196,8 +208,8 @@ CreateTask
 	li		r16, 0
 	stb		r16, Task.MysteryByte1(r28)
 
-	li		r16, 9
-	stw		r16, 0x0064(r28)
+	li		r16, 9 ; (Z>>Task.kFlag28) | (Z>>Task.kFlag31)
+	stw		r16, Task.Flags(r28)
 
 	lisori	r16, 'time'
 	stw		r16, 0x0024(r28)
@@ -217,8 +229,8 @@ CreateTask
 	addi	r16, r28, Task.ContextBlock
 	stw		r16, Task.ContextBlockPtr(r28)		; overridden to real ECB on blue
 
-	lwz		r16, PSA.EmpiricalCpuFeatures(r1)
-	stw		r16, Task.ContextBlock + ContextBlock.EmpiricalCpuFeatures(r28)
+	lwz		r16, PSA.GlobalCPUFlags(r1)
+	stw		r16, Task.ContextBlock + ContextBlock.Flags(r28)
 
 	lwz		r16, PSA.UserModeMSR(r1)
 	stw		r16, Task.ContextBlock + ContextBlock.MSR(r28)
@@ -230,7 +242,7 @@ CreateTask
 	lwz		r17, Task.NotificationPtr(r28)
 	stw		r16, 0x0010(r17)
 	stw		r16, 0x0014(r17)
-	li		r16, -0x7271
+	li		r16, kMPTaskAbortedErr
 	stw		r16, 0x0018(r17)
 
 	li		r16, 0
@@ -346,7 +358,7 @@ MPCall_8	;	OUTSIDE REFERER
 	mr		r8, r31
 	bl		TaskReadyAsPrev
 	bl		CalculateTimeslice
-	bl		major_0x14af8
+	bl		FlagSchEvaluationIfTaskRequires
 
 ;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall
@@ -383,7 +395,7 @@ MPCall_9	;	OUTSIDE REFERER
 	beq-	cr1, MPCall_9_0xb4
 	mfsprg	r15, 0
 	lhz		r18,  0x001a(r31)
-	lhz		r17, -0x0116(r15)
+	lhz		r17, EWA.CPUIndex(r15)
 	cmpw	r18, r17
 	beq-	MPCall_9_0xe0
 	ori		r16, r16,  0x400
@@ -401,7 +413,7 @@ MPCall_9_0x98	;	OUTSIDE REFERER
 	ori		r16, r16,  0x02
 	stw		r16,  0x0064(r31)
 	lwz		r17,  0x009c(r31)
-	li		r16, -0x7271
+	li		r16, kMPTaskAbortedErr
 	stw		r16,  0x0018(r17)
 	b		MPCall_9_0xfc
 
@@ -416,7 +428,7 @@ MPCall_9_0xe0
 	ori		r16, r16,  0x02
 	stw		r16,  0x0064(r31)
 	mr		r8, r31
-	bl		DequeueTask
+	bl		TaskUnready
 
 MPCall_9_0xf0
 	lwz		r17,  0x009c(r31)
@@ -432,7 +444,7 @@ MPCall_9_0xfc
 	cmpwi	r8,  0x01
 	bne-	MPCall_9_0x130
 	addi	r8, r31,  0x20
-	bl		major_0x136c8
+	bl		DequeueTimer
 
 MPCall_9_0x130
 	lwz		r8,  0x0098(r31)
@@ -447,7 +459,7 @@ MPCall_9_0x130
 	bne-	MPCall_9_0x15c
 	mr		r31, r8
 	mr		r8, r17
-	bl		major_0x0c8b4
+	bl		EnqueueMessage		; Message *r8, Queue *r31
 	b		ReleaseAndReturnMPCall
 
 MPCall_9_0x15c
@@ -595,94 +607,102 @@ MPCall_14_0x70
 
 
 
-	DeclareMPCall	56, MPCall_56
+;	MPLibrary passthrough
 
-MPCall_56	;	OUTSIDE REFERER
+;	When an exception occurs, the message to the queue will be:
+;		(32 bits) task ID
+;		(32 bits) exception type a la MachineExceptions.h
+;		(32 bits) 0 (reserved)
+
+;	ARG		TaskID r3, QueueID r4
+;	RET		OSStatus r3
+
+	DeclareMPCall	56, MPSetExceptionHandler
+
+MPSetExceptionHandler
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
 	mr		r8, r3
-
-;	r8 = id
  	bl		LookupID
 	cmpwi	r9, Task.kIDClass
-
 	bne+	ReleaseAndReturnMPCallInvalidIDErr
+
 	mr		r31, r8
+
 	mr		r8, r4
-
-;	r8 = id
  	bl		LookupID
-	cmpwi	r9, 0		; invalid
 
-	cmpwi	cr1, r9,  0x04
-	beq-	MPCall_56_0x44
+	cmpwi	r9, 0
+	cmpwi	cr1, r9, Queue.kIDClass
+	beq-	@isnil
 	bne+	cr1, ReleaseAndReturnMPCallInvalidIDErr
+@isnil
 
-MPCall_56_0x44
 	mr		r30, r8
-	stw		r4,  0x00f4(r31)
+	stw		r4, Task.ExceptionHandlerID(r31)
 
-;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall
 
 
 
-;	                    KCThrowException
+;	MPLibrary passthrough
 
 ;	Throws an exception to a specified task.
 
-;	> r3    = MPTaskID task
-;	> r4    = MPExceptionKind kind
+;	ARG		TaskID r3, ExceptionKind r4
+;	RET		OSStatus r3
 
-;	< r3    = result code
+	DeclareMPCall	57, MPThrowException
 
-	DeclareMPCall	57, KCThrowException
-
-KCThrowException	;	OUTSIDE REFERER
+MPThrowException
 	mfsprg	r15, 0
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
 	mr		r8, r3
-
-;	r8 = id
  	bl		LookupID
 	cmpwi	r9, Task.kIDClass
-
 	bne+	ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
-	lwz		r16,  0x0064(r31)
-	mtcr	r16
-	li		r3, -0x7271
-	beq+	cr7, ReleaseAndReturnMPCall
-	li		r3, -0x726c
-	beq+	cr5, ReleaseAndReturnMPCall
-	beq+	cr3, ReleaseAndReturnMPCallOOM
+
+	;	This is gold!
+		lwz		r16, Task.Flags(r31)
+		mtcr	r16
+
+		li		r3, kMPTaskAbortedErr
+		bc		BO_IF, 30, ReleaseAndReturnMPCall
+
+		li		r3, kMPTaskStoppedErr
+		bc		BO_IF, 22, ReleaseAndReturnMPCall
+
+		bc		BO_IF, 14, ReleaseAndReturnMPCallOOM
+
 	lbz		r17,  0x0018(r31)
 	lhz		r18,  0x001a(r31)
 	cmpwi	cr1, r17,  0x00
-	bne-	cr1, KCThrowException_0x70
+	bc		BO_IF_NOT, 6, KCThrowException_0x70
 	ori		r16, r16,  0x600
 	stw		r4,  0x00f8(r31)
 	stw		r16,  0x0064(r31)
-	li		r3, -0x726b
+
+	li		r3, kMPTaskBlockedErr
 	b		ReleaseAndReturnMPCall
 
 KCThrowException_0x70
-	lhz		r19, -0x0116(r15)
+	lhz		r19, EWA.CPUIndex(r15)
 	cmpw	r19, r18
 	bne-	KCThrowException_0xb8
 	ori		r16, r16,  0x200
 	stw		r4,  0x00f8(r31)
 	stw		r16,  0x0064(r31)
 	mr		r8, r31
-	bl		DequeueTask
+	bl		TaskUnready
 	addi	r16, r1, -0xa34
 	addi	r17, r31,  0x08
 	stw		r16,  0x0000(r17)
 	InsertAsPrev	r17, r16, scratch=r18
-	li		r3, -0x726c
+	li		r3, kMPTaskStoppedErr
 	b		ReleaseAndReturnMPCall
 
 KCThrowException_0xb8
@@ -720,21 +740,24 @@ MPCall_58	;	OUTSIDE REFERER
 
 	bne+	ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
-	lwz		r29,  0x0064(r31)
+
+	lwz		r29, Task.Flags(r31)
 	mtcr	r29
-	li		r3, -0x7271
-	beq+	cr7, ReleaseAndReturnMPCall
-	beq-	cr4, MPCall_58_0x44
-	bne+	cr5, ReleaseAndReturnMPCallOOM
+
+	li		r3, kMPTaskAbortedErr
+	bc		BO_IF, 30, ReleaseAndReturnMPCall
+
+	bc		BO_IF, 18, MPCall_58_0x44
+	bc		BO_IF_NOT, 22, ReleaseAndReturnMPCallOOM
 
 MPCall_58_0x44
 	mtcr	r4
 	lwz		r30,  0x0088(r31)
-	bns-	cr7, MPCall_58_0x68
+	bc		BO_IF_NOT, 31, MPCall_58_0x68
 	li		r8,  0x1c
 	bl		PoolAlloc_with_crset
 	cmpwi	r8,  0x00
-	beq+	major_0x0af60
+	beq+	ReleaseAndScrambleMPCall
 	li		r3,  0x00
 	b		MPCall_58_0x114
 
@@ -768,7 +791,7 @@ MPCall_58_0xb4
 	RemoveFromList		r16, scratch1=r17, scratch2=r18
 	mr		r8, r31
 	bl		TaskReadyAsPrev
-	bl		major_0x14af8
+	bl		FlagSchEvaluationIfTaskRequires
 
 MPCall_58_0xe0
 ;	r1 = kdp
@@ -783,14 +806,14 @@ FuncExportedFromTasks	;	OUTSIDE REFERER
 	InsertAsPrev	r17, r16, scratch=r18
 	li		r8,  0x1c
 	bl		PoolAlloc_with_crset
-	lwz		r29,  0x0064(r31)
-	ori		r29, r29,  0x200
+	lwz		r29, Task.Flags(r31)
+	_bset	r29, r29, 22
 
 MPCall_58_0x114
 	mtcr	r29
 	mr		r28, r8
-	beq-	cr3, MPCall_58_0x13c
-	blt-	cr5, MPCall_58_0x13c
+	bc		BO_IF, 14, MPCall_58_0x13c
+	bc		BO_IF, 20, MPCall_58_0x13c
 	lwz		r8, -0x08e8(r1)
 
 ;	r8 = id
@@ -802,7 +825,7 @@ MPCall_58_0x114
 	beq-	MPCall_58_0x184
 
 MPCall_58_0x13c
-	bso-	cr4, MPCall_58_0x158
+	bc		BO_IF, 19, MPCall_58_0x158
 	lwz		r8,  0x00f4(r31)
 
 ;	r8 = id
@@ -843,7 +866,7 @@ MPCall_58_0x1a4
 	stw		r17,  0x0018(r8)
 	stw		r18,  0x00f8(r31)
 	mr		r31, r30
-	bl		major_0x0c8b4
+	bl		EnqueueMessage		; Message *r8, Queue *r31
 	b		ReleaseAndReturnMPCall
 
 
@@ -903,12 +926,15 @@ MPCall_60	;	OUTSIDE REFERER
 	mr		r31, r8
 	cmpwi	r4,  0x05
 	beq-	MPCall_60_0x288
-	lwz		r16,  0x0064(r31)
+
+	lwz		r16, Task.Flags(r31)
 	mtcr	r16
-	li		r3, -0x7271
-	beq+	cr7, ReleaseAndReturnMPCall
-	beq-	cr4, MPCall_60_0x4c
-	bne+	cr5, ReleaseAndReturnMPCallOOM
+
+	li		r3, kMPTaskAbortedErr
+	bc		BO_IF, 30, ReleaseAndReturnMPCall
+
+	bc		BO_IF, 18, MPCall_60_0x4c
+	bc		BO_IF_NOT, 22, ReleaseAndReturnMPCallOOM
 
 MPCall_60_0x4c
 	lbz		r16,  0x0018(r31)
@@ -1226,12 +1252,15 @@ MPCall_61	;	OUTSIDE REFERER
 
 	bne+	ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
-	lwz		r16,  0x0064(r31)
+
+	lwz		r16, Task.Flags(r31)
 	mtcr	r16
-	li		r3, -0x7271
-	beq+	cr7, ReleaseAndReturnMPCall
-	beq-	cr4, MPCall_61_0x44
-	bne+	cr5, ReleaseAndReturnMPCallOOM
+
+	li		r3, kMPTaskAbortedErr
+	bc		BO_IF, 30, ReleaseAndReturnMPCall
+
+	bc		BO_IF, 18, MPCall_61_0x44
+	bc		BO_IF_NOT, 22, ReleaseAndReturnMPCallOOM
 
 MPCall_61_0x44
 	lbz		r16,  0x0018(r31)
@@ -1469,41 +1498,38 @@ MPCall_114	;	OUTSIDE REFERER
 	cmplwi	cr1, r17,  0x04
 	beq+	ReleaseAndReturnMPCallOOM
 	lwz		r16,  0x0064(r31)
-	lhz		r17,  0x022a(r30)
+	lhz		r17, CPU.EWA + EWA.CPUIndex(r30)
 	ori		r16, r16,  0x40
 	stw		r16,  0x0064(r31)
 	sth		r17,  0x001a(r31)
 	rlwinm.	r8, r16,  0, 26, 26
 	mr		r8, r31
 	bne-	MPCall_114_0x90
-	bl		DequeueTask
+	bl		TaskUnready
 	bl		TaskReadyAsPrev
 
 MPCall_114_0x90
-	bl		major_0x14af8
+	bl		FlagSchEvaluationIfTaskRequires
 
 ;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall
 
 
 
-;	                     KCSetTaskType
-
+;	ARG		TaskID r3, OSType r4
+;	RET		OSStatus r3
 
 	DeclareMPCall	126, KCSetTaskType
 
-KCSetTaskType	;	OUTSIDE REFERER
+KCSetTaskType
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
 	mr		r8, r3
-
-;	r8 = id
  	bl		LookupID
 	cmpwi	r9, Task.kIDClass
-
 	bne+	ReleaseAndReturnMPCallInvalidIDErr
-	stw		r4,  0x0074(r8)
 
-;	r1 = kdp
+	stw		r4, Task.Name(r8)
+
 	b		ReleaseAndReturnZeroFromMPCall

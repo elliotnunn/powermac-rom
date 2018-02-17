@@ -22,15 +22,15 @@ kcRTASDispatch	;	OUTSIDE REFERER
 	cmpwi	r8,  0x00
 	bne-	rtas_is_available
 	li		r3, -0x01
-	b		skeleton_key
+	b		IntReturn
 
 rtas_is_available
 
 	_Lock			PSA.RTASLock, scratch1=r8, scratch2=r9
 
 	mtcrf	 0x3f, r7
-	lwz		r9,  0x0658(r1)
-	lwz		r8, -0x000c(r1)
+	lwz		r9, KDP.PA_ECB(r1)
+	lwz		r8, EWA.Enables(r1)
 	stw		r7,  0x0000(r6)
 	stw		r8,  0x0004(r6)
 	bns-	cr6, kcRTASDispatch_0x5c
@@ -138,7 +138,7 @@ kcRTASDispatch_0x190
 	andi.	r8, r11,  0x900
 	lwz		r8,  0x0004(r6)
 	lwz		r13,  0x00dc(r6)
-	stw		r8, -0x000c(r1)
+	stw		r8, EWA.Enables(r1)
 	lwz		r8,  0x00d4(r6)
 	lwz		r12,  0x00ec(r6)
 	mtxer	r8
@@ -174,7 +174,7 @@ kcRTASDispatch_0x190
 	lwz		r31,  0x01fc(r6)
 	_AssertAndRelease	PSA.RTASLock, scratch=r8
 	li		r3,  0x00
-	b		skeleton_key
+	b		IntReturn
 
 rtas_make_actual_call
 	mtctr	r9

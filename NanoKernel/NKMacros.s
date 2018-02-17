@@ -86,7 +86,7 @@
 
 
 				MACRO
-				StartLoadingWord	&reg, &val
+				_lstart				&reg, &val
 				LHHI				(&reg), (&val)
 HalfLoadedWord	set					(&val)
 HalfLoadedReg	set					(&reg)
@@ -94,16 +94,16 @@ HalfLoadedReg	set					(&reg)
 
 
 	MACRO
-	FinishLoadingWord
+	_lfinish
 		LLHI	HalfLoadedReg, HalfLoadedWord
 	ENDM
 
 
 	MACRO
 	InitList					&ptr, &sig, &scratch==r8
-		StartLoadingWord		&scratch, &sig
+		_lstart					&scratch, &sig
 		stw						&ptr, LLL.Next(&ptr)
-		FinishLoadingWord
+		_lfinish
 		stw						&ptr, LLL.Prev(&ptr)
 		stw						&scratch, LLL.Signature(&ptr)
 	ENDM
@@ -203,3 +203,30 @@ HalfLoadedReg	set					(&reg)
 	ENDIF
 
 	ENDM
+
+
+	MACRO
+	_b_if_time_gt	&lhi, &rhi, &targ
+
+	cmpw	&lhi, &rhi
+	cmplw	cr1, &lhi + 1, &rhi + 1
+	bgt		&targ
+	blt		@fallthru
+	bgt		cr1, &targ
+@fallthru
+
+	ENDM
+
+
+	MACRO
+	_b_if_time_le	&lhi, &rhi, &targ
+
+	cmpw	&lhi, &rhi
+	cmplw	cr1, &lhi + 1, &rhi + 1
+	blt		&targ
+	bgt		@fallthru
+	ble		cr1, &targ
+@fallthru
+
+	ENDM
+

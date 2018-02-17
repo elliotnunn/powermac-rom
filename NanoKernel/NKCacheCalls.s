@@ -145,7 +145,7 @@ kcCacheDispatch_0x1d0
 	lwz		r22,  0x01b4(r6)
 	lwz		r23,  0x01bc(r6)
 	sync
-	b		skeleton_key
+	b		IntReturn
 
 kcCacheDispatch_0x1e4
 	clrlwi	r8, r3,  0x10

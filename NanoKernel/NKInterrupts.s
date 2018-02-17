@@ -9,7 +9,7 @@ Local_Panic		set		*
 ;	major_0x02ccc
 
 major_0x02964	;	OUTSIDE REFERER
-	b		AlternateMPCallReturnPath
+	b		BlockMPCall
 
 
 
@@ -37,7 +37,7 @@ major_0x02964	;	OUTSIDE REFERER
 major_0x02980	;	OUTSIDE REFERER
 	mfsprg	r1, 0
 	mtsprg	3, r24
-	lwz		r9, -0x000c(r1)
+	lwz		r9, EWA.Enables(r1)
 	rlwinm	r23, r17, 31, 27, 31
 	rlwnm.	r9, r9, r8,  0x00,  0x00
 	bsol-	cr3, major_0x02980_0x100
@@ -84,12 +84,12 @@ major_0x02980_0xa8
 	stw		r12,  0x008c(r6)
 	stw		r3,  0x0094(r6)
 	stw		r4,  0x009c(r6)
-	lwz		r8, -0x000c(r1)
+	lwz		r8, EWA.Enables(r1)
 	stw		r7,  0x0040(r6)
 	stw		r8,  0x0044(r6)
 	li		r8,  0x00
 	lwz		r10,  0x004c(r6)
-	stw		r8, -0x000c(r1)
+	stw		r8, EWA.Enables(r1)
 	lwz		r1, -0x0004(r1)
 	lwz		r4,  0x0054(r6)
 	lwz		r3,  0x0654(r1)
@@ -102,7 +102,7 @@ major_0x02980_0xec
 	bsol-	cr6, major_0x02980_0x114
 	rlwinm	r7, r7,  0, 29, 16
 	rlwimi	r11, r7,  0, 20, 23
-	b		skeleton_key
+	b		IntReturn
 
 major_0x02980_0x100
 	lwz		r2,  0x0008(r1)
@@ -124,7 +124,7 @@ major_0x02980_0x114	;	OUTSIDE REFERER
 major_0x02980_0x134	;	OUTSIDE REFERER
 	mfsprg	r1, 0
 	mtcrf	 0x3f, r7
-	lwz		r9, -0x000c(r1)
+	lwz		r9, EWA.Enables(r1)
 	lwz		r1, -0x0004(r1)
 	rlwnm.	r9, r9, r8,  0x00,  0x00
 	rlwimi	r7, r8, 24,  0,  7
@@ -142,16 +142,16 @@ major_0x02980_0x134	;	OUTSIDE REFERER
 
 major_0x02980_0x178	;	OUTSIDE REFERER
 	lwz		r1, -0x0004(r1)
-	lwz		r9,  0x0658(r1)
+	lwz		r9, KDP.PA_ECB(r1)
 	addi	r8, r1,  0x360
 	mtsprg	3, r8
-	bltl-	cr2, major_0x02ccc_0x108
+	bltl-	cr2, BlueException
 
 major_0x02980_0x18c	;	OUTSIDE REFERER
 	mfsprg	r1, 0
-	lwz		r8, -0x000c(r1)
-	stw		r7,  0x0000(r6)
-	stw		r8,  0x0004(r6)
+	lwz		r8, EWA.Enables(r1)
+	stw		r7, ContextBlock.Flags(r6)
+	stw		r8, ContextBlock.Enables(r6)
 	bns-	cr6, major_0x02980_0x1b8
 	stw		r17,  0x0024(r6)
 	stw		r20,  0x0028(r6)
@@ -217,7 +217,7 @@ major_0x02980_0x260
 	andi.	r8, r11,  0x900
 	lwz		r8,  0x0004(r6)
 	lwz		r13,  0x00dc(r6)
-	stw		r8, -0x000c(r1)
+	stw		r8, EWA.Enables(r1)
 	lwz		r8,  0x00d4(r6)
 	lwz		r12,  0x00ec(r6)
 	mtxer	r8
@@ -264,7 +264,7 @@ major_0x02980_0x2d0
 
 
 
-;	                      skeleton_key
+;	                      IntReturn
 
 ;	Called when a Gary reset trap is called. When else?
 
@@ -288,14 +288,14 @@ major_0x02980_0x2d0
 ;	CommonMPCallReturnPath
 ;	CommonPIHPath
 
-skeleton_key	;	OUTSIDE REFERER
+IntReturn	;	OUTSIDE REFERER
 	andi.	r8, r7,  0x30
 	mfsprg	r1, 0
 	bnel-	major_0x02ccc
 	li		r8,  0x00
-	stw		r7, -0x0010(r1)
+	stw		r7, EWA.Flags(r1)
 	stw		r8, -0x0114(r1)
-	b		major_0x142a8
+	b		ReturnToAnyTask
 
 
 
@@ -303,20 +303,20 @@ skeleton_key	;	OUTSIDE REFERER
 
 ;	Xrefs:
 ;	major_0x02980
-;	skeleton_key
+;	IntReturn
 
 major_0x02ccc	;	OUTSIDE REFERER
 	mtcrf	 0x3f, r7
-	bns-	cr6, major_0x02ccc_0x18
+	bc		BO_IF_NOT, 27, major_0x02ccc_0x18
 	rlwinm	r7, r7,  0, 28, 26
-	bso-	cr7, major_0x02ccc_0x30
+	bc		BO_IF, 31, major_0x02ccc_0x30
 	rlwinm	r7, r7,  0, 27, 25
 	b		major_0x02ccc_0x2c
 
 major_0x02ccc_0x18
 	bne-	cr6, major_0x02ccc_0x2c
 	rlwinm	r7, r7,  0, 27, 25
-	stw		r7, -0x0010(r1)
+	stw		r7, EWA.Flags(r1)
 	li		r8,  0x08
 	b		major_0x02980_0x134
 
@@ -325,8 +325,8 @@ major_0x02ccc_0x2c
 
 major_0x02ccc_0x30
 	rlwinm.	r8, r7,  0,  8,  8
-	beq-	major_0x02ccc_0x108
-	stw		r7, -0x0010(r1)
+	beq-	BlueException
+	stw		r7, EWA.Flags(r1)
 	lwz		r8,  0x0104(r6)
 	stw		r8,  0x0000(r1)
 	stw		r2,  0x0008(r1)
@@ -361,7 +361,7 @@ major_0x02ccc_0x30
 	rlwimi	r25, r17,  7, 25, 30
 	lhz		r26,  0x0d20(r25)
 	rlwimi	r25, r19,  1, 28, 30
-	stw		r16, -0x0010(r1)
+	stw		r16, EWA.Flags(r1)
 	rlwimi	r26, r26,  8,  8, 15		; copy hi byte of entry to second byte of word
 	rlwimi	r25, r17,  4, 23, 27
 	mtcrf	 0x10, r26					; so the second nybble of the entry is copied to cr3
@@ -381,36 +381,44 @@ major_0x02ccc_0x30
 
 
 
-major_0x02ccc_0x108	;	OUTSIDE REFERER
+BlueException
 	bl		Save_r14_r31		; r8 := EWA
 
 	lwz		r31, EWA.PA_CurTask(r8)
-	lwz		r8,  0x00f4(r31)
-
-;	r8 = id
+	lwz		r8, Task.ExceptionHandlerID(r31)
  	bl		LookupID
 	cmpwi	r9, Queue.kIDClass
-
 	mr		r30, r8
-	bnel-	major_0x02ccc_0x20c
-	lwz		r28,  0x0028(r30)
-	cmpwi	r28,  0x00
-	beql-	major_0x02ccc_0x20c
+	bnel-	@no_exception_handler
 
+	lwz		r28, Queue.ReservePtr(r30)
+	cmpwi	r28, 0
+	beql-	@no_memory_reserved_for_exception_messages
+
+;notify exception handler
 	_Lock			PSA.SchLock, scratch1=r8, scratch2=r9
 
-	lwz		r29,  0x0064(r31)
-	ori		r29, r29,  0x200
-	ori		r29, r29,  0x1000
-	stw		r29,  0x0064(r31)
-	lwz		r17,  0x0008(r28)
-	stw		r17,  0x0028(r30)
-	lwz		r17,  0x0000(r31)
-	stw		r17,  0x0010(r28)
-	li		r18, -0x7271
-	stw		r18,  0x0014(r28)
-	stw		r18,  0x00f8(r31)
-	stw		r10,  0x0018(r28)
+	lwz		r29, Task.Flags(r31)
+	_bset	r29, r29, Task.kFlag22
+	_bset	r29, r29, Task.kFlag19
+	stw		r29, Task.Flags(r31)
+
+	;	pop 'notr'
+	lwz		r17, Message.LLL + LLL.Next(r28)
+	stw		r17, Queue.ReservePtr(r30)
+
+	;	word1 = task ID
+	lwz		r17, Task.ID(r31)
+	stw		r17, Message.Word1(r28)
+
+	;	word 2 = kMPTaskAbortedErr
+	li		r18, kMPTaskAbortedErr
+	stw		r18, Message.Word2(r28)
+	stw		r18, Task.ErrToReturnIfIDie(r31)
+
+	;	word 3 = SRR0
+	stw		r10, Message.Word3(r28)
+
 	_log	'Blue task suspended. Notifying exception handler - srr1/0 '
 	mr		r8, r11
 	bl		Printw
@@ -420,12 +428,15 @@ major_0x02ccc_0x108	;	OUTSIDE REFERER
 	mr		r8, r12
 	bl		Printw
 	_log	'^n'
+
 	mr		r31, r30
 	mr		r8, r28
-	bl		major_0x0c8b4
-	b		major_0x142dc
+	bl		EnqueueMessage		; Message *r8, Queue *r31
 
-major_0x02ccc_0x20c
+	b		RescheduleAndReturn
+
+@no_exception_handler
+@no_memory_reserved_for_exception_messages
 	mflr	r16
 	_log	'Blue task terminated - no exception handler registered - srr1/0 '
 	mr		r8, r11
@@ -438,6 +449,8 @@ major_0x02ccc_0x20c
 	_log	'^n'
 	mtlr	r16
 	b		Local_Panic
+
+
 
 major_0x02ccc_0x2a4	;	OUTSIDE REFERER
 	bsol+	cr6, Local_Panic
@@ -457,7 +470,7 @@ major_0x02ccc_0x2a4	;	OUTSIDE REFERER
 	_Lock			PSA.SchLock, scratch1=r28, scratch2=r29
 
 	mr		r8, r31
-	bl		DequeueTask
+	bl		TaskUnready
 	lwz		r16,  0x0064(r31)
 	srwi	r8, r7, 24
 	rlwinm.	r16, r16,  0,  9,  9
@@ -489,7 +502,7 @@ major_0x02ccc_0x310	;	OUTSIDE REFERER
 	_Lock			PSA.SchLock, scratch1=r28, scratch2=r29
 
 	mr		r8, r31
-	bl		DequeueTask
+	bl		TaskUnready
 	lwz		r16,  0x0064(r31)
 	srwi	r8, r7, 24
 	rlwinm.	r16, r16,  0,  9,  9
@@ -545,7 +558,7 @@ major_0x02ccc_0x3d4
 	stw		r27,  0x0014(r26)
 	stw		r28,  0x0018(r26)
 	mr		r30, r26
-	bl		major_0x0db04
+	bl		CauseNotification
 	cmpwi	r8,  0x00
 	beq+	major_0x02964
 
@@ -572,10 +585,10 @@ major_0x02ccc_0x430
 	stw		r30,  0x0018(r26)
 	mr		r8, r26
 	addi	r31, r1, -0xa24
-	bl		major_0x0c8b4
+	bl		EnqueueMessage		; Message *r8, Queue *r31
 	lwz		r8, -0x0410(r1)
-	bl		major_0x0dce8
-	b		AlternateMPCallReturnPath
+	bl		UnblockBlueIfCouldBePolling
+	b		BlockMPCall
 
 major_0x02ccc_0x4a8
 	mr		r8, r31
@@ -606,7 +619,7 @@ major_0x02ccc_0x50c
 	mr		r8, r31
 	bl		TaskReadyAsPrev
 	bl		major_0x14af8_0xa0
-	b		AlternateMPCallReturnPath
+	b		BlockMPCall
 
 major_0x02ccc_0x524
 	b		FuncExportedFromTasks
@@ -635,24 +648,27 @@ IntDecrementer	;	OUTSIDE REFERER
 ;	r12 = sprg2
 ;	r13 = cr
 
-	lwz		r8,  0x05a0(r1)
+	lwz		r8, KDP.OldKDP(r1)
 	rlwinm.	r9, r11,  0, 16, 16
 	cmpwi	cr1, r8,  0x00
 	beq-	MaskedInterruptTaken
 	beq-	cr1, IntDecrementer_0x54
 
-	stw		r16,  0x0184(r6)
-	stw		r17,  0x018c(r6)
-	stw		r18,  0x0194(r6)
-	stw		r25,  0x01cc(r6)
+	stw		r16, ContextBlock.r16(r6)
+	stw		r17, ContextBlock.r17(r6)
+	stw		r18, ContextBlock.r18(r6)
+	stw		r25, ContextBlock.r25(r6)
+
 	bl		major_0x14a98
 	ble-	IntDecrementer_0x48
-	lwz		r8, -0x09d4(r1)
+
+	lwz		r8, PSA.CriticalReadyQ + ReadyQueue.Timecake + 4(r1)
 	mtspr	dec, r8
-	lwz		r16,  0x0184(r6)
-	lwz		r17,  0x018c(r6)
-	lwz		r18,  0x0194(r6)
-	b		skeleton_key
+
+	lwz		r16, ContextBlock.r16(r6)
+	lwz		r17, ContextBlock.r17(r6)
+	lwz		r18, ContextBlock.r18(r6)
+	b		IntReturn
 
 IntDecrementer_0x48
 	lwz		r16,  0x0184(r6)
@@ -673,9 +689,8 @@ IntDecrementer_0x54
 	bl		TimerDispatch
 	_AssertAndRelease	PSA.SchLock, scratch=r8
 
-;	r6 = ewa
 	bl		Restore_r14_r31
-	b		skeleton_key
+	b		IntReturn
 
 
 
@@ -698,7 +713,7 @@ IntDSI	;	OUTSIDE REFERER
 	mfsprg	r12, 2
 	mfcr	r13
 	mfsprg	r24, 3
-	lwz		r16, -0x0010(r1)
+	lwz		r16, EWA.Flags(r1)
 	lwz		r1, -0x0004(r1)
 	mfspr	r26, dsisr
 	addi	r23, r1,  0x4e0
@@ -731,7 +746,7 @@ major_0x03324	;	OUTSIDE REFERER
 
 major_0x03324_0x18
 	andis.	r26, r27,  0xec00
-	lwz		r16, -0x0010(r1)
+	lwz		r16, EWA.Flags(r1)
 	rlwinm	r17, r27,  0,  6, 15
 	rlwimi	r16, r16, 27, 26, 26
 	bge-	major_0x03324_0x58
@@ -831,7 +846,7 @@ IntAlignment	;	OUTSIDE REFERER
 
 	lwz		r11, EWA.PA_CurTask(r1)
 	lwz		r16, EWA.Flags(r1)
-	lwz		r21, Task.ThingThatAlignVecHits(r11)
+	lwz		r21, Task.Flags(r11)
 	lwz		r1, -0x0004(r1)		;	wha???
 
 	lwz		r11, KDP.NanoKernelInfo + NKNanoKernelInfo.MisalignmentCount(r1)
@@ -846,7 +861,7 @@ IntAlignment	;	OUTSIDE REFERER
 	mfspr	r27, dsisr
 	mfspr	r18, dar
 
-	rlwinm.	r21, r21,  0,  9,  9		;	KDP.ThingThatAlignVecHits
+	rlwinm.	r21, r21, 0, Task.kFlag9, Task.kFlag9
 
 	addi	r23, r1, KDP.RedVecBase
 
@@ -1223,7 +1238,7 @@ IntISI	;	OUTSIDE REFERER
 	mfsprg	r8, 0
 	mtsprg	3, r24
 	lmw		r14,  0x0038(r8)
-	b		skeleton_key
+	b		IntReturn
 
 
 
@@ -1289,7 +1304,7 @@ IntMachineCheck	;	OUTSIDE REFERER
 	rlwinm.	r8, r11,  0,  2,  2
 	beq-	IntMachineCheck_0xa4
 	bl		kcCacheDispatch_0x39c
-	b		skeleton_key
+	b		IntReturn
 
 IntMachineCheck_0xa4
 	li		r8,  0x07
@@ -1393,14 +1408,14 @@ major_0x03be0_0x58
 	rlwimi	r7, r8,  0, 17,  7
 	lwz		r8,  0x0044(r6)
 	rlwimi	r11, r7,  0, 20, 23
-	stw		r8, -0x000c(r1)
+	stw		r8, EWA.Enables(r1)
 	andi.	r8, r11,  0x900
 	lwz		r12,  0x008c(r6)
 	lwz		r3,  0x0094(r6)
 	lwz		r4,  0x009c(r6)
 	bnel-	major_0x03e18
 	addi	r9, r6,  0x40
-	b		skeleton_key
+	b		IntReturn
 
 major_0x03be0_0x90
 	lwz		r9,  0x0ea8(r1)
@@ -1413,7 +1428,7 @@ major_0x03be0_0x90
 	lwz		r8,  0x0044(r6)
 	mtcrf	 0x0f, r7
 	rlwimi	r11, r7,  0, 20, 23
-	stw		r8, -0x000c(r1)
+	stw		r8, EWA.Enables(r1)
 	lwz		r12,  0x008c(r6)
 	lwz		r3,  0x0094(r6)
 	lwz		r4,  0x009c(r6)
@@ -1462,7 +1477,7 @@ save_all_registers	;	OUTSIDE REFERER
 	mfspr	r11, srr1
 	mfcr	r13
 	mfsprg	r12, 2
-	lwz		r7, -0x0010(r1)
+	lwz		r7, EWA.Flags(r1)
 	lwz		r1, -0x0004(r1)
 
 ;	r6 = ewa
@@ -1495,7 +1510,7 @@ save_all_registers	;	OUTSIDE REFERER
 ;		 r4		(itself)
 ;		 r5		(itself)
 ;		 r6		ContextBlock		EWA
-;		 r7		AllCpuFeatures		ContextBlock
+;		 r7		Flags				ContextBlock
 ;		 r8		EWA					ContextBlock
 ;		 r9		(itself)			ContextBlock
 ;		r10		SRR0				ContextBlock
@@ -1833,21 +1848,18 @@ IntPerfMonitor	;	OUTSIDE REFERER
 	stw		r16,  0x0014(r30)
 	mfspr	r16, 955
 	stw		r16,  0x0018(r30)
-	bl		major_0x0db04
+	bl		CauseNotification
 
 IntPerfMonitor_0x88
 	_AssertAndRelease	PSA.SchLock, scratch=r8
 
 ;	r6 = ewa
 	bl		Restore_r14_r31
-	b		skeleton_key
+	b		IntReturn
 
 
 
-;	                    IntThermalEvent
-
-;	Xrefs:
-;	"vec"
+;	Notify the Thermal Handler
 
 	align	kIntAlign
 
@@ -1860,24 +1872,20 @@ IntThermalEvent	;	OUTSIDE REFERER
 
 	_Lock			PSA.SchLock, scratch1=r8, scratch2=r9
 
-	lwz		r8, -0x0418(r1)
-
-;	r8 = id
+	lwz		r8, PSA.ThermalHandlerID(r1)
  	bl		LookupID
 	cmpwi	r9, Notification.kIDClass
-
 	mr		r30, r8
-	bne-	IntThermalEvent_0x68
-	lwz		r16, -0x0340(r28)
-	stw		r16,  0x0010(r30)
-	bl		major_0x0db04
+	bne-	@no_thermal_handler
 
-IntThermalEvent_0x68
+	lwz		r16, EWA.CPUBase + CPU.ID(r28)
+	stw		r16, Notification.MsgWord1(r30)
+	bl		CauseNotification
+@no_thermal_handler
+
 	_AssertAndRelease	PSA.SchLock, scratch=r8
-
-;	r6 = ewa
 	bl		Restore_r14_r31
-	b		skeleton_key
+	b		IntReturn
 
 
 
@@ -1890,12 +1898,12 @@ IntThermalEvent_0x68
 
 kcRunAlternateContext	;	OUTSIDE REFERER
 	mtcrf	 0x3f, r7
-	bnel+	cr2, skeleton_key
+	bnel+	cr2, IntReturn
 	and.	r8, r4, r13
 	lwz		r9,  0x0340(r1)
 	rlwinm	r8, r3,  0,  0, 25
 	cmpw	cr1, r8, r9
-	bne+	skeleton_key
+	bne+	IntReturn
 	lwz		r9,  0x0344(r1)
 	bne-	cr1, major_0x043a0_0x48
 
@@ -2014,20 +2022,11 @@ wordfill	;	OUTSIDE REFERER
 
 
 
-;	                       kcResetSystem
-
 ;	Handle a 68k reset trap.
-;	Some messing around with 601 RTC vs later timebase
-;	registers.
-;	If Gary Davidian's first name and birthdate were in the
-;	68k's A0/A1 (the 'skeleton key'), do something.
-;	Otherwise, farm it out to non_skeleton_reset_trap.
 
-;	Xrefs:
-;	"sup"
+;	If A0(r3)/A1(r4) == 'Gary'/$05051955, load the register list in A3? Or is this now disabled?
 
-;	> r3    = a0
-;	> r4    = a1
+;	New SRR0 = SRR0 & ~r5(D0) | r7(D2)
 
 	align	kIntAlign
 
@@ -2056,12 +2055,12 @@ kcResetSystem	;	OUTSIDE REFERER
 	andis.	r9, r9,  0xffff
 
 	cmplwi	r8, 'ry'
-	bne-	non_skeleton_reset_trap
+	bne-	NonGaryReset
 
 	;	r4 (i.e. A1) == 5 May 1956?
 	xoris	r8, r4, 0x0505
 	cmplwi	r8,     0x1956
-	bne-	non_skeleton_reset_trap
+	bne-	NonGaryReset
 
 	andc	r11, r11, r5
 	lwz		r8, ContextBlock.r7(r6)
@@ -2077,18 +2076,18 @@ kcResetSystem	;	OUTSIDE REFERER
 
 	_log	'^n'
 	
-	b		skeleton_key
+	b		IntReturn
 
 
 
-;	                non_skeleton_reset_trap
+;	                NonGaryReset
 
 ;	A 68k reset trap without Gary Davidian's magic numbers.
 
 ;	Xrefs:
 ;	kcResetSystem
 
-non_skeleton_reset_trap
+NonGaryReset
 
 	_log	'ResetSystem trap entered^n'
 
@@ -2114,7 +2113,7 @@ non_skeleton_reset_trap
 	stw		r6,  0x065c(r8)
 	stw		r7,  0x0660(r8)			; ??????????
 
-	lwz		r9, -0x000c(r1)
+	lwz		r9, EWA.Enables(r1)
 	stw		r9,  0x0664(r8)
 
 ;	r6 = ewa
@@ -2130,7 +2129,7 @@ non_skeleton_reset_trap
 ;	r11 = new srr1
 ;	r12 = lr restore
 ;	r13 = cr restore
-	b		int_teardown
+	b		ReturnFromInterrupt
 
 
 
@@ -2338,7 +2337,7 @@ IntProgram_0xd0
 	xoris	r13, r13,  0x2000
 	lwz		r8,  0x00ec(r9)
 	stw		r8,  0x0104(r6)
-	b		skeleton_key
+	b		IntReturn
 
 IntProgram_0x110
 	mtcr	r7
@@ -2435,13 +2434,13 @@ IntExternalYellow	;	OUTSIDE REFERER
 	cmpwi	cr2, r8, -0x725f
 
 	beq+	kcPrioritizeInterrupts
-	beq+	cr1, skeleton_key
+	beq+	cr1, IntReturn
 	bne+	cr2, kcPrioritizeInterrupts
 	
 	mfsprg	r9, 0
 	li		r8,  0x01
-	stb		r8, EWA.BinaryFlag(r9)
-	b		skeleton_key
+	stb		r8, EWA.SchEvalFlag(r9)
+	b		IntReturn
 
 
 
@@ -2454,7 +2453,7 @@ IntExternalYellow	;	OUTSIDE REFERER
 ;	MPCall_43
 ;	KCStartCPU
 ;	KCCpuPlugin
-;	major_0x14af8
+;	FlagSchEvaluationIfTaskRequires
 ;	MPCall_103
 
 ;	> r7    = flags
@@ -2501,7 +2500,7 @@ SIGP_0x28
 	lwz		r8,  0x004c(r22)
 	cmpw	r9, r8
 	beq-	SIGP_0x94
-	bl		SetAddrSpcRegisters
+	bl		SetSpaceSRsAndBATs
 
 SIGP_0x94
 	lwz		r16,  0x0004(r23)
@@ -2513,7 +2512,7 @@ SIGP_0x94
 	stw		r5,  0x012c(r6)
 	stw		r17,  0x0134(r6)
 	lwz		r17,  0x0648(r1)
-	lhz		r16, -0x0116(r23)
+	lhz		r16, EWA.CPUIndex(r23)
 	lwz		r19, -0x0964(r1)
 	slwi	r16, r16,  2
 	rlwinm	r19, r19,  0, 18, 15
@@ -2581,7 +2580,7 @@ major_0x04a20_0x30
 	lwz		r9, -0x001c(r23)
 	cmpw	r9, r8
 	beq-	major_0x04a20_0x44
-	bl		SetAddrSpcRegisters
+	bl		SetSpaceSRsAndBATs
 
 major_0x04a20_0x44
 	lwz		r10, -0x02d0(r23)
@@ -2648,7 +2647,7 @@ IntSyscall	;	OUTSIDE REFERER
 
 	;	sc -1: mess around with flags
 
-		lwz		r0, -0x0010(r1)
+		lwz		r0, EWA.Flags(r1)
 		mfsprg	r1, 2
 		rlwinm.	r0, r0,  0, 10, 10
 		mtlr	r1
@@ -2661,7 +2660,7 @@ IntSyscall	;	OUTSIDE REFERER
 
 	;	sc -2: more flag nonsense?
 
-		lwz		r0, -0x0010(r1)
+		lwz		r0, EWA.Flags(r1)
 		lwz		r1, -0x0008(r1)
 		rlwinm.	r0, r0,  0, 10, 10
 		lwz		r0,  0x00ec(r1)

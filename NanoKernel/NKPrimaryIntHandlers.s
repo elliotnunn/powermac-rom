@@ -64,17 +64,19 @@ PIHTableEnd
 
 ;	> r1    = kdp
 
+;	ARG		r28 = 68k int number
+
 ;	Alignment probably to fit a cache block (very oft-run code).
 	align	5
 
 CommonPIHPath	;	OUTSIDE REFERER
 	mtsprg	3, r30
 	lwz		r23, KDP.PA_EmulatorIplValue(r1)
-	lwz		r27, -0x0428(r1)
+	lwz		r27, PSA.ExternalHandlerID(r1)
 
 CommonPIHPath_0xc	;	OUTSIDE REFERER
 	cmpwi	cr7, r28, 0
-	li		r31,  0x00
+	li		r31, 0
 	blt-	cr7, @negative
 
 	beq-	cr7, @zero_rupt
@@ -83,7 +85,7 @@ CommonPIHPath_0xc	;	OUTSIDE REFERER
 @zero_rupt
 
 	andis.	r8, r11, 0x8000 >> 14		;	some kind of perfmon bit
-	cmpwi	cr1, r27, 0x00
+	cmpwi	cr1, r27, 0
 	lwz		r29, KDP.ClearIntMaskInit(r1)
 
 	bne-	@noperf
@@ -100,7 +102,7 @@ CommonPIHPath_0xc	;	OUTSIDE REFERER
 @negative
 	_AssertAndRelease	PSA.PIHLock, scratch=r8
 	bl		Restore_r20_r31
-	b		skeleton_key
+	b		IntReturn
 
 CommonPIHPath_0x78
 	_AssertAndRelease	PSA.PIHLock, scratch=r8
@@ -109,24 +111,21 @@ CommonPIHPath_0x78
 	_Lock			PSA.SchLock, scratch1=r8, scratch2=r9
 
 	mr		r8, r27
-
-;	r8 = id
  	bl		LookupID
 	cmpwi	r9, Notification.kIDClass
-
 	mr		r30, r8
-	bne-	CommonPIHPath_0x100
-	clrlwi	r9, r28,  0x11
-	stw		r9,  0x0010(r30)
-	stw		r22,  0x0014(r30)
-	bl		major_0x0db04
+	bne-	@no_handler_notification
+
+	clrlwi	r9, r28, 17
+	stw		r9, Notification.MsgWord1(r30)
+	stw		r22, Notification.MsgWord2(r30)
+	bl		CauseNotification
 	_AssertAndRelease	PSA.SchLock, scratch=r8
 
-;	r6 = ewa
 	bl		Restore_r14_r31
-	b		skeleton_key
+	b		IntReturn
 
-CommonPIHPath_0x100
+@no_handler_notification
 	li		r27,  0x00
 	lwz		r23,  0x067c(r1)
 	stw		r27, -0x0428(r1)
@@ -156,7 +155,7 @@ CommonPIHPath_0x14c
 	cmpwi	r29,  0x00
 	lhz		r16,  0x001a(r31)
 	beq-	CommonPIHPath_0x1dc
-	lhz		r17, -0x0116(r30)
+	lhz		r17, EWA.CPUIndex(r30)
 	cmpw	cr1, r16, r17
 	rlwinm.	r8, r28,  0, 26, 26
 	beq-	cr1, CommonPIHPath_0x1d0
@@ -164,7 +163,7 @@ CommonPIHPath_0x14c
 
 CommonPIHPath_0x1d0
 	mr		r8, r31
-	bl		DequeueTask
+	bl		TaskUnready
 	b		CommonPIHPath_0x218
 
 CommonPIHPath_0x1dc
@@ -174,7 +173,7 @@ CommonPIHPath_0x1dc
 	cmpwi	r17,  0x01
 	bne-	CommonPIHPath_0x210
 	addi	r8, r31,  0x20
-	bl		major_0x136c8
+	bl		DequeueTimer
 
 CommonPIHPath_0x210
 	lwz		r16,  0x0e80(r1)
@@ -190,12 +189,12 @@ CommonPIHPath_0x218
 
 CommonPIHPath_0x230
 	mr		r8, r31
-	bl		major_0x14af8
+	bl		FlagSchEvaluationIfTaskRequires
 	_AssertAndRelease	PSA.SchLock, scratch=r16
 
 ;	r6 = ewa
 	bl		Restore_r14_r31
-	b		skeleton_key
+	b		IntReturn
 
 
 

@@ -138,7 +138,7 @@ major_0x09e28_0x4
 	lwz		r29,  0x01ec(r6)
 	lwz		r30,  0x01f4(r6)
 	lwz		r31,  0x01fc(r6)
-	b		skeleton_key
+	b		IntReturn
 
 major_0x09e28_0x24	;	OUTSIDE REFERER
 	li		r3, -0x7267
@@ -146,11 +146,11 @@ major_0x09e28_0x24	;	OUTSIDE REFERER
 
 major_0x09e28_0x2c	;	OUTSIDE REFERER
 	li		r3,  0x00
-	b		skeleton_key
+	b		IntReturn
 
 major_0x09e28_0x34	;	OUTSIDE REFERER
 	li		r3, -0x01
-	b		skeleton_key
+	b		IntReturn
 
 major_0x09e28_0x3c	;	OUTSIDE REFERER
 	mfsprg	r9, 0
@@ -158,7 +158,7 @@ major_0x09e28_0x3c	;	OUTSIDE REFERER
 	lwz		r9,  0x0024(r8)
 	cmpwi	r9,  0x01
 	li		r3, -0x7267
-	bgt+	skeleton_key
+	bgt+	IntReturn
 	stw		r26,  0x01d4(r6)
 	stw		r27,  0x01dc(r6)
 	stw		r28,  0x01e4(r6)
@@ -510,7 +510,7 @@ major_0x09e28_0x4a8
 	mtspr	ibat3l, r9
 	lwz		r16,  0x0184(r6)
 	li		r3,  0x00
-	b		skeleton_key
+	b		IntReturn
 
 major_0x09e28_0x59c
 	mflr	r9
@@ -573,7 +573,7 @@ major_0x0a600	;	OUTSIDE REFERER
 major_0x0a600_0x10	;	OUTSIDE REFERER
 	mtspr	1019, r5
 	li		r3,  0x00
-	b		skeleton_key
+	b		IntReturn
 
 major_0x0a600_0x1c	;	OUTSIDE REFERER
 	b		major_0x0a600_0x1c

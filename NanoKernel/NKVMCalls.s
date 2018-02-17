@@ -189,7 +189,7 @@ VMReturn	;	OUTSIDE REFERER
 	lwz		r7, -0x0010(r8)
 	lwz		r6, -0x0014(r8)
 	_AssertAndRelease	PSA.HTABLock, scratch=r8
-	b		skeleton_key
+	b		IntReturn
 
 
 

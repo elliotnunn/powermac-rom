@@ -122,7 +122,7 @@ MPCall_103_0x10c
 	mr		r29, r17
 	li		r16,  0x06
 	stw		r16, -0x0238(r15)
-	lhz		r16, -0x0116(r15)
+	lhz		r16, EWA.CPUIndex(r15)
 	stw		r16, -0x0234(r15)
 	li		r8,  0x02
 
@@ -259,7 +259,7 @@ MPCall_103_0x270
 	mfsprg	r15, 0
 	li		r16,  0x11
 	stw		r16, -0x0238(r15)
-	lhz		r16, -0x0116(r15)
+	lhz		r16, EWA.CPUIndex(r15)
 	stw		r16, -0x0234(r15)
 	li		r8,  0x02
 
@@ -359,12 +359,12 @@ RestoreKernelState_0x144
 	mfsprg	r15, 0
 	lwz		r8, -0x001c(r15)
 	li		r9,  0x00
-	bl		SetAddrSpcRegisters
+	bl		SetSpaceSRsAndBATs
 	isync
 	mfsprg	r15, 0
 	li		r16,  0x07
 	stw		r16, -0x0238(r15)
-	lhz		r16, -0x0116(r15)
+	lhz		r16, EWA.CPUIndex(r15)
 	stw		r16, -0x0234(r15)
 	li		r8,  0x02
 
@@ -374,7 +374,7 @@ RestoreKernelState_0x144
 	mfsprg	r15, 0
 	li		r16,  0x11
 	stw		r16, -0x0238(r15)
-	lhz		r16, -0x0116(r15)
+	lhz		r16, EWA.CPUIndex(r15)
 	stw		r16, -0x0234(r15)
 	li		r8,  0x02
 

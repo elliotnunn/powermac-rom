@@ -20,12 +20,12 @@
 ;	kcRTASDispatch
 ;	ReleaseAndMPCallWasBad
 ;	ReleaseAndReturnZeroFromMPCall
-;	major_0x0af60
+;	ReleaseAndScrambleMPCall
 ;	ReleaseAndReturnMPCallBlueBlocking
 ;	major_0x0b054
 ;	ReleaseAndReturnMPCallPrivilegedErr
 ;	major_0x0b0cc
-;	AlternateMPCallReturnPath
+;	BlockMPCall
 ;	MPCall_0
 ;	MPCall_6
 ;	KCYieldWithHint
@@ -33,7 +33,7 @@
 ;	KCStopScheduling
 ;	MPCall_115
 ;	Local_Panic
-;	major_0x0d35c
+;	SetEvent
 ;	MPCall_41
 ;	Local_Panic
 ;	MPCall_9
@@ -68,7 +68,7 @@
 ;	major_0x129cc
 ;	Local_Panic
 ;	Local_Panic
-;	major_0x142dc
+;	RescheduleAndReturn
 ;	major_0x14548
 ;	Local_Panic
 ;	CommonPIHPath
@@ -695,7 +695,7 @@ panic_common
 	bl		Printw
 
 	_log	' is CPU '
-	lhz		r8, -0x0116(r17)
+	lhz		r8, EWA.CPUIndex(r17)
 	bl		Printh
 
 	_log	' ID-'

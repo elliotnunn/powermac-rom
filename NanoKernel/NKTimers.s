@@ -92,10 +92,11 @@ InitTMRQs_0xb4
 	mr.		r31, r8
 	beq+	Local_Panic
 
-	li		r9,  0x06
-	stb		r9,  0x0014(r31)
-	li		r9,  0x01
-	stb		r9,  0x0016(r31)
+	li		r9, Timer.kKind6
+	stb		r9, Timer.Kind(r31)
+
+	li		r9, 1
+	stb		r9, Timer.KeepAfterFiring(r31)
 
 	bl		GetTime
 	stw		r8, Timer.Time(r31)
@@ -116,88 +117,91 @@ InitTMRQs_0xb4
 
 ;	Xrefs:
 ;	IntDecrementer
-;	major_0x130f0
+;	TimerFire0
 
 TimerTable
 
-	dc.l	major_0x130f0 - NKTop
-	dc.l	major_0x13120 - NKTop
-	dc.l	major_0x1318c - NKTop
-	dc.l	major_0x1324c - NKTop
-	dc.l	major_0x132e8 - NKTop
-	dc.l	major_0x13350 - NKTop
-	dc.l	major_0x135b8 - NKTop
-	dc.l	major_0x134bc - NKTop
-	dc.l	major_0x13524 - NKTop
+	dc.l	TimerFireUnknownKind - NKTop	; Timer.kKind0
+	dc.l	TimerFire1 - NKTop				; Timer.kKind1
+	dc.l	TimerFire2 - NKTop				; Timer.kKind2
+	dc.l	TimerFire3 - NKTop				; Timer.kKind3
+	dc.l	TimerFire4 - NKTop				; Timer.kKind4
+	dc.l	TimerFire5 - NKTop				; Timer.kKind5
+	dc.l	TimerFire6 - NKTop				; Timer.kKind6
+	dc.l	TimerFire7 - NKTop				; Timer.kKind7
+	dc.l	TimerFire8 - NKTop				; Timer.kKind8
 
 TimerDispatch	;	OUTSIDE REFERER
 	mflr	r19
 	mfsprg	r18, 0
-	stw		r19, -0x0258(r18)
+	stw		r19, EWA.TimerDispatchLR(r18)
 
 TimerDispatch_0x30	;	OUTSIDE REFERER
 	mfspr	r8, pvr
 	rlwinm.	r8, r8,  0,  0, 14
-	beq-	TimerDispatch_0x54
+	beq-	@is_601
 
-TimerDispatch_0x3c
+;not 601
+@gettime_loop_non_601
 	mftbu	r8
 	mftb	r9
 	mftbu	r16
 	cmpw	r8, r16
-	bne-	TimerDispatch_0x3c
-	b		TimerDispatch_0x90
+	bne-	@gettime_loop_non_601
+	b		@common
 
-TimerDispatch_0x54
+@is_601
+@gettime_loop_601
 	mfspr	r8, rtcu
 	mfspr	r9, rtcl
 	mfspr	r16, rtcu
 	cmpw	r8, r16
-	bne-	TimerDispatch_0x54
-	lis		r16,  0x3b9a
-	ori		r16, r16,  0xca00
-	mfspr	r17, mq
-	dc.l	0x7d1040d6
-	mfspr	r16, mq
-	mtspr	mq, r17
+	bne-	@gettime_loop_601
+
+	dialect	POWER
+
+	liu		r16, 1000000000 >> 16
+	oril	r16, r16, 1000000000 & 0xffff
+
+	mfmq	r17
+	mul		r8, r16, r8
+	mfmq	r16
+	mtmq	r17
+	
 	mfxer	r17
-	addc	r9, r16, r9
-	addze	r8, r8
+	a		r9, r16, r9
+	aze		r8, r8
 	mtxer	r17
 
-TimerDispatch_0x90
-	lbz		r19, -0x0309(r18)
-	addi	r30, r18, -0x320
-	cmpwi	r19,  0x01
-	lwz		r16,  0x0038(r30)
-	bne-	TimerDispatch_0xcc
-	lwz		r17,  0x003c(r30)
-	cmpw	r16, r8
-	cmplw	cr1, r17, r9
-	bgt-	TimerDispatch_0xcc
-	blt-	TimerDispatch_0xbc
-	bgt-	cr1, TimerDispatch_0xcc
+	dialect	PowerPC
+@common
 
-TimerDispatch_0xbc
+
+
+	lbz		r19, EWA.GlobalTimeIsValid(r18)
+	addi	r30, r18, EWA.Base
+	cmpwi	r19, 1
+	lwz		r16, EWA.GlobalTime - EWA.Base(r30)
+	bne-	timer_earlier_than_sometime
+	lwz		r17, EWA.GlobalTime + 4 - EWA.Base(r30)
+
+	_b_if_time_gt	r16, r8, timer_earlier_than_sometime
+@skipbranch
 	li		r19,  0x00
 	stw		r30, -0x0254(r18)
 	stb		r19,  0x0017(r30)
-	b		major_0x132e8_0x10
+	b		TimerFire4_0x10
 
-TimerDispatch_0xcc
+timer_earlier_than_sometime
 	lwz		r30, -0x0a7c(r1)
 	lwz		r16,  0x0038(r30)
 	lwz		r17,  0x003c(r30)
-	cmpw	r16, r8
-	cmplw	cr1, r17, r9
-	bgt-	TimerDispatch_0x188
-	blt-	TimerDispatch_0xec
-	bgt-	cr1, TimerDispatch_0x188
 
-TimerDispatch_0xec
+	_b_if_time_gt	r16, r8, TimerDispatch_0x188
+
 	RemoveFromList		r30, scratch1=r19, scratch2=r20
 	lwz		r19,  0x064c(r1)
-	lbz		r20,  0x0014(r30)
+	lbz		r20, Timer.Kind(r30)
 	rlwimi	r19, r20,  2, 23, 29
 	cmplwi	r20,  0x09
 	llabel	r20, TimerTable
@@ -233,7 +237,7 @@ TimerDispatch_0x180:
 	b		TimerDispatch_0x30
 
 TimerDispatch_0x188
-	lwz		r19, -0x0258(r18)
+	lwz		r19, EWA.TimerDispatchLR(r18)
 	mtlr	r19
 	b		AdjustDecForTMRQGivenCurTimeAndTripTime
 
@@ -248,7 +252,7 @@ StartTimeslicing	;	OUTSIDE REFERER
 	mfsprg	r19, 0
 
 	li		r8, 1
-	stb		r8, -0x0309(r19)
+	stb		r8, EWA.GlobalTimeIsValid(r19)
 
 	li		r8, 0
 	stw		r8, -0x02e8(r19)
@@ -278,7 +282,7 @@ AdjustDecForTMRQ
 AdjustDecForTMRQGivenCurTime
 
 ;	This should get the most distant time???
-	lwz		r18, PSA.TimerQueue + Queue.LLL + LLL.Next(r1)
+	lwz		r18, PSA.TimerQueue + LLL.Next(r1)
 	lwz		r16, Timer.Time(r18)
 	lwz		r17, Timer.Time+4(r18)
 
@@ -300,20 +304,15 @@ AdjustDecForTMRQGivenCurTimeAndTripTime
 
 	;	r16/r17 = soonest(last timer, global PSA time if available)
 
-	bne-	@global_time_invalid
+	bne-	global_time_invalid
 	lwz		r18, EWA.GlobalTime(r19)
 	lwz		r19, EWA.GlobalTime+4(r19)
 
-	cmpw	r16, r18
-	cmplw	cr1, r17, r19
-	blt-	@last_timer_fires_sooner
-	bgt-	@global_time_sooner
-	ble-	cr1, @last_timer_fires_sooner
-@global_time_sooner
+	_b_if_time_le	r16, r18, last_timer_fires_sooner
 	mr		r17, r19
 	mr		r16, r18
-@last_timer_fires_sooner
-@global_time_invalid
+last_timer_fires_sooner
+global_time_invalid
 
 
 	;	Subtract the current time (or what we were passed in r8/r9) from that time
@@ -341,23 +340,23 @@ AdjustDecForTMRQGivenCurTimeAndTripTime
 
 
 
-;	                     major_0x130f0                      
+;	                     TimerFire0                      
 
 ;	Xrefs:
 ;	TimerDispatch
 
-major_0x130f0	;	OUTSIDE REFERER
+TimerFireUnknownKind
 	_log	'TimerInformation.kind is zero??^n'
 
 
 
-;	                     major_0x13120                      
+;	                     TimerFire1                      
 
 ;	Xrefs:
 ;	TimerDispatch
-;	major_0x130f0
+;	TimerFire0
 
-major_0x13120	;	OUTSIDE REFERER
+TimerFire1	;	OUTSIDE REFERER
 	bl		Local_Panic
 	lwz		r18,  0x0018(r30)
 	stw		r16,  0x0080(r18)
@@ -368,29 +367,29 @@ major_0x13120	;	OUTSIDE REFERER
 	lwz		r19,  0x0088(r8)
 	cmpwi	r17,  0x00
 	stw		r16,  0x011c(r19)
-	bne-	major_0x13120_0x64
+	bne-	TimerFire1_0x64
 	addi	r16, r8,  0x08
 	RemoveFromList		r16, scratch1=r17, scratch2=r19
 	li		r17,  0x01
 	stb		r17,  0x0019(r8)
 	bl		TaskReadyAsPrev
 	bl		CalculateTimeslice
-	bl		major_0x14af8
+	bl		FlagSchEvaluationIfTaskRequires
 	b		TimerDispatch_0x144
 
-major_0x13120_0x64
+TimerFire1_0x64
 	lwz		r16,  0x0064(r8)
 	rlwinm.	r16, r16,  0, 30, 30
 
 
 
-;	                     major_0x1318c                      
+;	                     TimerFire2                      
 
 ;	Xrefs:
 ;	TimerDispatch
-;	major_0x13120
+;	TimerFire1
 
-major_0x1318c	;	OUTSIDE REFERER
+TimerFire2	;	OUTSIDE REFERER
 	bne+	TimerDispatch_0x144
 	bl		Local_Panic
 	lwz		r18,  0x0018(r30)
@@ -401,7 +400,7 @@ major_0x1318c	;	OUTSIDE REFERER
 	lbz		r17,  0x0018(r8)
 	lwz		r18,  0x0088(r8)
 	cmpwi	r17,  0x00
-	bne-	major_0x1324c_0x8
+	bne-	TimerFire3_0x8
 	stw		r16,  0x011c(r18)
 	lwz		r8,  0x0008(r8)
 	lwz		r8,  0x0000(r8)
@@ -411,35 +410,35 @@ major_0x1318c	;	OUTSIDE REFERER
 	cmpwi	r9, Queue.kIDClass
 
 	cmpwi	cr1, r9,  0x05
-	beq-	major_0x1318c_0x8c
-	beq-	cr1, major_0x1318c_0x7c
+	beq-	TimerFire2_0x8c
+	beq-	cr1, TimerFire2_0x7c
 	cmpwi	r9,  0x09
 	cmpwi	cr1, r9,  0x06
-	beq-	major_0x1318c_0x6c
+	beq-	TimerFire2_0x6c
 	bne+	cr1, Local_Panic
 	lwz		r16,  0x0020(r8)
 	addi	r16, r16, -0x01
 	stw		r16,  0x0020(r8)
-	b		major_0x1318c_0x98
+	b		TimerFire2_0x98
 
-major_0x1318c_0x6c
+TimerFire2_0x6c
 	lwz		r16,  0x001c(r8)
 	addi	r16, r16, -0x01
 	stw		r16,  0x001c(r8)
-	b		major_0x1318c_0x98
+	b		TimerFire2_0x98
 
-major_0x1318c_0x7c
+TimerFire2_0x7c
 	lwz		r16,  0x001c(r8)
 	addi	r16, r16, -0x01
 	stw		r16,  0x001c(r8)
-	b		major_0x1318c_0x98
+	b		TimerFire2_0x98
 
-major_0x1318c_0x8c
+TimerFire2_0x8c
 	lwz		r16,  0x002c(r8)
 	addi	r16, r16, -0x01
 	stw		r16,  0x002c(r8)
 
-major_0x1318c_0x98
+TimerFire2_0x98
 	lwz		r8,  0x0018(r30)
 	addi	r16, r8,  0x08
 	RemoveFromList		r16, scratch1=r17, scratch2=r18
@@ -447,17 +446,17 @@ major_0x1318c_0x98
 
 
 
-;	                     major_0x1324c                      
+;	                     TimerFire3                      
 
 ;	Xrefs:
 ;	TimerDispatch
-;	major_0x1318c
+;	TimerFire2
 
-major_0x1324c	;	OUTSIDE REFERER
-	bl		major_0x14af8
+TimerFire3	;	OUTSIDE REFERER
+	bl		FlagSchEvaluationIfTaskRequires
 	b		TimerDispatch_0x144
 
-major_0x1324c_0x8	;	OUTSIDE REFERER
+TimerFire3_0x8	;	OUTSIDE REFERER
 	b		Local_Panic
 
 
@@ -498,7 +497,7 @@ major_0x13258_0x4c
 	stw		r16,  0x0010(r8)
 	stw		r17,  0x0014(r8)
 	stw		r18,  0x0018(r8)
-	bl		major_0x0c8b4
+	bl		EnqueueMessage		; Message *r8, Queue *r31
 
 major_0x13258_0x68
 	lwz		r8,  0x0034(r30)
@@ -509,7 +508,7 @@ major_0x13258_0x68
 
 	mr		r31, r8
 	bne-	major_0x13258_0x80
-	bl		major_0x0ccf4
+	bl		SignalSemaphore
 
 major_0x13258_0x80
 	lwz		r8,  0x002c(r30)
@@ -522,62 +521,62 @@ major_0x13258_0x80
 
 
 
-;	                     major_0x132e8                      
+;	                     TimerFire4                      
 
 ;	Xrefs:
 ;	TimerDispatch
 ;	major_0x13258
 
-major_0x132e8	;	OUTSIDE REFERER
-	bne-	major_0x132e8_0xc
+TimerFire4	;	OUTSIDE REFERER
+	bne-	TimerFire4_0xc
 	lwz		r8,  0x0030(r30)
-	bl		major_0x0d35c
+	bl		SetEvent
 
-major_0x132e8_0xc
+TimerFire4_0xc
 	b		TimerDispatch_0x144
 
-major_0x132e8_0x10	;	OUTSIDE REFERER
+TimerFire4_0x10	;	OUTSIDE REFERER
 	mfsprg	r28, 0
 	lwz		r29, -0x0008(r28)
 	mr		r8, r29
-	bl		DequeueTask
+	bl		TaskUnready
 	lbz		r17,  0x0019(r29)
 	cmpwi	r17,  0x02
-	bge-	major_0x132e8_0x64
+	bge-	TimerFire4_0x64
 	mr		r8, r29
 	lwz		r16,  0x0038(r30)
 	lwz		r17,  0x003c(r30)
 	bl		clear_cr0_lt
-	bge-	major_0x132e8_0x50
+	bge-	TimerFire4_0x50
 	mr		r8, r29
 	bl		TaskReadyAsPrev
 	bl		CalculateTimeslice
-	b		major_0x13350_0x8
+	b		TimerFire5_0x8
 
-major_0x132e8_0x50
+TimerFire4_0x50
 	li		r18,  0x02
 	stb		r18,  0x0019(r29)
 	mr		r8, r29
 	bl		TaskReadyAsPrev
-	b		major_0x13350_0x8
+	b		TimerFire5_0x8
 
-major_0x132e8_0x64
+TimerFire4_0x64
 	mr		r8, r29
 
 
 
-;	                     major_0x13350                      
+;	                     TimerFire5                      
 
 ;	Xrefs:
 ;	TimerDispatch
-;	major_0x132e8
+;	TimerFire4
 
-major_0x13350	;	OUTSIDE REFERER
+TimerFire5	;	OUTSIDE REFERER
 	bl		TaskReadyAsPrev
 	bl		major_0x149d4
 
-major_0x13350_0x8	;	OUTSIDE REFERER
-	bl		major_0x14af8
+TimerFire5_0x8	;	OUTSIDE REFERER
+	bl		FlagSchEvaluationIfTaskRequires
 	mfsprg	r18, 0
 	b		TimerDispatch_0x30
 
@@ -605,7 +604,7 @@ major_0x13350_0x8	;	OUTSIDE REFERER
 	mr		r8, r16
 	bl		printb
 	_log	'scr-'
-	lwz		r16,  0x0658(r1)
+	lwz		r16, KDP.PA_ECB(r1)
 	lwz		r18,  0x0674(r1)
 	lwz		r16,  0x00dc(r16)
 	and		r16, r16, r18
@@ -621,7 +620,7 @@ major_0x13350_0x8	;	OUTSIDE REFERER
 	mr		r8, r16
 	bl		printh
 	_log	'eSR-'
-	lwz		r16,  0x0658(r1)
+	lwz		r16, KDP.PA_ECB(r1)
 	lwz		r16,  0x01cc(r16)
 	andi.	r16, r16,  0x07
 	mr		r8, r16
@@ -636,13 +635,13 @@ major_0x13350_0x8	;	OUTSIDE REFERER
 
 
 
-;	                     major_0x134bc                      
+;	                     TimerFire7                      
 
 ;	Xrefs:
 ;	TimerDispatch
 ;	major_0x13364
 
-major_0x134bc	;	OUTSIDE REFERER
+TimerFire7	;	OUTSIDE REFERER
 	addze	r16, r16
 	stw		r16,  0x0038(r30)
 	stw		r17,  0x003c(r30)
@@ -660,7 +659,7 @@ major_0x134bc	;	OUTSIDE REFERER
 	lwz		r18, -0x0438(r1)
 	lwz		r19,  0x0f88(r1)
 	subf.	r19, r18, r19
-	ble-	major_0x13524_0x1c
+	ble-	TimerFire8_0x1c
 	srwi	r19, r19, 11
 	mfxer	r20
 
@@ -681,13 +680,13 @@ major_0x134d8_0x18
 
 
 
-;	                     major_0x13524                      
+;	                     TimerFire8                      
 
 ;	Xrefs:
 ;	TimerDispatch
 ;	major_0x134d8
 
-major_0x13524	;	OUTSIDE REFERER
+TimerFire8	;	OUTSIDE REFERER
 	addc	r17, r17, r18
 	addze	r16, r16
 	stw		r16,  0x0038(r30)
@@ -696,7 +695,7 @@ major_0x13524	;	OUTSIDE REFERER
 	mr		r8, r30
 	bl		EnqueueTimer
 
-major_0x13524_0x1c	;	OUTSIDE REFERER
+TimerFire8_0x1c	;	OUTSIDE REFERER
 	b		TimerDispatch_0x144
 
 
@@ -709,7 +708,7 @@ major_0x13524_0x1c	;	OUTSIDE REFERER
 	mfxer	r20
 	cmpwi	cr1, r19,  0x00
 	srawi	r8, r19, 31
-	beq-	cr1, major_0x135b8_0x4
+	beq-	cr1, TimerFire6_0x4
 
 major_0x13544_0x14
 	mftbu	r16
@@ -743,16 +742,16 @@ major_0x13544_0x64
 
 
 
-;	                     major_0x135b8                      
+;	                     TimerFire6                      
 
 ;	Xrefs:
 ;	TimerDispatch
 ;	major_0x13544
 
-major_0x135b8	;	OUTSIDE REFERER
+TimerFire6	;	OUTSIDE REFERER
 	stw		r17,  0x003c(r30)
 
-major_0x135b8_0x4	;	OUTSIDE REFERER
+TimerFire6_0x4	;	OUTSIDE REFERER
 	mtxer	r20
 	beq+	cr1, TimerDispatch_0x144
 	mr		r8, r30
@@ -873,40 +872,26 @@ EnqueueTimer	;	OUTSIDE REFERER
 
 
 
+;	Remove a Timer from the global timer firing queue (TMRQ).
+;	If the Timer was to be the next to fire, then perform the
+;	standard decrementer rollover adjustment.
 
+;	ARG		Timer *r8
 
-
-
-;	                     major_0x136c8
-
-;	Xrefs:
-;	NKSetClockStep
-;	NKSetClockDriftCorrection
-;	MPCall_16
-;	major_0x0c8b4
-;	major_0x0ccf4
-;	MPCall_21
-;	MPCall_28
-;	MPCall_26
-;	MPCall_50
-;	major_0x0d35c
-;	MPCall_41
-;	MPCall_31
-;	MPCall_32
-;	major_0x0dce8
-;	MPCall_9
-;	CommonPIHPath
-
-major_0x136c8	;	OUTSIDE REFERER
-	lwz		r16,  0x0008(r8)
-	cmpwi	r16,  0x00
-	lwz		r18, -0x0a7c(r1)
+DequeueTimer
+	lwz		r16, Timer.QueueLLL + LLL.FreeForm(r8)
+	cmpwi	r16, 0
+	lwz		r18, PSA.TimerQueue + TimerQueueStruct.LLL + LLL.Next(r1)
 	beq+	Local_Panic
+
 	RemoveFromList		r8, scratch1=r16, scratch2=r17
-	li		r16,  0x00
+
+	li		r16, 0
 	cmpw	r18, r8
-	stb		r16,  0x0017(r8)
+	stb		r16, Timer.Byte3(r8)
+
 	beq+	AdjustDecForTMRQ
+
 	blr
 
 
@@ -966,7 +951,7 @@ TimebaseTicksPerPeriod
 ;	CreateTask
 ;	InitTMRQs
 ;	AdjustDecForTMRQ
-;	major_0x142dc
+;	RescheduleAndReturn
 ;	major_0x14548
 
 ;	RET		long r8 tbu, long r9 tbl

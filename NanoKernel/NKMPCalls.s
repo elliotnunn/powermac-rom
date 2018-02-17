@@ -267,7 +267,7 @@ ReturnZeroFromMPCall	;	OUTSIDE REFERER
 
 
 
-;	                     major_0x0af60
+;	                     ReleaseAndScrambleMPCall
 
 ;	Xrefs:
 ;	KCRegisterCpuPlugin
@@ -326,14 +326,14 @@ ReturnZeroFromMPCall	;	OUTSIDE REFERER
 ;	MPCall_94
 ;	MPCall_95
 
-major_0x0af60	;	OUTSIDE REFERER
+ReleaseAndScrambleMPCall	;	OUTSIDE REFERER
 	_AssertAndRelease	PSA.SchLock, scratch=r16
 
 
 
 ;	I'd really live a name for this.
 
-major_0x0af60_0x20	;	OUTSIDE REFERER
+ScrambleMPCall	;	OUTSIDE REFERER
 	mfspr	r16, pvr
 	rlwinm.	r16, r16,  0,  0, 14
 
@@ -348,7 +348,7 @@ major_0x0af60_0x20	;	OUTSIDE REFERER
 	xoris	r16, r16,  0x1950
 
 	stw		r16, PSA.ScrambledMPCallTime(r1)
-	li		r3, -0x726e
+	li		r3, -29294
 	b		CommonMPCallReturnPath
 
 
@@ -382,7 +382,7 @@ ReleaseAndReturnMPCallOOM	;	OUTSIDE REFERER
 ;	        ReturnMPCallOOM
 
 ;	Xrefs:
-;	major_0x0af60
+;	ReleaseAndScrambleMPCall
 ;	MPCall_0
 ;	KCRegisterCpuPlugin
 ;	MPCall_47
@@ -428,7 +428,7 @@ ReturnMPCallBlueBlocking	;	OUTSIDE REFERER
 
 
 
-;	                     major_0x0b054
+;	                     ReleaseAndReturnParamErrFromMPCall
 
 ;	Xrefs:
 ;	MPCall_128
@@ -456,7 +456,7 @@ ReturnMPCallBlueBlocking	;	OUTSIDE REFERER
 ;	MPCall_94
 ;	MPCall_129
 
-major_0x0b054	;	OUTSIDE REFERER
+ReleaseAndReturnParamErrFromMPCall	;	OUTSIDE REFERER
 	_AssertAndRelease	PSA.SchLock + Lock.Count, scratch=r16
 
 
@@ -464,7 +464,7 @@ major_0x0b054	;	OUTSIDE REFERER
 ;	                ReturnParamErrFromMPCall
 
 ;	Xrefs:
-;	major_0x0b054
+;	ReleaseAndReturnParamErrFromMPCall
 ;	KCGetNextIDOwnedByProcess
 ;	NKLocateInfoRecord
 ;	MPCall_108
@@ -624,7 +624,7 @@ ReturnZeroFromMPCall_again	;	OUTSIDE REFERER
 
 
 
-;	                     AlternateMPCallReturnPath
+;	                     BlockMPCall
 
 ;	Xrefs:
 ;	major_0x02964
@@ -645,8 +645,8 @@ ReturnZeroFromMPCall_again	;	OUTSIDE REFERER
 ;	MPCall_81
 ;	MPCall_98
 
-AlternateMPCallReturnPath	;	OUTSIDE REFERER
-	crclr	cr2_eq
+BlockMPCall	;	OUTSIDE REFERER
+	crclr	10
 	b		TrulyCommonMPCallReturnPath
 
 ReleaseAndReturnMPCall	;	OUTSIDE REFERER
@@ -659,7 +659,7 @@ ReleaseAndReturnMPCall	;	OUTSIDE REFERER
 ;	Xrefs:
 ;	MPCallBad
 ;	ReturnZeroFromMPCall
-;	major_0x0af60
+;	ReleaseAndScrambleMPCall
 ;	ReturnMPCallOOM
 ;	ReturnMPCallBlueBlocking
 ;	ReturnParamErrFromMPCall
@@ -667,7 +667,7 @@ ReleaseAndReturnMPCall	;	OUTSIDE REFERER
 ;	ReturnMPCallInvalidIDErr
 ;	major_0x0b0cc
 ;	ReturnZeroFromMPCall_again
-;	AlternateMPCallReturnPath
+;	BlockMPCall
 ;	KCGetCpuCount
 ;	MPCall_6
 ;	KCYieldWithHint
@@ -689,19 +689,21 @@ ReleaseAndReturnMPCall	;	OUTSIDE REFERER
 ;	major_0x16b80
 
 CommonMPCallReturnPath	;	OUTSIDE REFERER
-	crset	cr2_eq
+	crset	10
 
 TrulyCommonMPCallReturnPath	;	OUTSIDE REFERER
 	mfsprg	r8, 0
 	lwz		r9,  0x0134(r6)
 	stw		r9,  0x0018(r8)
 
-	bne-	cr2, @do_the_other_thing_instead
-	bl		Restore_r14_r31
-	b		skeleton_key
-@do_the_other_thing_instead
+	bc		BO_IF_NOT, 10, @block
 
-	b		major_0x142dc
+;return immediately
+	bl		Restore_r14_r31
+	b		IntReturn
+
+@block
+	b		RescheduleAndReturn
 
 
 
@@ -917,7 +919,7 @@ KCCreateProcess	;	OUTSIDE REFERER
 	bl		PoolAlloc
 
 	mr.		r31, r8
-	beq+	major_0x0af60
+	beq+	ReleaseAndScrambleMPCall
 
 	li		r9, Process.kIDClass
 	bl		MakeID
@@ -926,7 +928,7 @@ KCCreateProcess	;	OUTSIDE REFERER
 	bne-	@did_not_fail
 	mr		r8, r31
 	bl		PoolFree
-	b		major_0x0af60
+	b		ReleaseAndScrambleMPCall
 @did_not_fail
 
 	stw		r8, Process.ID(r31)
@@ -974,63 +976,67 @@ MPCall_5	;	OUTSIDE REFERER
 
 
 
-;	                     MPCall_6
+;	ARG		ProcessID r3
+;	RET		OSStatus r3
 
-;	Xrefs:
-;	kcMPDispatch
-;	KCStopScheduling
-;	MPCall_9
-;	KCThrowException
+	DeclareMPCall	6, MPDeleteProcess
 
-	DeclareMPCall	6, MPCall_6
+MPDeleteProcess
 
-MPCall_6	;	OUTSIDE REFERER
-
-	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
+	_Lock		PSA.SchLock, scratch1=r16, scratch2=r17
 
 	mr		r8, r3
-
-;	r8 = id
  	bl		LookupID
 	cmpwi	r9, Process.kIDClass
-
 	bne+	ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
-	lwz		r16,  0x0008(r31)
-	lwz		r17,  0x0010(r31)
-	rlwinm.	r8, r16,  0, 30, 30
-	cmpwi	cr1, r17,  0x00
+
+	lwz		r16, Process.Flags(r31)
+	lwz		r17, Process.TaskCount(r31)
+	rlwinm.	r8, r16, 0, Process.kFlag30, Process.kFlag30
+	cmpwi	cr1, r17, 0
 	beq+	ReleaseAndReturnMPCallOOM
 	bne+	cr1, ReleaseAndReturnMPCallOOM
+
 	mr		r8, r3
 	bl		DeleteID
+
 	_AssertAndRelease	PSA.SchLock + Lock.Count, scratch=r16
+
 	mr		r8, r31
 	bl		PoolFree
+
 	b		ReturnZeroFromMPCall
+
+
 
 MPCall_6_0x78	;	OUTSIDE REFERER
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
 	mfsprg	r16, 0
-	rlwinm.	r8, r7,  0, 10, 10
-	lwz		r17,  0x0658(r1)
-	lwz		r31, -0x0008(r16)
+	rlwinm.	r8, r7, 0, 10, 10
+	lwz		r17, KDP.PA_ECB(r1)
+	lwz		r31, EWA.PA_CurTask(r16)
+
 	beq-	MPCall_6_0xb4
-	lwz		r8,  0x00cc(r17)
+	lwz		r8, ContextBlock.PriorityShifty(r17)
 	rlwinm	r8, r8,  0, 24, 21
 	oris	r8, r8,  0x8000
-	stw		r8,  0x00cc(r17)
-
+	stw		r8, ContextBlock.PriorityShifty(r17)
 MPCall_6_0xb4
+
 	mr		r8, r31
-	bl		DequeueTask
-	li		r16,  0x02
-	stb		r16,  0x0019(r31)
+
+	bl		TaskUnready
+
+	li		r16, Task.kNominalPriority
+	stb		r16, Task.Priority(r31)
+
 	bl		TaskReadyAsPrev
+
 	mr		r8, r31
-	bl		major_0x14af8
+	bl		FlagSchEvaluationIfTaskRequires
 	_AssertAndRelease	PSA.SchLock + Lock.Count, scratch=r16
 	b		CommonMPCallReturnPath
 
@@ -1047,20 +1053,20 @@ KCYieldWithHint	;	OUTSIDE REFERER
 
 	mfsprg	r16, 0
 	rlwinm.	r8, r7,  0, 10, 10
-	lwz		r17,  0x0658(r1)
+	lwz		r17, KDP.PA_ECB(r1)
 	lwz		r31, -0x0008(r16)
 	beq-	KCYieldWithHint_0x68
 	clrlwi.	r8, r3,  0x1f
-	lwz		r8,  0x00cc(r17)
+	lwz		r8, ContextBlock.PriorityShifty(r17)
 	rlwinm	r8, r8,  0, 24, 21
 	oris	r8, r8,  0x8000
-	stw		r8,  0x00cc(r17)
+	stw		r8, ContextBlock.PriorityShifty(r17)
 	beq-	KCYieldWithHint_0x68
 	lbz		r16,  0x0019(r31)
 	cmpwi	r16,  0x02
 	bge-	KCYieldWithHint_0x7c
 	mr		r8, r31
-	bl		DequeueTask
+	bl		TaskUnready
 	li		r16,  0x02
 	stb		r16,  0x0019(r31)
 	bl		TaskReadyAsNext
@@ -1068,14 +1074,14 @@ KCYieldWithHint	;	OUTSIDE REFERER
 
 KCYieldWithHint_0x68
 	mr		r8, r31
-	bl		DequeueTask
+	bl		TaskUnready
 	li		r16,  0x02
 	stb		r16,  0x0019(r31)
 	bl		TaskReadyAsPrev
 
 KCYieldWithHint_0x7c
 	mr		r8, r31
-	bl		major_0x14af8
+	bl		FlagSchEvaluationIfTaskRequires
 	_AssertAndRelease	PSA.SchLock + Lock.Count, scratch=r16
 	b		CommonMPCallReturnPath
 
@@ -1120,12 +1126,11 @@ MPCall_55	;	OUTSIDE REFERER
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
-	;	if(-0x0410(r1) == -1) {-0x0410(r1) = 0; return 0;}
-	lwz		r16, -0x0410(r1)
-	cmpwi	r16, -0x01
-	li		r16,  0x00
+	lwz		r16, PSA.BlueSpinningOn(r1)
+	cmpwi	r16, -1
+	li		r16, 0
 	bne-	MPCall_55_0x60
-	stw		r16, -0x0410(r1)
+	stw		r16, PSA.BlueSpinningOn(r1)
 	b		ReleaseAndReturnZeroFromMPCall
 
 
@@ -1135,9 +1140,9 @@ MPCall_55_0x60	;	OUTSIDE REFERER
 	li		r17, 1
 
 	lwz		r31, EWA.PA_CurTask(r16)
-	addi	r16, r31,  0x20
+	addi	r16, r31, Task.Timer
 
-	stb		r17, Timer.Byte0(r16)
+	stb		r17, Timer.Kind(r16)
 
 	;	High bit is possibly suspect? Or a flag?
 	clrlwi	r3, r3, 1
@@ -1150,7 +1155,7 @@ MPCall_55_0x60	;	OUTSIDE REFERER
 	bl		EnqueueTimer
 
 	mr		r8, r31
-	bl		DequeueTask
+	bl		TaskUnready
 
 	addi	r16, r1, PSA.DelayQueue
 	addi	r17, r31, Timer.QueueLLL
@@ -1159,7 +1164,7 @@ MPCall_55_0x60	;	OUTSIDE REFERER
 	InsertAsPrev	r17, r16, scratch=r18
 
 	li		r3, 0
-	b		AlternateMPCallReturnPath
+	b		BlockMPCall
 
 
 
@@ -1173,7 +1178,7 @@ MPCall_34	;	OUTSIDE REFERER
 ;	r9 = kind
 	bl		MakeID
 	cmpwi	r8,  0x00
-	beq+	major_0x0af60_0x20
+	beq+	ScrambleMPCall
 	mr		r5, r8
 	b		ReturnZeroFromMPCall
 
@@ -1307,7 +1312,7 @@ KCGetNextIDOwnedByProcess	;	OUTSIDE REFERER
 	b		ReturnParamErrFromMPCall
 
 @task
-	lwz		r17, Task.ThingThatAlignVecHits(r8)
+	lwz		r17, Task.Flags(r8)
 	lwz		r9,  Task.ProcessID(r8)
 
 	rlwinm.	r17, r17,  0, 15, 15
@@ -1479,7 +1484,7 @@ KCCreateCpuStruct_0x24
 ;	r8 = ptr
 
 	mr.		r31, r8
-	beq+	major_0x0af60_0x20
+	beq+	ScrambleMPCall
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
@@ -1492,7 +1497,7 @@ KCCreateCpuStruct_0x24
 	bne+	KCCreateCpuStruct_0x68
 	mr		r8, r31
 	bl		PoolFree
-	b		major_0x0af60
+	b		ReleaseAndScrambleMPCall
 KCCreateCpuStruct_0x68
 
 
@@ -1584,7 +1589,7 @@ MPCall_43	;	OUTSIDE REFERER
 	mfsprg	r15, 0
 	li		r16,  0x04
 	stw		r16, -0x0238(r15)
-	lhz		r16,  0x022a(r31)
+	lhz		r16, CPU.EWA + EWA.CPUIndex(r31)
 	stw		r16, -0x0234(r15)
 	li		r8,  0x02
 
@@ -1628,7 +1633,7 @@ KCStartCPU	;	OUTSIDE REFERER
 	mfsprg	r15, 0
 	li		r16,  0x04
 	stw		r16, -0x0238(r15)
-	lhz		r16,  0x022a(r30)
+	lhz		r16, CPU.EWA + EWA.CPUIndex(r30)
 	stw		r16, -0x0234(r15)
 
 
@@ -1650,21 +1655,21 @@ KCStartCPU	;	OUTSIDE REFERER
 	rlwinm	r7, r7, 0, 13, 11
 	lwz		r8, PSA.blueProcessPtr(r1)
 
-;	ARG		EmpiricalCpuFeatures r7, Process *r8
+;	ARG		GlobalCPUFlags r7, Process *r8
 	bl		CreateTask
 ;	RET		Task *r8
 
 	mr		r7, r31
 	mr.		r31, r8
-	beq+	major_0x0af60
+	beq+	ReleaseAndScrambleMPCall
 
 	stw		r31, CPU.IdleTaskPtr(r30)
 
 	lisori	r8, 'idle'
 	stw		r8, Task.Name(r31)
 
-	lisori	r8, 0x00080040			;	clearly flags
-	stw		r8, Task.ThingThatAlignVecHits(r31)
+	lisori	r8, 0x80040 ; (Z>>Task.kFlag12)| (Z>>Task.kFlag25)
+	stw		r8, Task.Flags(r31)
 
 	li		r8, 1
 	stw		r8, Task.Weight(r31)
@@ -1673,12 +1678,12 @@ KCStartCPU	;	OUTSIDE REFERER
 	stb		r8, Task.Priority(r31)
 
 	;	whoa -- cpu structs arent this big?
-	lhz		r8,  0x022a(r30)
-	sth		r8, Task.MysteryHalf(r31)
+	lhz		r8, CPU.EWA + EWA.CPUIndex(r30)
+	sth		r8, Task.CPUIndex(r31)
 
-	lwz		r8, Task.ContextBlock + ContextBlock.EmpiricalCpuFeatures(r31)
+	lwz		r8, Task.ContextBlock + ContextBlock.Flags(r31)
 	_bset	r8, r8, 9
-	stw		r8, Task.ContextBlock + ContextBlock.EmpiricalCpuFeatures(r31)
+	stw		r8, Task.ContextBlock + ContextBlock.Flags(r31)
 
 
 	lwz		r8, KDP.PA_NanoKernelCode(r1)
@@ -1699,7 +1704,7 @@ KCStartCPU	;	OUTSIDE REFERER
 	mfsprg	r15, 0
 	li		r16,  0x08
 	stw		r16, -0x0238(r15)
-	lhz		r16,  0x022a(r30)
+	lhz		r16, CPU.EWA + EWA.CPUIndex(r30)
 	stw		r16, -0x0234(r15)
 
 MPCall_44_0x15c
@@ -1718,7 +1723,7 @@ MPCall_44_0x15c
 	mfsprg	r15, 0
 	li		r16,  0x01
 	stw		r16, -0x0238(r15)
-	lhz		r16,  0x022a(r30)
+	lhz		r16, CPU.EWA + EWA.CPUIndex(r30)
 	stw		r16, -0x0234(r15)
 	lwz		r16,  0x064c(r1)
 	llabel	r17, major_0x14bcc
@@ -1774,7 +1779,7 @@ KCStopScheduling	;	OUTSIDE REFERER
 	oris	r17, r17,  0x80
 	stw		r17,  0x0064(r31)
 	mr		r8, r31
-	bl		DequeueTask
+	bl		TaskUnready
 	li		r17,  0x00
 	stb		r17,  0x0019(r31)
 	mr		r8, r31
@@ -1991,9 +1996,9 @@ KCMarkPMFTask	;	OUTSIDE REFERER
 @use_blue_task_instead
 
 ;	Insert bit 31 of r4 into bit 21 of these flags
-	lwz			r17, Task.ThingThatAlignVecHits(r31)
+	lwz			r17, Task.Flags(r31)
 	rlwimi		r17, r4, 10, 21, 21
-	stw			r17, Task.ThingThatAlignVecHits(r31)
+	stw			r17, Task.Flags(r31)
 
 
 ;	Don't know what this does!
@@ -2155,7 +2160,7 @@ NKSetClockStep	;	OUTSIDE REFERER
 ;	r1 = kdp
 	beq+	ReleaseAndReturnZeroFromMPCall
 	mr		r8, r31
-	bl		major_0x136c8
+	bl		DequeueTimer
 
 ;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall
@@ -2265,7 +2270,7 @@ NKSetClockDriftCorrection_0x12c
 ;	r1 = kdp
 	beq+	ReleaseAndReturnZeroFromMPCall
 	mr		r8, r31
-	bl		major_0x136c8
+	bl		DequeueTimer
 
 ;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall

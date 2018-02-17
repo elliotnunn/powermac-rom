@@ -46,5 +46,9 @@ kKDPfromIRP	equ		10 * 4096
 
 
 
+;	Branch instruction BO fields
+;	(disregarding static prediction :)
+BO_IF			equ		12
+BO_IF_NOT		equ		4
 
-noErr					equ		0
+Z				equ		0x80000000

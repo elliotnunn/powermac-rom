@@ -111,7 +111,7 @@ InitReplacement
 
 ;	Do something terrible with the CPU features
 
-	lwz		r12, -0x0010(r1)
+	lwz		r12, EWA.Flags(r1)
 	li		r10,  0x00
 	rlwimi	r10, r12,  0, 12, 15
 	rlwimi	r10, r12,  0, 28, 30
@@ -161,7 +161,7 @@ InitReplacement
 	stw		r12, EWA.Flags(r1)
 
 	lwz		r12,  0x0664(r1)
-	stw		r12, -0x000c(r1)		; boy, better figure out what this is
+	stw		r12, EWA.Enables(r1)		; boy, better figure out what this is
 
 	b		@endif
 @replaces_later_than_0101
@@ -178,7 +178,7 @@ InitReplacement
 	stw		r12, EWA.Flags(r1)
 
 	lwz		r12, -0x000c(r11)
-	stw		r12, -0x000c(r1)
+	stw		r12, EWA.Enables(r1)
 
 @endif
 

@@ -1,4 +1,5 @@
 	include		'MacErrors.a'
+	include		'Multiprocessing.a'
 
 	include		'InfoRecords.a'
 	include		'EmulatorPublic.a'
@@ -29,7 +30,7 @@ NKTop
 	align		5
 	include		'NKMPCalls.s'
 	align		5
-	include		'NKQueues.s'
+	include		'NKSync.s'
 	align		5
 	include		'NKTasks.s'
 	align		5

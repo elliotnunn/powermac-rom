@@ -83,7 +83,7 @@ InitPool	;	OUTSIDE REFERER
 ;	MPCall_40
 ;	MPCall_31
 ;	MPCall_64
-;	major_0x0db04
+;	CauseNotification
 ;	CreateTask
 ;	MPCall_58
 ;	convert_pmdts_to_areas
