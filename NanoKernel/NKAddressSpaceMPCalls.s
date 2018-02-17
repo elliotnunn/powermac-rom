@@ -488,7 +488,7 @@ NKCreateAddressSpaceSub
 	;	Use the motherboard coherence group if none is provided in r8
 	bne-	@cgrp_provided
 	mfsprg	r15, 0
-	lwz		r28, EWA.CPUBase + CPU.CgrpList + LLL.Freeform(r15)
+	lwz		r28, EWA.CPUBase + CPU.LLL + LLL.Freeform(r15)
 
 	b		@got_cgrp
 
@@ -498,7 +498,7 @@ NKCreateAddressSpaceSub
 	cmpwi	r9, CoherenceGroup.kIDClass
 	mr		r28, r8
 	bne-	@fail_notcgrp
-	lwz		r28, CoherenceGroup.GRPSList + LLL.Next(r28)
+	lwz		r28, CoherenceGroup.LLL + LLL.Next(r28)
 
 @got_cgrp
 

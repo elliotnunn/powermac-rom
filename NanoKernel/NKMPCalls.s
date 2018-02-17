@@ -879,7 +879,7 @@ KCRegisterCpuPlugin_0x114
 KCGetCpuCount	;	OUTSIDE REFERER
 
 	mfsprg	r15, 0
-	lwz		r14, EWA.CPUBase + CPU.CgrpList + LLL.Freeform(r15)
+	lwz		r14, EWA.CPUBase + CPU.LLL + LLL.Freeform(r15)
 	mr.		r8, r3
 
 	lwz		r3, CoherenceGroup.CpuCount(r14)
@@ -1459,7 +1459,7 @@ KCCreateCpuStruct	;	OUTSIDE REFERER
 	mr.		r8, r3
 	bne-	KCCreateCpuStruct_0x14
 	mfsprg	r15, 0
-	lwz		r30, EWA.CPUBase + CPU.CgrpList + LLL.Freeform(r15)
+	lwz		r30, EWA.CPUBase + CPU.LLL + LLL.Freeform(r15)
 	b		KCCreateCpuStruct_0x24
 
 KCCreateCpuStruct_0x14

@@ -288,7 +288,7 @@ kSignature				equ		'CPU '
 
 ID						ds.l	1	; 00
 Signature				ds.l	1	; 04
-CgrpList				ds.l	4	; 08:18
+LLL						ds.l	4	; 08:18 ; member of CGRP
 Eff						ds.l	1	; 18 ; contains 0x0000000f
 IdleTaskPtr				ds.l	1	; 1c
 
@@ -395,8 +395,8 @@ kSignature				equ		'CGRP'
 ;	Fields
 ;_______________________
 
-LLL						ds.l	4	; 00:10 ; element in CpuStructs list of cgrps
-GRPSList				ds.l	4	; 10:20 ; my own list of GRPSes (what are they?)
+CPUList					ds.l	4	; 00:10 ; CPUs on this "motherboard"
+LLL						ds.l	4	; 10:20 ; member of global CGRP list
 CpuCount				ds.l	1	; 20
 ScheduledCpuCount		ds.l	1	; 24
 						ds.l	1	; 28

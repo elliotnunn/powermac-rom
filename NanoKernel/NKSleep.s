@@ -21,7 +21,7 @@ Local_CommonMPCallReturnPath
 
 MPCall_102	;	OUTSIDE REFERER
 	mfsprg	r9, 0
-	lwz		r8, EWA.CPUBase + CPU.CgrpList + LLL.Freeform(r9)
+	lwz		r8, EWA.CPUBase + CPU.LLL + LLL.Freeform(r9)
 	lwz		r9, CoherenceGroup.ScheduledCpuCount(r8)
 	cmpwi	r9, 1
 	bgt+	Local_ReturnInsufficientResourcesErrFromMPCall
@@ -36,7 +36,7 @@ MPCall_102	;	OUTSIDE REFERER
 
 MPCall_103	;	OUTSIDE REFERER
 	mfsprg	r9, 0
-	lwz		r8, EWA.CPUBase + CPU.CgrpList + LLL.Freeform(r9)
+	lwz		r8, EWA.CPUBase + CPU.LLL + LLL.Freeform(r9)
 	lwz		r9, CoherenceGroup.ScheduledCpuCount(r8)
 	cmpwi	r9, 1
 	bgt+	Local_ReturnInsufficientResourcesErrFromMPCall

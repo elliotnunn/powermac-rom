@@ -789,12 +789,11 @@ SetProcessorFlags
 
 
 
-;	Create a GRPS struct in KDP. Make it into an
-;	infinite linked list for adoption by coherence group.
-;	So leave ptr in r30.
+;	Init a global linked list of coherence groups.
+;	Leave ptr in r30.
 
-	addi	r30, r1, PSA.FirstGRPS
-	InitList	r30, GRPSStruct.kSignature, scratch=r17
+	addi	r30, r1, PSA.CoherenceGrpList
+	InitList	r30, 'GRPS', scratch=r17
 
 
 
@@ -809,14 +808,14 @@ SetProcessorFlags
 	beq-	Init_Panic
 
 
-	;	Adopt the above-created list of GRPS structs (only one so far)
-	addi	r17, r31, CoherenceGroup.GRPSList
+	;	Append to the global CGRP list
+	addi	r17, r31, CoherenceGroup.LLL
 	stw     r30, LLL.Freeform(r17)
 	InsertAsPrev	r17, r30, scratch=r18
 
 
-	;	Make me into an infinite linked list for adoption by CPU struct.
-	addi    r29, r31,  CoherenceGroup.LLL
+	;	Init a list of the CPUs in this CGRP
+	addi    r29, r31,  CoherenceGroup.CPUList
 	InitList	r29, CoherenceGroup.kSignature, scratch=r17
 
 
@@ -824,7 +823,7 @@ SetProcessorFlags
 	mr		r8, r31
 	li		r9, CoherenceGroup.kIDClass
 	bl		MakeID
-	stw		r8, CoherenceGroup.LLL + LLL.Freeform(r31)
+	stw		r8, CoherenceGroup.CPUList + LLL.Freeform(r31)
 
 
 	;	Congratulate ourselves
@@ -868,8 +867,8 @@ SetProcessorFlags
 	stw		r8, CPU.Signature(r31)
 
 
-	;	Adopt the above-created coherence group list
-	addi	r17, r31, CPU.CgrpList
+	;	Append to the motherboard CGRP
+	addi	r17, r31, CPU.LLL
 
 	stw		r29, LLL.Freeform(r17)
 	InsertAsPrev	r17, r29, scratch=r18

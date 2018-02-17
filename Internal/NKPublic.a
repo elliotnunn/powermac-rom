@@ -113,7 +113,7 @@ FreePool				ds.l	4	; -ab0 ; LLL with signature 'POOL'
 						ds.l	1	; -aa0
 						ds.l	1	; -a9c
 IndexPtr				ds.l	1	; -a98 ; index of opaque IDs
-FirstGRPS				ds.l	4	; -a94:-a84
+CoherenceGrpList		ds.l	4	; -a94:-a84 ; signature 'GRPS'
 TimerQueue				ds.l	16	; -a84:-a44 ; there are more of these in the pool
 DelayQueue				ds.l	4	; -a44:-a34
 DbugQueue				ds.l	4	; -a34:-a24
@@ -919,27 +919,6 @@ Size					equ		*
 
 
 ; Special opaque NanoKernel stuff!
-
-
-
-
-
-GRPSStruct				record	0,INCR
-kSignature				equ		'GRPS'
-
-LLL						ds.l	4	; 00:10
-
-						endr
-
-
-
-
-
-
-
-
-
-
 
 
 ;	These seem to go in a notification queue?

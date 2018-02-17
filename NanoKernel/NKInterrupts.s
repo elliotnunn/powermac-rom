@@ -2407,7 +2407,7 @@ IntExternalYellow	;	OUTSIDE REFERER
 
 	;	How many CPUs?
 
-	lwz		r9, EWA.CPUBase + CPU.CgrpList + LLL.Freeform(r8)
+	lwz		r9, EWA.CPUBase + CPU.LLL + LLL.Freeform(r8)
 	lwz		r9, CoherenceGroup.CpuCount(r9)
 	cmpwi	r9, 2
 
