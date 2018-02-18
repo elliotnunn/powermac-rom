@@ -724,17 +724,17 @@ MPCall_0	;	OUTSIDE REFERER
 
 	_Lock			PSA.HTABLock, scratch1=r17, scratch2=r18
 
-	bl		VeryPopularFunction
+	bl		GetPARPageInfo
 	bge-	cr4, MPCall_0_0xd8
 	bgt-	cr5, MPCall_0_0xd8
 	bns-	cr7, MPCall_0_0xd8
 	bgt-	cr7, MPCall_0_0xd8
-	bltl+	cr5, VMDoSomethingWithTLB
+	bltl+	cr5, RemovePageFromTLB
 	bgel+	cr5, VMSecondLastExportedFunc
 	ori		r16, r16,  0x404
 	li		r31,  0x03
 	rlwimi	r9, r31,  0, 30, 31
-	bl		VMDoSomeIO
+	bl		EditPTEInHTAB
 	mr		r7, r30
 	mr		r6, r29
 	_AssertAndRelease	PSA.HTABLock, scratch=r16

@@ -164,7 +164,7 @@ VMDispatchTableEnd
 ;	setPTEntryGivenPage
 ;	VMShouldClean
 ;	VMAllocateMemory
-;	VeryPopularFunction
+;	GetPARPageInfo
 ;	major_0x09c9c
 
 VMReturnMinus1	;	OUTSIDE REFERER
@@ -231,13 +231,13 @@ VMFinalInit	;	OUTSIDE REFERER
 @loop
 	srwi	r4, r31, 12
 	lwz		r9, KDP.PrimaryAddrRangePages(r1)
-	bl		VeryPopularFunction
+	bl		GetPARPageInfo
 	bge-	cr4, @skip
-	bltl-	cr5, VMDoSomethingWithTLB
+	bltl-	cr5, RemovePageFromTLB
 	bgel-	cr5, VMSecondLastExportedFunc
 	ori		r16, r16,  0x400
 	rlwimi	r9, r29,  0,  0, 19
-	bl		major_0x09b40
+	bl		RemovePTEFromHTAB
 	addi	r31, r31,  0x1000
 	cmplw	r31, r30
 	ble+	@loop
@@ -315,8 +315,8 @@ VMInit_0xa8
 	rlwimi	r3, r8, 21, 12, 15
 	cmpw	r3, r4
 	bnel+	Local_Panic
-	bl		VMDoSomethingWithTLB
-	bl		major_0x09b40
+	bl		RemovePageFromTLB
+	bl		RemovePTEFromHTAB
 
 VMInit_0x100
 	cmpwi	r7,  0x00
@@ -514,26 +514,26 @@ VMInit_Fail
 	DeclareVMCallWithAlt	12, VMExchangePages, VMReturnNotReady
 
 VMExchangePages	;	OUTSIDE REFERER
-	bl		VeryPopularFunction
+	bl		GetPARPageInfo
 	bge+	cr4, VMReturnMinus1
 	bgt+	cr5, VMReturnMinus1
 	bns+	cr7, VMReturnMinus1
 	bgt+	cr6, VMReturnMinus1
 	bne+	cr6, VMReturnMinus1
-	bltl-	cr5, VMDoSomethingWithTLB
-	bltl-	cr5, major_0x09b40
+	bltl-	cr5, RemovePageFromTLB
+	bltl-	cr5, RemovePTEFromHTAB
 	mr		r6, r15
 	mr		r4, r5
 	mr		r5, r16
 	lwz		r9, KDP.PrimaryAddrRangePages(r1)
-	bl		VeryPopularFunction
+	bl		GetPARPageInfo
 	bge+	cr4, VMReturnMinus1
 	bgt+	cr5, VMReturnMinus1
 	bns+	cr7, VMReturnMinus1
 	bgt+	cr6, VMReturnMinus1
 	bne+	cr6, VMReturnMinus1
-	bltl-	cr5, VMDoSomethingWithTLB
-	bltl-	cr5, major_0x09b40
+	bltl-	cr5, RemovePageFromTLB
+	bltl-	cr5, RemovePTEFromHTAB
 	stw		r5,  0x0000(r15)
 	stw		r16,  0x0000(r6)
 	rlwinm	r4, r5,  0,  0, 19
@@ -578,7 +578,7 @@ VMGetPhysicalPage_0x28
 	lwz		r9, KDP.PrimaryAddrRangePages(r1)
 
 VMGetPhysicalPage_0x30
-	bl		VeryPopularFunction
+	bl		GetPARPageInfo
 	bns+	cr7, VMReturnMinus1
 	srwi	r3, r9, 12
 	b		VMReturn
@@ -621,13 +621,13 @@ getPTEntryGivenPage_0x48
 	lwz		r9, KDP.PrimaryAddrRangePages(r1)
 
 getPTEntryGivenPage_0x50
-	bl		VeryPopularFunction
+	bl		GetPARPageInfo
 	mr		r3, r16
 	bns-	cr7, getPTEntryGivenPage_0x74
 	rlwimi	r3, r9,  0,  0, 19
 	bge-	cr5, getPTEntryGivenPage_0x74
-	bl		VMDoSomethingWithTLB
-	bl		VMDoSomeIO_0x4
+	bl		RemovePageFromTLB
+	bl		EditPTEOnlyInHTAB
 	mr		r3, r16
 	rlwimi	r3, r9,  0,  0, 19
 
@@ -713,7 +713,7 @@ major_0x08d88_0xb0	;	OUTSIDE REFERER
 	DeclareVMCallWithAlt	5, VMIsInited, VMReturnNotReady
 
 VMIsInited	;	OUTSIDE REFERER
-	bl		VeryPopularFunction
+	bl		GetPARPageInfo
 	bso+	cr7, VMReturn1
 	rlwinm	r3, r16, 16, 31, 31
 	b		VMReturn
@@ -746,7 +746,7 @@ VMIsResident_0x28
 	lwz		r9, KDP.PrimaryAddrRangePages(r1)
 
 VMIsResident_0x30
-	bl		VeryPopularFunction
+	bl		GetPARPageInfo
 	clrlwi	r3, r16,  0x1f
 	b		VMReturn
 
@@ -757,12 +757,12 @@ VMIsResident_0x30
 	DeclareVMCallWithAlt	4, VMIsUnmodified, VMReturnNotReady
 
 VMIsUnmodified	;	OUTSIDE REFERER
-	bl		VeryPopularFunction
+	bl		GetPARPageInfo
 	rlwinm	r3, r16, 28, 31, 31
 	xori	r3, r3,  0x01
 	bge+	cr5, VMReturn
-	bl		VMDoSomethingWithTLB
-	bl		VMDoSomeIO_0x4
+	bl		RemovePageFromTLB
+	bl		EditPTEOnlyInHTAB
 	rlwinm	r3, r16, 28, 31, 31
 	xori	r3, r3,  0x01
 	b		VMReturn
@@ -792,9 +792,9 @@ VMLRU_0x1c
 	bge-	cr5, VMLRU_0x50
 	add		r14, r14, r7
 	lwz		r8,  0x0000(r14)
-	bl		VMDoSomethingWithTLB
+	bl		RemovePageFromTLB
 	andc	r9, r9, r5
-	bl		major_0x09b40
+	bl		RemovePTEFromHTAB
 	subf	r14, r7, r14
 
 VMLRU_0x50
@@ -846,20 +846,20 @@ VMMakePageCacheable	;	OUTSIDE REFERER
 	bne-	cr1, VMMakePageCacheable_0x4
 
 VMMakePageCacheable_0x4
-	bl		VeryPopularFunction
+	bl		GetPARPageInfo
 	rlwinm	r7, r16,  0, 25, 26
 	cmpwi	r7,  0x20
 	bns+	cr7, VMReturnMinus1
 	beq+	VMReturn
 	bge-	cr4, VMMakePageCacheable_0x40
-	bltl-	cr5, VMDoSomethingWithTLB
+	bltl-	cr5, RemovePageFromTLB
 	bgel-	cr5, VMSecondLastExportedFunc
 	rlwinm	r16, r16,  0, 27, 24
 	rlwinm	r9, r9,  0, 27, 24
 	lwz		r7, KDP.PageAttributeInit(r1)
 	rlwimi	r9, r7,  0, 27, 28
 	ori		r16, r16,  0x20
-	bl		VMDoSomeIO
+	bl		EditPTEInHTAB
 	b		VMReturn
 
 VMMakePageCacheable_0x40
@@ -922,19 +922,19 @@ VMMakePageWriteThrough	;	OUTSIDE REFERER
 	bne-	cr1, VMMakePageWriteThrough_0x4
 
 VMMakePageWriteThrough_0x4
-	bl		VeryPopularFunction
+	bl		GetPARPageInfo
 	rlwinm.	r7, r16,  0, 25, 26
 	bns+	cr7, VMReturnMinus1
 	beq+	VMReturn
 	bge-	cr4, VMMakePageWriteThrough_0x3c
-	bltl-	cr5, VMDoSomethingWithTLB
+	bltl-	cr5, RemovePageFromTLB
 	bgel-	cr5, VMSecondLastExportedFunc
 	rlwinm	r16, r16,  0, 27, 24
 	rlwinm	r9, r9,  0, 27, 24
 	lwz		r7, KDP.PageAttributeInit(r1)
 	rlwimi	r9, r7,  0, 27, 28
 	ori		r9, r9,  0x40
-	bl		VMDoSomeIO
+	bl		EditPTEInHTAB
 	b		VMMakePageNonCacheable_0x3c
 
 VMMakePageWriteThrough_0x3c
@@ -1056,10 +1056,10 @@ PageSetCommon_0xc4
 	addi	r14, r14,  0x08
 
 PageSetCommon_0xc8
-	bl		VMDoSomethingWithTLB
+	bl		RemovePageFromTLB
 	li		r8,  0x00
 	li		r9,  0x00
-	bl		VMDoSomeIO_0x4
+	bl		EditPTEOnlyInHTAB
 	b		VMReturn
 
 
@@ -1072,20 +1072,20 @@ VMMakePageNonCacheable	;	OUTSIDE REFERER
 	bne-	cr1, VMMakePageNonCacheable_0x4
 
 VMMakePageNonCacheable_0x4
-	bl		VeryPopularFunction
+	bl		GetPARPageInfo
 	rlwinm	r7, r16,  0, 25, 26
 	cmpwi	r7,  0x60
 	bns+	cr7, VMReturnMinus1
 	beq+	VMReturn
 	bge-	cr4, VMMakePageNonCacheable_0x78
-	bltl-	cr5, VMDoSomethingWithTLB
+	bltl-	cr5, RemovePageFromTLB
 	bgel-	cr5, VMSecondLastExportedFunc
 	rlwinm	r9, r9,  0, 27, 24
 	lwz		r7, KDP.PageAttributeInit(r1)
 	rlwimi	r9, r7,  0, 27, 28
 	ori		r16, r16,  0x60
 	ori		r9, r9,  0x20
-	bl		VMDoSomeIO
+	bl		EditPTEInHTAB
 
 VMMakePageNonCacheable_0x3c	;	OUTSIDE REFERER
 	rlwinm	r4, r9,  0,  0, 19
@@ -1200,11 +1200,11 @@ VMMarkBacking_0x50
 	lwz		r9, KDP.PrimaryAddrRangePages(r1)
 
 VMMarkBacking_0x58
-	bl		VeryPopularFunction
+	bl		GetPARPageInfo
 	bge+	cr4, VMReturnMinus1
 	bgt+	cr5, VMReturnMinus1
-	bltl-	cr5, VMDoSomethingWithTLB
-	bltl-	cr5, major_0x09b40
+	bltl-	cr5, RemovePageFromTLB
+	bltl-	cr5, RemovePTEFromHTAB
 	rlwimi	r16, r5, 16, 15, 15
 	li		r7,  0x01
 	andc	r16, r16, r7
@@ -1218,16 +1218,16 @@ VMMarkBacking_0x58
 	DeclareVMCallWithAlt	9, VMMarkCleanUnused, VMReturnNotReady
 
 VMMarkCleanUnused	;	OUTSIDE REFERER
-	bl		VeryPopularFunction
+	bl		GetPARPageInfo
 	bge+	cr4, VMReturnMinus1
 	bns+	cr7, VMReturnMinus1
-	bltl-	cr5, VMDoSomethingWithTLB
+	bltl-	cr5, RemovePageFromTLB
 	beq-	cr2, VMMarkCleanUnused_0x2c
 	bgel-	cr5, VMSecondLastExportedFunc
 	li		r7,  0x180
 	andc	r9, r9, r7
 	ori		r16, r16,  0x100
-	bl		VMDoSomeIO
+	bl		EditPTEInHTAB
 	b		VMReturn
 
 VMMarkCleanUnused_0x2c
@@ -1235,7 +1235,7 @@ VMMarkCleanUnused_0x2c
 	ori		r16, r16,  0x100
 	li		r7,  0x18
 	andc	r16, r16, r7
-	bl		major_0x09b40
+	bl		RemovePTEFromHTAB
 	b		VMReturn
 
 
@@ -1303,7 +1303,7 @@ VMMarkResident_0x50
 	lwz		r9, KDP.PrimaryAddrRangePages(r1)
 
 VMMarkResident_0x58
-	bl		VeryPopularFunction
+	bl		GetPARPageInfo
 	bge+	cr4, VMReturnMinus1
 	bso+	cr7, VMReturnMinus1
 	bltl+	cr5, Local_Panic
@@ -1311,7 +1311,7 @@ VMMarkResident_0x58
 	ori		r16, r16,  0x01
 	stw		r16,  0x0000(r15)
 	bl		VMSecondLastExportedFunc
-	bl		VMDoSomeIO
+	bl		EditPTEInHTAB
 	b		VMReturn
 
 
@@ -1325,7 +1325,7 @@ VMPTest	;	OUTSIDE REFERER
 	cmplw	r4, r9
 	li		r3,  0x4000
 	bge+	VMReturn
-	bl		VeryPopularFunction
+	bl		GetPARPageInfo
 	li		r3,  0x400
 	bns+	cr7, VMReturn
 	li		r3,  0x00
@@ -1381,7 +1381,7 @@ setPTEntryGivenPage_0x5c
 setPTEntryGivenPage_0x64
 	mr		r6, r4
 	mr		r4, r5
-	bl		VeryPopularFunction
+	bl		GetPARPageInfo
 	bge+	cr4, VMReturnMinus1
 	xor		r7, r16, r6
 	li		r3,  0x461
@@ -1392,19 +1392,19 @@ setPTEntryGivenPage_0x64
 	xor		r16, r16, r7
 	stw		r16,  0x0000(r15)
 	bge+	cr5, VMReturn
-	bl		VMDoSomethingWithTLB
+	bl		RemovePageFromTLB
 	lwz		r16,  0x0000(r15)
 	bne-	cr2, setPTEntryGivenPage_0xb4
 	andi.	r7, r16,  0x08
 	bne-	setPTEntryGivenPage_0xb4
-	bl		major_0x09b40
+	bl		RemovePTEFromHTAB
 	b		VMReturn
 
 setPTEntryGivenPage_0xb4
 	rlwimi	r9, r16,  5, 23, 23
 	rlwimi	r9, r16,  3, 24, 24
 	rlwimi	r9, r16, 30, 31, 31
-	bl		VMDoSomeIO_0x4
+	bl		EditPTEOnlyInHTAB
 	b		VMReturn
 
 
@@ -1414,10 +1414,10 @@ setPTEntryGivenPage_0xb4
 	DeclareVMCallWithAlt	6, VMShouldClean, VMReturnNotReady
 
 VMShouldClean	;	OUTSIDE REFERER
-	bl		VeryPopularFunction
+	bl		GetPARPageInfo
 	bns+	cr7, VMReturn0
 	bge+	cr4, VMReturnMinus1
-	bltl-	cr5, VMDoSomethingWithTLB
+	bltl-	cr5, RemovePageFromTLB
 	blt-	cr7, VMShouldClean_0x34
 	bns-	cr6, VMShouldClean_0x34
 	xori	r16, r16,  0x10
@@ -1425,11 +1425,11 @@ VMShouldClean	;	OUTSIDE REFERER
 	stw		r16,  0x0000(r15)
 	bge+	cr5, VMReturn1
 	xori	r9, r9,  0x80
-	bl		VMDoSomeIO_0x4
+	bl		EditPTEOnlyInHTAB
 	b		VMReturn1
 
 VMShouldClean_0x34
-	bltl-	cr5, VMDoSomeIO_0x4
+	bltl-	cr5, EditPTEOnlyInHTAB
 	b		VMReturn0
 
 
@@ -1473,9 +1473,9 @@ VMAllocateMemory_0x6c
 
 VMAllocateMemory_0x74
 	addi	r4, r4, -0x01
-	bl		VeryPopularFunction
-	bltl-	cr5, VMDoSomethingWithTLB
-	bltl-	cr5, major_0x09b40
+	bl		GetPARPageInfo
+	bltl-	cr5, RemovePageFromTLB
+	bltl-	cr5, RemovePTEFromHTAB
 	lwz		r9, KDP.PrimaryAddrRangePages(r1)
 	subf	r8, r4, r9
 	cmplw	cr7, r5, r8
@@ -1684,87 +1684,72 @@ VMAllocateMemory_0x360
 
 
 
-;	                  VeryPopularFunction                   
+;This function gets sent an page# for a page in the main mac os memory area and returns a bunch of useful info on it.
+;Return values that mention HTAB are undefined when the PTE is not in the HTAB
+;HTAB residence is determined by bit 20 (value 0x800) of the PTE. This is often checked by a bltl cr5
 
-;	Xrefs:
-;	VMFinalInit
-;	VMExchangePages
-;	VMGetPhysicalPage
-;	getPTEntryGivenPage
-;	VMIsInited
-;	VMIsResident
-;	VMIsUnmodified
-;	VMMakePageCacheable
-;	VMMakePageWriteThrough
-;	VMMakePageNonCacheable
-;	VMMarkBacking
-;	VMMarkCleanUnused
-;	VMMarkResident
-;	VMPTest
-;	setPTEntryGivenPage
-;	VMShouldClean
-;	VMAllocateMemory
-;	VMLastExportedFunc
-;	major_0x0b144
+;	ARG		page# r4, KDP.VMMaxVirtualPages r9,
+;	RET		PTE_flags CR, HTAB_upper r8, HTAB_lower r9, PTE_value r16, HTAB_entry_loc r14, PTE_loc r15, 
 
-VeryPopularFunction	;	OUTSIDE REFERER
-	cmplw	cr4, r4, r9
+
+GetPARPageInfo	;	OUTSIDE REFERER
+	cmplw	cr4, r4, r9	;r9 is VMMaxVirtualPages by convention
 	lwz		r15,  KDP.FlatPageListPtr(r1)
 	slwi	r8, r4,  2
-	bge-	cr4, VeryPopularFunction_0x40
+	bge-	cr4, GetPARPageInfo_0x40
 
-VeryPopularFunction_0x10
-	lwzux	r16, r15, r8
-	lwz		r14, KDP.HTABORG(r1)
-	mtcrf	 0x07, r16
-	rlwinm	r8, r16, 23,  9, 28
-	rlwinm	r9, r16,  0,  0, 19
-	bgelr-	cr5
-	lwzux	r8, r14, r8
-	lwz		r9,  0x0004(r14)
+GetPARPageInfo_0x10
+	lwzux	r16, r15, r8	;get PTE from KDP.FlatPageListPointer
+	lwz		r14,  KDP.HTABORG(r1)
+	mtcrf	 0x07, r16	;copy bits 20-31 to cr
+	rlwinm	r8, r16, 23,  9, 28;convert page# into an index
+	rlwinm	r9, r16,  0,  0, 19;get unshifted page#
+	bgelr-	cr5		;return if PTE is not in HTAB
+	lwzux	r8, r14, r8	;get first word of PTE from HTAB
+	lwz		r9,  0x0004(r14);get second word of PTE from HTAB
 	mtcrf	 0x80, r8
-	bns+	cr7, Local_Panic
-	bltlr-	
-	bl		Local_Panic
+	bns+	cr7, Local_Panic;panic if the PTE is in the HTAB but isn't mapped to a real page
+	bltlr-			;return if PTE is valid
+	bl		Local_Panic;panic if PTE isn't valid but is in the HTAB
 
-VeryPopularFunction_0x40
-	lwz		r9, KDP.VMMaxVirtualPages(r1)
+GetPARPageInfo_0x40	;some kind of little-used code path for when VMMaxVirtualPages is invalid? ROM overlay?
+	lwz		r9,  KDP.VMMaxVirtualPages(r1)
 	cmplw	cr4, r4, r9
 	rlwinm.	r9, r4,  0,  0, 11
-	blt+	cr4, VMReturnMinus1
-	bne+	VMReturnMinus1
-	lwz		r15,  0x05e8(r1)
-	rlwinm	r9, r4, 19, 25, 28
-	lwzx	r15, r15, r9
-	clrlwi	r9, r4,  0x10
+	blt+	cr4, VMReturnMinus1;return failure if r4<VMMaxVirtualPages
+	bne+	VMReturnMinus1	;return failure if bits 0-11 of r4 are non-zero
+	lwz		r15,  0x05e8(r1);this appears to be an array of 8-byte structures.
+	rlwinm	r9, r4, 19, 25, 28;copy bits 12-15 or r4 to bits 25-28 of r9
+	lwzx	r15, r15, r9	;do an index for some reason
+	clrlwi	r9, r4,  0x10	;copy bits 16-31 to r9
 	lhz		r8,  0x0000(r15)
-	b		VeryPopularFunction_0x70
+	b		GetPARPageInfo_0x70
 
-VeryPopularFunction_0x6c
+GetPARPageInfo_0x6c
 	lhzu	r8,  0x0008(r15)
 
-VeryPopularFunction_0x70
+GetPARPageInfo_0x70
 	lhz		r16,  0x0002(r15)
 	subf	r8, r8, r9
 	cmplw	cr4, r8, r16
-	bgt+	cr4, VeryPopularFunction_0x6c
+	bgt+	cr4, GetPARPageInfo_0x6c
 	lwz		r9,  0x0004(r15)
 	andi.	r16, r9,  0xc00
 	cmpwi	cr6, r16,  0x400
 	cmpwi	cr7, r16,  0xc00
-	beq-	VeryPopularFunction_0xac
-	beq-	cr6, VeryPopularFunction_0xb4
+	beq-	GetPARPageInfo_0xac
+	beq-	cr6, GetPARPageInfo_0xb4
 	bne+	cr7, VMReturnMinus1
 	slwi	r8, r8,  2
 	rlwinm	r15, r9, 22,  0, 29
 	crset	cr4_lt
-	b		VeryPopularFunction_0x10
+	b		GetPARPageInfo_0x10
 
-VeryPopularFunction_0xac
+GetPARPageInfo_0xac
 	slwi	r8, r8, 12
 	add		r9, r9, r8
 
-VeryPopularFunction_0xb4
+GetPARPageInfo_0xb4
 	rlwinm	r16, r9,  0,  0, 19
 	crclr	cr4_lt
 	rlwinm	r9, r9,  0, 22, 19
@@ -1780,40 +1765,24 @@ VeryPopularFunction_0xb4
 
 
 
-;	                  VMDoSomethingWithTLB                  
-
-;	Xrefs:
-;	VMFinalInit
-;	VMInit
-;	VMExchangePages
-;	getPTEntryGivenPage
-;	VMIsUnmodified
-;	VMLRU
-;	VMMakePageCacheable
-;	VMMakePageWriteThrough
-;	PageSetCommon
-;	VMMakePageNonCacheable
-;	VMMarkBacking
-;	VMMarkCleanUnused
-;	setPTEntryGivenPage
-;	VMShouldClean
-;	VMAllocateMemory
-;	VMLastExportedFunc
-;	major_0x0b144
-
-VMDoSomethingWithTLB	;	OUTSIDE REFERER
+;invalidates TLB entry for page?
+;registers are assumed to be unmodified after call to VeryPopularFunction
+;r4 is address
+;r14 is address of HTAB entry
+;r8 is upper word of HTAB entry
+RemovePageFromTLB	;	OUTSIDE REFERER
 	mfpvr	r9
-	clrlwi	r8, r8,  0x01
+	clrlwi	r8, r8,  0x01	;clear valid bit from upper word of HTAB entry
 	rlwinm.	r9, r9,  0,  0, 14
-	stw		r8,  0x0000(r14)
-	slwi	r9, r4, 12
+	stw		r8,  0x0000(r14);store invalidated version of entry
+	slwi	r9, r4, 12	;get page number of address
 	sync	
 	tlbie	r9
-	beq-	VMDoSomethingWithTLB_0x28
+	beq-	@is_601
 	sync	
 	tlbsync	
 
-VMDoSomethingWithTLB_0x28
+@is_601
 	sync	
 	isync	
 	lwz		r9,  0x0004(r14)
@@ -1821,69 +1790,50 @@ VMDoSomethingWithTLB_0x28
 	rlwimi	r16, r9, 29, 27, 27
 	rlwimi	r16, r9, 27, 28, 28
 	mtcrf	 0x07, r16
-	blr		
+	blr
 
 
 
-;	                       VMDoSomeIO                       
-
-;	Xrefs:
-;	getPTEntryGivenPage
-;	VMIsUnmodified
-;	VMMakePageCacheable
-;	VMMakePageWriteThrough
-;	PageSetCommon
-;	VMMakePageNonCacheable
-;	VMMarkCleanUnused
-;	VMMarkResident
-;	setPTEntryGivenPage
-;	VMShouldClean
-;	major_0x09b40
-;	major_0x0b144
-
-VMDoSomeIO	;	OUTSIDE REFERER
+;updates stored PTE and HTAB entry for PTE
+;r16 is PTE value
+;r15 is address of stored PTE
+;r8 is lower word of HTAB entry
+;r9 is upper word of HTAB entry
+;r14 is address of HTAB entry
+EditPTEInHTAB	;	OUTSIDE REFERER
 	stw		r16,  0x0000(r15)
-
-VMDoSomeIO_0x4	;	OUTSIDE REFERER
-	stw		r9,  0x0004(r14)
+;just updates HTAB entry
+EditPTEOnlyInHTAB	;	OUTSIDE REFERER
+	stw		r9,  0x0004(r14);upper word of HTAB entry contains valid bit
 	eieio	
 	stw		r8,  0x0000(r14)
 	sync	
-	blr		
+	blr
 
 
 
-;	                     major_0x09b40                      
-
-;	Xrefs:
-;	VMFinalInit
-;	VMInit
-;	VMExchangePages
-;	VMLRU
-;	VMMakePageCacheable
-;	VMMakePageWriteThrough
-;	VMMakePageNonCacheable
-;	VMMarkBacking
-;	VMMarkCleanUnused
-;	VMMarkResident
-;	setPTEntryGivenPage
-;	VMAllocateMemory
-;	major_0x0b144
-
-major_0x09b40	;	OUTSIDE REFERER
-	lwz		r8,  0x0e98(r1)
-	rlwinm	r16, r16,  0, 21, 19
+;Removes a page from the HTAB.
+;Called right after GetPARPageInfo, with either a bl or a bltl cr5
+;
+;also updates NK statistics?
+;r9 is low word of HTAB entry
+;r14 ia address of HTAB entry
+;r15 is address of stored PTE
+;r16 is PTE value
+RemovePTEFromHTAB	;	OUTSIDE REFERER
+	lwz		r8,  0x0e98(r1);update a value in NanoKernelInfo
+	rlwinm	r16, r16,  0, 21, 19	;update PTE flags to indicate not in HTAB
 	addi	r8, r8,  0x01
 	stw		r8,  0x0e98(r1)
-	rlwimi	r16, r9,  0,  0, 19
+	rlwimi	r16, r9,  0,  0, 19	;move page# back into PTE
 	li		r8, -0x01
-	stw		r8,  0x0340(r1)
-	stw		r8,  0x0348(r1)
-	stw		r8,  0x0350(r1)
-	stw		r8,  0x0358(r1)
-	li		r8,  0x00
-	li		r9,  0x00
-	b		VMDoSomeIO
+	stw		r8,  KDP. MinusOne1(r1)
+	stw		r8,  KDP. MinusOne2(r1)
+	stw		r8,  KDP. MinusOne3(r1)
+	stw		r8,  KDP. MinusOne4(r1)
+	li		r8,  0x00	;0 upper HTAB word
+	li		r9,  0x00	;0 lower HTAB word
+	b		EditPTEInHTAB	;update stored PTE and invalidate HTAB entry
 
 VMSecondLastExportedFunc	;	OUTSIDE REFERER
 	lwz		r8, KDP.PTEGMask(r1)
@@ -1893,7 +1843,7 @@ VMSecondLastExportedFunc	;	OUTSIDE REFERER
 ;	                   VMLastExportedFunc                   
 
 ;	Xrefs:
-;	major_0x09b40
+;	RemovePTEFromHTAB
 
 
 VMLastExportedFunc
@@ -1977,9 +1927,9 @@ VMLastExportedFunc_0xd7
 	mr		r28, r16
 	mr		r26, r14
 	lwz		r9, KDP.PrimaryAddrRangePages(r1)
-	bl		VeryPopularFunction
+	bl		GetPARPageInfo
 	mtlr	r6
-	b		VMDoSomethingWithTLB
+	b		RemovePageFromTLB
 
 
 
