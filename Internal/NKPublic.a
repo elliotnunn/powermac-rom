@@ -283,16 +283,16 @@ ThudSavedR29			ds.l	1	; -2e0, cpu+060
 ThudSavedR30			ds.l	1	; -2dc, cpu+064
 ThudSavedR31			ds.l	1	; -2d8, cpu+068
 						ds.l	1	; -2d4, cpu+06c
-						ds.l	1	; -2d0, cpu+070
-						ds.l	1	; -2cc, cpu+074
-						ds.l	1	; -2c8, cpu+078
-						ds.l	1	; -2c4, cpu+07c
-						ds.l	1	; -2c0, cpu+080
-						ds.l	1	; -2bc, cpu+084
-						ds.l	1	; -2b8, cpu+088
-						ds.l	1	; -2b4, cpu+08c
-						ds.l	1	; -2b0, cpu+090
-						ds.l	1	; -2ac, cpu+094
+SIGPSavedR10			ds.l	1	; -2d0, cpu+070
+SIGPSavedR11			ds.l	1	; -2cc, cpu+074
+SIGPSavedR12			ds.l	1	; -2c8, cpu+078
+SIGPSavedR13			ds.l	1	; -2c4, cpu+07c
+SIGPSavedXER			ds.l	1	; -2c0, cpu+080
+SIGPSavedCTR			ds.l	1	; -2bc, cpu+084
+SIGPSavedLR				ds.l	1	; -2b8, cpu+088
+SIGPSavedR6				ds.l	1	; -2b4, cpu+08c
+SIGPSavedR7				ds.l	1	; -2b0, cpu+090
+SIGPSpacOnResume		ds.l	1	; -2ac, cpu+094 ; address space ptr to switch to when plug has executed
 						ds.l	1	; -2a8, cpu+098
 						ds.l	1	; -2a4, cpu+09c
 						ds.l	1	; -2a0, cpu+0a0
@@ -321,14 +321,14 @@ TimerDispatchLR			ds.l	1	; -258, cpu+0e8
 						ds.l	1	; -244, cpu+0fc
 						ds.l	1	; -240, cpu+100
 						ds.l	1	; -23c, cpu+104
-						ds.l	1	; -238, cpu+108
-						ds.l	1	; -234, cpu+10c
-						ds.l	1	; -230, cpu+110
-						ds.l	1	; -22c, cpu+114
-						ds.l	1	; -228, cpu+118
-						ds.l	1	; -224, cpu+11c
-						ds.l	1	; -220, cpu+120
-						ds.l	1	; -21c, cpu+124
+SIGPSelector			ds.l	1	; -238, cpu+108
+SIGPCallR4				ds.l	1	; -234, cpu+10c
+SIGPCallR5				ds.l	1	; -230, cpu+110
+SIGPCallR6				ds.l	1	; -22c, cpu+114
+SIGPCallR7				ds.l	1	; -228, cpu+118
+SIGPCallR8				ds.l	1	; -224, cpu+11c
+SIGPCallR9				ds.l	1	; -220, cpu+120
+SIGPCallR10				ds.l	1	; -21c, cpu+124
 						ds.l	1	; -218, cpu+128
 						ds.l	1	; -214, cpu+12c
 						ds.l	1	; -210, cpu+130
@@ -668,7 +668,7 @@ ThudSavedSR12			ds.l	1	; 7f0
 ThudSavedSR13			ds.l	1	; 7f4
 ThudSavedSR14			ds.l	1	; 7f8
 ThudSavedSR15			ds.l	1	; 7fc
-ThudSavedF0				ds.d	1	; 800
+ThudSavedF0				ds.d	1	; KDP.BATs + 0xa0
 ThudSavedF1				ds.d	1	; 808
 ThudSavedF2				ds.d	1	; 810
 ThudSavedF3				ds.d	1	; 818
@@ -745,7 +745,7 @@ ISIVector				ds.l	1	; 10 ; called by    IVT+400 (ISI)
 ExternalIntVector		ds.l	1	; 14 ; called by    IVT+500 (external interrupt)
 AlignmentIntVector		ds.l	1	; 18 ; called by    IVT+600 (alignment)
 ProgramIntVector		ds.l	1	; 1c ; called by    IVT+700 (program)
-FPUnavailVector			ds.l	1	; 20 ; called by    IVT+800 (FP unavail)
+FPUnavailVector			ds.l	1	; 20 ; called by    IVT+KDP.BATs + 0xa0 (FP unavail)
 DecrementerVector		ds.l	1	; 24 ; called by    IVT+900 (decrementer)
 ReservedVector1			ds.l	1	; 28 ; called by    IVT+a00 (reserved)
 ReservedVector2			ds.l	1	; 2c ; called by    IVT+b00 (reserved)

@@ -1927,24 +1927,17 @@ BEFOUR
 	lwz		r9,  0x0ee0(r1)
 	addi	r9, r9,  0x01
 	stw		r9,  0x0ee0(r1)
-	li		r16,  0x05
-	stw		r16, -0x0238(r15)
-	stw		r18, -0x0234(r15)
-	li		r8,  0x02
 
-;	r7 = flags
-;	r8 = usually 2?
+	li		r16, kAlert
+	stw		r16, EWA.SIGPSelector(r15)
+	stw		r18, EWA.SIGPCallR4(r15)
+
+	li		r8, 2
 	b		SIGP
 
 
 
-;	                     major_0x14bcc
-
-;	Xrefs:
-;	"EvenMore"
-;	"SecondCpuCodeViaPtr"
-
-major_0x14bcc
+NewCpuEntryPoint
 
 	;	This func gets passed its CPU struct in r3,
 	;	which lets us find its real EWA pointer.
@@ -2192,10 +2185,12 @@ StopProcessor
 	bl		TasksFuncThatIsNotAMPCall
 	_AssertAndRelease	PSA.SchLock, scratch=r16
 	_log	'SIGP kStopProcessor^n'
-	li		r3,  0x03
+	li		r3, kStopProcessor
 	lhz		r4, CPU.EWA + EWA.CPUIndex(r31)
-	li		r0,  0x2e
-	twi		31, r31,  0x08
+
+	;	Use twi to call MPCpuPlugin(3, myCpuID)
+	li		r0, 46
+	twi		31, r31, 8
 	_log	'Stop didn''t work - going to sleep.^n'
 
 StopProcessor_0x10c

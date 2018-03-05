@@ -386,7 +386,7 @@ kSignature				equ		'CPU '
 ID						ds.l	1	; 00
 Signature				ds.l	1	; 04
 LLL						ds.l	4	; 08:18 ; member of CGRP
-Eff						ds.l	1	; 18 ; contains 0x0000000f
+Eff						ds.l	1	; 18 ; contains 0x0000000f ; cannot delete if this field & 9
 IdleTaskPtr				ds.l	1	; 1c
 
 EWABase					ds.b	800	; negative-indexed parts of EWA
@@ -499,16 +499,16 @@ CPUList					ds.l	4	; 00:10 ; CPUs on this "motherboard"
 LLL						ds.l	4	; 10:20 ; member of global CGRP list
 CpuCount				ds.l	1	; 20
 ScheduledCpuCount		ds.l	1	; 24
-						ds.l	1	; 28
-						ds.l	1	; 2c
-						ds.l	1	; 30
-						ds.l	1	; 34
-						ds.l	1	; 38
-						ds.l	1	; 3c
-						ds.l	1	; 40
-						ds.l	1	; 44
+LA_CpuPlugin			ds.l	1	; 28 ; page-aligned
+PA_CpuPlugin			ds.l	1	; 2c ; page-aligned
+CpuPluginSize			ds.l	1	; 30 ; page-aligned size
+LA_CpuPluginDesc		ds.l	1	; 34 ; non-page-aligned ; [1c] = count, [20...] = entry table
+PA_CpuPluginDesc		ds.l	1	; 38 ; non-page-aligned
+PA_CpuPluginTOC			ds.l	1	; 3c ; "table of contents": a TVector pointer for each selector
+PA_CpuPluginStackPtrs	ds.l	1	; 40 ; array of stack pointers (one per CPU)
+CpuPluginSelectorCount	ds.l	1	; 44 ; max of 64
 Incrementer				ds.l	1	; 48 ; number of NKCreateAddressSpaceSub calls % 1M
-						ds.l	1	; 4c
+CpuPluginSpacePtr		ds.l	1	; 4c ; space that cpup runs in
 						ds.l	1	; 50
 						ds.l	1	; 54
 

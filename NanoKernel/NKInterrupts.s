@@ -2420,10 +2420,10 @@ IntExternalYellow	;	OUTSIDE REFERER
 
 	bl		Save_r14_r31
 
-	li		r9, 9
-	stw		r9, -0x0238(r8)
+	li		r9, kSIGP9
+	stw		r9, EWA.SIGPSelector(r8)
 
-	li		r8, 1
+	li		r8, 1 ; args in EWA
 	bl		SIGP
 
 	bl		Restore_r14_r31
@@ -2444,109 +2444,145 @@ IntExternalYellow	;	OUTSIDE REFERER
 
 
 
-;	                          SIGP
+;	"SIGnal Plugin": Call the CPU plugin PEF bundle synchronously.
+;	(blue address space but in supervisor mode without interrupts)
 
-;	Really need to figure out what this does...
+;	ARG:
 
-;	Xrefs:
-;	IntExternalYellow
-;	MPCall_43
-;	KCStartCPU
-;	KCCpuPlugin
-;	FlagSchEvaluationIfTaskRequires
-;	MPCall_103
+;	if r8 == 0, i.e. userspace MPCpuPlugin call:
+;		r3 => routine selector
+;		executing CPU index => r3
+;		r4-10 => r4-10
 
-;	> r7    = flags
-;	> r8    = usually 2?
+;	if r8 != 0, i.e. internal NanoKernel call:
+;		EWA.SIGPSelector => routine selector
+;		executing CPU index => r3
+;		PlugCallR4-10 => r4-10
+
+;	For most NK SIGPs, r4 contains the index of the CPU being operated on
 
 	align	5
 
-SIGP	;	OUTSIDE REFERER
+SIGP
+
 	mfsprg	r23, 0
 	mtcr	r7
-	lwz		r16, -0x001c(r23)
-	slwi	r20, r3,  2
-	stw		r16, -0x02ac(r23)
-	blt-	cr4, major_0x04a20_0x18
-	cmpwi	cr2, r8,  0x00
-	lwz		r18, -0x0238(r23)
-	beq-	cr2, SIGP_0x28
-	slwi	r20, r18,  2
 
-SIGP_0x28
-	lwz		r22, -0x0338(r23)
+	;	r20 = offset into CPU plugin dispatch table = routine number * 4
+	;
+	lwz		r16, EWA.PA_CurAddressSpace(r23)
+	slwi	r20, r3, 2
+	stw		r16, EWA.SIGPSpacOnResume(r23)
+	bc		BO_IF, 16, major_0x04a20_0x18			; not sure about this
+	cmpwi	cr2, r8, 0
+	lwz		r18, EWA.SIGPSelector(r23)
+	beq-	cr2, @args_in_registers
+	slwi	r20, r18, 2
+@args_in_registers
+
+	;	Check that a CPU plugin is installed and that the
+	;	plugin dispatch table includes this command number.
+	lwz		r22, EWA.CPUBase + CPU.LLL + LLL.Freeform(r23)
 	li		r8, -0x7266
-	lwz		r17,  0x0038(r22)
-	lwz		r16,  0x0044(r22)
+	lwz		r17, CoherenceGroup.PA_CpuPluginDesc(r22)
+	lwz		r16, CoherenceGroup.CpuPluginSelectorCount(r22)
 	mr.		r17, r17
 	beqlr-
 	slwi	r16, r16,  2
 	li		r8, -0x7267
 	cmplw	r20, r16
 	bgelr-
-	stw		r10, -0x02d0(r23)
-	stw		r11, -0x02cc(r23)
-	stw		r12, -0x02c8(r23)
-	stw		r13, -0x02c4(r23)
+
+	;	Save some registers in advance of this unusual "upcall".
+	stw		r10, EWA.SIGPSavedR10(r23)
+	stw		r11, EWA.SIGPSavedR11(r23)
+	stw		r12, EWA.SIGPSavedR12(r23)
+	stw		r13, EWA.SIGPSavedR13(r23)
 	mfxer	r16
 	mfctr	r17
-	stw		r16, -0x02c0(r23)
+	stw		r16, EWA.SIGPSavedXER(r23)
 	mflr	r16
-	stw		r17, -0x02bc(r23)
-	stw		r16, -0x02b8(r23)
-	stw		r6, -0x02b4(r23)
-	stw		r7, -0x02b0(r23)
-	lwz		r9, -0x001c(r23)
-	lwz		r8,  0x004c(r22)
-	cmpw	r9, r8
-	beq-	SIGP_0x94
-	bl		SetSpaceSRsAndBATs
+	stw		r17, EWA.SIGPSavedCTR(r23)
+	stw		r16, EWA.SIGPSavedLR(r23)	; obviously this is getting revisited somewhere
+	stw		r6, EWA.SIGPSavedR6(r23)
+	stw		r7, EWA.SIGPSavedR7(r23)
 
-SIGP_0x94
-	lwz		r16,  0x0004(r23)
-	lwz		r17,  0x0018(r23)
-	stw		r16,  0x010c(r6)
-	stw		r2,  0x0114(r6)
-	stw		r3,  0x011c(r6)
-	stw		r4,  0x0124(r6)
-	stw		r5,  0x012c(r6)
-	stw		r17,  0x0134(r6)
-	lwz		r17,  0x0648(r1)
+	;	Change to the CPU plugin's preferred address space.
+	lwz		r9, EWA.PA_CurAddressSpace(r23)
+	lwz		r8, CoherenceGroup.CpuPluginSpacePtr(r22)
+	cmpw	r9, r8
+	beq-	@noNeedToSwitchSpace
+	bl		SetSpaceSRsAndBATs
+@noNeedToSwitchSpace
+
+	;	Save user registers to ContextBlock (odd way to do this).
+	lwz		r16, EWA.r1(r23)
+	lwz		r17, EWA.r6(r23)
+	stw		r16, ContextBlock.r1(r6)
+	stw		r2, ContextBlock.r2(r6)
+	stw		r3, ContextBlock.r3(r6)
+	stw		r4, ContextBlock.r4(r6)
+	stw		r5, ContextBlock.r5(r6)
+	stw		r17, ContextBlock.r6(r6)
+
+	;	Return address for CPU plugin code (=> twi 31, r31, 0 => kcReturnFromException)
+	lwz		r17, KDP.LA_EmulatorKernelTrapTable + NanoKernelCallTable.ReturnFromException(r1)
+
+	;	Need CPU index to look up the CPU plugin stack pointer in a table
 	lhz		r16, EWA.CPUIndex(r23)
-	lwz		r19, -0x0964(r1)
-	slwi	r16, r16,  2
-	rlwinm	r19, r19,  0, 18, 15
-	lwz		r8,  0x003c(r22)
-	lwz		r9,  0x0040(r22)
+
+	;	MSR for CPU plugin with EE (external ints) and PR (problem state) switched off
+	lwz		r19, PSA.UserModeMSR(r1)
+	slwi	r16, r16, 2
+	rlwinm	r19, r19, 0, 18, 15
+
+	;	SRR0 (=> program counter) = TOC[routine_idx][first long]
+	;	r1 (stack ptr) = stackPtrs[cpu_idx]
+	;	r2 (RTOC) = TOC[routine_idx][second long]
+	lwz		r8, CoherenceGroup.PA_CpuPluginTOC(r22)
+	lwz		r9, CoherenceGroup.PA_CpuPluginStackPtrs(r22)
 	lwzx	r20, r8, r20
-	lwz		r18,  0x0000(r20)
+	lwz		r18, 0(r20)
 	mtlr	r17
 	mtspr	srr0, r18
 	mtspr	srr1, r19
 	lwzx	r1, r9, r16
-	lwz		r2,  0x0004(r20)
-	srwi	r3, r16,  2
+	lwz		r2, 4(r20)
+
+	;	r3 (first arg) = CPU index
+	srwi	r3, r16, 2
+
+	;	Flags |= 0x8000
 	ori		r7, r7,  0x8000
 	mr		r16, r6
-	stw		r7, -0x0010(r23)
+	stw		r7, EWA.Flags(r23)
+
+	;	Not sure where this ContextBlock comes from?
 	addi	r6, r23, -0x318
-	stw		r6, -0x0014(r23)
-	beq-	cr2, SIGP_0x128
-	lwz		r4, -0x0234(r23)
-	lwz		r5, -0x0230(r23)
-	lwz		r6, -0x022c(r23)
-	lwz		r7, -0x0228(r23)
-	lwz		r8, -0x0224(r23)
-	lwz		r9, -0x0220(r23)
-	lwz		r10, -0x021c(r23)
+	stw		r6, EWA.PA_ContextBlock(r23)
+
+	beq-	cr2, @args_in_registers_2
+
+;args not in registers
+	lwz		r4, EWA.SIGPCallR4(r23)
+	lwz		r5, EWA.SIGPCallR5(r23)
+	lwz		r6, EWA.SIGPCallR6(r23)
+	lwz		r7, EWA.SIGPCallR7(r23)
+	lwz		r8, EWA.SIGPCallR8(r23)
+	lwz		r9, EWA.SIGPCallR9(r23)
+	lwz		r10, EWA.SIGPCallR10(r23)
+
+	;	Go.
 	rfi
 
-SIGP_0x128
-	lwz		r6,  0x0134(r16)
-	lwz		r7,  0x013c(r16)
-	lwz		r8,  0x0144(r16)
-	lwz		r9,  0x014c(r16)
-	lwz		r10,  0x0154(r16)
+@args_in_registers_2
+	lwz		r6, ContextBlock.r6(r16)
+	lwz		r7, ContextBlock.r7(r16)
+	lwz		r8, ContextBlock.r8(r16)
+	lwz		r9, ContextBlock.r9(r16)
+	lwz		r10, ContextBlock.r10(r16)
+
+	;	Go.
 	rfi
 
 
@@ -2576,7 +2612,7 @@ major_0x04a20_0x18	;	OUTSIDE REFERER
 	li		r3, -0x7265
 
 major_0x04a20_0x30
-	lwz		r8, -0x02ac(r23)
+	lwz		r8, EWA.SIGPSpacOnResume(r23)
 	lwz		r9, -0x001c(r23)
 	cmpw	r9, r8
 	beq-	major_0x04a20_0x44

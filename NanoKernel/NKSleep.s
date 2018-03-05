@@ -120,14 +120,11 @@ MPCall_103_0x10c
 	stw		r8, -0x0278(r15)
 	stw		r9, -0x0274(r15)
 	mr		r29, r17
-	li		r16,  0x06
-	stw		r16, -0x0238(r15)
+	li		r16, kSIGP6
+	stw		r16, EWA.SIGPSelector(r15)
 	lhz		r16, EWA.CPUIndex(r15)
-	stw		r16, -0x0234(r15)
-	li		r8,  0x02
-
-;	r7 = flags
-;	r8 = usually 2?
+	stw		r16, EWA.SIGPCallR4(r15)
+	li		r8, 2 ; args in EWA
 	bl		SIGP
 	mr		r17, r29
 	mfsdr1	r8
@@ -257,14 +254,11 @@ MPCall_103_0x270
 	li		r8,  0x00
 	stw		r8,  0x0004(r17)
 	mfsprg	r15, 0
-	li		r16,  0x11
-	stw		r16, -0x0238(r15)
+	li		r16, kSIGP17
+	stw		r16, EWA.SIGPSelector(r15)
 	lhz		r16, EWA.CPUIndex(r15)
-	stw		r16, -0x0234(r15)
-	li		r8,  0x02
-
-;	r7 = flags
-;	r8 = usually 2?
+	stw		r16, EWA.SIGPCallR4(r15)
+	li		r8, 2 ; args in EWA
 	bl		SIGP
 	li		r3,  0x00
 	b		Local_CommonMPCallReturnPath
@@ -362,24 +356,18 @@ RestoreKernelState_0x144
 	bl		SetSpaceSRsAndBATs
 	isync
 	mfsprg	r15, 0
-	li		r16,  0x07
-	stw		r16, -0x0238(r15)
+	li		r16, kSIGP7
+	stw		r16, EWA.SIGPSelector(r15)
 	lhz		r16, EWA.CPUIndex(r15)
-	stw		r16, -0x0234(r15)
-	li		r8,  0x02
-
-;	r7 = flags
-;	r8 = usually 2?
+	stw		r16, EWA.SIGPCallR4(r15)
+	li		r8, 2 ; args in EWA
 	bl		SIGP
 	mfsprg	r15, 0
-	li		r16,  0x11
-	stw		r16, -0x0238(r15)
+	li		r16, kSIGP17
+	stw		r16, EWA.SIGPSelector(r15)
 	lhz		r16, EWA.CPUIndex(r15)
-	stw		r16, -0x0234(r15)
-	li		r8,  0x02
-
-;	r7 = flags
-;	r8 = usually 2?
+	stw		r16, EWA.SIGPCallR4(r15)
+	li		r8, 2 ; args in EWA
 	bl		SIGP
 	li		r3,  0x00
 	b		Local_CommonMPCallReturnPath

@@ -770,97 +770,138 @@ MPCall_1	;	OUTSIDE REFERER
 
 ;	               KCRegisterCpuPlugin
 
+;	ARG		MPCoherenceGroupID r3, CpuPluginPtr r4, CpuPluginSize r5, CpuPluginDesc r6
+;	RET		OSStatus r3
 
-	DeclareMPCall	2, KCRegisterCpuPlugin
+	DeclareMPCall	2, MPRegisterCpuPlugin
 
-KCRegisterCpuPlugin	;	OUTSIDE REFERER
+MPRegisterCpuPlugin
+;	_log	'MPRegisterCpuPlugin '
+;	mr		r8, r3
+;	bl		Printw
+;	mr		r8, r4
+;	bl		Printw
+;	mr		r8, r5
+;	bl		Printw
+;	mr		r8, r6
+;	bl		Printw
+;	_log	'^n'
+
 	mfsprg	r14, 0
 	lwz		r15, EWA.PA_CurTask(r14)
 	lwz		r16, ContextBlock.r6(r6)
 
-	andi.	r8, r4, 0xfff		;	page alignment?
+	;	Check that address of CPU plugin is page-aligned,
+	;	and that CPU plugin size if page-aligned and nonzero.
+	andi.	r8, r4, 0xfff
 	bne+	ReturnMPCallOOM
-
-	andi.	r8, r5, 0xfff		;	r5 page aligned and nonzero?
+	andi.	r8, r5, 0xfff
 	cmpwi	cr1, r5, 0
 	bne+	ReturnMPCallOOM
 	beq+	cr1, ReturnMPCallOOM
 
 	_Lock			PSA.SchLock, scratch1=r18, scratch2=r19
 
+	;	r14 = coherence group ptr (motherpboard CGRP if not specified in first argument)
 	mr.		r8, r3
-	bne-	KCRegisterCpuPlugin_0x50
+	bne-	@use_specified_cgrp
 	mfsprg	r15, 0
-	lwz		r14, -0x0338(r15)
-	b		KCRegisterCpuPlugin_0x60
-
-KCRegisterCpuPlugin_0x50
-;	r8 = id
+	lwz		r14, EWA.CPUBase + CPU.LLL + LLL.Freeform(r15)
+	b		@cgrp_done
+@use_specified_cgrp
  	bl		LookupID
 	cmpwi	r9, CoherenceGroup.kIDClass
-
 	mr		r14, r8
 	bne+	ReturnMPCallInvalidIDErr
+@cgrp_done
 
-KCRegisterCpuPlugin_0x60
-	cmpwi	r16,  0x00
-	bne-	KCRegisterCpuPlugin_0x74
-	stw		r16,  0x0038(r14)
-	stw		r16,  0x0034(r14)
+	;	Fail if no CPU plugin descriptor is passed in fourth argument
+	cmpwi	r16, 0
+	bne-	@no_table_ptr
+	stw		r16, CoherenceGroup.PA_CpuPluginDesc(r14)
+	stw		r16, CoherenceGroup.LA_CpuPluginDesc(r14)
 	b		ReleaseAndReturnMPCallInvalidIDErr
+@no_table_ptr
 
-KCRegisterCpuPlugin_0x74
+	;	Fail if CPU plugin descriptor lies within CPU plugin
 	add		r17, r4, r5
 	cmplw	r16, r4
 	cmplw	cr1, r16, r17
 	blt+	ReleaseAndReturnMPCallOOM
 	bge+	cr1, ReleaseAndReturnMPCallOOM
-	lwz		r19,  0x0038(r14)
+
+	;	What the hell? Wouldn't this always fail?
+	lwz		r19, CoherenceGroup.PA_CpuPluginDesc(r14)
 	mr.		r19, r19
 	bne+	ReleaseAndReturnMPCallInvalidIDErr
+
+	;	r18 = physical address of plugin (assumes page-aligned)
 	mr		r27, r4
-	addi	r29, r1, 800
+	addi	r29, r1, KDP.BATs + 0xa0
 	bl		PagingFunc3
 	beq+	ReleaseAndReturnMPCallOOM
-	rlwinm	r18, r31,  0,  0, 19
+	rlwinm	r18, r31, 0, 0, 19
+
+	;	r18 = physical address of descriptor (does not assume page-aligned)
 	mr		r27, r16
 	mr		r19, r16
-	addi	r29, r1, 800
+	addi	r29, r1, KDP.BATs + 0xa0
 	bl		PagingFunc3
 	beq+	ReleaseAndReturnMPCallOOM
-	rlwimi	r19, r31,  0,  0, 19
-	stw		r4,  0x0028(r14)
-	stw		r18,  0x002c(r14)
-	stw		r5,  0x0030(r14)
-	stw		r16,  0x0034(r14)
-	stw		r19,  0x0038(r14)
-	lwz		r27,  0x0000(r19)
-	addi	r29, r1, 800
+	rlwimi	r19, r31, 0, 0, 19
+
+	;	Populate the coherence group structure.
+
+		;	Save (page-aligned) address of main plugin (second argument)
+		stw		r4, CoherenceGroup.LA_CpuPlugin(r14)
+		stw		r18, CoherenceGroup.PA_CpuPlugin(r14)
+
+		;	Save size of main plugin (third argument)
+		stw		r5, CoherenceGroup.CpuPluginSize(r14)
+
+		;	Save (non-page-aligned) address of descriptor (fourth argument)
+		stw		r16, CoherenceGroup.LA_CpuPluginDesc(r14)
+		stw		r19, CoherenceGroup.PA_CpuPluginDesc(r14)
+
+	;	Get physical ptr to table of stack pointers (one per CPU)
+	lwz		r27, 0(r19)
+	addi	r29, r1, KDP.BATs + 0xa0
 	bl		PagingFunc3
 	beq+	ReleaseAndReturnMPCallOOM
-	rlwimi	r27, r31,  0,  0, 19
-	stw		r27,  0x0040(r14)
+	rlwimi	r27, r31, 0, 0, 19
+	stw		r27, CoherenceGroup.PA_CpuPluginStackPtrs(r14)
+
 	mfsprg	r16, 0
-	lwz		r17, -0x001c(r16)
-	stw		r17,  0x004c(r14)
-	addi	r16, r19,  0x20
-	stw		r16,  0x003c(r14)
-	subi	r16, r16, 4
-	lwz		r17,  0x001c(r19)
-	cmplwi	r17,  0x40
-	stw		r17,  0x0044(r14)
+
+	;	The cpup should operate in the caller's address space
+	lwz		r17, EWA.PA_CurAddressSpace(r16)
+	stw		r17, CoherenceGroup.CpuPluginSpacePtr(r14)
+
+	;	Get ptr to dispatch table at descriptor + 32
+	addi	r16, r19, 0x20
+	stw		r16, CoherenceGroup.PA_CpuPluginTOC(r14)
+	subi	r16, r16, 4 ; prepare for loop below
+
+	;	Get number of entries in the dispatch table
+	lwz		r17, 0x1c(r19)
+	cmplwi	r17, 64
+	stw		r17, CoherenceGroup.CpuPluginSelectorCount(r14)
 	bgt+	ReleaseAndReturnMPCallOOM
 
-KCRegisterCpuPlugin_0x114
-	lwzu	r27,  0x0004(r16)
-	addi	r29, r1, 800
+	;	Convert those entries to physical addresses
+@table_convert_loop
+	lwzu	r27, 4(r16)
+	addi	r29, r1, KDP.BATs + 0xa0
 	bl		PagingFunc3
 	beq+	ReleaseAndReturnMPCallOOM
-	addi	r17, r17, -0x01
-	rlwimi	r27, r31,  0,  0, 19
-	cmpwi	r17,  0x00
-	stw		r27,  0x0000(r16)
-	bgt+	KCRegisterCpuPlugin_0x114
+	subi	r17, r17, 1
+	rlwimi	r27, r31, 0, 0, 19
+	cmpwi	r17, 0
+	stw		r27, 0(r16)
+	bgt+	@table_convert_loop
+
+
+
 	_log	'CPU plugin registered^n'
 
 ;	r1 = kdp
@@ -1426,7 +1467,7 @@ MPCall_62	;	OUTSIDE REFERER
 	mr.		r8, r3
 	bne-	MPCall_62_0x18
 	mfsprg	r15, 0
-	lwz		r31, -0x0338(r15)
+	lwz		r31, EWA.CPUBase + CPU.LLL + LLL.Freeform(r15)
 	lwz		r3,  0x0000(r31)
 	b		MPCall_62_0x24
 
@@ -1567,34 +1608,33 @@ KCCreateCpuStruct_0x68
 
 
 
-	DeclareMPCall	43, MPCall_43
+;	Simple MPLibrary wrapper
 
-MPCall_43	;	OUTSIDE REFERER
+	DeclareMPCall	43, MPDeleteProcessor
+
+MPDeleteProcessor
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
 	mr		r8, r3
-
-;	r8 = id
  	bl		LookupID
 	cmpwi	r9, CPU.kIDClass
-
 	mr		r31, r8
 	bne+	ReleaseAndReturnMPCallInvalidIDErr
-	lwz		r16,  0x0018(r31)
-	lis		r17,  0x00
-	ori		r17, r17,  0x09
+
+	lwz		r16, CPU.Eff(r31)
+	lisori	r17, 9
 	and.	r17, r17, r16
 	bne+	ReleaseAndReturnMPCallOOM
-	mfsprg	r15, 0
-	li		r16,  0x04
-	stw		r16, -0x0238(r15)
-	lhz		r16, CPU.EWA + EWA.CPUIndex(r31)
-	stw		r16, -0x0234(r15)
-	li		r8,  0x02
 
-;	r7 = flags
-;	r8 = usually 2?
+	mfsprg	r15, 0
+
+	li		r16, kResetProcessor
+	stw		r16, EWA.SIGPSelector(r15)
+
+	lhz		r16, CPU.EWA + EWA.CPUIndex(r31)
+	stw		r16, EWA.SIGPCallR4(r15)
+	li		r8, 2 ; args in EWA
 	bl		SIGP
 	lwz		r17,  0x0008(r31)
 	addi	r16, r31,  0x08
@@ -1631,16 +1671,16 @@ KCStartCPU	;	OUTSIDE REFERER
 	bne+	ReleaseAndReturnZeroFromMPCall
 
 	mfsprg	r15, 0
-	li		r16,  0x04
-	stw		r16, -0x0238(r15)
+	li		r16, kResetProcessor
+	stw		r16, EWA.SIGPSelector(r15)
 	lhz		r16, CPU.EWA + EWA.CPUIndex(r30)
-	stw		r16, -0x0234(r15)
+	stw		r16, EWA.SIGPCallR4(r15)
 
 
 ;	Put the boots in?
 
 	_log	'SIGP kResetProcessor^n'
-	li		r8, 2
+	li		r8, 2 ; args in EWA
 	bl		SIGP
 	cmpwi	r8, -0x7264
 	cmpwi	cr1, r8, 0
@@ -1700,19 +1740,17 @@ KCStartCPU	;	OUTSIDE REFERER
 	_AssertAndRelease	PSA.SchLock, scratch=r16
 
 
-	;	Some EWA/KDP stuff I do not understand
 	mfsprg	r15, 0
-	li		r16,  0x08
-	stw		r16, -0x0238(r15)
+
+
+	li		r16, kSynchClock
+	stw		r16, EWA.SIGPSelector(r15)
 	lhz		r16, CPU.EWA + EWA.CPUIndex(r30)
-	stw		r16, -0x0234(r15)
+	stw		r16, EWA.SIGPCallR4(r15)
 
 MPCall_44_0x15c
 	_log	'SIGP kSynchClock^n'
-	li		r8,  0x02
-
-;	r7 = flags
-;	r8 = usually 2?
+	li		r8, 2 ; args in EWA
 	bl		SIGP
 	cmpwi	r8, -0x7264
 	cmpwi	cr1, r8,  0x00
@@ -1720,29 +1758,34 @@ MPCall_44_0x15c
 
 
 	bne-	cr1, MPCall_Panic
+
 	mfsprg	r15, 0
-	li		r16,  0x01
-	stw		r16, -0x0238(r15)
+
+	li		r16, kStartProcessor
+	stw		r16, EWA.SIGPSelector(r15)
+
 	lhz		r16, CPU.EWA + EWA.CPUIndex(r30)
-	stw		r16, -0x0234(r15)
-	lwz		r16,  0x064c(r1)
-	llabel	r17, major_0x14bcc
+	stw		r16, EWA.SIGPCallR4(r15)
+
+	lwz		r16, KDP.PA_NanoKernelCode(r1)
+	llabel	r17, NewCpuEntryPoint
 	add		r16, r16, r17
-	stw		r16, -0x0230(r15)
-	stw		r30, -0x022c(r15)
+	stw		r16, EWA.SIGPCallR5(r15)
 
-MPCall_44_0x1c0
+	stw		r30, EWA.SIGPCallR6(r15) ; cpu struct
+
+@retry
 	_log	'SIGP kStartProcessor^n'
-	li		r8,  0x04
-
-;	r7 = flags
-;	r8 = usually 2?
+	li		r8, 4 ; args in EWA
 	bl		SIGP
+
 	cmpwi	r8, -0x7264
-	cmpwi	cr1, r8,  0x00
-	beq+	MPCall_44_0x1c0
+	cmpwi	cr1, r8, 0
+	beq+	@retry
 	bne-	cr1, MPCall_Panic
+
 	_log	'Processor scheduled^n'
+
 	b		ReturnZeroFromMPCall
 
 
@@ -1798,19 +1841,24 @@ KCStopScheduling_0x94
 
 
 
-;	                      KCCpuPlugin
+;	Directly wrapped by MPLibrary
 
+;	ARG		selector r3, arbitrary args r4...
+;	RET		arbitrary
 
-	DeclareMPCall	46, KCCpuPlugin
+	DeclareMPCall	46, MPCpuPlugin
 
-KCCpuPlugin	;	OUTSIDE REFERER
-	li		r8,  0x00
+MPCpuPlugin
 
-;	r7 = flags
-;	r8 = usually 2?
+	;	Arguments in registers
+	li		r8, 0
+
+	;	Hopefully returns via kcReturnFromInterrupt? Geez...
 	bl		SIGP
+
 	mr		r3, r8
-	mr		r4, r9
+	mr		r4, r9	; r4 not accessible calling MPLibrary func from C
+
 	b		CommonMPCallReturnPath
 
 
@@ -2121,7 +2169,7 @@ MPCall_108	;	OUTSIDE REFERER
 
 NKSetClockStep	;	OUTSIDE REFERER
 	mfsprg	r9, 0
-	lwz		r8, -0x0338(r9)
+	lwz		r8, EWA.CPUBase + CPU.LLL + LLL.Freeform(r9)
 	lwz		r9,  0x0024(r8)
 	cmpwi	r9,  0x01
 	bgt+	ReturnMPCallOOM
@@ -2199,7 +2247,7 @@ NKSetClockDriftCorrection	;	OUTSIDE REFERER
 	mfsprg	r9, 0
 	cmpwi	r31,  0x00
 	beq+	ReturnMPCallOOM
-	lwz		r8, -0x0338(r9)
+	lwz		r8, EWA.CPUBase + CPU.LLL + LLL.Freeform(r9)
 	lwz		r9,  0x0024(r8)
 	cmpwi	r9,  0x01
 	bgt+	ReturnMPCallOOM
