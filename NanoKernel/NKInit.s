@@ -541,12 +541,9 @@ InitHighLevel
 
 
 
-;	Fill Indigo (PSA). All panics, except for IntIndigo in:
-;	-	SystemResetVector
-;	-	ExternalIntVector
-;	-	DecrementerVector
+;	For the PowerDispatch selector that governs idle modes
 
-	bl		FillIndigo
+	bl		InitIdleVecTable
 
 
 
@@ -1138,7 +1135,7 @@ SetProcessorFlags
 	stw		r8, Task.Name(r31)
 
 	li		r8, 2
-	stb		r8, Task.MysteryByte1(r31)
+	stb		r8, Task.State(r31)
 
 	lisori	r8,	0x30028 ; (Z>>Task.kFlag14) | (Z>>Task.kFlagBlue) | (Z>>Task.kFlag26) | (Z>>Task.kFlag28)
 	stw		r8, Task.Flags(r31)

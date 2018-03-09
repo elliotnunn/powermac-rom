@@ -1302,11 +1302,13 @@ IntMachineCheck	;	OUTSIDE REFERER
 	_log	'^n'
 
 	rlwinm.	r8, r11,  0,  2,  2
-	beq-	IntMachineCheck_0xa4
-	bl		kcCacheDispatch_0x39c
+	beq-	@not_L1_data_cache_error
+
+;L1 data cache error
+	bl		FlushL1CacheUsingMSSCR0
 	b		IntReturn
 
-IntMachineCheck_0xa4
+@not_L1_data_cache_error
 	li		r8,  0x07
 	b		major_0x02980_0x134
 

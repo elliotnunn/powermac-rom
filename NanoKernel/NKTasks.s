@@ -59,8 +59,8 @@ MPCall_7	;	OUTSIDE REFERER
 
 	stw		r4,  0x0098(r31)
 
-	lwz		r17,  ContextBlock.r6(r6)
-	stw		r17,  0x00ec(r31)
+	lwz		r17, ContextBlock.r6(r6)
+	stw		r17, ContextBlock.LR(r31)
 
 
 	lwz		r16, Task.Flags(r28)
@@ -206,7 +206,7 @@ CreateTask
 
 
 	li		r16, 0
-	stb		r16, Task.MysteryByte1(r28)
+	stb		r16, Task.State(r28)
 
 	li		r16, 9 ; (Z>>Task.kFlag28) | (Z>>Task.kFlag31)
 	stw		r16, Task.Flags(r28)
@@ -541,7 +541,7 @@ TasksFuncThatIsNotAMPCall
 MPCall_11	;	OUTSIDE REFERER
 	mfsprg	r16, 0
 	cmpwi	r3,  0x00
-	lwz		r17, -0x08f0(r1)
+	lwz		r17, PSA.PA_BlueTask(r1)
 	lwz		r18, -0x0008(r16)
 	lwz		r19,  0x0000(r17)
 	bne-	MPCall_11_0x1c

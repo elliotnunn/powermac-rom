@@ -322,7 +322,8 @@ LogFlagShift			equ		3
 LogFlagBit				equ		31 - LogFlagShift
 ;	bit 31 always set on replacement, bit 27 set on replacement with ROM 2.7f3 or later
 
-						org		0x128
+AlertCount				ds.l	1			; 120, kdp+ee0 ; interprocessor alerts
+SchEvalCount			ds.l	1			; 124, kdp+ee4
 VMDispatchCountTblPtr	ds.l	1			; 128, kdp+ee8
 						ds.l	1
 						ds.l	1
@@ -390,7 +391,7 @@ hasL2CR					equ		0
 hasPLRUL1				equ		1
 hasTAU					equ		2
 hasVMX					equ		3
-unknownFlag				equ		4
+hasMSSregs				equ		4
 hasExtraBATs			equ		5
 ProcessorFlags			ds.l	1			; 048, kdp+f68 ; flags to specify processor features
 

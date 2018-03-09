@@ -230,3 +230,50 @@ HalfLoadedReg	set					(&reg)
 
 	ENDM
 
+
+	MACRO
+	_RegRangeToContextBlock &first, &last
+
+	stw		&first, $104+8*(&first)(r6)
+
+	IF &first != &last
+	_RegRangeToContextBlock &first+1, &last
+	ENDIF
+
+	ENDM
+
+
+	MACRO
+	_RegRangeFromContextBlock &first, &last
+
+	lwz		&first, $104+8*(&first)(r6)
+
+	IF &first != &last
+	_RegRangeFromContextBlock &first+1, &last
+	ENDIF
+
+	ENDM
+
+
+	MACRO
+	_FloatRangeToContextBlock &first, &last
+
+	stfd	&first, ContextBlock.FloatRegisters+8*(&first)(r6)
+
+	IF &first != &last
+	_FloatRangeToContextBlock &first+1, &last
+	ENDIF
+
+	ENDM
+
+
+	MACRO
+	_FloatRangeFromContextBlock &first, &last
+
+	lfd		&first, ContextBlock.FloatRegisters+8*(&first)(r6)
+
+	IF &first != &last
+	_FloatRangeFromContextBlock &first+1, &last
+	ENDIF
+
+	ENDM

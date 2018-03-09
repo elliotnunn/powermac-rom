@@ -153,13 +153,13 @@ SevenFFFDead2			ds.l	1	; -8dc
 SevenFFFDead3			ds.l	1	; -8d8
 SevenFFFDead4			ds.l	1	; -8d4
 VioletVecBase			ds.l	48	; -8d0:-810
-IndigoVecBase			ds.l	48	; -810:-750
+IdleVecBase				ds.l	48	; -810:-750 ; to wake from DOZE/NAP/SLEEP state
 BlueVecBase				ds.l	48	; -750:-690 ; gets enabled by PDM PIH
 GreenVecBase			ds.l	48	; -690:-5d0
 DiagInfo				ds.b	256	; -5d0:-4d0
 ProcessorState			ds.b	128	; -4d0:-450 ; interesting what this gets used by
 FreeList				ds.l	4	; -450:-440
-						ds.l	1	; -440
+MCR						ds.l	1	; -440 ; reported by heartbeat code
 Int						ds.w	1	; -43c ; set by CommonPIHPath: a one-byte 68k int ID or -1
 						ds.w	1	; -43a
 DecClockRateHzCopy		ds.l	1	; -438 ; copied by Init.s
@@ -172,7 +172,7 @@ SystemAddressSpaceID	ds.l	1	; -424
 blueProcessPtr			ds.l	1	; -41c ; physical ptr to first type-1 struct created
 ThermalHandlerID		ds.l	1	; -418 ; is a Note struct
 PMFHandlerID			ds.l	1	; -414 ; also a Note struct
-BlueSpinningOn	ds.l	1	; -410 ; ID or 0 or -1
+BlueSpinningOn			ds.l	1	; -410 ; ID or 0 or -1
 						ds.l	1	; -40c
 						ds.l	1	; -408
 						ds.l	1	; -404

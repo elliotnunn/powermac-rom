@@ -24,7 +24,7 @@ NKTop
 	align		5
 	include		'NKRTASCalls.s'
 	align		5
-	include		'NKCacheCalls.s'
+	include		'NKCache.s'
 
 	;	Mostly MP calls:
 	align		5

@@ -13,7 +13,7 @@ NKFiles = ¶
 	{NKDir}NKVMCalls.s						¶
 	{NKDir}NKPowerCalls.s					¶
 	{NKDir}NKRTASCalls.s					¶
-	{NKDir}NKCacheCalls.s					¶
+	{NKDir}NKCache.s						¶
 	{NKDir}NKMPCalls.s						¶
 	{NKDir}NKSync.s							¶
 	{NKDir}NKTasks.s						¶

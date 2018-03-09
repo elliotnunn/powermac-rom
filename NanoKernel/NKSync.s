@@ -1496,117 +1496,155 @@ MPSetEvent
  ##   ##          ##    ## ##          ##      ##  
   ### ########     ######  ########    ##    ###   
 
-SetEvent	;	OUTSIDE REFERER
-	lwz		r16,  0x0010(r31)
-	or		r16, r16, r8
-	stw		r16,  0x0010(r31)
-	mflr	r27
-	lwz		r8,  0x0000(r31)
-	bl		UnblockBlueIfCouldBePolling
-	lwz		r16,  0x0008(r31)
-	cmpw	r16, r31
-	addi	r8, r16, -0x08
-	beq-	SetEvent_0x90
-	lwz		r17,  0x0088(r8)
-	lwz		r18,  0x00fc(r17)
-	subi	r18, r18, 4
-	stw		r18,  0x00fc(r17)
-	lbz		r17,  0x0037(r8)
-	cmpwi	r17,  0x01
-	bne-	SetEvent_0x4c
-	addi	r8, r8,  0x20
-	bl		DequeueTimer
+;	ARG		Event *r31, flags r8
 
-SetEvent_0x4c
-	lwz		r16,  0x0008(r31)
+SetEvent
+	lwz		r16, EventGroup.Flags(r31)
+	or		r16, r16, r8
+	stw		r16, EventGroup.Flags(r31)
+
+	mflr	r27
+
+	lwz		r8, EventGroup.LLL + LLL.Freeform(r31)
+	bl		UnblockBlueIfCouldBePolling
+
+	;	
+	lwz		r16, EventGroup.LLL + LLL.Next(r31)
+	cmpw	r16, r31
+	subi	r8, r16, Task.QueueMember
+	beq-	@no_task_waiting
+
+
+	;	CASE 1: task needs unblocking
+
+	;	Rerun SC instruction in task context
+	lwz		r17, Task.ContextBlockPtr(r8)
+	lwz		r18, ContextBlock.CodePtr(r17)
+	subi	r18, r18, 4
+	stw		r18, ContextBlock.CodePtr(r17)
+
+	;	Cancel timeout
+	lbz		r17, Task.Timer + Timer.Byte3(r8)
+	cmpwi	r17, 1
+	bne-	@timer_not_armed
+	addi	r8, r8, Task.Timer
+	bl		DequeueTimer
+@timer_not_armed
+
+	;	Remove this task from my wait queue
+	lwz		r16, EventGroup.LLL + LLL.Next(r31)
 	RemoveFromList		r16, scratch1=r17, scratch2=r18
-	lwz		r18,  0x001c(r31)
-	addi	r18, r18, -0x01
-	stw		r18,  0x001c(r31)
-	addi	r8, r16, -0x08
-	li		r17,  0x01
-	stb		r17,  0x0019(r8)
+	lwz		r18, EventGroup.Counter(r31)
+	subi	r18, r18, 1
+	stw		r18, EventGroup.Counter(r31)
+
+	;	Latency protection priority
+	subi	r8, r16, Task.QueueMember
+	li		r17, Task.kLatencyProtectPriority
+	stb		r17, Task.Priority(r8)
+
 	bl		TaskReadyAsPrev
 	bl		CalculateTimeslice
 	bl		FlagSchEvaluationIfTaskRequires
 
-SetEvent_0x90
-	lwz		r16,  0x0018(r31)
-	rlwinm.	r17, r16,  0, 27, 27
-	beq-	SetEvent_0x1a0
-	lwz		r17, KDP.PA_ECB(r1)
-	lwz		r26, -0x08f0(r1)
-	lwz		r18,  0x00c8(r17)
-	lwz		r19,  0x00d0(r17)
-	cmpwi	cr1, r18,  0x00
-	cmpwi	r19,  0x00
-	bne-	cr1, SetEvent_0xc8
-	bne-	SetEvent_0x1a0
-	lwz		r8,  0x0000(r31)
-	stw		r8,  0x00d0(r17)
-	b		SetEvent_0x118
 
-SetEvent_0xc8
-	lwz		r9,  0x0634(r1)
+@no_task_waiting
+	lwz		r16, EventGroup.SWI(r31)
+	rlwinm.	r17, r16, 0, 27, 27
+
+
+	;	CASE 2: no task waiting.
+
+	beq-	@return
+
+
+	;	CASE 3: SOFTWARE INTERRUPT
+
+	lwz		r17, KDP.PA_ECB(r1)
+	lwz		r26, PSA.PA_BlueTask(r1)
+	lwz		r18, ContextBlock.EDPOffsetSWIRelated(r17)
+	lwz		r19, ContextBlock.SWIEventGroupID(r17)
+	cmpwi	cr1, r18, 0
+	cmpwi	r19, 0
+	bne-	cr1, @do_not_save_swi_event_id
+	bne-	@return
+
+	lwz		r8, EventGroup.LLL + LLL.Freeform(r31) ; contains my ID
+	stw		r8, ContextBlock.SWIEventGroupID(r17)
+	b		@common_case
+@do_not_save_swi_event_id
+
+	;	There is an EDP table of SWI-EventGroup IDs... set ours, cancel if already set
+	lwz		r9, KDP.PA_EmulatorData(r1)
 	rlwinm	r16, r16,  2, 26, 29
 	add		r18, r18, r9
 	lwzx	r19, r16, r18
-	cmpwi	r19,  0x00
-	bne-	SetEvent_0x1a0
-	lwz		r8,  0x0000(r31)
+	cmpwi	r19, 0
+	bne-	@return
+
+	;	Set!
+	lwz		r8, EventGroup.LLL + LLL.Freeform(r31) ; my ID
 	stwx	r8, r16, r18
-	li		r19,  0x1c
-	li		r9,  0x04
 
-SetEvent_0xf0
+	;	Find the highest interrupt level with a nonzero thing
+	li		r19, 7*4
+	li		r9, 4
+@loop
 	lwzx	r8, r19, r18
-	cmpwi	r8,  0x00
-	bne-	SetEvent_0x108
+	cmpwi	r8, 0
+	bne-	@exit_loop
 	subf.	r19, r9, r19
-	bgt+	SetEvent_0xf0
+	bgt+	@loop
 	bl		panic
+@exit_loop
 
-SetEvent_0x108
+	;	Can I interrupt the current interrupt?
 	cmplw	r16, r19
-	srwi	r16, r16,  2
-	blt-	SetEvent_0x1a0
-	stw		r16,  0x00d0(r17)
+	srwi	r16, r16, 2
+	blt-	@return
+	stw		r16, ContextBlock.SWIEventGroupID(r17)
+@common_case
 
-SetEvent_0x118
-	lwz		r16,  0x0064(r26)
-	lbz		r19,  0x0018(r26)
-	ori		r16, r16,  0x10
-	stw		r16,  0x0064(r26)
-	lwz		r17, -0x0440(r1)
-	lwz		r16,  0x0674(r1)
-	lwz		r8,  0x0678(r1)
+
+	lwz		r16, Task.Flags(r26)
+	lbz		r19, Task.State(r26)
+	ori		r16, r16, (1 << (31 - Task.kFlag27))
+	stw		r16, Task.Flags(r26)
+
+	;	But what *is* MCR?
+	lwz		r17, PSA.MCR(r1)
+	lwz		r16,  KDP.PostIntMaskInit(r1)
+	lwz		r8,  KDP.ClearIntMaskInit(r1)
 	and		r16, r16, r8
 	or		r17, r17, r16
-	stw		r17, -0x0440(r1)
-	cmpwi	r19,  0x00
-	addi	r16, r26,  0x08
-	bne-	SetEvent_0x198
-	RemoveFromList		r16, scratch1=r17, scratch2=r18
-	lbz		r17,  0x0037(r26)
-	cmpwi	r17,  0x01
-	bne-	SetEvent_0x17c
-	addi	r8, r26,  0x20
-	bl		DequeueTimer
+	stw		r17, PSA.MCR(r1)
 
-SetEvent_0x17c
-	lwz		r18, -0x08f0(r1)
-	li		r16,  0x00
-	stb		r16,  0x0019(r26)
+	cmpwi	r19, 0
+	addi	r16, r26, Task.QueueMember
+	bne-	@task_already_running
+
+	;	De-fang the blocking timeout
+	RemoveFromList		r16, scratch1=r17, scratch2=r18
+	lbz		r17, Task.Timer + Timer.Byte3(r26)
+	cmpwi	r17, 1
+	bne-	@timer_not_armed_2
+	addi	r8, r26, Task.Timer
+	bl		DequeueTimer
+@timer_not_armed_2
+
+	lwz		r18, PSA.PA_BlueTask(r1)
+	li		r16, Task.kCriticalPriority
+	stb		r16, Task.Priority(r26)
 	mr		r8, r26
 	bl		TaskReadyAsNext
 	mr		r8, r26
 	bl		CalculateTimeslice
+@task_already_running
 
-SetEvent_0x198
 	mr		r8, r26
 	bl		FlagSchEvaluationIfTaskRequires
 
-SetEvent_0x1a0
+@return
 	mtlr	r27
 	blr
 
@@ -2553,7 +2591,7 @@ UnblockBlueIfCouldBePolling
 	mflr	r24
 	stw		r9, PSA.BlueSpinningOn(r1)
 
-	lbz		r17, Task.MysteryByte1(r19)
+	lbz		r17, Task.State(r19)
 	cmpwi	r17, 0
 
 	addi	r16, r19, Task.QueueMember
@@ -2566,12 +2604,12 @@ UnblockBlueIfCouldBePolling
 	bne-	major_0x0dce8_0x60
 	addi	r8, r19, Task.Timer
 	bl		DequeueTimer
-	lwz		r19, -0x08f0(r1)
+	lwz		r19, PSA.PA_BlueTask(r1)
 major_0x0dce8_0x60
 
 	li		r16,  0x01
 	stb		r16,  0x0019(r19)
-	lwz		r8, -0x08f0(r1)
+	lwz		r8, PSA.PA_BlueTask(r1)
 	bl		TaskReadyAsPrev
 major_0x0dce8_0x70
 

@@ -63,5 +63,5 @@ kSIGP6				equ		6	; r4 = target CPU idx?
 kSIGP7				equ		7	; r4 = target CPU idx?
 kSynchClock			equ		8	; r4 = target CPU idx, 
 kSIGP9				equ		9	; no args?
-kSIGPGetTemp		equ		12	; r4 = selector (ignored on Core99), r5 = cpu ID ; my name
+kGetProcessorTemp	equ		12	; r4 = selector (ignored on Core99), r5 = cpu ID ; my name
 kSIGP17				equ		17	; r4 = target CPU idx?

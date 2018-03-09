@@ -109,7 +109,7 @@ kIdlePriority			equ		3
 ID						ds.l	1	; 000
 Signature				ds.l	1	; 004
 QueueMember				ds.l	4	; 008:018 ; a task is always a member of a queue, e.g. the RDYQ
-MysteryByte1			ds.b	1	; 018 ; CreateTask sets 0 by default (blue = 2)
+State					ds.b	1	; 018 ; non-zero when running
 Priority				ds.b	1	; 019 ; CreateTask sets 2 by default
 CPUIndex				ds.w	1	; 01a
 Weight					ds.l	1	; 01c ; default is 100, blue gets 200, idle gets 1
@@ -145,7 +145,7 @@ kFlag23					equ		23
 kFlag24					equ		24
 kFlag25					equ		25	; set for idle1, idle2
 kFlag26					equ		26	; set for blue
-kFlag27					equ		27
+kFlag27					equ		27	; set on SWI
 kFlag28					equ		28	; set for blue
 kFlag29					equ		29
 kFlag30					equ		30
@@ -470,7 +470,7 @@ kSignature				equ		'EVNT'
 LLL						ds.l	4	; 00:10 ; first field is ID
 Flags					ds.l	1	; 10
 ProcessID				ds.l	1	; 14
-SWI						ds.l	1	; 18 ; contains 1-8 +/- 16
+SWI						ds.l	1	; 18 ; contains 1-8 +/- 16 ; flag 27 (=16) means "is swi"
 Counter					ds.l	1	; 1c
 
 Size					equ		*

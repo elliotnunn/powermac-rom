@@ -39,18 +39,20 @@ MSR						ds.l	1	; 0a4 ; (SPAC) copied from kdp by CreateTask
 
 						org		0xc4
 MQ						ds.l	1	; 0c4 ; 601 only
-						ds.l	1
+EDPOffsetSWIRelated		ds.l	1	; 0c8
 PriorityShifty			ds.l	1	; 0cc ; if low nybble is empty, InitRDYQs sets this to 2
-
-						org		0xd4
-XER						ds.l	1
+SWIEventGroupID			ds.l	1	; 0d0 ; what?
+XER						ds.l	1	; 0d4
 VectorSaveArea			ds.l	1	; 0d8 ; AltiVec hack: vector registers don't fit in CB!
 
-						org		0xe0
+						org		0xdc
+CR						ds.l	1	; 0dc ; from heartbeat code, unsure of meaning (ANDed with PostIntMaskInit) r13
 PageInSystemHeap		ds.l	1	; 0e0 ; these are set by StartInit.a:FiddleWithEmulator
 OtherPageInSystemHeap	ds.l	1	; 0e4
-FE000000				ds.l	1	; 0e8
-Zero					ds.l	1	; 0ec
+FE000000				ds.l	1	; 0e8 ; also LR?
+LR						ds.l	1	; 0ec
+CTR						ds.l	1	; 0f0
+KernelCTR				ds.l	1	; 0f4
 
 						org		0xfc
 CodePtr					ds.l	1	; 0fc ; probably goes in SRR0?

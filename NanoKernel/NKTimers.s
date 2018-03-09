@@ -587,45 +587,53 @@ TimerFire5_0x8	;	OUTSIDE REFERER
 ;	Dead code -- probably removed from TimerTable
 
 	_log	'Heartbeat: Ext '
-	lwz		r16, 0x0e80(r1)
+	lwz		r16, KDP.NanoKernelInfo + NKNanoKernelInfo.ExternalIntCount(r1)
 	mr		r8, r16
 	bl		printd
+
 	_log	'Alerts '
-	lwz		r16,  0x0ee0(r1)
+	lwz		r16, KDP.NanoKernelInfo + NKNanoKernelInfo.AlertCount(r1)
 	mr		r8, r16
 	bl		printd
+
 	_log	'Blue cpu-'
-	lwz		r17, -0x08f0(r1)
-	lhz		r16,  0x001a(r17)
+	lwz		r17, PSA.PA_BlueTask(r1)
+	lhz		r16, Task.CPUIndex(r17)
 	mr		r8, r16
 	bl		printb
+
 	_log	'state-'
-	lbz		r16,  0x0018(r17)
+	lbz		r16, Task.State(r17)
 	mr		r8, r16
 	bl		printb
+
 	_log	'scr-'
 	lwz		r16, KDP.PA_ECB(r1)
-	lwz		r18,  0x0674(r1)
-	lwz		r16,  0x00dc(r16)
+	lwz		r18, KDP.PostIntMaskInit(r1)
+	lwz		r16, ContextBlock.CR(r16)
 	and		r16, r16, r18
 	mr		r8, r16
 	bl		printw
+
 	_log	'mcr-'
-	lwz		r16, -0x0440(r1)
+	lwz		r16, PSA.MCR(r1)
 	mr		r8, r16
 	bl		printw
+
 	_log	'IPL-'
-	lwz		r16,  0x067c(r1)
-	lhz		r16,  0x0000(r16)
+	lwz		r16, KDP.PA_EmulatorIplValue(r1)
+	lhz		r16, 0(r16)
 	mr		r8, r16
 	bl		printh
+
 	_log	'eSR-'
 	lwz		r16, KDP.PA_ECB(r1)
-	lwz		r16,  0x01cc(r16)
-	andi.	r16, r16,  0x07
+	lwz		r16, ContextBlock.r25(r16)
+	andi.	r16, r16, 7
 	mr		r8, r16
 	bl		printb
 	_log	'^n'
+
 	mfxer	r19
 	lwz		r16,  0x0038(r30)
 	lwz		r17,  0x003c(r30)

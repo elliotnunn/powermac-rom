@@ -702,11 +702,11 @@ Save_v0_v31_0x1b8
 TaskUnready
 
 	lwz		r17, Task.QueueMember + LLL.Next( r8)
-	lbz		r18, Task.MysteryByte1( r8)
+	lbz		r18, Task.State( r8)
 
 	addi	r16, r8, Task.QueueMember
 
-	;	Panic if MysteryByte1==0, return early if this task is not enqueued (i.e. LLL.Next==0)
+	;	Panic if State==0, return early if this task is not enqueued (i.e. LLL.Next==0)
 	cmpwi	cr1, r18, 0
 	cmpwi	r17, 0
 	beq+	cr1, Local_Panic
@@ -740,7 +740,7 @@ TaskUnready
 @return_early
 
 	li		r16, 0
-	stb		r16, Task.MysteryByte1(r8)
+	stb		r16, Task.State(r8)
 
 	mfsprg  r17, 0
 	li		r16, 1
@@ -821,7 +821,7 @@ TaskReadyCommonPath
 
 
 	li		r16, 1
-	stb		r16, Task.MysteryByte1(r8)
+	stb		r16, Task.State(r8)
 	blr
 
 
@@ -1167,9 +1167,11 @@ RescheduleAndReturn	;	OUTSIDE REFERER
 	stb		r8, EWA.SchEvalFlag(r14)
 	lwz		r31, -0x0008(r14)
 	lwz		r1, -0x0004(r14)
-	lwz		r9,  0x0ee4(r1)
-	addi	r9, r9,  0x01
-	stw		r9,  0x0ee4(r1)
+
+	lwz		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.SchEvalCount(r1)
+	addi	r9, r9, 1
+	stw		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.SchEvalCount(r1)
+
 	bl		major_0x14a98
 	lbz		r27,  0x0019(r31)
 	blt-	major_0x142dc_0x58
@@ -1459,9 +1461,9 @@ major_0x14548_0x148
 	li		r8,  0x00
 	beq-	major_0x14548_0x20c
 	andc	r27, r27, r28
-	lwz		r29, -0x0440(r1)
+	lwz		r29, PSA.MCR(r1)
 	stw		r27,  0x0064(r30)
-	stw		r8, -0x0440(r1)
+	stw		r8, PSA.MCR(r1)
 	blt-	cr2, major_0x14548_0x1cc
 	bsol+	cr6, Local_Panic
 	clrlwi	r8, r7,  0x08
@@ -1491,7 +1493,7 @@ major_0x14548_0x1cc
 	lhz		r17, -0x043c(r1)
 	lwz		r18,  0x067c(r1)
 	cmplwi	r17,  0xffff
-	lwz		r26,  0x0674(r1)
+	lwz		r26,  KDP.PostIntMaskInit(r1)
 	beq-	major_0x14548_0x1f8
 	sth		r17,  0x0000(r18)
 	li		r17, -0x01
@@ -1501,7 +1503,7 @@ major_0x14548_0x1f8
 	cmpwi	r29,  0x00
 	or		r13, r13, r29
 	bne-	major_0x14548_0x20c
-	lwz		r29,  0x0678(r1)
+	lwz		r29,  KDP.ClearIntMaskInit(r1)
 	and		r13, r13, r29
 
 major_0x14548_0x20c
@@ -1823,7 +1825,8 @@ major_0x14a98	;	OUTSIDE REFERER
 	lwz		r18, KDP.PA_ECB(r1)
 	nand.	r8, r8, r8
 	lwz		r17, ContextBlock.PriorityShifty(r18)
-	bltlr-
+	bltlr- ; return if flag 10 was unset
+
 	cmpwi	r17, 0
 	rlwinm	r9, r17,  0, 22, 22
 	blt-	major_0x14a98_0x54
@@ -1857,6 +1860,8 @@ major_0x14a98_0x54
 ##       ##       ######### ##    ##     ##        ##   ##  ######### ##       
 ##       ##       ##     ## ##    ##     ##         ## ##   ##     ## ##       
 ##       ######## ##     ##  ######      ########    ###    ##     ## ######## 
+
+;	ARG		Task *r8
 
 FlagSchEvaluationIfTaskRequires	;	OUTSIDE REFERER
 	lwz		r16, Task.Flags(r8)
@@ -1908,7 +1913,7 @@ FlagSchEvaluationIfTaskRequires	;	OUTSIDE REFERER
 	lhz		r17, EWA.CPUIndex(r15)
 	lhz		r18, CPU.EWA + EWA.CPUIndex(r18)
 	cmpw	r18, r17
-	bne-	BEFOUR
+	bne-	DoInterprocessorAlert
 
 NINETYFOUR
 	li		r16,  0x01
@@ -1923,10 +1928,10 @@ major_0x14af8_0xa0
 	cmpw	r17, r18
 	beq+	NINETYFOUR
 
-BEFOUR
-	lwz		r9,  0x0ee0(r1)
-	addi	r9, r9,  0x01
-	stw		r9,  0x0ee0(r1)
+DoInterprocessorAlert
+	lwz		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.AlertCount(r1)
+	addi	r9, r9, 1
+	stw		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.AlertCount(r1)
 
 	li		r16, kAlert
 	stw		r16, EWA.SIGPSelector(r15)
@@ -2009,8 +2014,8 @@ NewCpuEntryPoint
 
 	lwz		r10, ContextBlock.CodePtr(r6)
 	lwz		r11, ContextBlock.MSR(r6)
-	lwz		r13, 0x00dc(r6)
-	lwz		r12, 0x00ec(r6)
+	lwz		r13, ContextBlock.CR(r6)
+	lwz		r12, ContextBlock.LR(r6)
 
 	_log	'EWA '
 	mr		r8, r14
@@ -2033,7 +2038,7 @@ NewCpuEntryPoint
 	RemoveFromList		r16, scratch1=r17, scratch2=r18
 
 	li		r16, 2
-	stb		r16, Task.MysteryByte1(r31)
+	stb		r16, Task.State(r31)
 
 	lwz		r16, Task.Flags(r31)
 	ori		r16, r16, 0x20
@@ -2135,17 +2140,20 @@ IdleCode
 
 @make_calls
 
-	;	KCCpuPlugin(12, 1)
-	li		r3, 12
-	li		r4, 1
-	li		r0, 46
+
+	;	Check that CPU plugin trusts this CPU
+
+	li		r3, kGetProcessorTemp
+	li		r4, 1			; 2nd arg ignored
+	li		r0, 46			; KCCpuPlugin
 	sc
 	cmpwi	r3, 0
 	beq-	@startagain
 
+
 	li		r3, 1
 	li		r4, 0
-	twi		31, r31, 5		;	unconditional
+	twi		31, r31, 5		; PowerCall(1)
 	cmpwi	r3, 0
 	beq-	@startagain
 
@@ -2197,7 +2205,8 @@ StopProcessor_0x10c
 	lis		r5,  0x7fff
 	ori		r5, r5,  0xffff
 	mtdec	r5
-	li		r3,  0x06
-	li		r4,  0x00
-	twi		31, r31,  0x05
+
+	li		r3, 6
+	li		r4, 0
+	twi		31, r31, 5
 	b		StopProcessor_0x10c

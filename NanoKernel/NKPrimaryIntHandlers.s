@@ -142,11 +142,11 @@ CommonPIHPath_0x14c
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
-	lwz		r30, -0x0440(r1)
+	lwz		r30, PSA.MCR(r1)
 	or		r31, r31, r30
-	stw		r31, -0x0440(r1)
+	stw		r31, PSA.MCR(r1)
 	sth		r28, -0x043c(r1)
-	lwz		r31, -0x08f0(r1)
+	lwz		r31, PSA.PA_BlueTask(r1)
 	mfsprg	r30, 0
 	lwz		r28,  0x0064(r31)
 	lbz		r29,  0x0018(r31)
