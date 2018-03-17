@@ -59,3 +59,45 @@ NKDebug
 	b		ReturnMPCallOOM
 
 	endif
+
+
+
+;	The 7447a does not have THRM registers. Enable me to stop the mini
+;	crashing with a vanilla CPU plugin
+
+	IF 1
+
+;	ARG		selector r3, arbitrary args r4...
+;	RET		arbitrary
+
+	DeclareMPCall	46, MPCpuPluginThatDoesntTrustThrmRegisters
+
+MPCpuPluginThatDoesntTrustThrmRegisters
+
+	cmpwi	r3, kGetProcessorTemp
+	bne		@not_temp_selector
+
+	mfpvr	r8
+	rlwinm	r8, r8, 0, 0xffff0000
+	lis		r9, 0x8003
+	cmpw	r8, r9
+	bne		@not_G4e
+
+	li		r3, kCantReportProcessorTemperatureErr ; (MacErrors.a)
+	b		CommonMPCallReturnPath
+
+@not_temp_selector
+@not_G4e
+
+	;	Arguments in registers
+	li		r8, 0
+
+	;	Hopefully returns via kcReturnFromInterrupt? Geez...
+	bl		SIGP
+
+	mr		r3, r8
+	mr		r4, r9	; r4 not accessible calling MPLibrary func from C
+
+	b		CommonMPCallReturnPath
+
+	ENDIF

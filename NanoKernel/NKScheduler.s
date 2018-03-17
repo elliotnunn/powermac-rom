@@ -2179,13 +2179,6 @@ SchIdleTask
 
 	;	Check that CPU plugin trusts this CPU
 
-	li		r3, kGetProcessorTemp
-	li		r4, 1			; 2nd arg ignored
-	li		r0, 46			; KCCpuPlugin
-	sc
-	cmpwi	r3, 0
-	beq		@startagain
-
 
 	li		r3, 1
 	li		r4, 0

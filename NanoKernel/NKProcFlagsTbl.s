@@ -62,7 +62,7 @@ HID0_neither				equ		0
 	PflgTblEnt	0x03,	HID0_NHR_and_sleep,		1<< hasL2CR | 1<< hasPLRUL1 | 1<< hasTAU | 1<< hasVMX | 1<< hasMSSregs	; 8**0 = 7450 (see note below)
 	PflgTblEnt	0x1b,	HID0_NHR_and_sleep,		1<< hasL2CR | 1<< hasPLRUL1 | 1<< hasTAU | 1<< hasVMX | 1<< hasMSSregs	; 8**1 = 7445/55
 	PflgTblEnt	0x03,	HID0_NHR_and_sleep,		0																		; 8**2 = 7447 (OS X only)
-	PflgTblEnt	0x03,	HID0_NHR_and_sleep,		0																		; 8**3
+	PflgTblEnt	0x23,	HID0_NHR_and_sleep,		1<< hasL2CR | 1<< hasPLRUL1 | 1<< hasTAU | 1<< hasVMX | 1<< hasMSSregs	; 8**3 like 7450 but better
 	PflgTblEnt	0x03,	HID0_NHR_only,			0																		; 8**4
 	PflgTblEnt	0x03,	HID0_NHR_and_sleep,		0																		; 8**5
 	PflgTblEnt	0x03,	HID0_NHR_and_sleep,		0																		; 8**6
