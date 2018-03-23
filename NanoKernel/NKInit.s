@@ -175,13 +175,13 @@ FinishInitBuiltin
 	;	Copy some choice values out of KDP's copy of NKProcessorInfo
 
 	lwz		r9, KDP.ProcessorInfo + NKProcessorInfo.DecClockRateHz(r1)
-	stw		r9, KDP.ProcessorInfo + NKProcessorInfo.DecClockRateHzCopy(r1)
+	stw		r9, KDP.ProcessorInfo + NKProcessorInfo.ClockRates + 8(r1)
 
 	lwz		r9, KDP.ProcessorInfo + NKProcessorInfo.BusClockRateHz(r1)
-	stw		r9, KDP.ProcessorInfo + NKProcessorInfo.BusClockRateHzCopy(r1)
+	stw		r9, KDP.ProcessorInfo + NKProcessorInfo.ClockRates + 4(r1)
 
 	lwz		r9, KDP.ProcessorInfo + NKProcessorInfo.CpuClockRateHz(r1)
-	stw		r9, KDP.ProcessorInfo + NKProcessorInfo.CpuClockRateHzCopy(r1)
+	stw		r9, KDP.ProcessorInfo + NKProcessorInfo.ClockRates + 0(r1)
 
 	li		r9, 0
 	sth		r9, KDP.ProcessorInfo + NKProcessorInfo.SetToZero(r1)
@@ -873,7 +873,7 @@ SetProcessorFlags
 
 	;	Actually populate something useful (still have one unused long)
 	lisori	r8,	15
-	stw		r8, CPU.Eff(r31)
+	stw		r8, CPU.Flags(r31)
 
 	;	Matches code in KCCreateCpuStruct very closely
 
@@ -1094,7 +1094,7 @@ SetProcessorFlags
 
 	;	One ready for each task priority (critical, etc)
 
-	bl		InitRDYQs
+	bl		SchInit
 
 
 
@@ -1102,7 +1102,7 @@ SetProcessorFlags
 
 	lwz		r8, EWA.PA_CurAddressSpace(r1)
 	li		r9, 0
-	bl		SetSpaceSRsAndBATs
+	bl		SchSwitchSpace
 
 
 
@@ -1192,14 +1192,14 @@ SetProcessorFlags
 	;	CLOB	r16, r17, r18
 
 	mr		r8, r31
-	bl		TaskReadyAsPrev
+	bl		SchRdyTaskNow
 
 	bl		CalculateTimeslice
 
 
 
 ;	Do some things I do not understand
-	bl		major_0x14af8_0xa0
+	bl		FlagSchEval
 	bl		StartTimeslicing
 
 
@@ -1255,7 +1255,7 @@ av	set		PSA.AVFeatureBit
 
 	;	Point task ECB at the idle loop within the nanokernel code
 	lwz		r8, KDP.PA_NanoKernelCode(r1)
-	llabel	r26, IdleCode
+	llabel	r26, SchIdleTask
 	add		r8, r8, r26
 	stw		r8, Task.ContextBlock + ContextBlock.CodePtr(r31)
 
@@ -1283,7 +1283,7 @@ av	set		PSA.AVFeatureBit
 	;	CLOB	r16, r17, r18
 
 	mr		r8, r31
-	bl		TaskReadyAsPrev
+	bl		SchRdyTaskNow
 
 	bl		CalculateTimeslice
 
@@ -1865,7 +1865,7 @@ ReconcileMemory
 	mfsprg	r8, 0
 	mtxer	r9
 
-	bl		Restore_r14_r31
+	bl		SchRestoreStartingAtR14
 
 	b		kcPrioritizeInterrupts
 

@@ -239,7 +239,7 @@ TimerDispatch_0x180:
 TimerDispatch_0x188
 	lwz		r19, EWA.TimerDispatchLR(r18)
 	mtlr	r19
-	b		AdjustDecForTMRQGivenCurTimeAndTripTime
+	b		SetTimesliceFromCurTimeAndTripTime
 
 
 
@@ -255,8 +255,8 @@ StartTimeslicing	;	OUTSIDE REFERER
 	stb		r8, EWA.GlobalTimeIsValid(r19)
 
 	li		r8, 0
-	stw		r8, -0x02e8(r19)
-	stw		r8, -0x02e4(r19)
+	stw		r8, EWA.GlobalTime(r19)
+	stw		r8, EWA.GlobalTime + 4(r19)
 	
 	mflr	r19
 	_log	'Starting timeslicing^n'
@@ -267,7 +267,7 @@ StartTimeslicing	;	OUTSIDE REFERER
 
 ;	CLOB	r8/r9, r16-r21
 
-AdjustDecForTMRQ
+SetTimeslice
 
 	mflr	r19
 	bl		GetTime
@@ -279,7 +279,7 @@ AdjustDecForTMRQ
 ;	ARG		TimeBase r8/r9 curTime
 ;	CLOB	r16-r21
 
-AdjustDecForTMRQGivenCurTime
+SetTimesliceFromCurTime
 
 ;	This should get the most distant time???
 	lwz		r18, PSA.TimerQueue + LLL.Next(r1)
@@ -292,7 +292,7 @@ AdjustDecForTMRQGivenCurTime
 ;	ARG		TimeBase r8/r9 curTime, TimeBase r16/r17 TripTime
 ;	CLOB	r18-r21
 
-AdjustDecForTMRQGivenCurTimeAndTripTime
+SetTimesliceFromCurTimeAndTripTime
 
 	mfxer	r20
 	mfsprg	r19, 0
@@ -372,7 +372,7 @@ TimerFire1	;	OUTSIDE REFERER
 	RemoveFromList		r16, scratch1=r17, scratch2=r19
 	li		r17,  0x01
 	stb		r17,  0x0019(r8)
-	bl		TaskReadyAsPrev
+	bl		SchRdyTaskNow
 	bl		CalculateTimeslice
 	bl		FlagSchEvaluationIfTaskRequires
 	b		TimerDispatch_0x144
@@ -442,7 +442,7 @@ TimerFire2_0x98
 	lwz		r8,  0x0018(r30)
 	addi	r16, r8,  0x08
 	RemoveFromList		r16, scratch1=r17, scratch2=r18
-	bl		TaskReadyAsPrev
+	bl		SchRdyTaskNow
 
 
 
@@ -539,7 +539,7 @@ TimerFire4_0x10	;	OUTSIDE REFERER
 	mfsprg	r28, 0
 	lwz		r29, -0x0008(r28)
 	mr		r8, r29
-	bl		TaskUnready
+	bl		SchTaskUnrdy
 	lbz		r17,  0x0019(r29)
 	cmpwi	r17,  0x02
 	bge-	TimerFire4_0x64
@@ -549,7 +549,7 @@ TimerFire4_0x10	;	OUTSIDE REFERER
 	bl		clear_cr0_lt
 	bge-	TimerFire4_0x50
 	mr		r8, r29
-	bl		TaskReadyAsPrev
+	bl		SchRdyTaskNow
 	bl		CalculateTimeslice
 	b		TimerFire5_0x8
 
@@ -557,7 +557,7 @@ TimerFire4_0x50
 	li		r18,  0x02
 	stb		r18,  0x0019(r29)
 	mr		r8, r29
-	bl		TaskReadyAsPrev
+	bl		SchRdyTaskNow
 	b		TimerFire5_0x8
 
 TimerFire4_0x64
@@ -572,7 +572,7 @@ TimerFire4_0x64
 ;	TimerFire4
 
 TimerFire5	;	OUTSIDE REFERER
-	bl		TaskReadyAsPrev
+	bl		SchRdyTaskNow
 	bl		major_0x149d4
 
 TimerFire5_0x8	;	OUTSIDE REFERER
@@ -844,7 +844,7 @@ EnqueueTimer	;	OUTSIDE REFERER
 	stw		r8, LLL.Next(r20)					;	next of considered = me
 	stw		r19, LLL.Freeform(r8)				;	my freeform = my original freeform
 
-	b		AdjustDecForTMRQ
+	b		SetTimeslice
 
 @insert_further_ahead
 	lwz		r20, PSA.TimerQueue + TimerQueueStruct.LLL + LLL.Prev(r1)
@@ -898,7 +898,7 @@ DequeueTimer
 	cmpw	r18, r8
 	stb		r16, Timer.Byte3(r8)
 
-	beq+	AdjustDecForTMRQ
+	beq+	SetTimeslice
 
 	blr
 
@@ -912,7 +912,7 @@ DequeueTimer
 ;	MPCall_27
 ;	MPCall_52
 ;	MPCall_31
-;	InitRDYQs
+;	SchInit
 
 ;	Get the number of timebase ticks in a specified period
 
@@ -958,8 +958,8 @@ TimebaseTicksPerPeriod
 ;	MPCall_32
 ;	CreateTask
 ;	InitTMRQs
-;	AdjustDecForTMRQ
-;	RescheduleAndReturn
+;	SetTimeslice
+;	SchEval
 ;	major_0x14548
 
 ;	RET		long r8 tbu, long r9 tbl

@@ -2253,12 +2253,8 @@ ProbePerfMonitor_0x188
 
 
 
-;	                     FDP_1214
+FDPEmulateInstruction
 
-;	Xrefs:
-;	IntProgram
-
-FDP_1214	;	OUTSIDE REFERER
 		mfsprg	r1, 0
 		lwz		r8,  0x0104(r6)
 		stw		r8,  0x0000(r1)

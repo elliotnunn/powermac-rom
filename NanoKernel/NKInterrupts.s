@@ -1,14 +1,36 @@
+ecNoException				equ		0
+ecSystemCall				equ		1
+ecTrapInstr					equ		2
+ecFloatException			equ		3
+ecInvalidInstr				equ		4
+ecPrivilegedInstr			equ		5
+ecMachineCheck				equ		7
+ecInstTrace					equ		8
+ecInstInvalidAddress		equ		10
+ecInstHardwareFault			equ		11
+ecInstPageFault				equ		12
+ecInstSupAccessViolation	equ		14
+ecDataInvalidAccess			equ		18
+ecDataHardwareFault			equ		19
+ecDataPageFault				equ		20
+ecDataWriteViolation		equ		21
+ecDataSupAccessViolation	equ		22
+ecDataSupWriteViolation		equ		23
+ecUnknown24					equ		24
+
+
+
 Local_Panic		set		*
 				b		panic
 
 
 
-;	                     major_0x02964
+;	                     IntLocalBlockMPCall
 
 ;	Xrefs:
 ;	major_0x02ccc
 
-major_0x02964	;	OUTSIDE REFERER
+IntLocalBlockMPCall	;	OUTSIDE REFERER
 	b		BlockMPCall
 
 
@@ -73,10 +95,10 @@ major_0x02980	;	OUTSIDE REFERER
 	stw		r8,  0x016c(r6)
 	cmpwi	cr1, r9,  0x14
 	blt-	cr4, major_0x04a20_0x18
-	bne-	cr2, major_0x02ccc_0x310
+	bne-	cr2, TaskApproachTwo
 	blt-	major_0x02980_0xa8
 	bne-	cr1, major_0x02980_0x178
-	b		major_0x02ccc_0x310
+	b		TaskApproachTwo
 
 major_0x02980_0xa8
 	mfsprg	r1, 0
@@ -95,11 +117,11 @@ major_0x02980_0xa8
 	lwz		r3,  0x0654(r1)
 	blt-	cr2, major_0x02980_0xec
 	lwz		r3,  0x05b4(r1)
-	rlwinm	r11, r11,  0, 17, 15
+	_bclr	r11, r11, 16
 
 major_0x02980_0xec
 	lwz		r12,  0x0648(r1)
-	bsol-	cr6, major_0x02980_0x114
+	bsol-	cr6, PreferRegistersFromEWASavingContextBlock
 	rlwinm	r7, r7,  0, 29, 16
 	rlwimi	r11, r7,  0, 20, 23
 	b		IntReturn
@@ -111,48 +133,57 @@ major_0x02980_0x100
 	lwz		r5,  0x0014(r1)
 	blr
 
-major_0x02980_0x114	;	OUTSIDE REFERER
+PreferRegistersFromEWASavingContextBlock	;	OUTSIDE REFERER
 	mfsprg	r8, 0
 	stw		r17,  0x0064(r6)
 	stw		r20,  0x0068(r6)
 	stw		r21,  0x006c(r6)
 	stw		r19,  0x0074(r6)
 	stw		r18,  0x007c(r6)
-	lmw		r14,  0x0038(r8)
+	lmw		r14, EWA.r14(r8)
 	blr
+
+
+
+
+
 
 major_0x02980_0x134	;	OUTSIDE REFERER
 	mfsprg	r1, 0
-	mtcrf	 0x3f, r7
+	mtcrf	0x3f, r7
 	lwz		r9, EWA.Enables(r1)
-	lwz		r1, -0x0004(r1)
-	rlwnm.	r9, r9, r8,  0x00,  0x00
+	lwz		r1, EWA.PA_KDP(r1)
+	rlwnm.	r9, r9, r8, 0, 0
 	rlwimi	r7, r8, 24,  0,  7
-	slwi	r8, r8,  2
+
+	slwi	r8, r8, 2
 	add		r8, r8, r1
-	lwz		r9,  0x0dc0(r8)
-	addi	r9, r9,  0x01
-	stw		r9,  0x0dc0(r8)
+	lwz		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.ExceptionCauseCounts(r8)
+	addi	r9, r9, 1
+	stw		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.ExceptionCauseCounts(r8)
+
 	srwi	r9, r7, 24
-	blt-	cr4, major_0x04a20_0x18
-	bne-	cr2, major_0x02ccc_0x2a4
-	cmpwi	cr1, r9,  0x0c
-	blt+	major_0x02980_0xa8
-	beq-	cr1, major_0x02ccc_0x2a4
+
+	bc		BO_IF, EWA.kFlag16, major_0x04a20_0x18
+	bc		BO_IF_NOT, EWA.kFlagBlue, TaskApproachOne
+	cmpwi	cr1, r9, ecInstPageFault
+	blt+	major_0x02980_0xa8						; when Enables[cause] is set!
+	beq-	cr1, TaskApproachOne
 
 major_0x02980_0x178	;	OUTSIDE REFERER
-	lwz		r1, -0x0004(r1)
+	lwz		r1, EWA.PA_KDP(r1)
 	lwz		r9, KDP.PA_ECB(r1)
-	addi	r8, r1,  0x360
+	addi	r8, r1, KDP.YellowVecBase
 	mtsprg	3, r8
-	bltl-	cr2, BlueException
+
+	bcl		BO_IF, 8, SuspendBlueTask				; does not return
 
 major_0x02980_0x18c	;	OUTSIDE REFERER
 	mfsprg	r1, 0
 	lwz		r8, EWA.Enables(r1)
 	stw		r7, ContextBlock.Flags(r6)
 	stw		r8, ContextBlock.Enables(r6)
-	bns-	cr6, major_0x02980_0x1b8
+	bc		BO_IF_NOT, 27, major_0x02980_0x1b8
 	stw		r17,  0x0024(r6)
 	stw		r20,  0x0028(r6)
 	stw		r21,  0x002c(r6)
@@ -168,7 +199,7 @@ major_0x02980_0x1b8
 	mfctr	r8
 	stw		r10,  0x00fc(r6)
 	stw		r8,  0x00f4(r6)
-	ble-	cr3, major_0x02980_0x1e8
+	bc		BO_IF_NOT, 13, major_0x02980_0x1e8
 	lwz		r8,  0x00c4(r9)
 	mfspr	r12, mq
 	mtspr	mq, r8
@@ -203,10 +234,11 @@ major_0x02980_0x1e8
 	stw		r30,  0x01f4(r6)
 	stw		r31,  0x01fc(r6)
 	bnel-	major_0x03e18_0xb4
-	bge-	cr3, major_0x02980_0x260
-	bl		Save_v0_v31
 
+	bc		BO_IF_NOT, 12, major_0x02980_0x260
+	bl		Save_v0_v31
 major_0x02980_0x260
+
 	stw		r11,  0x00a4(r6)
 	lwz		r8,  0x0000(r9)
 	stw		r9, -0x0014(r1)
@@ -264,68 +296,52 @@ major_0x02980_0x2d0
 
 
 
-;	                      IntReturn
+;	Almost always goes straight through to SchReturn. Zeros a word in EWA.
 
-;	Called when a Gary reset trap is called. When else?
-
-;	Xrefs:
-;	major_0x02980
-;	IntDecrementer
-;	IntISI
-;	IntMachineCheck
-;	major_0x03be0
-;	IntPerfMonitor
-;	IntThermalEvent
-;	kcRunAlternateContext
-;	kcResetSystem
-;	IntProgram
-;	IntExternalYellow
-;	kcVMDispatch
-;	major_0x09e28
-;	major_0x0a600
-;	kcRTASDispatch
-;	kcCacheDispatch
-;	CommonMPCallReturnPath
-;	CommonPIHPath
+;	ARG		flags_to_set r7
 
 IntReturn	;	OUTSIDE REFERER
-	andi.	r8, r7,  0x30
+
+	andi.	r8, r7, (1 << (31 - 26)) | (1 << (31 - 27))
 	mfsprg	r1, 0
-	bnel-	major_0x02ccc
-	li		r8,  0x00
+	bnel-	major_0x02ccc								; my counters say almost never called!
+	li		r8, 0
 	stw		r7, EWA.Flags(r1)
-	stw		r8, -0x0114(r1)
-	b		ReturnToAnyTask
+	stw		r8, EWA.WeMightClear(r1)
+	b		SchReturn
 
 
 
-;	                     major_0x02ccc
-
-;	Xrefs:
-;	major_0x02980
-;	IntReturn
+;	 Almost never called (by above func)
 
 major_0x02ccc	;	OUTSIDE REFERER
+
 	mtcrf	 0x3f, r7
-	bc		BO_IF_NOT, 27, major_0x02ccc_0x18
-	rlwinm	r7, r7,  0, 28, 26
+
+	bc		BO_IF_NOT, 27, @major_0x02ccc_0x18
+	_bclr	r7, r7, 27
+
 	bc		BO_IF, 31, major_0x02ccc_0x30
-	rlwinm	r7, r7,  0, 27, 25
-	b		major_0x02ccc_0x2c
+	_bclr	r7, r7, 26
 
-major_0x02ccc_0x18
-	bne-	cr6, major_0x02ccc_0x2c
-	rlwinm	r7, r7,  0, 27, 25
+	b		@return
+@major_0x02ccc_0x18
+
+	bc		BO_IF_NOT, 26, @return
+	_bclr	r7, r7, 26
+
 	stw		r7, EWA.Flags(r1)
-	li		r8,  0x08
+	li		r8, ecInstTrace
 	b		major_0x02980_0x134
+@return
 
-major_0x02ccc_0x2c
 	blr
 
 major_0x02ccc_0x30
+	; according to my counter, this point is never reached
+
 	rlwinm.	r8, r7,  0,  8,  8
-	beq-	BlueException
+	beq-	SuspendBlueTask
 	stw		r7, EWA.Flags(r1)
 	lwz		r8,  0x0104(r6)
 	stw		r8,  0x0000(r1)
@@ -354,7 +370,7 @@ major_0x02ccc_0x30
 	lwz		r21,  0x002c(r9)
 	lwz		r19,  0x0034(r9)
 	lwz		r18,  0x003c(r9)
-	rlwinm	r16, r7,  0, 28, 26
+	_bclr	r16, r7, 27
 	lwz		r25,  0x0650(r8)
 	rlwinm.	r22, r17, 31, 27, 31
 	add		r19, r19, r22
@@ -381,8 +397,8 @@ major_0x02ccc_0x30
 
 
 
-BlueException
-	bl		Save_r14_r31		; r8 := EWA
+SuspendBlueTask
+	bl		SchSaveStartingAtR14		; r8 := EWA
 
 	lwz		r31, EWA.PA_CurTask(r8)
 	lwz		r8, Task.ExceptionHandlerID(r31)
@@ -433,7 +449,7 @@ BlueException
 	mr		r8, r28
 	bl		EnqueueMessage		; Message *r8, Queue *r31
 
-	b		RescheduleAndReturn
+	b		SchEval
 
 @no_exception_handler
 @no_memory_reserved_for_exception_messages
@@ -452,45 +468,54 @@ BlueException
 
 
 
-major_0x02ccc_0x2a4	;	OUTSIDE REFERER
-	bsol+	cr6, Local_Panic
+TaskApproachOne	;	OUTSIDE REFERER
 
-;	r6 = ewa
-	bl		Save_r14_r31
-;	r8 = sprg0 (not used by me)
+	bcl		BO_IF, 27, Local_Panic
+	bl		SchSaveStartingAtR14
 
 	mr		r30, r10
-	lwz		r29,  0x0018(r8)
-	lwz		r31, -0x0008(r8)
-	stw		r29,  0x0134(r6)
-	stw		r30,  0x0074(r6)
-	stw		r7,  0x0040(r6)
-	lwz		r1, -0x0004(r1)
+	lwz		r29, EWA.r6(r8)
+	lwz		r31, EWA.PA_CurTask(r8)
+	stw		r29, ContextBlock.r6(r6)
+	stw		r30, 0x0074(r6)						; ContextBlock.srr0?
+	stw		r7, 0x0040(r6)						; ContextBlock.savedFlags?
+	lwz		r1, EWA.PA_KDP(r1)
+
+	; get task in r31, globals in r1
 
 	_Lock			PSA.SchLock, scratch1=r28, scratch2=r29
 
 	mr		r8, r31
-	bl		TaskUnready
-	lwz		r16,  0x0064(r31)
+	bl		SchTaskUnrdy
+
+	lwz		r16, Task.Flags(r31)
 	srwi	r8, r7, 24
-	rlwinm.	r16, r16,  0,  9,  9
-	cmpwi	cr1, r8,  0x0c
-	bne-	major_0x02ccc_0x524
-	bne-	cr1, major_0x02ccc_0x524
-	lwz		r8,  0x00e0(r31)
-	addi	r8, r8,  0x01
-	stw		r8,  0x00e0(r31)
-	b		major_0x02ccc_0x380
+	rlwinm.	r16, r16, 0, Task.kFlag9, Task.kFlag9
+	cmpwi	cr1, r8, ecInstPageFault
+	bne-	TaskNotSuitableForWhatWeWantToDo
+	bne-	cr1, TaskNotSuitableForWhatWeWantToDo
+	;	what is special about the upper 8 Flags? Are they Task-related?
 
-major_0x02ccc_0x310	;	OUTSIDE REFERER
-	bnsl+	cr6, Local_Panic
-	bl		major_0x02980_0x114
-	stw		r10,  0x0084(r6)
-	rlwinm	r7, r7,  0, 28, 26
+	lwz		r8, Task.Zero3(r31)
+	addi	r8, r8, 1
+	stw		r8, Task.Zero3(r31)
 
-;	r6 = ewa
-	bl		Save_r14_r31
-;	r8 = sprg0 (not used by me)
+	b		CommonPathBetweenTaskIntFuncs
+
+
+
+TaskApproachTwo	;	OUTSIDE REFERER
+
+	bcl		BO_IF_NOT, 27, Local_Panic
+
+	bl		PreferRegistersFromEWASavingContextBlock
+
+	stw		r10, ContextBlock.LA_EmulatorEntry(r6)
+
+	_bclr	r7, r7, EWA.kFlag27
+
+
+	bl		SchSaveStartingAtR14
 
 	lwz		r30,  0x0074(r6)
 	lwz		r29,  0x0018(r8)
@@ -499,100 +524,116 @@ major_0x02ccc_0x310	;	OUTSIDE REFERER
 	stw		r7,  0x0040(r6)
 	lwz		r1, -0x0004(r1)
 
+
 	_Lock			PSA.SchLock, scratch1=r28, scratch2=r29
 
 	mr		r8, r31
-	bl		TaskUnready
-	lwz		r16,  0x0064(r31)
-	srwi	r8, r7, 24
-	rlwinm.	r16, r16,  0,  9,  9
-	cmpwi	cr1, r8,  0x14
-	bne-	major_0x02ccc_0x524
-	bne-	cr1, major_0x02ccc_0x524
-	lwz		r8,  0x00e4(r31)
-	addi	r8, r8,  0x01
-	stw		r8,  0x00e4(r31)
+	bl		SchTaskUnrdy
 
-major_0x02ccc_0x380
+	lwz		r16, Task.Flags(r31)
+	srwi	r8, r7, 24
+	rlwinm.	r16, r16, 0, Task.kFlag9, Task.kFlag9
+	cmpwi	cr1, r8, 0x14
+	bne-	TaskNotSuitableForWhatWeWantToDo
+	bne-	cr1, TaskNotSuitableForWhatWeWantToDo
+
+	lwz		r8, Task.Zero4(r31)
+	addi	r8, r8, 1
+	stw		r8, Task.Zero4(r31)
+
+
+
+
+CommonPathBetweenTaskIntFuncs
+
 	mfsprg	r14, 0
-	rlwinm	r7, r7,  0, 27, 25
-	rlwinm	r7, r7,  0,  0, 30
-	lwz		r29, -0x00e4(r14)
-	lis		r17,  0x4152
-	ori		r17, r17,  0x4541
-	lwz		r16,  0x0004(r29)
+
+	_bclr	r7, r7, EWA.kFlag26
+	_bclr	r7, r7, EWA.kFlag31
+
+	lwz		r29, EWA.SpecialAreaPtr(r14)
+	lisori	r17, Area.kSignature
+	lwz		r16, Area.Signature(r29)
 	cmplw	r16, r17
 	bnel+	Local_Panic
-	lwz		r17,  0x0034(r29)
-	addi	r17, r17,  0x01
-	stw		r17,  0x0034(r29)
-	lwz		r8,  0x0018(r29)
 
-;	r8 = id
+	lwz		r17, Area.Counter(r29)
+	addi	r17, r17, 1
+	stw		r17, Area.Counter(r29)
+
+	lwz		r8, Area.BackingProviderID(r29) ; this is a notification? ugh...
 	bl		LookupID
-;	r8 = something not sure what
-;	r9 = 0:inval, 1:proc, 2:task, 3:timer, 4:q, 5:sema, 6:cr, 7:cpu, 8:addrspc, 9:evtg, 10:cohg, 11:area, 12:not, 13:log
 
-	lwz		r16,  0x06b4(r1)
-	cmpwi	r9,  0x0c
-	cmpwi	cr1, r16,  0x00
+	lwz		r16, KDP.VMMaxVirtualPages(r1)
+	cmpwi	cr0, r9, ecInstPageFault
+	cmpwi	cr1, r16, 0
 	mr		r26, r8
-	bne-	major_0x02ccc_0x430
-	beq-	cr1, major_0x02ccc_0x3d4
-	beq-	cr2, major_0x02ccc_0x430
+	bne-	cr0, CanSendMessage
+	beq-	cr1, CantSendMessage
+	beq-	cr2, CanSendMessage
 
-major_0x02ccc_0x3d4
-	lwz		r16,  0x0064(r31)
-	addi	r17, r31,  0x08
-	addi	r18, r31, 160
-	stw		r18,  0x0000(r17)
+CantSendMessage
+	lwz		r16, Task.Flags(r31)
+	addi	r17, r31, Task.QueueMember
+	addi	r18, r31, Task.Semaphore
+
+	stw		r18, LLL.Freeform(r17)
 	InsertAsPrev	r17, r18, scratch=r19
-	li		r17,  0x01
-	ori		r16, r16,  0x2000
-	stw		r17,  0x00b0(r31)
-	stw		r16,  0x0064(r31)
+
+	li		r17, 1
+	_bset	r16, r16, Task.kFlag18
+	stw		r17, Task.Semaphore + Semaphore.Value(r31)
+	stw		r16, Task.Flags(r31)
+
 	rlwinm	r30, r30,  0,  0, 19
+
 	lwz		r27,  0x0000(r29)
 	lwz		r28,  0x0000(r31)
 	stw		r30,  0x0010(r26)
 	stw		r27,  0x0014(r26)
 	stw		r28,  0x0018(r26)
+
 	mr		r30, r26
 	bl		CauseNotification
-	cmpwi	r8,  0x00
-	beq+	major_0x02964
 
-major_0x02ccc_0x430
+	cmpwi	r8, 0
+	beq+	IntLocalBlockMPCall				; jump if no error?
+
+CanSendMessage
 	mfcr	r28
-	li		r8,  0x1c
+	li		r8, Message.Size
 	beq-	cr2, major_0x02ccc_0x4a8
 	bl		PoolAlloc
 	mr.		r26, r8
-	beq-	major_0x02ccc_0x50c
-	addi	r17, r31,  0x08
-	addi	r18, r31, 160
-	stw		r18,  0x0000(r17)
-	InsertAsPrev	r17, r18, scratch=r19
-	li		r17,  0x01
-	stw		r17,  0x00b0(r31)
-	lwz		r27,  0x0000(r29)
-	lis		r8,  0x6e6f
-	ori		r8, r8,  0x7465
-	lwz		r29,  0x00a0(r31)
-	stw		r27,  0x0010(r26)
-	stw		r29,  0x0014(r26)
-	stw		r8,  0x0004(r26)
-	stw		r30,  0x0018(r26)
+	beq-	major_0x02ccc_PoolAllocFailed
+
+	addi	r17, r31, Task.QueueMember
+	addi	r18, r31, Task.Semaphore
+	stw		r18, LLL.Freeform(r17)
+	InsertAsPrev	r17, r18, scratch=r19					; make this task wait on its own semaphore
+
+	li		r17, 1
+	stw		r17, Task.Semaphore + Semaphore.Value(r31)
+
+	;	message = area ID, semaphore ID, address (page aligned?)
+	lwz		r27, Area.ID(r29)
+	lisori	r8, Message.kSignature
+	lwz		r29, Task.Semaphore + Semaphore.BlockedTasks + LLL.Freeform(r31)
+	stw		r27, Message.Word1(r26)
+	stw		r29, Message.Word2(r26)
+	stw		r8, Message.LLL + LLL.Signature(r26)
+	stw		r30, Message.Word3(r26)
+
 	mr		r8, r26
-	addi	r31, r1, -0xa24
+	addi	r31, r1, PSA.PageQueue
 	bl		EnqueueMessage		; Message *r8, Queue *r31
-	lwz		r8, -0x0410(r1)
+	lwz		r8, PSA.BlueSpinningOn(r1)
 	bl		UnblockBlueIfCouldBePolling
 	b		BlockMPCall
 
 major_0x02ccc_0x4a8
 	mr		r8, r31
-	bl		TaskReadyAsPrev
+	bl		SchRdyTaskNow
 	_AssertAndRelease	PSA.SchLock, scratch=r31
 	mtcr	r28
 	bns-	cr6, major_0x02ccc_0x504
@@ -606,22 +647,22 @@ major_0x02ccc_0x4a8
 	stw		r9,  0x0034(r6)
 	lwz		r8,  0x007c(r6)
 	stw		r8,  0x003c(r6)
-	crclr	cr6_so
+	crclr	EWA.kFlag27
 
 major_0x02ccc_0x504
 ;	r6 = ewa
-	bl		Restore_r14_r31
+	bl		SchRestoreStartingAtR14
 	b		major_0x02980_0x178
 
-major_0x02ccc_0x50c
-	li		r16,  0x02
-	stb		r16,  0x0019(r31)
+major_0x02ccc_PoolAllocFailed
+	li		r16, Task.kNominalPriority
+	stb		r16, Task.Priority(r31)
 	mr		r8, r31
-	bl		TaskReadyAsPrev
-	bl		major_0x14af8_0xa0
+	bl		SchRdyTaskNow
+	bl		FlagSchEval
 	b		BlockMPCall
 
-major_0x02ccc_0x524
+TaskNotSuitableForWhatWeWantToDo
 	b		FuncExportedFromTasks
 
 
@@ -659,7 +700,7 @@ IntDecrementer	;	OUTSIDE REFERER
 	stw		r18, ContextBlock.r18(r6)
 	stw		r25, ContextBlock.r25(r6)
 
-	bl		major_0x14a98
+	bl		SchFiddlePriorityShifty
 	ble-	IntDecrementer_0x48
 
 	lwz		r8, PSA.CriticalReadyQ + ReadyQueue.Timecake + 4(r1)
@@ -677,7 +718,7 @@ IntDecrementer_0x48
 
 IntDecrementer_0x54
 ;	r6 = ewa
-	bl		Save_r14_r31
+	bl		SchSaveStartingAtR14
 ;	r8 = sprg0 (not used by me)
 
 
@@ -689,7 +730,7 @@ IntDecrementer_0x54
 	bl		TimerDispatch
 	_AssertAndRelease	PSA.SchLock, scratch=r8
 
-	bl		Restore_r14_r31
+	bl		SchRestoreStartingAtR14
 	b		IntReturn
 
 
@@ -957,7 +998,7 @@ major_0x03548_0x20	;	OUTSIDE REFERER
 	mr		r19, r18
 	rlwimi	r17, r27,  7, 31, 31
 	xori	r17, r17,  0x01
-	li		r8,  0x18
+	li		r8, ecUnknown24
 	b		major_0x02980
 
 
@@ -1066,9 +1107,9 @@ IntDSIOtherOther_0x100
 
 IntDSIOtherOther_0x144
 	andi.	r28, r31,  0x03
-	li		r8,  0x16
+	li		r8, ecDataSupAccessViolation
 	beq+	major_0x02980
-	li		r8,  0x15
+	li		r8, ecDataWriteViolation
 	b		major_0x02980
 
 IntDSIOtherOther_0x158
@@ -1086,7 +1127,7 @@ IntDSIOtherOther_0x158
 	lwz		r8, -0x00e0(r30)
 	mfspr	r29, srr1
 	mfsprg	r28, 2
-	rlwinm	r29, r29,  0, 18, 16
+	_bclr	r29, r29, 17
 	mtlr	r28
 	mtspr	srr1, r29
 
@@ -1108,9 +1149,9 @@ IntDSIOtherOther_0x1c8
 	mfsprg	r28, 2
 	mtlr	r28
 	beq+	IntDSIOtherOther_0x19c
-	li		r8,  0x12
+	li		r8, ecDataInvalidAccess
 	bge+	major_0x02980
-	li		r8,  0x14
+	li		r8, ecDataPageFault
 	b		major_0x02980
 
 
@@ -1179,12 +1220,12 @@ IntMachineCheckMemRetry_0x124
 
 IntMachineCheckMemRetry_0x14c	;	OUTSIDE REFERER
 	cmplw	r10, r19
-	li		r8,  0x13
+	li		r8, ecDataHardwareFault
 	bne+	major_0x02980
 	mfsprg	r1, 0
 	mtsprg	3, r24
 	lmw		r14,  0x0038(r1)
-	li		r8,  0x0b
+	li		r8, ecInstHardwareFault
 	b		major_0x02980_0x134
 
 
@@ -1250,16 +1291,16 @@ IntISI	;	OUTSIDE REFERER
 
 major_0x039dc	;	OUTSIDE REFERER
 	lmw		r14,  0x0038(r8)
-	li		r8,  0x0c
+	li		r8, ecInstPageFault
 	blt+	major_0x02980_0x134
-	li		r8,  0x0a
+	li		r8, ecInstInvalidAddress
 	b		major_0x02980_0x134
 
 major_0x039dc_0x14	;	OUTSIDE REFERER
 	andis.	r8, r11,  0x800
-	li		r8,  0x0e
+	li		r8, ecInstSupAccessViolation
 	bne+	major_0x02980_0x134
-	li		r8,  0x0b
+	li		r8, ecInstHardwareFault
 	b		major_0x02980_0x134
 
 
@@ -1309,7 +1350,7 @@ IntMachineCheck	;	OUTSIDE REFERER
 	b		IntReturn
 
 @not_L1_data_cache_error
-	li		r8,  0x07
+	li		r8, ecMachineCheck
 	b		major_0x02980_0x134
 
 
@@ -1331,7 +1372,7 @@ MaskedInterruptTaken	;	OUTSIDE REFERER
 	_log	'^n'
 	lis		r10, -0x4523
 	ori		r10, r10,  0xcb00
-	li		r8,  0x07
+	li		r8, ecMachineCheck
 	b		major_0x02980_0x134
 
 
@@ -1378,12 +1419,12 @@ IntDSIOther	;	OUTSIDE REFERER
 
 ;	dead code?
 
-	dc.l	0x81610e40
-	dc.l	0x7d8a6378
-	dc.l	0x396b0001
-	dc.l	0x91610e40
-	dc.l	0x7d7b02a6
-	dc.l	0x50e7deb4
+	lwz		r11, KDP.NanoKernelInfo + NKNanoKernelInfo.NanoKernelCallCounts(r1)
+	mr		r10, r12
+	addi	r11, r11, 1
+	stw		r11, KDP.NanoKernelInfo + NKNanoKernelInfo.NanoKernelCallCounts(r1)
+	mfsrr1	r11
+	rlwimi	r7, r7, 27, 26, 26
 
 kcReturnFromException	;	OUTSIDE REFERER
 	ori		r11, r11,  0x8000
@@ -1400,7 +1441,7 @@ kcReturnFromException	;	OUTSIDE REFERER
 	mfsprg	r1, 0
 	rlwimi	r7, r3, 24,  0,  7
 	blt-	major_0x03be0_0xe8
-	li		r8,  0x02
+	li		r8, ecTrapInstr
 	b		major_0x02980_0x134
 
 major_0x03be0_0x58
@@ -1447,7 +1488,7 @@ major_0x03be0_0xe8
 	beq+	cr2, major_0x02980_0x178
 	crclr	cr6_so
 	mfspr	r10, srr0
-	li		r8,  0x02
+	li		r8, ecTrapInstr
 	b		major_0x02980_0x134
 
 
@@ -1483,7 +1524,7 @@ save_all_registers	;	OUTSIDE REFERER
 	lwz		r1, -0x0004(r1)
 
 ;	r6 = ewa
-	b		Save_r14_r31
+	b		SchSaveStartingAtR14
 ;	r8 = sprg0 (not used by me)
 
 
@@ -1521,7 +1562,7 @@ save_all_registers	;	OUTSIDE REFERER
 ;		r13		CR					ContextBlock
 ;
 ;
-;	Can be followed up by a call to Save_r14_r31,
+;	Can be followed up by a call to SchSaveStartingAtR14,
 ;	(which will put them in the ContextBlock too).
 
 	align	5
@@ -1674,7 +1715,7 @@ major_0x03e18_0xb4	;	OUTSIDE REFERER
 	ori		r8, r8,  0x2000
 	mtmsr	r8
 	isync
-	rlwinm	r11, r11,  0, 19, 17
+	_bclr	r11, r11, 18
 	stfd	f0,  0x0200(r6)
 	stfd	f1,  0x0208(r6)
 	stfd	f2,  0x0210(r6)
@@ -1804,7 +1845,7 @@ major_0x04180_0x9c
 ;	r12 = sprg2
 ;	r13 = cr
 
-	li		r8,  0x04
+	li		r8, ecInvalidInstr
 	b		major_0x02980_0x134
 
 
@@ -1856,7 +1897,7 @@ IntPerfMonitor_0x88
 	_AssertAndRelease	PSA.SchLock, scratch=r8
 
 ;	r6 = ewa
-	bl		Restore_r14_r31
+	bl		SchRestoreStartingAtR14
 	b		IntReturn
 
 
@@ -1886,7 +1927,7 @@ IntThermalEvent	;	OUTSIDE REFERER
 @no_thermal_handler
 
 	_AssertAndRelease	PSA.SchLock, scratch=r8
-	bl		Restore_r14_r31
+	bl		SchRestoreStartingAtR14
 	b		IntReturn
 
 
@@ -1899,10 +1940,13 @@ IntThermalEvent	;	OUTSIDE REFERER
 	align	kIntAlign
 
 kcRunAlternateContext	;	OUTSIDE REFERER
-	mtcrf	 0x3f, r7
-	bnel+	cr2, IntReturn
+
+	mtcrf	0x3f, r7
+
+	bcl		BO_IF_NOT, 10, IntReturn
+
 	and.	r8, r4, r13
-	lwz		r9,  0x0340(r1)
+	lwz		r9, KDP.MinusOne1(r1)
 	rlwinm	r8, r3,  0,  0, 25
 	cmpw	cr1, r8, r9
 	bne+	IntReturn
@@ -2001,7 +2045,7 @@ major_0x043a0_0x154
 	mfsprg	r1, 0
 	lmw		r14,  0x0038(r1)
 	lwz		r1, -0x0004(r1)
-	li		r8,  0x02
+	li		r8, ecTrapInstr
 	b		major_0x02980_0x134
 
 
@@ -2034,7 +2078,7 @@ wordfill	;	OUTSIDE REFERER
 
 kcResetSystem	;	OUTSIDE REFERER
 ;	r6 = ewa
-	bl		Save_r14_r31
+	bl		SchSaveStartingAtR14
 ;	r8 = sprg0 (not used by me)
 
 	;	Check for 601 (rtc vs timebase)
@@ -2119,7 +2163,7 @@ NonGaryReset
 	stw		r9,  0x0664(r8)
 
 ;	r6 = ewa
-	bl		Restore_r14_r31
+	bl		SchRestoreStartingAtR14
 	subi	r10, r10, 4
 	lwz		r1, -0x0004(r1)
 
@@ -2131,7 +2175,7 @@ NonGaryReset
 ;	r11 = new srr1
 ;	r12 = lr restore
 ;	r13 = cr restore
-	b		ReturnFromInterrupt
+	b		SchExitInterrupt
 
 
 
@@ -2207,7 +2251,7 @@ major_0x046d0	;	OUTSIDE REFERER
 ;	r12 = sprg2
 ;	r13 = cr
 
-	li		r8,  0x02
+	li		r8, ecTrapInstr
 	b		major_0x02980_0x134
 
 
@@ -2236,144 +2280,166 @@ IntExternalOrange	;	OUTSIDE REFERER
 
 	mtcrf	 0x3f, r7
 	bnel+	cr2, Local_Panic
-	li		r8,  0x00
+	li		r8, ecNoException
 	b		major_0x02980_0x134
 
 
 
-;	                       IntProgram
-
-;	Xrefs:
-;	"vec"
-
 	align	kIntAlign
 
-IntProgram	;	OUTSIDE REFERER
-;	r6 = saved at *(ewa + 0x18)
-;	sprg1 = saved at *(ewa + 4)
-;	rN (0,7,8,9,10,11,12,13, not r1) = saved at *(*(ewa - 0x14) + 0x104 + 8*N)
-	bl		int_prepare
-;	r0 = 0
-;	r1 = *(ewa - 4)
-;	r6 = kdp
-;	r7 = *(ewa - 0x10) # flags?
-;	r8 = ewa
-;	r10 = srr0
-;	r11 = srr1
-;	r12 = sprg2
-;	r13 = cr
+IntProgram
 
-	lwz		r8,  0x0648(r1)
-	mtcr	r11
+	bl		int_prepare
+
+	lwz		r8, KDP.LA_EmulatorKernelTrapTable(r1)
+	mtcr	r11						; UNUSUAL to have SRR1 in condition register
 	xor		r8, r10, r8
-	bne-	cr3, IntProgram_0x144
-	cmplwi	r8,  0x00
-	cmplwi	cr1, r8,  0x20
-	beq-	IntProgram_0x120
-	beq-	cr1, IntProgram_0x120
-	cmplwi	r8,  0x0c
-	cmplwi	cr1, r8,  0x40
-	beq-	IntProgram_0x120
-	blt-	cr1, IntProgram_0x110
-	bne-	cr6, IntProgram_0x58
-	stw		r14,  0x0174(r6)
+	bc		BO_IF_NOT, 14, @not_trap
+
+
+	;	Program interrupt caused by a trap instruction
+
+
+	;	From the table of twis in the emulator code image? Then return will be to LR.
+
+	cmplwi	cr0, r8, NanoKernelCallTable.ReturnFromException
+	cmplwi	cr1, r8, NanoKernelCallTable.MPDispatch
+	beq-	cr0, @emutrap_0_return_from_exception
+	beq-	cr1, @emutrap_8_mpdispatch
+	cmplwi	cr0, r8, NanoKernelCallTable.VMDispatch
+	cmplwi	cr1, r8, NanoKernelCallTable.Size
+	beq-	cr0, @emutrap_3_vmdispatch
+	blt-	cr1, @emutrap_other
+
+
+	;	Not from the emulator image? Return will be to next instruction,
+	;	and we will read the trap instruction from memory
+
+	;	If !MSR[IR], turn on MSR[DR] for just a moment
+	bc		BO_IF_NOT, 26, @_IntProgram_0x58
+	stw		r14, ContextBlock.r14(r6)
 	mfsprg	r14, 3
-	addi	r8, r1, -0x750
+	addi	r8, r1, PSA.BlueVecBase
 	mfmsr	r9
 	mtsprg	3, r8
-	ori		r8, r9,  0x10
+	_bset	r8, r9, 27				; turn on data paging (MSR[DR]) for just a sec
 	mtmsr	r8
 	isync
+@_IntProgram_0x58
 
-IntProgram_0x58
-	lwz		r8,  0x0000(r10)
-	bne-	cr6, IntProgram_0x74
+	;	Get the offending instruction!
+	lwz		r8, 0(r10)
+
+	;	If !MSR[IR], restore MSR
+	bc		BO_IF_NOT, 26, @_IntProgram_0x74
 	isync
 	mtmsr	r9
 	isync
 	mtsprg	3, r14
-	lwz		r14,  0x0174(r6)
+	lwz		r14, ContextBlock.r14(r6)
+@_IntProgram_0x74
 
-IntProgram_0x74
+
+	;	Switch from SRR1-in-CR to Flags-in-CR
+
 	mtcr	r7
-	xoris	r8, r8,  0xfff
-	cmplwi	r8,  0x10
-	cmplwi	cr1, r8,  0x00
-	bge-	IntProgram_0x150
-	cmplwi	cr7, r8,  0x08
-	cmplwi	r8,  0x03
-	slwi	r8, r8,  2
-	beq-	cr1, IntProgram_0xac
-	beq-	cr7, IntProgram_0xd0
-	beq-	IntProgram_0xac
-	blt-	cr4, IntProgram_0x150
-	blt-	cr2, IntProgram_0xac
-	ble-	cr2, IntProgram_0x150
 
-IntProgram_0xac
+
+	;	Read the bottom half of the non-emu-image trap instruction, getting trapnum*8 in r8
+	xoris	r8, r8, 0xfff
+	cmplwi	cr0, r8, NanoKernelCallTable.Size / 4
+	cmplwi	cr1, r8, NanoKernelCallTable.ReturnFromException / 4
+	bge-	cr0, @trap_too_high
+	cmplwi	cr7, r8, NanoKernelCallTable.MPDispatch / 4
+	cmplwi	cr0, r8, NanoKernelCallTable.VMDispatch / 4
+	slwi	r8, r8, 2
+	beq-	cr1, @nonemu_return_from_exception
+	beq-	cr7, @nonemu_mpdispatch
+	beq-	cr0, @nonemu_vmdispatch
+
+	;	Fall through to some hard truths
+	bc		BO_IF, 16, @_IntProgram_0x150
+	bc		BO_IF, 8, @_IntProgram_0xac
+	bc		BO_IF_NOT, 9, @_IntProgram_0x150
+
+@nonemu_return_from_exception
+@nonemu_vmdispatch
+@_IntProgram_0xac
 	add		r8, r8, r1
 	lwz		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.NanoKernelCallCounts(r8)
-	addi	r9, r9,  0x01
+	addi	r9, r9,  1
 	stw		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.NanoKernelCallCounts(r8)
 
-IntProgram_0xbc
+@nonemu_go
 	lwz		r8, KDP.NanoKernelCallTable(r8)
 	mtlr	r8
-	addi	r10, r10,  0x04
-	rlwimi	r7, r7, 27, 26, 26
+	addi	r10, r10, 4
+	rlwimi	r7, r7, 27, 26, 26						; copy EWA.kFlag22 into EWA.kFlag26
 	blr
 
-IntProgram_0xd0
-	lwz		r9,  0x0104(r6)
+@nonemu_mpdispatch
+	lwz		r9, ContextBlock.r0(r6)
 	add		r8, r8, r1
-	cmpwi	r9, -0x01
+	cmpwi	r9, -1
 	lwz		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.NanoKernelCallCounts(r8)
-	addi	r9, r9,  0x01
+	addi	r9, r9, 1
 	stw		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.NanoKernelCallCounts(r8)
-	bne+	IntProgram_0xbc
-	addi	r10, r10,  0x04
-	rlwimi	r7, r7, 27, 26, 26
+	bne+	@nonemu_go
+
+	;	Non-emu MPDispatch trap with r0 == -1: muck around a bit?
+	addi	r10, r10, 4
+	rlwimi	r7, r7, 27, 26, 26						; copy EWA.kFlag22 into EWA.kFlag26
 	mfsprg	r8, 0
-	rlwimi	r13, r7,  8,  2,  2
-	lwz		r9, -0x0008(r8)
+	rlwimi	r13, r7, 8, 2, 2
+	lwz		r9, EWA.PA_CurTask(r8)
 	xoris	r13, r13,  0x2000
-	lwz		r8,  0x00ec(r9)
-	stw		r8,  0x0104(r6)
+	lwz		r8, Task.SomeLabelField(r9)
+	stw		r8, ContextBlock.r0(r6)
 	b		IntReturn
 
-IntProgram_0x110
-	mtcr	r7
-	blt-	cr4, IntProgram_0x150
-	blt-	cr2, IntProgram_0x120
-	ble-	cr2, IntProgram_0x150
 
-IntProgram_0x120
+@emutrap_other
+@_IntProgram_0x110
+	mtcr	r7
+	bc		BO_IF, 16, @_IntProgram_0x150
+	bc		BO_IF, 8, @_IntProgram_0x120
+	bc		BO_IF_NOT, 9, @_IntProgram_0x150
+
+@emutrap_0_return_from_exception
+@emutrap_8_mpdispatch
+@emutrap_3_vmdispatch
+@_IntProgram_0x120
 	add		r8, r8, r1
 	lwz		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.NanoKernelCallCounts(r8)
 	lwz		r10, KDP.NanoKernelCallTable(r8)
-	addi	r9, r9,  0x01
+	addi	r9, r9, 1
 	stw		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.NanoKernelCallCounts(r8)
 	mtlr	r10
-	mr		r10, r12
+	mr		r10, r12								; return to whatever the emulator left in the PPC link register
 	rlwimi	r7, r7, 27, 26, 26
 	blr
 
-IntProgram_0x144
-	blt+	cr3, FDP_1214
-	bgt-	cr3, FDP_1214
-	bso-	cr2, IntProgram_0x160
 
-IntProgram_0x150
-	rlwinm	r8, r11, 17, 28, 29
+	;	Program interrupt not caused by a trap instruction: consult SRR1 bits 11-13
+
+@not_trap
+	bc		BO_IF+1, 12, FDPEmulateInstruction		; illegal instruction exception
+	bc		BO_IF,   13, FDPEmulateInstruction		; privileged instruction exception
+	bc		BO_IF,   11, @floating_point_exception	; floating point exception
+
+@trap_too_high
+@_IntProgram_0x150
+	rlwinm	r8, r11, 17, 28, 29						; whoa
 	addi	r8, r8,  0x4b3
-	rlwnm	r8, r8, r8,  0x1c,  0x1f
+	rlwnm	r8, r8, r8, 28, 31
 	b		major_0x02980_0x134
 
-IntProgram_0x160
-	li		r8,  0x03
-	bso+	cr3, major_0x02980_0x134
-	addi	r10, r10,  0x04
-	rlwimi	r7, r7, 27, 26, 26
+@floating_point_exception
+	li		r8, ecFloatException
+
+	bc		BO_IF, 15, major_0x02980_0x134			; if SRR0 points to subsequent instr
+	addi	r10, r10, 4								; if SRR0 points to offending instr
+	rlwimi	r7, r7, 27, 26, 26						; copy EWA.kFlag22 into EWA.kFlag26
 	b		major_0x02980_0x134
 
 
@@ -2418,31 +2484,30 @@ IntExternalYellow	;	OUTSIDE REFERER
 	blt+	kcPrioritizeInterrupts
 
 
-	;	Multiprocessor machine: signal another CPU?
+	;	Check with the CPU plugin whether this is an interprocessor interrupt
+	;	(i.e. an alert to flag a scheduler evaluation)
 
-	bl		Save_r14_r31
+	bl		SchSaveStartingAtR14
 
 	li		r9, kSIGP9
 	stw		r9, EWA.SIGPSelector(r8)
-
-	li		r8, 1 ; args in EWA
+	li		r8, 1						;	args are in EWA
 	bl		SIGP
+	bl		SchRestoreStartingAtR14
 
-	bl		Restore_r14_r31
+	cmpwi	cr0, r8, -29278				;	real external interrupt
+	cmpwi	cr1, r8, -29277				;	ignore
+	cmpwi	cr2, r8, -29279				;	interprocessor interrupt!
+										;	else: real external interrupt
 
-	;	These do not match any public Apple error codes?
-	cmpwi	r8, -0x725e
-	cmpwi	cr1, r8, -0x725d
-	cmpwi	cr2, r8, -0x725f
-
-	beq+	kcPrioritizeInterrupts
+	beq+	cr0, kcPrioritizeInterrupts
 	beq+	cr1, IntReturn
 	bne+	cr2, kcPrioritizeInterrupts
 	
-	mfsprg	r9, 0
-	li		r8,  0x01
+	mfsprg	r9, 0						;	"alert" => run scheduler evaluation
+	li		r8, 1
 	stb		r8, EWA.SchEvalFlag(r9)
-	b		IntReturn
+	b		IntReturn					;	goes to SchReturn
 
 
 
@@ -2514,7 +2579,7 @@ SIGP
 	lwz		r8, CoherenceGroup.CpuPluginSpacePtr(r22)
 	cmpw	r9, r8
 	beq-	@noNeedToSwitchSpace
-	bl		SetSpaceSRsAndBATs
+	bl		SchSwitchSpace
 @noNeedToSwitchSpace
 
 	;	Save user registers to ContextBlock (odd way to do this).
@@ -2618,7 +2683,7 @@ major_0x04a20_0x30
 	lwz		r9, -0x001c(r23)
 	cmpw	r9, r8
 	beq-	major_0x04a20_0x44
-	bl		SetSpaceSRsAndBATs
+	bl		SchSwitchSpace
 
 major_0x04a20_0x44
 	lwz		r10, -0x02d0(r23)
@@ -2666,7 +2731,7 @@ IntSyscall	;	OUTSIDE REFERER
 		;	unset MSR_PR bit
 		mfspr	r1, srr1
 		rlwinm.	r0, r1, 26, 26, 27	; nonsense code?
-		rlwinm	r1, r1,  0, 18, 16
+		_bclr	r1, r1, 17
 		blt-	@dont_unset_pr		; r0 should never have bit 0 set
 		mtspr	srr1, r1
 	@dont_unset_pr
@@ -2764,7 +2829,7 @@ IntTrace	;	OUTSIDE REFERER
 ;	r12 = sprg2
 ;	r13 = cr
 
-	li		r8,  0x08
+	li		r8, ecInstTrace
 	b		major_0x02980_0x134
 
 

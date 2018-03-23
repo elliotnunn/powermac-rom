@@ -68,7 +68,7 @@
 ;	major_0x129cc
 ;	Local_Panic
 ;	Local_Panic
-;	RescheduleAndReturn
+;	SchEval
 ;	major_0x14548
 ;	Local_Panic
 ;	CommonPIHPath

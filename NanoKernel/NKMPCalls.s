@@ -86,7 +86,7 @@ MaxMPCallCount		equ		134
 
 kcMPDispatch		;	reached by `sc`, or `twi *, *, 8`
 
-	bl		Save_r14_r31
+	bl		SchSaveStartingAtR14
 
 	lwz		r8, EWA.r6(r8)					;	clobbers our EWA pointer :(
 	lwz		r14, KDP.PA_NanoKernelCode(r1)	;	but r14...
@@ -670,7 +670,7 @@ ReleaseAndReturnMPCall	;	OUTSIDE REFERER
 ;	BlockMPCall
 ;	KCGetCpuCount
 ;	MPCall_6
-;	KCYieldWithHint
+;	MPYieldWithHint
 ;	KCCpuPlugin
 ;	NKPrintHex
 ;	NKPrintDecimal
@@ -699,15 +699,15 @@ TrulyCommonMPCallReturnPath	;	OUTSIDE REFERER
 	bc		BO_IF_NOT, 10, @block
 
 ;return immediately
-	bl		Restore_r14_r31
+	bl		SchRestoreStartingAtR14
 	b		IntReturn
 
 @block
-	b		RescheduleAndReturn
+	b		SchEval
 
 
 
-;	                     MPCall_0
+;	Called after MPLibrary creates a new structure
 
 	DeclareMPCall	0, MPCall_0
 
@@ -716,8 +716,10 @@ MPCall_0	;	OUTSIDE REFERER
 	mr		r30, r7
 	mr		r29, r6
 	bne+	ReturnMPCallOOM
+
+	;	Fail if this page is outside of the PAR
 	rlwinm.	r4, r3, 20, 12, 31
-	lwz		r9,  0x06a8(r1)
+	lwz		r9, KDP.PrimaryAddrRangePages(r1)
 	beq+	ReturnMPCallOOM
 	cmplw	r4, r9
 	bge+	ReturnMPCallOOM
@@ -909,17 +911,14 @@ MPRegisterCpuPlugin
 
 
 
-;	                   KCGetCpuCount
-
 ;	Called by MPProcessors and MPProcessorsScheduled
 
-;	> r3    = 0:all, 1:scheduled
+;	ARG		bool r3 scheduled_only
+;	RET		int r3
 
-;	< r3    = cpu_count
+	DeclareMPCall	3, MPProcessors
 
-	DeclareMPCall	3, KCGetCpuCount
-
-KCGetCpuCount	;	OUTSIDE REFERER
+MPProcessors
 
 	mfsprg	r15, 0
 	lwz		r14, EWA.CPUBase + CPU.LLL + LLL.Freeform(r15)
@@ -936,9 +935,9 @@ KCGetCpuCount	;	OUTSIDE REFERER
 ;	ARG		AddressSpaceID r3
 ;	RET		AddressSpaceID r3, ??? r4, ProcessStructID r5
 
-	DeclareMPCall	4, KCCreateProcess
+	DeclareMPCall	4, MPCreateProcess
 
-KCCreateProcess	;	OUTSIDE REFERER
+MPCreateProcess
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
@@ -991,9 +990,9 @@ KCCreateProcess	;	OUTSIDE REFERER
 
 
 
-	DeclareMPCall	5, MPCall_5
+	DeclareMPCall	5, MPTerminateProcess
 
-MPCall_5	;	OUTSIDE REFERER
+MPTerminateProcess
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
@@ -1069,12 +1068,12 @@ MPCall_6_0xb4
 
 	mr		r8, r31
 
-	bl		TaskUnready
+	bl		SchTaskUnrdy
 
 	li		r16, Task.kNominalPriority
 	stb		r16, Task.Priority(r31)
 
-	bl		TaskReadyAsPrev
+	bl		SchRdyTaskNow
 
 	mr		r8, r31
 	bl		FlagSchEvaluationIfTaskRequires
@@ -1083,44 +1082,51 @@ MPCall_6_0xb4
 
 
 
-;	                  KCYieldWithHint
+;	Implements MPYield (null argument)
 
+;	Caller gets its priority set to nominal
 
-	DeclareMPCall	13, KCYieldWithHint
+;	ARG		TaskID r3 (null for MPYield)
+;	RET		OSStatus r3
 
-KCYieldWithHint	;	OUTSIDE REFERER
+	DeclareMPCall	13, MPYieldWithHint
+
+MPYieldWithHint
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
 	mfsprg	r16, 0
 	rlwinm.	r8, r7,  0, 10, 10
 	lwz		r17, KDP.PA_ECB(r1)
-	lwz		r31, -0x0008(r16)
-	beq-	KCYieldWithHint_0x68
-	clrlwi.	r8, r3,  0x1f
+	lwz		r31, EWA.PA_CurTask(r16)
+	beq-	@i_am_important							;	not 68k mode?
+
+	clrlwi.	r8, r3, 31
 	lwz		r8, ContextBlock.PriorityShifty(r17)
 	rlwinm	r8, r8,  0, 24, 21
 	oris	r8, r8,  0x8000
 	stw		r8, ContextBlock.PriorityShifty(r17)
-	beq-	KCYieldWithHint_0x68
-	lbz		r16,  0x0019(r31)
-	cmpwi	r16,  0x02
-	bge-	KCYieldWithHint_0x7c
-	mr		r8, r31
-	bl		TaskUnready
-	li		r16,  0x02
-	stb		r16,  0x0019(r31)
-	bl		TaskReadyAsNext
-	b		KCYieldWithHint_0x7c
+	beq-	@i_am_important							;	MPYield call
 
-KCYieldWithHint_0x68
+	;	If this task is 
+	lbz		r16, Task.Priority(r31)
+	cmpwi	r16, Task.kNominalPriority
+	bge-	@return
 	mr		r8, r31
-	bl		TaskUnready
-	li		r16,  0x02
-	stb		r16,  0x0019(r31)
-	bl		TaskReadyAsPrev
+	bl		SchTaskUnrdy
+	li		r16, Task.kNominalPriority
+	stb		r16, Task.Priority(r31)
+	bl		SchRdyTaskLater
+	b		@return
 
-KCYieldWithHint_0x7c
+@i_am_important
+	mr		r8, r31
+	bl		SchTaskUnrdy
+	li		r16, Task.kNominalPriority
+	stb		r16, Task.Priority(r31)
+	bl		SchRdyTaskNow
+
+@return
 	mr		r8, r31
 	bl		FlagSchEvaluationIfTaskRequires
 	_AssertAndRelease	PSA.SchLock + Lock.Count, scratch=r16
@@ -1128,32 +1134,35 @@ KCYieldWithHint_0x7c
 
 
 
-	DeclareMPCall	33, MPCall_33
+;	ARG		AbsoluteTime r3/r4
+;	RET		OSStatus r3
 
-MPCall_33	;	OUTSIDE REFERER
-	rlwinm.	r8, r7,  0, 10, 10						;	Contains CpuFlags
+	DeclareMPCall	33, MPDelayUntil
+
+MPDelayUntil
+
+	rlwinm.	r8, r7, 0, EWA.kFlagBlue, EWA.kFlagBlue
 	bne+	ReturnMPCallBlueBlocking
 
-	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
-
-	b		MPCall_55_0x60
-
+	_Lock	PSA.SchLock, scratch1=r16, scratch2=r17
+	b		_MPDelayUntilCommon
 
 
 
-;	                     MPCall_55
+;	This version is allowed while the blue task is running
 
-;	Xrefs:
-;	kcMPDispatch
-;	MPCall_33
+;	ARG		AbsoluteTime r3/r4
+;	RET		OSStatus r3
 
-	DeclareMPCall	55, MPCall_55
+	DeclareMPCall	55, MPDelayUntilSys
 
-MPCall_55	;	OUTSIDE REFERER
-	rlwinm.	r8, r7,  0, 10, 10
+MPDelayUntilSys
+
+	rlwinm.	r8, r7, 0, EWA.kFlagBlue, EWA.kFlagBlue
 	lwz		r16, KDP.NanoKernelInfo + NKNanoKernelInfo.ExternalIntCount(r1)
-	beq-	MPCall_55_0x60
+	beq-	_MPDelayUntilCommon
 
+	;	Why the hell are we counting interrupts?
 	lwz		r17, PSA.OtherSystemContextPtr(r1)
 	lwz		r18, KDP.PA_ECB(r1)
 	cmpw	r16, r17
@@ -1165,18 +1174,19 @@ MPCall_55	;	OUTSIDE REFERER
 	oris	r8, r8, 0x8000
 	stw		r8, ContextBlock.PriorityShifty(r18)
 
-	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
+	_Lock	PSA.SchLock, scratch1=r16, scratch2=r17
 
 	lwz		r16, PSA.BlueSpinningOn(r1)
 	cmpwi	r16, -1
 	li		r16, 0
-	bne-	MPCall_55_0x60
+	bne-	_MPDelayUntilCommon
 	stw		r16, PSA.BlueSpinningOn(r1)
 	b		ReleaseAndReturnZeroFromMPCall
 
 
 
-MPCall_55_0x60	;	OUTSIDE REFERER
+_MPDelayUntilCommon
+
 	mfsprg	r16, 0
 	li		r17, 1
 
@@ -1196,7 +1206,7 @@ MPCall_55_0x60	;	OUTSIDE REFERER
 	bl		EnqueueTimer
 
 	mr		r8, r31
-	bl		TaskUnready
+	bl		SchTaskUnrdy
 
 	addi	r16, r1, PSA.DelayQueue
 	addi	r17, r31, Timer.QueueLLL
@@ -1559,7 +1569,7 @@ KCCreateCpuStruct_0x68
 
 	lisori	r8, 11
 	lisori	r8, 6
-	stw		r8, CPU.Eff(r31)
+	stw		r8, CPU.Flags(r31)
 
 
 
@@ -1622,7 +1632,7 @@ MPDeleteProcessor
 	mr		r31, r8
 	bne+	ReleaseAndReturnMPCallInvalidIDErr
 
-	lwz		r16, CPU.Eff(r31)
+	lwz		r16, CPU.Flags(r31)
 	lisori	r17, 9
 	and.	r17, r17, r16
 	bne+	ReleaseAndReturnMPCallOOM
@@ -1666,7 +1676,7 @@ KCStartCPU	;	OUTSIDE REFERER
 	bne+	ReleaseAndReturnMPCallInvalidIDErr
 
 	mr		r30, r8
-	lwz		r16, CPU.Eff(r30)
+	lwz		r16, CPU.Flags(r30)
 	rlwinm.	r8, r16,  0, 28, 28
 	bne+	ReleaseAndReturnZeroFromMPCall
 
@@ -1727,7 +1737,7 @@ KCStartCPU	;	OUTSIDE REFERER
 
 
 	lwz		r8, KDP.PA_NanoKernelCode(r1)
-	llabel	r26, IdleCode
+	llabel	r26, SchIdleTask
 	add		r8, r8, r26
 	stw		r8, Task.ContextBlock + ContextBlock.CodePtr(r31)
 
@@ -1822,16 +1832,16 @@ KCStopScheduling	;	OUTSIDE REFERER
 	oris	r17, r17,  0x80
 	stw		r17,  0x0064(r31)
 	mr		r8, r31
-	bl		TaskUnready
+	bl		SchTaskUnrdy
 	li		r17,  0x00
 	stb		r17,  0x0019(r31)
 	mr		r8, r31
-	bl		TaskReadyAsNext
+	bl		SchRdyTaskLater
 	bl		CalculateTimeslice
 	mr		r8, r31
-	bl		major_0x14af8_0xa0
+	bl		FlagSchEval
 	lwz		r8,  0x064c(r1)
-	llabel	r9, StopProcessor
+	llabel	r9, SchIdleTaskStopper
 	add		r8, r8, r9
 	stw		r8,  0x01fc(r31)
 
@@ -1853,7 +1863,7 @@ MPCpuPlugin
 	;	Arguments in registers
 	li		r8, 0
 
-	;	Hopefully returns via kcReturnFromInterrupt? Geez...
+	;	Hopefully returns via kcSchExitInterrupt? Geez...
 	bl		SIGP
 
 	mr		r3, r8
@@ -2045,13 +2055,13 @@ KCMarkPMFTask	;	OUTSIDE REFERER
 
 ;	Insert bit 31 of r4 into bit 21 of these flags
 	lwz			r17, Task.Flags(r31)
-	rlwimi		r17, r4, 10, 21, 21
+	rlwimi		r17, r4, 10, Task.kFlagPMF, Task.kFlagPMF
 	stw			r17, Task.Flags(r31)
 
 
 ;	Don't know what this does!
 	mr			r8, r31
-	bl			major_0x14af8_0xa0
+	bl			FlagSchEval
 
 	b			ReleaseAndReturnZeroFromMPCall
 
@@ -2129,18 +2139,28 @@ NKLocateInfoRecord
 
 
 
-	DeclareMPCall	108, MPCall_108
+	;	ARG		int r3 stop
+	;			long r4 CpuClockRateHz
+	;			long r5 BusClockRateHz
+	;			long r6 DecClockRateHz
+	;	RET		OSStatus r3
 
-MPCall_108	;	OUTSIDE REFERER
-	cmplwi	r3,  0x02
+	DeclareMPCall	108, NKSetPrInfoClockRates
+
+NKSetPrInfoClockRates
+
+	cmplwi	r3, 2
 	bge+	ReturnParamErrFromMPCall
-	mulli	r17, r3,  0x10
-	addi	r18, r1,  0xf80
+
+	mulli	r17, r3, 16
+	addi	r18, r1, KDP.ProcessorInfo + NKProcessorInfo.ClockRates
 	add		r18, r17, r18
-	lwz		r16,  0x0134(r6)
-	stw		r4,  0x0000(r18)
-	stw		r5,  0x0004(r18)
-	stw		r16,  0x0008(r18)
+
+	lwz		r16, ContextBlock.r6(r6)
+	stw		r4, 0(r18)
+	stw		r5, 4(r18)
+	stw		r16, 8(r18)
+
 	_log	'Clock rates for step '
 	mr		r8, r3
 	bl		Printd
@@ -2154,6 +2174,7 @@ MPCall_108	;	OUTSIDE REFERER
 	mr		r8, r16
 	bl		Printd
 	_log	'Hz^n'
+
 	b		ReturnZeroFromMPCall
 
 

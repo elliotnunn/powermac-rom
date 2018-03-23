@@ -189,7 +189,17 @@ HalfLoadedReg	set					(&reg)
 	MACRO
 	_bclr			&dest, &src, &bit
 
-	rlwinm&dot		&dest, &src, 0, (&bit)+1, (&bit)-1
+_bclr_rbit set &bit+1
+	if _bclr_rbit > 31
+_bclr_rbit set 0
+	endif
+
+_bclr_lbit set &bit-1
+	if _bclr_lbit < 0
+_bclr_lbit set 31
+	endif
+
+	rlwinm&dot		&dest, &src, 0, _bclr_rbit, _bclr_lbit
 
 	ENDM
 

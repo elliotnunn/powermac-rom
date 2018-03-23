@@ -139,13 +139,13 @@ kFlag17					equ		17
 kFlag18					equ		18
 kFlag19					equ		19
 kFlag20					equ		20
-kFlag21					equ		21
+kFlagPMF				equ		21	; set by MPMarkPMFTask, means perf monitor
 kFlag22					equ		22
 kFlag23					equ		23
 kFlag24					equ		24
 kFlag25					equ		25	; set for idle1, idle2
 kFlag26					equ		26	; set for blue
-kFlag27					equ		27	; set on SWI
+kFlag68kInterrupt		equ		27	; set on SWI (meaning 68k, or 68k interrupt?)
 kFlag28					equ		28	; set for blue
 kFlag29					equ		29
 kFlag30					equ		30
@@ -164,11 +164,7 @@ VectorSaveArea			ds.l	1	; 08c
 						ds.l	1	; 094
 						ds.l	1	; 098
 NotificationPtr			ds.l	1	; 09c
-SemaphoreLLL			ds.l	4	; 0a0:0b0
-Zero					ds.l	1	; 0b0
-One						ds.l	1	; 0b4
-						ds.l	1	; 0b8
-						ds.l	1	; 0bc
+Semaphore				ds.b	32	; 0a0:0c0 ; Zero and One were fields
 Zero1					ds.l	1	; 0c0
 Zero2					ds.l	1	; 0c4
 CreateTime1				ds.d	1	; 0c8
@@ -178,7 +174,7 @@ CreateTime2				ds.d	1	; 0d0
 Zero3					ds.l	1	; 0e0
 Zero4					ds.l	1	; 0e4
 Zero5					ds.l	1	; 0e8
-						ds.l	1	; 0ec
+SomeLabelField			ds.l	1	; 0ec
 YellowVecTblPtr			ds.l	1	; 0f0
 ExceptionHandlerID		ds.l	1	; 0f4 ; a queue
 ErrToReturnIfIDie		ds.l	1	; 0f8
@@ -275,7 +271,7 @@ Size					equ		*
 ReadyQueue				record	0,INCR
 
 LLL						ds.l	4	; 00:10 ; nothing fancy, freeform contains priority flag
-Counter					ds.l	1	; 10 ; InitRDYQs sets, TaskReadyAsNext bumps, major_0x13e4c decs
+Counter					ds.l	1	; 10 ; SchInit sets, SchRdyTaskLater bumps, major_0x13e4c decs
 TotalWeight				ds.l	1	; 14 ; divide available time by these
 Timecake				ds.d	1	; 18 ; period of ~1ms, 8ms, 64ms, 512ms
 
@@ -386,11 +382,45 @@ kSignature				equ		'CPU '
 ID						ds.l	1	; 00
 Signature				ds.l	1	; 04
 LLL						ds.l	4	; 08:18 ; member of CGRP
-Eff						ds.l	1	; 18 ; contains 0x0000000f ; cannot delete if this field & 9
+Flags					ds.l	1	; 18 ; contains 0x0000000f ; cannot delete if this field & 9
 IdleTaskPtr				ds.l	1	; 1c
 
 EWABase					ds.b	800	; negative-indexed parts of EWA
 EWA						ds.b	128	; positive-indexed parts of EWA
+
+kFlag0					equ		0
+kFlag1					equ		1
+kFlag2					equ		2
+kFlag3					equ		3
+kFlag4					equ		4
+kFlag5					equ		5
+kFlag6					equ		6
+kFlag7					equ		7
+kFlag8					equ		8
+kFlag9					equ		9
+kFlag10					equ		10
+kFlag11					equ		11
+kFlag12					equ		12
+kFlag13					equ		13
+kFlag14					equ		14
+kFlag15					equ		15
+kFlag16					equ		16
+kFlag17					equ		17
+kFlag18					equ		18
+kFlag19					equ		19
+kFlag20					equ		20
+kFlag21					equ		21
+kFlag22					equ		22
+kFlag23					equ		23
+kFlag24					equ		24
+kFlag25					equ		25
+kFlag26					equ		26
+kFlag27					equ		27
+kFlagScheduled			equ		28
+kFlag29					equ		29
+kFlag30					equ		30
+kFlag31					equ		31
+
 
 Size					equ		*
 						endr
@@ -555,7 +585,7 @@ LogicalBase				ds.l	1	; 24
 LogicalEnd				ds.l	1	; 28 ; the last valid address in the area
 Length					ds.l	1	; 2c ; in actual bytes!
 LogicalSeparation		ds.l	1	; 30 ; min logical distance to any other area
-						ds.l	1	; 34
+Counter					ds.l	1	; 34
 BytesMapped				ds.l	1	; 38 ; total size of pages actually mapped to me
 FaultCtrArrayPtr		ds.l	1	; 3c ; in paged areas, tracks how many times pages are added to HTAB
 PageMapArrayPtr			ds.l	1	; 40 ; in paged areas, stores PTE template for each page

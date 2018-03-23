@@ -462,7 +462,7 @@ VMInit_0x29c
 	mfsprg	r9, 0
 
 	lwz		r6, EWA.PA_ContextBlock(r9)
-	bl		Save_r14_r31 ; need some registers
+	bl		SchSaveStartingAtR14 ; need some registers
 
 	lwz		r8, EWA.PA_CurAddressSpace(r9)
 	li		r9, 0
@@ -495,7 +495,7 @@ VMInit_0x29c
 	bl		printw
 	_log	'^n'
 
-	bl		Restore_r14_r31
+	bl		SchRestoreStartingAtR14
 
 	b		VMReturn0
 
@@ -562,7 +562,7 @@ VMGetPhysicalPage	;	OUTSIDE REFERER
 	lwz		r6, -0x0014(r9)
 
 ;	r6 = ewa
-	bl		Save_r14_r31
+	bl		SchSaveStartingAtR14
 ;	r8 = sprg0 (not used by me)
 
 	slwi	r29, r4, 12
@@ -574,7 +574,7 @@ VMGetPhysicalPage	;	OUTSIDE REFERER
 
 VMGetPhysicalPage_0x28
 ;	r6 = ewa
-	bl		Restore_r14_r31
+	bl		SchRestoreStartingAtR14
 	lwz		r9, KDP.PrimaryAddrRangePages(r1)
 
 VMGetPhysicalPage_0x30
@@ -595,7 +595,7 @@ getPTEntryGivenPage	;	OUTSIDE REFERER
 	lwz		r6, -0x0014(r9)
 
 ;	r6 = ewa
-	bl		Save_r14_r31
+	bl		SchSaveStartingAtR14
 ;	r8 = sprg0 (not used by me)
 
 	slwi	r29, r4, 12
@@ -617,7 +617,7 @@ getPTEntryGivenPage_0x3c
 
 getPTEntryGivenPage_0x48
 ;	r6 = ewa
-	bl		Restore_r14_r31
+	bl		SchRestoreStartingAtR14
 	lwz		r9, KDP.PrimaryAddrRangePages(r1)
 
 getPTEntryGivenPage_0x50
@@ -698,12 +698,12 @@ major_0x08d88_0x8c
 
 major_0x08d88_0xa8	;	OUTSIDE REFERER
 ;	r6 = ewa
-	bl		Restore_r14_r31
+	bl		SchRestoreStartingAtR14
 	b		VMReturnMinus1
 
 major_0x08d88_0xb0	;	OUTSIDE REFERER
 ;	r6 = ewa
-	bl		Restore_r14_r31
+	bl		SchRestoreStartingAtR14
 	b		VMReturn
 
 
@@ -730,7 +730,7 @@ VMIsResident	;	OUTSIDE REFERER
 	lwz		r6, -0x0014(r9)
 
 ;	r6 = ewa
-	bl		Save_r14_r31
+	bl		SchSaveStartingAtR14
 ;	r8 = sprg0 (not used by me)
 
 	slwi	r29, r4, 12
@@ -742,7 +742,7 @@ VMIsResident	;	OUTSIDE REFERER
 
 VMIsResident_0x28
 ;	r6 = ewa
-	bl		Restore_r14_r31
+	bl		SchRestoreStartingAtR14
 	lwz		r9, KDP.PrimaryAddrRangePages(r1)
 
 VMIsResident_0x30
@@ -875,13 +875,13 @@ VMMakePageCacheable_0x40
 	lwz		r6, -0x0014(r6)
 
 ;	r6 = ewa
-	bl		Save_r14_r31
+	bl		SchSaveStartingAtR14
 ;	r8 = sprg0 (not used by me)
 
 	bl		major_0x08f14
 
 ;	r6 = ewa
-	bl		Restore_r14_r31
+	bl		SchRestoreStartingAtR14
 	lwz		r5,  0x000c(r15)
 	andi.	r6, r5,  0xe01
 	cmpwi	r6,  0xa01
@@ -950,13 +950,13 @@ VMMakePageWriteThrough_0x3c
 	lwz		r6, -0x0014(r6)
 
 ;	r6 = ewa
-	bl		Save_r14_r31
+	bl		SchSaveStartingAtR14
 ;	r8 = sprg0 (not used by me)
 
 	bl		major_0x08f14
 
 ;	r6 = ewa
-	bl		Restore_r14_r31
+	bl		SchRestoreStartingAtR14
 	lwz		r5,  0x000c(r15)
 	andi.	r6, r5,  0xe01
 	cmpwi	r6,  0xa01
@@ -1119,13 +1119,13 @@ VMMakePageNonCacheable_0x78
 	lwz		r6, -0x0014(r6)
 
 ;	r6 = ewa
-	bl		Save_r14_r31
+	bl		SchSaveStartingAtR14
 ;	r8 = sprg0 (not used by me)
 
 	bl		major_0x08f14
 
 ;	r6 = ewa
-	bl		Restore_r14_r31
+	bl		SchRestoreStartingAtR14
 	lwz		r5,  0x0004(r15)
 	srwi	r6, r5, 12
 	cmpw	r6, r4
@@ -1172,7 +1172,7 @@ VMMarkBacking	;	OUTSIDE REFERER
 	lwz		r6, -0x0014(r9)
 
 ;	r6 = ewa
-	bl		Save_r14_r31
+	bl		SchSaveStartingAtR14
 ;	r8 = sprg0 (not used by me)
 
 	slwi	r29, r4, 12
@@ -1196,7 +1196,7 @@ VMMarkBacking_0x30
 
 VMMarkBacking_0x50
 ;	r6 = ewa
-	bl		Restore_r14_r31
+	bl		SchRestoreStartingAtR14
 	lwz		r9, KDP.PrimaryAddrRangePages(r1)
 
 VMMarkBacking_0x58
@@ -1277,7 +1277,7 @@ VMMarkResident	;	OUTSIDE REFERER
 	lwz		r6, -0x0014(r9)
 
 ;	r6 = ewa
-	bl		Save_r14_r31
+	bl		SchSaveStartingAtR14
 ;	r8 = sprg0 (not used by me)
 
 	slwi	r29, r4, 12
@@ -1299,7 +1299,7 @@ VMMarkResident	;	OUTSIDE REFERER
 
 VMMarkResident_0x50
 ;	r6 = ewa
-	bl		Restore_r14_r31
+	bl		SchRestoreStartingAtR14
 	lwz		r9, KDP.PrimaryAddrRangePages(r1)
 
 VMMarkResident_0x58
@@ -1348,7 +1348,7 @@ setPTEntryGivenPage	;	OUTSIDE REFERER
 	lwz		r6, -0x0014(r9)
 
 ;	r6 = ewa
-	bl		Save_r14_r31
+	bl		SchSaveStartingAtR14
 ;	r8 = sprg0 (not used by me)
 
 	mr		r26, r4
@@ -1375,7 +1375,7 @@ setPTEntryGivenPage_0x34
 
 setPTEntryGivenPage_0x5c
 ;	r6 = ewa
-	bl		Restore_r14_r31
+	bl		SchRestoreStartingAtR14
 	lwz		r9, KDP.PrimaryAddrRangePages(r1)
 
 setPTEntryGivenPage_0x64
@@ -1562,7 +1562,7 @@ VMAllocateMemory_0x1a4
 	lwz		r6, -0x0014(r6)
 
 ;	r6 = ewa
-	bl		Save_r14_r31
+	bl		SchSaveStartingAtR14
 ;	r8 = sprg0 (not used by me)
 
 	mr		r30, r14
@@ -1631,7 +1631,7 @@ VMAllocateMemory_0x1a4
 
 VMAllocateMemory_0x2e0
 ;	r6 = ewa
-	bl		Restore_r14_r31
+	bl		SchRestoreStartingAtR14
 	b		VMReturn1
 
 VMAllocateMemory_0x2e8

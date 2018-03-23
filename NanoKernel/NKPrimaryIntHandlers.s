@@ -89,11 +89,12 @@ CommonPIHPath_0xc	;	OUTSIDE REFERER
 	lwz		r29, KDP.ClearIntMaskInit(r1)
 
 	bne-	@noperf
-	bne-	cr1, CommonPIHPath_0x78
+	bne-	cr1, @CommonPIHPath_0x78
 @noperf
 
 	rlwinm.	r8, r7,  0, 10, 10
-	beq-	CommonPIHPath_0x14c
+	beq-	@actual_meat
+
 	sth		r28,  0x0000(r23)
 	or		r13, r13, r31
 	bgt-	cr7, @negative
@@ -101,10 +102,10 @@ CommonPIHPath_0xc	;	OUTSIDE REFERER
 
 @negative
 	_AssertAndRelease	PSA.PIHLock, scratch=r8
-	bl		Restore_r20_r31
+	bl		SchRestoreStartingAtR20
 	b		IntReturn
 
-CommonPIHPath_0x78
+@CommonPIHPath_0x78
 	_AssertAndRelease	PSA.PIHLock, scratch=r8
 	bl		Save_r14_r19
 
@@ -122,7 +123,7 @@ CommonPIHPath_0x78
 	bl		CauseNotification
 	_AssertAndRelease	PSA.SchLock, scratch=r8
 
-	bl		Restore_r14_r31
+	bl		SchRestoreStartingAtR14
 	b		IntReturn
 
 @no_handler_notification
@@ -136,7 +137,13 @@ CommonPIHPath_0x78
 
 	b		CommonPIHPath_0xc
 
-CommonPIHPath_0x14c
+
+
+
+
+
+@actual_meat
+
 	_AssertAndRelease	PSA.PIHLock, scratch=r8
 	bl		Save_r14_r19
 
@@ -145,55 +152,56 @@ CommonPIHPath_0x14c
 	lwz		r30, PSA.MCR(r1)
 	or		r31, r31, r30
 	stw		r31, PSA.MCR(r1)
-	sth		r28, -0x043c(r1)
+
+	sth		r28, PSA.Int(r1)
+
 	lwz		r31, PSA.PA_BlueTask(r1)
 	mfsprg	r30, 0
-	lwz		r28,  0x0064(r31)
-	lbz		r29,  0x0018(r31)
-	ori		r28, r28,  0x10
-	stw		r28,  0x0064(r31)
-	cmpwi	r29,  0x00
-	lhz		r16,  0x001a(r31)
-	beq-	CommonPIHPath_0x1dc
+	lwz		r28, Task.Flags(r31)
+	lbz		r29, Task.State(r31)
+	_bset	r28, r28, Task.kFlag68kInterrupt
+	stw		r28, Task.Flags(r31)
+
+	cmpwi	r29, 0
+	lhz		r16, Task.CPUIndex(r31)
+	beq-	@task_not_running
 	lhz		r17, EWA.CPUIndex(r30)
 	cmpw	cr1, r16, r17
-	rlwinm.	r8, r28,  0, 26, 26
-	beq-	cr1, CommonPIHPath_0x1d0
-	bne-	CommonPIHPath_0x230
+	rlwinm.	r8, r28, 0, Task.kFlag26, Task.kFlag26
+	beq-	cr1, @running_on_this_cpu
+	bne-	@flag_and_run
 
-CommonPIHPath_0x1d0
+@running_on_this_cpu
 	mr		r8, r31
-	bl		TaskUnready
-	b		CommonPIHPath_0x218
+	bl		SchTaskUnrdy
+	b		@now_reschedule_task
 
-CommonPIHPath_0x1dc
-	addi	r16, r31,  0x08
+@task_not_running
+	addi	r16, r31, Task.QueueMember
 	RemoveFromList		r16, scratch1=r17, scratch2=r18
-	lbz		r17,  0x0037(r31)
-	cmpwi	r17,  0x01
-	bne-	CommonPIHPath_0x210
-	addi	r8, r31,  0x20
+	lbz		r17, Task.Timer + Timer.Byte3(r31)
+	cmpwi	r17, 1
+	bne-	@task_timer_not_in_use
+	addi	r8, r31, Task.Timer
 	bl		DequeueTimer
-
-CommonPIHPath_0x210
-	lwz		r16,  0x0e80(r1)
+@task_timer_not_in_use
+	lwz		r16, KDP.NanoKernelInfo + NKNanoKernelInfo.ExternalIntCount(r1)
 	stw		r16, PSA.OtherSystemContextPtr(r1)
 
-CommonPIHPath_0x218
-	li		r16,  0x00
-	stb		r16,  0x0019(r31)
+@now_reschedule_task
+	li		r16, Task.kCriticalPriority
+	stb		r16, Task.Priority(r31)
 	mr		r8, r31
-	bl		TaskReadyAsNext
+	bl		SchRdyTaskLater
 	mr		r8, r31
 	bl		CalculateTimeslice
 
-CommonPIHPath_0x230
+@flag_and_run
 	mr		r8, r31
 	bl		FlagSchEvaluationIfTaskRequires
 	_AssertAndRelease	PSA.SchLock, scratch=r16
 
-;	r6 = ewa
-	bl		Restore_r14_r31
+	bl		SchRestoreStartingAtR14
 	b		IntReturn
 
 
@@ -297,7 +305,7 @@ PDM_PIH
 
 	_Lock		PSA.PIHLock, scratch1=r8, scratch2=r9
 
-	bl			Save_r20_r31
+	bl			SchSaveStartingAtR20
 
 	addi		r9, r1, PSA.BlueVecBase
 	andis.		r8, r11, 0x8000 >> 14		;	SRR1 mystery bit
@@ -375,7 +383,7 @@ PBX_PIH
 	_Lock			PSA.PIHLock, scratch1=r8, scratch2=r9
 
 ;	r6 = ewa
-	bl		Save_r20_r31
+	bl		SchSaveStartingAtR20
 ;	r8 = sprg0 (not used by me)
 
 	addi	r9, r1, -0x750
@@ -439,7 +447,7 @@ GazellePIH
 	_Lock			PSA.PIHLock, scratch1=r8, scratch2=r9
 
 ;	r6 = ewa
-	bl		Save_r20_r31
+	bl		SchSaveStartingAtR20
 ;	r8 = sprg0 (not used by me)
 
 	addi	r9, r1, -0x750
@@ -527,7 +535,7 @@ TNT_PIH
 	_Lock			PSA.PIHLock, scratch1=r8, scratch2=r9
 
 ;	r6 = ewa
-	bl		Save_r20_r31
+	bl		SchSaveStartingAtR20
 ;	r8 = sprg0 (not used by me)
 
 	addi	r9, r1, -0x750
@@ -603,7 +611,7 @@ GossamerPIH
 	_Lock			PSA.PIHLock, scratch1=r8, scratch2=r9
 
 ;	r6 = ewa
-	bl		Save_r20_r31
+	bl		SchSaveStartingAtR20
 ;	r8 = sprg0 (not used by me)
 
 	addi	r9, r1, -0x750
@@ -696,7 +704,7 @@ NewWorldPowerBookPIH
 	_Lock			PSA.PIHLock, scratch1=r8, scratch2=r9
 
 ;	r6 = ewa
-	bl		Save_r20_r31
+	bl		SchSaveStartingAtR20
 ;	r8 = sprg0 (not used by me)
 
 	addi	r9, r1, -0x750
@@ -773,7 +781,7 @@ CordycepsPIH
 	_Lock			PSA.PIHLock, scratch1=r8, scratch2=r9
 
 ;	r6 = ewa
-	bl		Save_r20_r31
+	bl		SchSaveStartingAtR20
 ;	r8 = sprg0 (not used by me)
 
 	addi	r9, r1, -0x750
@@ -837,7 +845,7 @@ NewWorldPIH
 	_Lock			PSA.PIHLock, scratch1=r8, scratch2=r9
 
 ;	r6 = ewa
-	bl		Save_r20_r31
+	bl		SchSaveStartingAtR20
 ;	r8 = sprg0 (not used by me)
 
 	addi	r9, r1, -0x750
@@ -1025,7 +1033,7 @@ UnknownPIH
 	_Lock			PSA.PIHLock, scratch1=r8, scratch2=r9
 
 ;	r6 = ewa
-	bl		Save_r20_r31
+	bl		SchSaveStartingAtR20
 ;	r8 = sprg0 (not used by me)
 
 	addi	r9, r1, -0x750

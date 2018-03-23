@@ -33,7 +33,7 @@
 ;	major_0x12b94
 ;	InitTMRQs
 ;	StartTimeslicing
-;	InitRDYQs
+;	SchInit
 ;	major_0x14bcc
 ;	panic
 ;	major_0x18040
@@ -360,7 +360,7 @@ printd_0x120
 ;	createarea
 ;	ExtendPool
 ;	major_0x12b94
-;	InitRDYQs
+;	SchInit
 ;	major_0x14bcc
 ;	panic
 ;	print_xpt_info

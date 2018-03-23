@@ -88,7 +88,7 @@ MSR						ds.l	1	; 0a4 ; (SPAC) copied from kdp by CreateTask
 						org		0xc4
 MQ						ds.l	1	; 0c4 ; 601 only
 EDPOffsetSWIRelated		ds.l	1	; 0c8
-PriorityShifty			ds.l	1	; 0cc ; if low nybble is empty, InitRDYQs sets this to 2
+PriorityShifty			ds.l	1	; 0cc ; if low nybble is empty, SchInit sets this to 2
 SWIEventGroupID			ds.l	1	; 0d0 ; what?
 XER						ds.l	1	; 0d4
 VectorSaveArea			ds.l	1	; 0d8 ; AltiVec hack: vector registers don't fit in CB!

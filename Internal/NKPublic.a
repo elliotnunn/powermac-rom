@@ -396,7 +396,7 @@ SIGPCallR10				ds.l	1	; -21c, cpu+124
 SchEvalFlag				ds.b	1	; -118, cpu+228
 TaskPriority			ds.b	1	; -117, cpu+229
 CPUIndex				ds.w	1	; -116, cpu+22a
-						ds.l	1	; -114, cpu+22c
+WeMightClear			ds.l	1	; -114, cpu+22c ; still boots if not cleared
 						ds.l	1	; -110, cpu+230
 						ds.l	1	; -10c, cpu+234
 						ds.l	1	; -108, cpu+238
@@ -408,7 +408,7 @@ CPUIndex				ds.w	1	; -116, cpu+22a
 						ds.l	1	; -0f0, cpu+250
 						ds.l	1	; -0ec, cpu+254
 						ds.l	1	; -0e8, cpu+258
-						ds.l	1	; -0e4, cpu+25c
+SpecialAreaPtr			ds.l	1	; -0e4, cpu+25c
 						ds.l	1	; -0e0, cpu+260
 						ds.l	1	; -0dc, cpu+264
 						ds.l	1	; -0d8, cpu+268
@@ -503,6 +503,39 @@ r31						ds.l	1	; 07c, cpu+3bc
 
 ;	Fun fact: offsets past here contain the main kernel globals
 ;	("Kernel Data Page"), but only on CPU-0.
+
+kFlag0			equ		0
+kFlag1			equ		1
+kFlag2			equ		2
+kFlag3			equ		3
+kFlag4			equ		4
+kFlag5			equ		5
+kFlag6			equ		6
+kFlag7			equ		7
+kFlag8			equ		8
+kFlag9			equ		9
+kFlagBlue		equ		10	; could mean "currently in interrupt mode"
+kFlag11			equ		11
+kFlag12			equ		12
+kFlag13			equ		13
+kFlag14			equ		14
+kFlag15			equ		15
+kFlag16			equ		16
+kFlag17			equ		17
+kFlag18			equ		18
+kFlag19			equ		19
+kFlag20			equ		20
+kFlag21			equ		21
+kFlag22			equ		22
+kFlag23			equ		23
+kFlag24			equ		24
+kFlag25			equ		25
+kFlag26			equ		26
+kFlag27			equ		27
+kFlag28			equ		28
+kFlag29			equ		29
+kFlag30			equ		30
+kFlag31			equ		31
 
 						endr
 

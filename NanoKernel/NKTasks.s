@@ -131,34 +131,25 @@ CreateTask
 
 
 ;	Create a semaphore struct inside the task
-;	(NOT a semaphore queue)
 
-	addi				r16, r28, Task.SemaphoreLLL
-	_lstart				r17, 'SEMA'
-	stw					r16, LLL.Next(r16)
+	addi				r16, r28, Task.Semaphore
+	_lstart				r17, Semaphore.kSignature
+	stw					r16, Semaphore.BlockedTasks + LLL.Next(r16)
 	_lfinish
-	stw					r16, LLL.Prev(r16)
-	stw					r17, LLL.Signature(r16)
-
-
-
-;	Might be part of the SEMA?
+	stw					r16, Semaphore.BlockedTasks + LLL.Prev(r16)
+	stw					r17, Semaphore.BlockedTasks + LLL.Signature(r16)
 
 	li		r16, 1
-	stw		r16, Task.One(r28)
+	stw		r16, Task.Semaphore + Semaphore.MaxValue(r28)
 	li		r16, 0
-	stw		r16, Task.Zero(r28)
+	stw		r16, Task.Semaphore + Semaphore.Value(r28)
 
-
-
-;	Allocate an ID for the SEMA
-
-	addi	r8, r28, Task.SemaphoreLLL
+	addi	r8, r28, Task.Semaphore
 	li		r9, Semaphore.kIDClass
 	bl		MakeID
 	cmpwi	r8, 0
 	beq-	@fail_semq_no_id
-	stw		r8, Task.SemaphoreLLL + LLL.Freeform(r28)
+	stw		r8, Task.Semaphore + Semaphore.BlockedTasks + LLL.Freeform(r28)
 
 
 
@@ -356,7 +347,7 @@ MPCall_8	;	OUTSIDE REFERER
 	addi	r16, r31,  0x08
 	RemoveFromList		r16, scratch1=r17, scratch2=r18
 	mr		r8, r31
-	bl		TaskReadyAsPrev
+	bl		SchRdyTaskNow
 	bl		CalculateTimeslice
 	bl		FlagSchEvaluationIfTaskRequires
 
@@ -403,7 +394,7 @@ MPCall_9	;	OUTSIDE REFERER
 	li		r17,  0x01
 	stb		r17,  0x0019(r31)
 	mr		r8, r31
-	bl		major_0x14af8_0xa0
+	bl		FlagSchEval
 	_AssertAndRelease	PSA.SchLock, scratch=r16
 	subi	r10, r10, 4
 	b		MPCall_6_0x78
@@ -428,7 +419,7 @@ MPCall_9_0xe0
 	ori		r16, r16,  0x02
 	stw		r16,  0x0064(r31)
 	mr		r8, r31
-	bl		TaskUnready
+	bl		SchTaskUnrdy
 
 MPCall_9_0xf0
 	lwz		r17,  0x009c(r31)
@@ -597,7 +588,7 @@ MPCall_14	;	OUTSIDE REFERER
 	stw		r18,  0x0014(r16)
 	beq-	MPCall_14_0x70
 	mr		r8, r31
-	bl		major_0x14af8_0xa0
+	bl		FlagSchEval
 
 MPCall_14_0x70
 	stw		r4,  0x001c(r31)
@@ -697,7 +688,7 @@ KCThrowException_0x70
 	stw		r4,  0x00f8(r31)
 	stw		r16,  0x0064(r31)
 	mr		r8, r31
-	bl		TaskUnready
+	bl		SchTaskUnrdy
 	addi	r16, r1, -0xa34
 	addi	r17, r31,  0x08
 	stw		r16,  0x0000(r17)
@@ -712,7 +703,7 @@ KCThrowException_0xb8
 	li		r17,  0x01
 	stb		r17,  0x0019(r31)
 	mr		r8, r31
-	bl		major_0x14af8_0xa0
+	bl		FlagSchEval
 	_AssertAndRelease	PSA.SchLock, scratch=r16
 	subi	r10, r10, 4
 	b		MPCall_6_0x78
@@ -790,7 +781,7 @@ MPCall_58_0xb4
 	addi	r16, r31,  0x08
 	RemoveFromList		r16, scratch1=r17, scratch2=r18
 	mr		r8, r31
-	bl		TaskReadyAsPrev
+	bl		SchRdyTaskNow
 	bl		FlagSchEvaluationIfTaskRequires
 
 MPCall_58_0xe0
@@ -800,9 +791,9 @@ MPCall_58_0xe0
 
 
 FuncExportedFromTasks	;	OUTSIDE REFERER
-	addi	r16, r1, -0xa34
-	addi	r17, r31,  0x08
-	stw		r16,  0x0000(r17)
+	addi	r16, r1, PSA.DbugQueue
+	addi	r17, r31, Task.QueueMember
+	stw		r16, LLL.Freeform(r17)
 	InsertAsPrev	r17, r16, scratch=r18
 	li		r8,  0x1c
 	bl		PoolAlloc
@@ -885,6 +876,8 @@ LoadSomeData	;	OUTSIDE REFERER
 	dc.l	0x11000000
 
 
+
+;	Used to extract task state. This will be tricky.
 
 	DeclareMPCall	59, MPCall_59
 
@@ -1505,8 +1498,8 @@ MPCall_114	;	OUTSIDE REFERER
 	rlwinm.	r8, r16,  0, 26, 26
 	mr		r8, r31
 	bne-	MPCall_114_0x90
-	bl		TaskUnready
-	bl		TaskReadyAsPrev
+	bl		SchTaskUnrdy
+	bl		SchRdyTaskNow
 
 MPCall_114_0x90
 	bl		FlagSchEvaluationIfTaskRequires

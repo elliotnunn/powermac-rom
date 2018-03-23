@@ -22,7 +22,7 @@ Local_Panic		set		*
 ;	Each one has a "time cake" that gets divided among its tasks.
 ;	For critical it is ~1ms, successively multiplying by 8.
 
-InitRDYQs
+SchInit
 
 	li		r16, 0
 	stw		r16, KDP.NanoKernelInfo + NKNanoKernelInfo.TaskCount(r1)
@@ -61,7 +61,7 @@ InitRDYQs
 
 	;	Zero some shit
 	li		r8, 0
-	stw		r8, ReadyQueue.Counter(r9)		; incremented by TaskReadyAsPrev/Next
+	stw		r8, ReadyQueue.Counter(r9)		; incremented by SchRdyTaskNow/Next
 	stw		r8, ReadyQueue.TotalWeight(r9)	
 
 	;	1ms for critical, successively 8x for other queues
@@ -97,6 +97,10 @@ InitRDYQs
 	addi	r9, r9, 32 ;ReadyQueue.Size
 	blt+	@loop
 
+
+
+	;	DO SOMETHING ELSE:
+
 	;	If the low nybble is empty, set ContextBlock.PriorityShifty to 2.
 	lwz		r16, KDP.PA_ECB(r1)
 	lwz		r17, ContextBlock.PriorityShifty(r16)
@@ -120,13 +124,13 @@ InitRDYQs
 ;	...to (ECB *)r6
 ;	(and also copy SPRG0 to r8)
 
-Save_r14_r31
+SchSaveStartingAtR14
 	li			r8, ContextBlock.r16 & -32
 	dcbtst		r8, r6
 		stw		r14, ContextBlock.r14(r6)
 		stw		r15, ContextBlock.r15(r6)
 
-Save_r16_r31
+SchSaveStartingAtR16
 	li			r8, ContextBlock.r20 & -32
 		stw		r16, ContextBlock.r16(r6)
 	dcbtst		r8, r6
@@ -134,7 +138,7 @@ Save_r16_r31
 		stw		r18, ContextBlock.r18(r6)
 		stw		r19, ContextBlock.r19(r6)
 
-Save_r20_r31
+SchSaveStartingAtR20
 	li			r8, ContextBlock.r24 & -32
 		stw		r20, ContextBlock.r20(r6)
 	dcbtst		r8, r6
@@ -142,7 +146,7 @@ Save_r20_r31
 		stw		r22, ContextBlock.r22(r6)
 		stw		r23, ContextBlock.r23(r6)
 
-Save_r24_r31
+SchSaveStartingAtR24
 	li			r8, ContextBlock.r28 & -32
 		stw		r24, ContextBlock.r24(r6)
 	dcbtst		r8, r6
@@ -169,13 +173,13 @@ Save_r24_r31
 
 ;	...from (ECB *)r6
 
-Restore_r14_r31
+SchRestoreStartingAtR14
 	li			r31, ContextBlock.r16 & -32
 	dcbt		r31, r6
 		lwz		r14, ContextBlock.r14(r6)
 		lwz		r15, ContextBlock.r15(r6)
 
-Restore_r16_r31
+SchRestoreStartingAtR16
 	li			r31, ContextBlock.r20 & -32
 		lwz		r16, ContextBlock.r16(r6)
 	dcbt		r31, r6
@@ -183,7 +187,7 @@ Restore_r16_r31
 		lwz		r18, ContextBlock.r18(r6)
 		lwz		r19, ContextBlock.r19(r6)
 
-Restore_r20_r31
+SchRestoreStartingAtR20
 	li			r31, ContextBlock.r24 & -32
 		lwz		r20, ContextBlock.r20(r6)
 	dcbt		r31, r6
@@ -191,7 +195,7 @@ Restore_r20_r31
 		lwz		r22, ContextBlock.r22(r6)
 		lwz		r23, ContextBlock.r23(r6)
 
-Restore_r24_r31
+SchRestoreStartingAtR24
 	li			r31, ContextBlock.r28 & -32
 		lwz		r24, ContextBlock.r24(r6)
 	dcbt		r31, r6
@@ -699,7 +703,7 @@ Save_v0_v31_0x1b8
 ;	ARG		Task *r8
 ;	CLOB	r16, r17, r18
 
-TaskUnready
+SchTaskUnrdy
 
 	lwz		r17, Task.QueueMember + LLL.Next( r8)
 	lbz		r18, Task.State( r8)
@@ -762,14 +766,12 @@ TaskUnready
 ;	ARG		Task *r8
 ;	CLOB	r16, r17, r18
 
-TaskReadyAsNext
+SchRdyTaskLater
 	crclr	cr1_eq
-	b		TaskReadyCommonPath
-
-TaskReadyAsPrev
+	b		_SchRdyTaskCommon
+SchRdyTaskNow						; not much point in doing this unless you then flag a scheduler evaluation
 	crset	cr1_eq
-
-TaskReadyCommonPath
+_SchRdyTaskCommon
 
 	lwz		r16, Task.QueueMember + LLL.Next(r8)
 	lis		r17, 0x8000 ; ...0000
@@ -842,7 +844,7 @@ TaskReadyCommonPath
 
 ;	ARG		AddressSpace *r8, AddressSpace *r9 (can be zero?)
 
-SetSpaceSRsAndBATs
+SchSwitchSpace
 
 	;	This is the only function that hits this counter
 	lwz		r17, KDP.NanoKernelInfo + NKNanoKernelInfo.AddrSpcSetCtr(r1)
@@ -1130,49 +1132,40 @@ SetAddrSpcRegisters_0x314:
 	
 
 
-########  ######## ########    ##          ###    ##    ## ##    ## 
-##     ## ##          ##        ##        ## ##   ###   ##  ##  ##  
-##     ## ##          ##         ##      ##   ##  ####  ##   ####   
-########  ######      ##          ##    ##     ## ## ## ##    ##    
-##   ##   ##          ##         ##     ######### ##  ####    ##    
-##    ##  ##          ##        ##      ##     ## ##   ###    ##    
-##     ## ########    ##       ##       ##     ## ##    ##    ##    
+;	Always and only jumped to by IntReturn
 
-ReturnToAnyTask	;	OUTSIDE REFERER
+SchReturn
+
 	lbz		r8, EWA.SchEvalFlag(r1)
 	rlwinm.	r9, r7, 0, 16, 16
 	lwz		r1, EWA.PA_KDP(r1)
-	cmpwi	cr1, r8,  0x00
+	cmpwi	cr1, r8, 0
 
-	bne-	ReturnFromInterrupt
-	beq+	cr1, ReturnFromInterrupt
+	bne-	SchExitInterrupt
+	beq+	cr1, SchExitInterrupt
 
-	bl		Save_r14_r31
+	bl		SchSaveStartingAtR14
 	_Lock		PSA.SchLock, scratch1=r27, scratch2=r28
 
 
 
+;	Either fallen through from SchReturn, or jumped to by
+;	TrulyCommonMPCallReturnPath when it wants to block the caller
 
-########  ######## ########    ##        #######  ######## ##     ## ######## ########  
-##     ## ##          ##        ##      ##     ##    ##    ##     ## ##       ##     ## 
-##     ## ##          ##         ##     ##     ##    ##    ##     ## ##       ##     ## 
-########  ######      ##          ##    ##     ##    ##    ######### ######   ########  
-##   ##   ##          ##         ##     ##     ##    ##    ##     ## ##       ##   ##   
-##    ##  ##          ##        ##      ##     ##    ##    ##     ## ##       ##    ##  
-##     ## ########    ##       ##        #######     ##    ##     ## ######## ##     ## 
-
-RescheduleAndReturn	;	OUTSIDE REFERER
+SchEval
 	mfsprg	r14, 0
-	li		r8,  0x00
+
+	li		r8, 0
 	stb		r8, EWA.SchEvalFlag(r14)
-	lwz		r31, -0x0008(r14)
-	lwz		r1, -0x0004(r14)
+
+	lwz		r31, EWA.PA_CurTask(r14)
+	lwz		r1, EWA.PA_KDP(r14)
 
 	lwz		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.SchEvalCount(r1)
 	addi	r9, r9, 1
 	stw		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.SchEvalCount(r1)
 
-	bl		major_0x14a98
+	bl		SchFiddlePriorityShifty
 	lbz		r27,  0x0019(r31)
 	blt-	major_0x142dc_0x58
 	li		r26,  0x01
@@ -1183,11 +1176,12 @@ major_0x142dc_0x38
 	cmpw	r27, r26
 	mr		r8, r31
 	beq-	major_0x142dc_0x58
-	bl		TaskUnready
+	bl		SchTaskUnrdy
 	stb		r26,  0x0019(r31)
 	mr		r8, r31
-	bl		TaskReadyAsPrev
+	bl		SchRdyTaskNow
 	bl		CalculateTimeslice
+
 
 major_0x142dc_0x58	;	OUTSIDE REFERER
 	lwz		r27, -0x0970(r1)
@@ -1290,7 +1284,7 @@ major_0x142dc_0x1bc
 	_AssertAndRelease	PSA.SchLock, scratch=r27
 
 ;	r6 = ewa
-	bl		Restore_r14_r31
+	bl		SchRestoreStartingAtR14
 
 
 
@@ -1302,7 +1296,7 @@ major_0x142dc_0x1bc
 ##    ##  ##        ##  
 ##     ## ##       #### 
 
-;	                      ReturnFromInterrupt
+;	                      SchExitInterrupt
 
 ;	All MPCalls get here?
 ;	r0,7,8,9,10,11,12,13 restored from r6 area
@@ -1314,8 +1308,8 @@ major_0x142dc_0x1bc
 
 ;	Xrefs:
 ;	non_skeleton_reset_trap
-;	ReturnToAnyTask
-;	RescheduleAndReturn
+;	SchReturn
+;	SchEval
 ;	major_0x14548
 
 ;	> sprg0 = for r1 and r6
@@ -1327,20 +1321,20 @@ major_0x142dc_0x1bc
 ;	> r12   = lr restore
 ;	> r13   = cr restore
 
-ReturnFromInterrupt	;	OUTSIDE REFERER
+SchExitInterrupt	;	OUTSIDE REFERER
 	lwz		r8,  0x0edc(r1)
 	mfsprg	r1, 0
 	mtlr	r12
 	mtspr	srr0, r10
 	mtspr	srr1, r11
 	rlwinm.	r8, r8,  0, 27, 27
-	beq-	ReturnFromInterrupt_0x2c
+	beq-	SchExitInterrupt_0x2c
 	mfxer	r8
 	rlwinm	r8, r8,  0, 23, 21
 	rlwimi	r8, r7, 19, 23, 23
 	mtxer	r8
 
-ReturnFromInterrupt_0x2c
+SchExitInterrupt_0x2c
 	mtcr	r13
 	lwz		r10,  0x0154(r6)
 	lwz		r11,  0x015c(r6)
@@ -1361,7 +1355,7 @@ ReturnFromInterrupt_0x2c
 ;	                     major_0x14548
 
 ;	Xrefs:
-;	RescheduleAndReturn
+;	SchEval
 
 major_0x14548	;	OUTSIDE REFERER
 	lwz		r16,  0x0064(r31)
@@ -1418,7 +1412,7 @@ major_0x14548_0x58
 	beq-	major_0x14548_0xd4
 	cmpwi	r16,  0x00
 	mr		r8, r31
-	beql+	TaskReadyAsPrev
+	beql+	SchRdyTaskNow
 major_0x14548_0xd4
 
 	mfsprg	r19, 0
@@ -1449,7 +1443,7 @@ major_0x14548_0xd4
 	cmpw	r18, r9
 	beq-	major_0x14548_0x148
 	mr		r8, r18
-	bl		SetSpaceSRsAndBATs
+	bl		SchSwitchSpace
 
 major_0x14548_0x148
 	mfsprg	r19, 0
@@ -1616,14 +1610,14 @@ major_0x14548_0x380
 ;	r11 = new srr1
 ;	r12 = lr restore
 ;	r13 = cr restore
-	b		ReturnFromInterrupt
+	b		SchExitInterrupt
 
 
 
 ;	                     major_0x148ec
 
 ;	Xrefs:
-;	RescheduleAndReturn
+;	SchEval
 ;	major_0x14548
 
 major_0x148ec	;	OUTSIDE REFERER
@@ -1694,7 +1688,7 @@ major_0x148ec_0xc8
 	mtxer	r20
 	li		r16,  0x01
 	stb		r16, -0x0309(r21)
-	b		AdjustDecForTMRQGivenCurTime
+	b		SetTimesliceFromCurTime
 
 
 
@@ -1709,7 +1703,7 @@ major_0x148ec_0xc8
 ;	SetEvent
 ;	MPCall_8
 ;	major_0x130f0
-;	RescheduleAndReturn
+;	SchEval
 ;	major_0x14bcc
 ;	CommonPIHPath
 
@@ -1814,14 +1808,15 @@ clear_cr0_lt	;	OUTSIDE REFERER
 
 
 
-;	                     major_0x14a98
+;	                     SchFiddlePriorityShifty
 
 ;	Xrefs:
 ;	IntDecrementer
-;	RescheduleAndReturn
+;	SchEval
 
-major_0x14a98	;	OUTSIDE REFERER
-	rlwinm	r8, r7, 10,  0,  0
+SchFiddlePriorityShifty	;	OUTSIDE REFERER
+
+	rlwinm	r8, r7, EWA.kFlagBlue,  0,  0
 	lwz		r18, KDP.PA_ECB(r1)
 	nand.	r8, r8, r8
 	lwz		r17, ContextBlock.PriorityShifty(r18)
@@ -1829,24 +1824,26 @@ major_0x14a98	;	OUTSIDE REFERER
 
 	cmpwi	r17, 0
 	rlwinm	r9, r17,  0, 22, 22
-	blt-	major_0x14a98_0x54
+	blt-	@pshifty_high_bit_set
+
 	cmpwi	r9,  0x200
 	lwz		r16, ContextBlock.r25(r18)
-	beq-	major_0x14a98_0x48
+	beq-	@pshifty_bit_22_set
+
 	clrlwi	r8, r16, 29
 	clrlwi	r9, r17, 28
 	cmpwi	r8, 6
-	bgt-	major_0x14a98_0x48
+	bgt-	@pshifty_bit_22_set
 	cmpw	r8, r9
 	bltlr-
 	cmpw	r8, r8
 
-major_0x14a98_0x48
+@pshifty_bit_22_set
 	ori		r17, r17, 0x100
 	stw		r17, ContextBlock.PriorityShifty(r18)
 	blr
 
-major_0x14a98_0x54
+@pshifty_high_bit_set
 	clrlwi	r17, r17, 1
 	stw		r17, ContextBlock.PriorityShifty(r18)
 	blr
@@ -1864,71 +1861,109 @@ major_0x14a98_0x54
 ;	ARG		Task *r8
 
 FlagSchEvaluationIfTaskRequires	;	OUTSIDE REFERER
+
 	lwz		r16, Task.Flags(r8)
 	mfsprg	r15, 0
-	rlwinm.	r16, r16,  0, Task.kFlag25, Task.kFlag26
-	bne-	major_0x14af8_0xa0
+
+	rlwinm.	r16, r16, 0, Task.kFlag25, Task.kFlag26
+	bne-	FlagSchEval
 
 	addi	r16, r15, EWA.CPUBase
-	lbz		r17,  0x0019(r8)
+	lbz		r17, Task.Priority(r8)
 	lwz		r19, CPU.LLL + LLL.Freeform(r16)
+
+
+	;	Uniprocessor systems:
+	;	Flag a reevaluation on this, the only CPU
+
 	lwz		r14, CoherenceGroup.ScheduledCpuCount(r19)
 	cmpwi	r14, 2
-	blt-	major_0x14af8_0xa0
+	blt-	FlagSchEval
 
-;multiprocessor
+
+	;	Multiprocessor systems:
+	;	Find the best CPU to flag a 
+
 	lwz		r14, CoherenceGroup.CpuCount(r19)
 	mr		r18, r16
 	b		@loopentry
 
-@34
-	lwz		r16,  0x0008(r19)
+	;	r19 = motherboard coherence group
+	;	r14 = loop counter
+	;	r16 = current CPU pointer
 
-@38
-	addi	r16, r16, -0x08
+@loop_hit_the_coherence_group
+	lwz		r16, CoherenceGroup.CPUList + LLL.Next(r19)
+@loop
+	subi	r16, r16, CPU.LLL
 
 @loopentry
-	addi	r14, r14, -0x01
-	lbz		r20,  0x0229(r16)
-	lwz		r21,  0x0018(r16)
+	subi	r14, r14, 1
+
+	lbz		r20, CPU.EWA + EWA.TaskPriority(r16)
+	lwz		r21, CPU.Flags(r16)
+
 	cmpw	cr1, r17, r20
-	rlwinm.	r21, r21,  0, 28, 28
-	bge-	cr1, @60
-	beq-	@60
+	rlwinm.	r21, r21, 0, CPU.kFlagScheduled, CPU.kFlagScheduled
+
+	bge-	cr1, @cpu_not_best_for_task
+	beq-	@cpu_not_best_for_task
+
 	mr		r17, r20
 	mr		r18, r16
+@cpu_not_best_for_task
 
-@60
-	lwz		r16,  0x0010(r16)
-	cmpwi	cr1, r14,  0x00
+	lwz		r16, CPU.LLL + LLL.Next(r16)		;	next element
+
+	cmpwi	cr1, r14, 0
 	cmpw	r16, r19
-	ble-	cr1, @78
-	beq+	@34
-	b		@38
 
-@78
-	lbz		r16,  0x0019(r8)
+	ble-	cr1, @exit_loop
+	beq+	@loop_hit_the_coherence_group		;	skip the owner of the linked list
+
+	b		@loop
+@exit_loop
+
+	;	r17 = least-important priority being executed on any CPU
+	;	r18 = pointer to that CPU
+
+	;	No suitable CPU found (all running important-er tasks)
+	lbz		r16, Task.Priority(r8)
 	cmpw	r17, r16
 	blelr-
+
+	;	Was this CPU the most suitable?
 	lhz		r17, EWA.CPUIndex(r15)
 	lhz		r18, CPU.EWA + EWA.CPUIndex(r18)
 	cmpw	r18, r17
-	bne-	DoInterprocessorAlert
+	bne-	AlertSchEvalOnOtherCPU
+	; otherwise fall through to FlagSchEvalOnThisCPU
 
-NINETYFOUR
-	li		r16,  0x01
+
+	;	RETURN PATHS
+
+	;	To force a scheduler evaluation to run on *this* CPU when returning from
+	;	*this* interrupt, just raise a flag.
+
+FlagSchEvalOnThisCPU
+	li		r16, 1
 	stb		r16, EWA.SchEvalFlag(r15)
 	blr
 
 
-major_0x14af8_0xa0
+	;	Public function! Can go to FlagSchEvalOnThisCPU or AlertSchEvalOnOtherCPU
+
+FlagSchEval
 	mfsprg	r15, 0
 	lhz		r18, Task.CPUIndex(r8)
 	lhz		r17, EWA.CPUIndex(r15)
 	cmpw	r17, r18
-	beq+	NINETYFOUR
+	beq+	FlagSchEvalOnThisCPU
 
-DoInterprocessorAlert
+
+	;	To force a scheduler evaluation to run on *another* CPU, we interrupt it
+
+AlertSchEvalOnOtherCPU
 	lwz		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.AlertCount(r1)
 	addi	r9, r9, 1
 	stw		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.AlertCount(r1)
@@ -1938,7 +1973,7 @@ DoInterprocessorAlert
 	stw		r18, EWA.SIGPCallR4(r15)
 
 	li		r8, 2
-	b		SIGP
+	b		SIGP								;	returns to link register
 
 
 
@@ -2051,7 +2086,7 @@ NewCpuEntryPoint
 
 	lwz		r8, Task.AddressSpacePtr(r31)
 	li		r9, 0
-	bl		SetSpaceSRsAndBATs
+	bl		SchSwitchSpace
 
 	_log	'Adding idle task 0x'
 	mr		r8, r31
@@ -2059,11 +2094,11 @@ NewCpuEntryPoint
 	_log	'to the ready queue^n'
 
 	mr		r8, r31
-	bl		TaskReadyAsPrev
+	bl		SchRdyTaskNow
 	bl		CalculateTimeslice
-	lwz		r16, CPU.Eff(r3)
+	lwz		r16, CPU.Flags(r3)
 	ori		r16, r16, 8
-	stw		r16, CPU.Eff(r3)
+	stw		r16, CPU.Flags(r3)
 
 	lwz		r17, Task.QueueMember + LLL.Freeform(r3)
 	lwz		r16,  0x0024(r17)
@@ -2082,11 +2117,14 @@ NewCpuEntryPoint
 
 	mr		r30, r31
 	b		major_0x142dc_0xd8
+
+
 	b		major_0x142dc_0x58
 
 
 
-IdleCode
+SchIdleTask
+
 	li		r31, 0
 	lisori	r20, 'idle'
 	lisori	r21, 'task'
@@ -2164,7 +2202,7 @@ IdleCode
 
 
 
-StopProcessor
+SchIdleTaskStopper
 	mfmsr	r30
 	andi.	r29, r30,  0x7fff
 	mtmsr	r29
@@ -2185,7 +2223,7 @@ StopProcessor
 	lwz		r8,  0x001c(r31)
 	li		r9,  0x00
 	stw		r9,  0x001c(r31)
-	bl		TaskUnready
+	bl		SchTaskUnrdy
 	addi	r16, r1, -0xa44
 	addi	r17, r8,  0x08
 	stw		r16,  0x0000(r17)
@@ -2201,7 +2239,7 @@ StopProcessor
 	twi		31, r31, 8
 	_log	'Stop didn''t work - going to sleep.^n'
 
-StopProcessor_0x10c
+SchIdleTaskStopper_0x10c
 	lis		r5,  0x7fff
 	ori		r5, r5,  0xffff
 	mtdec	r5
@@ -2209,4 +2247,4 @@ StopProcessor_0x10c
 	li		r3, 6
 	li		r4, 0
 	twi		31, r31, 5
-	b		StopProcessor_0x10c
+	b		SchIdleTaskStopper_0x10c

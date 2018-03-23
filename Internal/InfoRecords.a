@@ -328,7 +328,7 @@ VMDispatchCountTblPtr	ds.l	1			; 128, kdp+ee8
 						ds.l	1
 						ds.l	1
 MPDispatchCountTblPtr	ds.l	1			; 134, kdp+ef4 ; ???????
-AddrSpcSetCtr			ds.l	1			; 138, kdp+ef8 ; incremented by SetSpaceSRsAndBATs
+AddrSpcSetCtr			ds.l	1			; 138, kdp+ef8 ; incremented by SchSwitchSpace
 IDCtr					ds.l	1			; 13c, kdp+efc
 
 						org		0x160
@@ -399,9 +399,7 @@ ProcessorFlags			ds.l	1			; 048, kdp+f68 ; flags to specify processor features
 						
 						org		0x05e
 SetToZero				ds.w	1			; 05e, kdp+f7e ; by same code that sets below
-CpuClockRateHzCopy		ds.l	1			; 060, kdp+f80 ; copies by Init.s
-BusClockRateHzCopy		ds.l	1			; 064, kdp+f84 ; copies by Init.s
-DecClockRateHzCopy		ds.l	1			; 068, kdp+f88 ; copies by Init.s
+ClockRates				ds.b	16*4		; 060:0a0, kdp:f80:fc0 ; 16b blks of cpu/bus/dec/?? speeds (Hz)
 
 						endr
 

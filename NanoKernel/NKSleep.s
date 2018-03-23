@@ -374,7 +374,7 @@ RestoreKernelState_0x144
 	mfsprg	r15, 0
 	lwz		r8, -0x001c(r15)
 	li		r9,  0x00
-	bl		SetSpaceSRsAndBATs
+	bl		SchSwitchSpace
 	isync
 
 	mfsprg	r15, 0

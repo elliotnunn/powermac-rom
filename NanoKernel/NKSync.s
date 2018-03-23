@@ -155,7 +155,7 @@ MPDeleteQueue
 
 	;	Put RDYQ
 	subi	r8, r16, Task.QueueMember
-	bl		TaskReadyAsPrev
+	bl		SchRdyTaskNow
 
 	bl		FlagSchEvaluationIfTaskRequires
 
@@ -392,7 +392,7 @@ EnqueueMessage
 	li		r17, Task.kLatencyProtectPriority
 	stb		r17, Task.Priority(r8)
 
-	bl		TaskReadyAsPrev
+	bl		SchRdyTaskNow
 	bl		CalculateTimeslice
 
 	bl		FlagSchEvaluationIfTaskRequires
@@ -491,7 +491,7 @@ MPWaitOnQueue
 
 	;	Remove from ready queue
 	mr		r8, r19
-	bl		TaskUnready
+	bl		SchTaskUnrdy
 
 	;	Add to this queue
 	lwz		r19, EWA.PA_CurTask(r30)
@@ -711,7 +711,7 @@ MPWaitOnSemaphore
 ;committed to blocking the calling task
 
 	;	Remove from ready queue
-	bl		TaskUnready
+	bl		SchTaskUnrdy
 
 	;	Add to this queue
 	addi	r16, r31, Semaphore.BlockedTasks
@@ -861,7 +861,7 @@ SignalSemaphore_0x30
 	addi	r8, r16, -0x08
 	li		r17,  0x01
 	stb		r17,  0x0019(r8)
-	bl		TaskReadyAsPrev
+	bl		SchRdyTaskNow
 	bl		CalculateTimeslice
 	bl		FlagSchEvaluationIfTaskRequires
 	mtlr	r27
@@ -924,7 +924,7 @@ MPCall_21_0x68
 	lwz		r16,  0x0008(r31)
 	RemoveFromList		r16, scratch1=r17, scratch2=r18
 	addi	r8, r16, -0x08
-	bl		TaskReadyAsPrev
+	bl		SchRdyTaskNow
 	bl		FlagSchEvaluationIfTaskRequires
 	b		MPCall_21_0x34
 
@@ -1089,7 +1089,7 @@ MPCall_27_0x78
 
 MPCall_27_0xb4
 	mr		r8, r30
-	bl		TaskUnready
+	bl		SchTaskUnrdy
 	lis		r16,  0x7fff
 	addi	r18, r30,  0x08
 	ori		r16, r16,  0xffff
@@ -1236,7 +1236,7 @@ MPCall_28_0x94
 	stw		r18,  0x00fc(r17)
 	li		r17,  0x01
 	stb		r17,  0x0019(r8)
-	bl		TaskReadyAsPrev
+	bl		SchRdyTaskNow
 	bl		CalculateTimeslice
 	bl		FlagSchEvaluationIfTaskRequires
 
@@ -1289,7 +1289,7 @@ MPCall_26_0x68
 	lwz		r16,  0x0008(r31)
 	RemoveFromList		r16, scratch1=r17, scratch2=r18
 	addi	r8, r16, -0x08
-	bl		TaskReadyAsPrev
+	bl		SchRdyTaskNow
 	bl		FlagSchEvaluationIfTaskRequires
 	b		MPCall_26_0x34
 
@@ -1442,7 +1442,7 @@ MPDeleteEvent_0x68
 	lwz		r16,  0x0008(r31)
 	RemoveFromList		r16, scratch1=r17, scratch2=r18
 	addi	r8, r16, -0x08
-	bl		TaskReadyAsPrev
+	bl		SchRdyTaskNow
 	bl		FlagSchEvaluationIfTaskRequires
 	b		MPDeleteEvent_0x34
 
@@ -1543,7 +1543,7 @@ SetEvent
 	li		r17, Task.kLatencyProtectPriority
 	stb		r17, Task.Priority(r8)
 
-	bl		TaskReadyAsPrev
+	bl		SchRdyTaskNow
 	bl		CalculateTimeslice
 	bl		FlagSchEvaluationIfTaskRequires
 
@@ -1608,7 +1608,7 @@ SetEvent
 
 	lwz		r16, Task.Flags(r26)
 	lbz		r19, Task.State(r26)
-	ori		r16, r16, (1 << (31 - Task.kFlag27))
+	ori		r16, r16, (1 << (31 - Task.kFlag68kInterrupt))
 	stw		r16, Task.Flags(r26)
 
 	;	But what *is* MCR?
@@ -1636,7 +1636,7 @@ SetEvent
 	li		r16, Task.kCriticalPriority
 	stb		r16, Task.Priority(r26)
 	mr		r8, r26
-	bl		TaskReadyAsNext
+	bl		SchRdyTaskLater
 	mr		r8, r26
 	bl		CalculateTimeslice
 @task_already_running
@@ -1749,7 +1749,7 @@ MPWaitForEvent_field_10_was_zero
 
 	;	MOVE TASK OUT OF QUEUE AND INTO EVENT GROUP
 	mr		r8, r19
-	bl		TaskUnready
+	bl		SchTaskUnrdy
 
 	lwz		r19, EWA.PA_CurTask(r30)
 	addi	r16, r31, EventGroup.LLL
@@ -2610,7 +2610,7 @@ major_0x0dce8_0x60
 	li		r16,  0x01
 	stb		r16,  0x0019(r19)
 	lwz		r8, PSA.PA_BlueTask(r1)
-	bl		TaskReadyAsPrev
+	bl		SchRdyTaskNow
 major_0x0dce8_0x70
 
 	lwz		r8, PSA.PA_BlueTask(r1)

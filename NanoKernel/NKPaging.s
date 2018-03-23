@@ -59,7 +59,7 @@ PagingFunc1	;	OUTSIDE REFERER
 	lwz		r8, -0x001c(r30)
 	bl		FindAreaAbove
 	mr		r31, r8
-	stw		r8, -0x00e4(r30)
+	stw		r8, EWA.SpecialAreaPtr(r30)
 	stw		r27, -0x00e8(r30)
 	lwz		r16,  0x0024(r31)
 	lwz		r17,  0x0020(r31)
