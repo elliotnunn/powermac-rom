@@ -850,6 +850,9 @@ DaddyFlag				equ		0x800
 CountingFlag			equ		0x400
 PhysicalIsRelativeFlag	equ		0x200
 
+; try not to use the equates above; they are dicey
+TopFieldMask			equ		0xe00
+
 Size					equ		*
 						endr
 

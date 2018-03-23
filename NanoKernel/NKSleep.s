@@ -17,24 +17,35 @@ Local_CommonMPCallReturnPath
 
 
 
-	DeclareMPCall	102, MPCall_102
+;	RET		OSStatus r3, something r4, something r4
 
-MPCall_102	;	OUTSIDE REFERER
+	DeclareMPCall	102, MPGetKernelStateSize
+
+MPGetKernelStateSize
+
 	mfsprg	r9, 0
+
 	lwz		r8, EWA.CPUBase + CPU.LLL + LLL.Freeform(r9)
 	lwz		r9, CoherenceGroup.ScheduledCpuCount(r8)
 	cmpwi	r9, 1
 	bgt+	Local_ReturnInsufficientResourcesErrFromMPCall
-	bl		CoherenceFunc
+
+	bl		KernelStateSize
+
 	mr		r4, r8
 	mr		r5, r9
+
 	b		ReturnZeroFromMPCall
 
 
 
-	DeclareMPCall	103, MPCall_103
+;	ARG		r3/r4/r5
+;	RET		OSStatus r3
 
-MPCall_103	;	OUTSIDE REFERER
+	DeclareMPCall	103, MPGetKernelState
+
+MPGetKernelState
+
 	mfsprg	r9, 0
 	lwz		r8, EWA.CPUBase + CPU.LLL + LLL.Freeform(r9)
 	lwz		r9, CoherenceGroup.ScheduledCpuCount(r8)
@@ -43,11 +54,13 @@ MPCall_103	;	OUTSIDE REFERER
 
 	clrlwi.	r8, r5, 20
 	bne+	Local_ReturnParamErrFromMPCall
-	bl		CoherenceFunc
+
+	bl		KernelStateSize
 	cmpw	r3, r8
 	blt+	Local_ReturnParamErrFromMPCall
 	cmpw	r4, r9
 	blt+	Local_ReturnParamErrFromMPCall
+
 	bl		PagingFlushTLB
 	mfsprg	r9, 0
 	mfxer	r8
@@ -92,7 +105,7 @@ MPCall_103	;	OUTSIDE REFERER
 	addi	r15, r17,  0x34
 	srwi	r3, r3, 12
 
-MPCall_103_0xc8
+MPGetKernelState_0xc8
 	mr		r27, r5
 	addi	r29, r1, 800
 	bl		PagingFunc3
@@ -102,7 +115,7 @@ MPCall_103_0xc8
 	addi	r3, r3, -0x01
 	addi	r5, r5,  0x1000
 	cmpwi	r3,  0x00
-	bge+	MPCall_103_0xc8
+	bge+	MPGetKernelState_0xc8
 	addi	r15, r15,  0x04
 	subf	r15, r17, r15
 	stw		r15,  0x0034(r17)
@@ -111,14 +124,16 @@ MPCall_103_0xc8
 	mfsprg	r8, 3
 	stw		r8,  0x0028(r17)
 
-MPCall_103_0x10c
+@retry_time
 	mftbu	r8
-	mftb	r9,  0x10c
+	mftb	r9
 	mftbu	r16
 	cmpw	r16, r8
-	bne-	MPCall_103_0x10c
-	stw		r8, -0x0278(r15)
-	stw		r9, -0x0274(r15)
+	bne-	@retry_time
+
+	stw		r8, EWA.SpacesSavedLR(r15)
+	stw		r9, EWA.SpacesSavedCR(r15)
+
 	mr		r29, r17
 	li		r16, kSIGP6
 	stw		r16, EWA.SIGPSelector(r15)
@@ -150,16 +165,16 @@ MPCall_103_0x10c
 	lwz		r29,  0x0034(r17)
 	add		r29, r29, r17
 
-MPCall_103_0x1a0
+MPGetKernelState_0x1a0
 	lwzu	r30,  0x0008(r9)
 
-MPCall_103_0x1a4
+MPGetKernelState_0x1a4
 	lwz		r18,  0x0004(r30)
 	lhz		r15,  0x0000(r30)
 	andi.	r19, r18,  0xe00
 	lhz		r16,  0x0002(r30)
 	cmplwi	r19,  0xc00
-	bne-	MPCall_103_0x1dc
+	bne-	MPGetKernelState_0x1dc
 	addi	r16, r16,  0x01
 	slwi	r16, r16,  2
 	stw		r16,  0x0000(r29)
@@ -167,26 +182,26 @@ MPCall_103_0x1a4
 	stw		r18,  0x0004(r29)
 	addi	r29, r29,  0x0c
 	addi	r14, r14,  0x01
-	b		MPCall_103_0x1fc
+	b		MPGetKernelState_0x1fc
 
-MPCall_103_0x1dc
+MPGetKernelState_0x1dc
 	cmpwi	r15,  0x00
-	bne-	MPCall_103_0x1fc
+	bne-	MPGetKernelState_0x1fc
 	cmplwi	r16,  0xffff
-	bne-	MPCall_103_0x1fc
+	bne-	MPGetKernelState_0x1fc
 	addis	r31, r31,  0x1000
 	cmpwi	r31,  0x00
-	bne+	MPCall_103_0x1a0
-	b		MPCall_103_0x204
+	bne+	MPGetKernelState_0x1a0
+	b		MPGetKernelState_0x204
 
-MPCall_103_0x1fc
+MPGetKernelState_0x1fc
 	addi	r30, r30,  0x08
-	b		MPCall_103_0x1a4
+	b		MPGetKernelState_0x1a4
 
-MPCall_103_0x204
+MPGetKernelState_0x204
 	lwz		r16, PSA.FirstPoolSeg(r1)
 
-MPCall_103_0x208
+MPGetKernelState_0x208
 	lwz		r31,  0x0000(r16)
 	add		r18, r31, r16
 	lwz		r19,  0x0000(r18)
@@ -196,31 +211,31 @@ MPCall_103_0x208
 	addi	r29, r29,  0x0c
 	addi	r14, r14,  0x01
 	cmpwi	r19,  0x00
-	beq-	MPCall_103_0x238
+	beq-	MPGetKernelState_0x238
 	add		r16, r19, r18
-	b		MPCall_103_0x208
+	b		MPGetKernelState_0x208
 
-MPCall_103_0x238
+MPGetKernelState_0x238
 	addi	r19, r1, -0x450
 	lwz		r31, -0x0448(r1)
 
-MPCall_103_0x240
+MPGetKernelState_0x240
 	cmpw	r31, r19
-	beq-	MPCall_103_0x264
+	beq-	MPGetKernelState_0x264
 	li		r18,  0x10
 	stw		r18,  0x0000(r29)
 	stw		r31,  0x0004(r29)
 	addi	r29, r29,  0x0c
 	addi	r14, r14,  0x01
 	lwz		r31,  0x0008(r31)
-	b		MPCall_103_0x240
+	b		MPGetKernelState_0x240
 
-MPCall_103_0x264
+MPGetKernelState_0x264
 	stw		r14,  0x0030(r17)
 	lwz		r30,  0x0034(r17)
 	add		r30, r30, r17
 
-MPCall_103_0x270
+MPGetKernelState_0x270
 	subf	r8, r17, r29
 	stw		r8,  0x0008(r30)
 	lwz		r24,  0x0004(r30)
@@ -231,7 +246,7 @@ MPCall_103_0x270
 	addi	r30, r30,  0x0c
 	addi	r14, r14, -0x01
 	cmpwi	r14,  0x00
-	bne+	MPCall_103_0x270
+	bne+	MPGetKernelState_0x270
 	subf	r8, r17, r29
 	stw		r8,  0x0020(r17)
 	lwz		r24,  0x001c(r17)
@@ -253,6 +268,7 @@ MPCall_103_0x270
 	stw		r8,  0x0008(r17)
 	li		r8,  0x00
 	stw		r8,  0x0004(r17)
+
 	mfsprg	r15, 0
 	li		r16, kSIGP17
 	stw		r16, EWA.SIGPSelector(r15)
@@ -260,7 +276,8 @@ MPCall_103_0x270
 	stw		r16, EWA.SIGPCallR4(r15)
 	li		r8, 2 ; args in EWA
 	bl		SIGP
-	li		r3,  0x00
+
+	li		r3, 0
 	b		Local_CommonMPCallReturnPath
 
 
@@ -301,14 +318,17 @@ RestoreKernelState_0x38
 	lwz		r7, -0x0010(r16)
 	li		r8, -0x01
 	stw		r8,  0x0004(r17)
-	lwz		r8, -0x0278(r16)
-	lwz		r9, -0x0274(r16)
+
+	lwz		r8, EWA.SpacesSavedLR(r16)
+	lwz		r9, EWA.SpacesSavedCR(r16)
 	li		r16,  0x01
 	mttb	r16
 	mttbu	r8
 	mttb	r9
 	mtdec	r16
+
 	_log	'Resuming saved kernel state^n'
+
 	lwz		r8,  0x00d4(r6)
 	lwz		r13,  0x00dc(r6)
 	mtxer	r8
@@ -317,6 +337,7 @@ RestoreKernelState_0x38
 	lwz		r10,  0x00fc(r6)
 	mtctr	r8
 	lwz		r11,  0x00a4(r6)
+
 	mfpvr	r8
 	rlwinm.	r8, r8,  0,  0, 14
 	bne-	RestoreKernelState_0xf8
@@ -324,8 +345,8 @@ RestoreKernelState_0x38
 	DIALECT	POWER
 	mtmq	r8
 	DIALECT	PowerPC
-
 RestoreKernelState_0xf8
+
 	lwz		r4, -0x0020(r1)
 	li		r2,  0x01
 	sth		r2,  0x0910(r1)
@@ -355,6 +376,7 @@ RestoreKernelState_0x144
 	li		r9,  0x00
 	bl		SetSpaceSRsAndBATs
 	isync
+
 	mfsprg	r15, 0
 	li		r16, kSIGP7
 	stw		r16, EWA.SIGPSelector(r15)
@@ -362,6 +384,7 @@ RestoreKernelState_0x144
 	stw		r16, EWA.SIGPCallR4(r15)
 	li		r8, 2 ; args in EWA
 	bl		SIGP
+
 	mfsprg	r15, 0
 	li		r16, kSIGP17
 	stw		r16, EWA.SIGPSelector(r15)
@@ -369,114 +392,145 @@ RestoreKernelState_0x144
 	stw		r16, EWA.SIGPCallR4(r15)
 	li		r8, 2 ; args in EWA
 	bl		SIGP
-	li		r3,  0x00
+
+	li		r3, 0
 	b		Local_CommonMPCallReturnPath
 
 
 
-;	Xrefs:
-;	MPCall_102
-;	MPCall_103
-;	AnotherCoherenceFunc
-;	YetAnotherCoherenceFunc
+;	RET		r8/r9
 
-CoherenceFunc	;	OUTSIDE REFERER
-	li		r24,  0x00
+KernelStateSize
+
+	;	Counter
+
+	li		r24, 0
+
+
+	;	Start with hash table
+	;	Also inits counter r8 (bytes!)
+
 	mfsdr1	r16
 	rlwinm	r16, r16, 16,  7, 15
 	cntlzw	r17, r16
-	li		r16, -0x01
+	li		r16, -1
 	srw		r16, r16, r17
-	addi	r8, r16,  0x01
-	addi	r9, r1, 120
-	lis		r31,  0x00
-	li		r19,  0x00
-	li		r14,  0x00
+	addi	r8, r16, 1
 
-CoherenceFunc_0x2c
-	lwzu	r17,  0x0008(r9)
 
-CoherenceFunc_0x30
-	lwz		r18,  0x0004(r17)
-	lhz		r15,  0x0000(r17)
-	andi.	r18, r18,  0xe00
-	lhz		r16,  0x0002(r17)
-	cmplwi	r18,  0xc00
-	bne-	CoherenceFunc_0x58
-	addi	r16, r16,  0x01
+
+
+	addi	r9, r1, KDP.SegMaps - 8
+	lis		r31, 0							; segment address counter
+	li		r19, 0							; page counter (to use later)
+	li		r14, 0							; entry counter (to use later)
+
+@next_segment
+	lwzu	r17, 8(r9)
+
+@next_entry
+	lwz		r18, PMDT.PBaseAndFlags(r17)	; PhysicalPage(20b) || pageAttr(12b)
+	lhz		r15, PMDT.LBase(r17)			; LogicalPageIndexInSegment(16b)
+
+	;	Same as usual: if 
+	andi.	r18, r18, PMDT.TopFieldMask		; r18 = 3b field at top of pageAttr
+	lhz		r16, PMDT.PageCount(r17)		; PageCountMinus1(16b)
+	cmplwi	r18, PMDT.DaddyFlag | PMDT.CountingFlag
+	bne-	@entry_seems_blank
+
+	addi	r16, r16, 1
 	add		r19, r19, r16
-	addi	r14, r14,  0x01
-	b		CoherenceFunc_0x78
+	addi	r14, r14, 1
+	b		@continue_next_entry
+@entry_seems_blank
 
-CoherenceFunc_0x58
-	cmpwi	r15,  0x00
-	bne-	CoherenceFunc_0x78
-	cmplwi	r16,  0xffff
-	bne-	CoherenceFunc_0x78
-	addis	r31, r31,  0x1000
-	cmpwi	r31,  0x00
-	bne+	CoherenceFunc_0x2c
-	b		CoherenceFunc_0x80
+	cmpwi	r15, 0							; if not full-segment, might not be blank?
+	bne-	@continue_next_entry
+	cmplwi	r16, 0xffff
+	bne-	@continue_next_entry
 
-CoherenceFunc_0x78
-	addi	r17, r17,  0x08
-	b		CoherenceFunc_0x30
+	;	This is the "normal" way to loop to the next segment
+	addis	r31, r31, 0x1000
+	cmpwi	r31, 0
+	bne+	@next_segment
+	b		@exit
 
-CoherenceFunc_0x80
-	slwi	r19, r19,  2
+@continue_next_entry
+	addi	r17, r17, 8
+	b		@next_entry
+@exit
+
+
+
+
+	slwi	r19, r19, 2						; 4 bytes per mapped page
 	add		r8, r8, r19
-	cmpwi	r14,  0x00
+
+	cmpwi	r14,  0x00						; no entries? fail!
 	beq+	Local_ReturnInsufficientResourcesErrFromMPCall
-	mulli	r9, r14,  0x0c
-	add		r8, r8, r9
-	add		r24, r24, r9
-	li		r9,  0x00
-	li		r14,  0x00
-	lwz		r16, PSA.FirstPoolSeg(r1)
+	mulli	r9, r14, 12
+	add		r8, r8, r9						; 12 bytes per SegMap entry
 
-CoherenceFunc_0xa8
-	lwz		r17,  0x0000(r16)
+	add		r24, r24, r9					; also in the secondary counter?
+
+
+	;	Count pool segments
+
+	li		r9, 0							; total size of pool segments
+	li		r14, 0							; count of pool segments
+	lwz		r16, PSA.FirstPoolSeg(r1)		; current pool segment
+
+@next_pool_segment
+	lwz		r17, Block.OffsetToNext(r16)	; of Begin block
 	add		r18, r17, r16
-	lwz		r19,  0x0000(r18)
+	lwz		r19, Block.OffsetToNext(r18)	; of End block
+
 	add		r9, r9, r17
-	addi	r9, r9,  0x18
-	addi	r14, r14,  0x01
-	cmpwi	r19,  0x00
+	addi	r9, r9, Block.kEndSize
+
+	addi	r14, r14, 1
+
+	cmpwi	r19, 0							; last segment?
 	add		r16, r19, r18
-	beq-	CoherenceFunc_0xd0
-	b		CoherenceFunc_0xa8
+	beq-	@exit_pool_counter
+	b		@next_pool_segment				; odd... what happened here?
+@exit_pool_counter
 
-CoherenceFunc_0xd0
-	addi	r16, r1, -0x450
-	lwz		r18, -0x0448(r1)
 
-CoherenceFunc_0xd8
+	;	Count pages in the system free list
+
+	addi	r16, r1, PSA.FreeList
+	lwz		r18, PSA.FreeList + LLL.Next(r1)
+
+@next_page_in_freelist
 	cmpw	r18, r16
-	beq-	CoherenceFunc_0xf0
-	addi	r9, r9,  0x10
-	addi	r14, r14,  0x01
-	lwz		r18,  0x0008(r18)
-	b		CoherenceFunc_0xd8
+	beq-	@exit_freelist_counter
+	addi	r9, r9, 16
+	addi	r14, r14, 1
+	lwz		r18, LLL.Next(r18)
+	b		@next_page_in_freelist
+@exit_freelist_counter
 
-CoherenceFunc_0xf0
-	add		r8, r8, r9
-	mulli	r9, r14,  0x0c
+
+	add		r8, r8, r9						; byte counter
+	mulli	r9, r14, 12						; 12 bytes per thing
 	add		r8, r8, r9
 	add		r24, r24, r9
-	lis		r9,  0x00
-	ori		r9, r9,  0xc000
+
+	lisori	r9, 0xc000
 	add		r8, r8, r9
-	lis		r9,  0x00
-	ori		r9, r9,  0x3c
+
+	lisori	r9, 0x3c
 	add		r8, r8, r9
 	add		r24, r24, r9
 	srwi	r9, r8, 12
-	slwi	r9, r9,  2
-	addi	r9, r9,  0x04
+	slwi	r9, r9, 2
+	addi	r9, r9, 4
 	add		r8, r8, r9
 	add		r24, r24, r9
 	mr		r9, r24
 	blr
+
 
 CoherenceFunc_0x138	;	OUTSIDE REFERER
 	srwi	r23, r28, 12
@@ -487,9 +541,6 @@ CoherenceFunc_0x138	;	OUTSIDE REFERER
 	blr
 
 
-
-;	Xrefs:
-;	MPCall_103
 
 AnotherCoherenceFunc	;	OUTSIDE REFERER
 	cmpwi	r26,  0x00
@@ -525,10 +576,6 @@ AnotherCoherenceFunc_0x3c
 	blr
 
 
-
-;	Xrefs:
-;	RestoreKernelState
-;	AnotherCoherenceFunc
 
 YetAnotherCoherenceFunc	;	OUTSIDE REFERER
 	cmpwi	r26,  0x00
