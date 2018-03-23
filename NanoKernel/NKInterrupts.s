@@ -566,7 +566,7 @@ major_0x02ccc_0x430
 	mfcr	r28
 	li		r8,  0x1c
 	beq-	cr2, major_0x02ccc_0x4a8
-	bl		PoolAlloc_with_crset
+	bl		PoolAlloc
 	mr.		r26, r8
 	beq-	major_0x02ccc_0x50c
 	addi	r17, r31,  0x08

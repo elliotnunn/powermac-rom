@@ -957,7 +957,7 @@ KCCreateProcess	;	OUTSIDE REFERER
 	bne+	ReleaseAndReturnMPCallInvalidIDErr
 
 	li		r8, 0x20 ;Process.Size
-	bl		PoolAlloc
+	bl		PoolAllocClear
 
 	mr.		r31, r8
 	beq+	ReleaseAndScrambleMPCall
@@ -1521,7 +1521,7 @@ KCCreateCpuStruct_0x24
 
 ;	r1 = kdp
 ;	r8 = size
-	bl		PoolAlloc
+	bl		PoolAllocClear
 ;	r8 = ptr
 
 	mr.		r31, r8

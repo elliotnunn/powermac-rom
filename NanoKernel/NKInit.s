@@ -760,7 +760,7 @@ SetProcessorFlags
 
 	;	Allocate and check
 	li		r8, 32 ;Process.Size
-	bl		PoolAlloc		; takes size and returns ptr, all in r8
+	bl		PoolAllocClear		; takes size and returns ptr, all in r8
 
 	mr.		r31, r8
 	beq-	Init_Panic
@@ -800,7 +800,7 @@ SetProcessorFlags
 
 	;	Allocate the main structure in the kernel pool, and check for a null ptr
 	li		r8, 0x58 ;CoherenceGroup.Size
-	bl		PoolAlloc
+	bl		PoolAllocClear
 	mr.		r31, r8
 	beq-	Init_Panic
 

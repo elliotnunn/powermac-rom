@@ -23,7 +23,7 @@
 MPCreateQueue
 
 	li		r8, Queue.Size
-	bl		PoolAlloc_with_crset
+	bl		PoolAlloc
 	mr.		r31, r8
 	beq+	ScrambleMPCall
 
@@ -238,7 +238,7 @@ MPSetQueueReserve
 @make_more
 @alloc_loop
 	li		r8, Message.Size
-	bl		PoolAlloc_with_crset
+	bl		PoolAlloc
 	cmpwi	r8, 0
 	beq+	ReleaseAndScrambleMPCall
 
@@ -292,7 +292,7 @@ MPNotifyQueue
 	bne-	@try_reserve
 
 ;no reservation available
-	bl		PoolAlloc_with_crset
+	bl		PoolAlloc
 
 	cmpwi	r8, 0
 	beq+	ReleaseAndScrambleMPCall
@@ -617,7 +617,7 @@ MPCreateSemaphore
 	bgt+	ReturnMPCallOOM
 
 	li		r8, Semaphore.Size
-	bl		PoolAlloc_with_crset
+	bl		PoolAlloc
 	mr.		r31, r8
 	beq+	ScrambleMPCall
 
@@ -977,7 +977,7 @@ MPCall_21_0x98
 
 MPCreateCriticalRegion
 	li		r8,  0x24
-	bl		PoolAlloc_with_crset
+	bl		PoolAlloc
 	mr.		r31, r8
 	beq+	ScrambleMPCall
 	InitList	r31, CriticalRegion.kSignature, scratch=r16
@@ -1364,7 +1364,7 @@ MPCall_26_0x98
 MPCreateEvent
 
 	li		r8, EventGroup.Size
-	bl		PoolAlloc
+	bl		PoolAllocClear
 	mr.		r31, r8
 	beq+	ScrambleMPCall
 
@@ -1908,7 +1908,7 @@ NKCreateTimer	;	OUTSIDE REFERER
 
 ;	r1 = kdp
 ;	r8 = size
-	bl		PoolAlloc
+	bl		PoolAllocClear
 ;	r8 = ptr
 
 	mr.		r31, r8
@@ -2110,7 +2110,7 @@ MPArmTimer
 	cmpwi	r9, 0
 	bne-	@already_got_notr
 
-	bl		PoolAlloc
+	bl		PoolAllocClear
 	mr.		r30, r8
 	beq+	ReleaseAndScrambleMPCall
 
@@ -2248,7 +2248,7 @@ MPCancelTimer
 
 MPCreateNotification
 	li		r8, Notification.Size
-	bl		PoolAlloc
+	bl		PoolAllocClear
 	mr.		r31, r8
 	beq+	ScrambleMPCall
 
@@ -2388,7 +2388,7 @@ CauseNotification
 
 @no_notr ; ... allocate message anew
 	li		r8, Message.Size
-	bl		PoolAlloc_with_crset
+	bl		PoolAlloc
 	cmpwi	r8, 0
 	beq-	@fail_unknown_err
 

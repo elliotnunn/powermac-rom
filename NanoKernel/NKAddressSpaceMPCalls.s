@@ -109,7 +109,7 @@ convert_pmdts_to_areas	;	OUTSIDE REFERER
 		;	61F168F1 (magic bus error incantation)
 
 		li		r8, Area.Size
-		bl		PoolAlloc
+		bl		PoolAllocClear
 		mr.		r31, r8
 		beq+	Local_Panic
 
@@ -144,7 +144,7 @@ convert_pmdts_to_areas	;	OUTSIDE REFERER
 		;	DEADBEEF (all over the place)
 
 		li		r8, Area.Size
-		bl		PoolAlloc
+		bl		PoolAllocClear
 		mr.		r31, r8
 		beq+	Local_Panic
 
@@ -205,7 +205,7 @@ convert_pmdts_to_areas	;	OUTSIDE REFERER
 
 
 	li		r8, Area.Size
-	bl		PoolAlloc
+	bl		PoolAllocClear
 	mr.		r31, r8
 	beq+	Local_Panic
 
@@ -302,7 +302,7 @@ convert_pmdts_to_areas	;	OUTSIDE REFERER
 
 			;	Else replace FailedArea with an Area copied from NewArea
 					li		r8, Area.Size
-					bl		PoolAlloc
+					bl		PoolAllocClear
 					mr.		r31, r8
 					beq+	Local_Panic
 
@@ -340,7 +340,7 @@ convert_pmdts_to_areas	;	OUTSIDE REFERER
 @pmdt_flags_are_c00
 	_clog	'        pmdt_flags_are_c00^n'
 	li		r8, Area.Size
-	bl		PoolAlloc
+	bl		PoolAllocClear
 	mr.		r31, r8
 	beq+	Local_Panic
 
@@ -522,7 +522,7 @@ NKCreateAddressSpaceSub
 
 	;	Create the AddressSpace
 	li		r8, AddressSpace.Size
-	bl		PoolAlloc
+	bl		PoolAllocClear
 	mr.		r31, r8
 	beq-	@fail_OOM
 
@@ -581,7 +581,7 @@ NKCreateAddressSpaceSub
 
 		;	Allocate the Area, check for errors
 		li		r8, Area.Size
-		bl		PoolAlloc
+		bl		PoolAllocClear
 		mr.		r29, r8
 		beq-	@fail_OOM_again
 
@@ -812,7 +812,7 @@ MPCreateArea
 
 	;	Allocate the new Area
 	li		r8, Area.Size
-	bl		PoolAlloc
+	bl		PoolAllocClear
 	mr.		r31, r8
 	beq+	ReleaseAndScrambleMPCall
 
@@ -1136,7 +1136,7 @@ createarea_0x3b8
 
 ;	r1 = kdp
 ;	r8 = size
-	bl		PoolAlloc
+	bl		PoolAllocClear
 ;	r8 = ptr
 
 	cmpwi	r8,  0x00
@@ -1159,7 +1159,7 @@ createarea_0x41c
 
 ;	r1 = kdp
 ;	r8 = size
-	bl		PoolAlloc
+	bl		PoolAllocClear
 ;	r8 = ptr
 
 	cmpwi	r8,  0x00
@@ -1489,7 +1489,7 @@ MPCreateAliasArea
 
 	;	Allocate the new Area
 	li		r8, Area.Size
-	bl		PoolAlloc
+	bl		PoolAllocClear
 	mr.		r31, r8
 	beq+	ReleaseAndScrambleMPCall
 
@@ -1957,7 +1957,7 @@ MPCall_130_0x11c
 
 ;	r1 = kdp
 ;	r8 = size
-	bl		PoolAlloc
+	bl		PoolAllocClear
 ;	r8 = ptr
 
 	mr.		r16, r8

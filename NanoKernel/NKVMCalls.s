@@ -1571,7 +1571,7 @@ VMAllocateMemory_0x1a4
 
 ;	r1 = kdp
 ;	r8 = size
-	bl		PoolAlloc
+	bl		PoolAllocClear
 ;	r8 = ptr
 
 	mr.		r31, r8

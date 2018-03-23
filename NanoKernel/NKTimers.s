@@ -34,7 +34,7 @@ InitTMRQs	;	OUTSIDE REFERER
 
 ;	r1 = kdp
 ;	r8 = size
-	bl		PoolAlloc
+	bl		PoolAllocClear
 ;	r8 = ptr
 
 	mr.		r31, r8
@@ -55,7 +55,7 @@ InitTMRQs_0x7c
 
 ;	r1 = kdp
 ;	r8 = size
-	bl		PoolAlloc
+	bl		PoolAllocClear
 ;	r8 = ptr
 
 	mr.		r31, r8
@@ -88,7 +88,7 @@ InitTMRQs_0xb4
 	mflr	r30
 
 	li		r8, Timer.Size
-	bl		PoolAlloc					;	one of those weird queue structures
+	bl		PoolAllocClear					;	one of those weird queue structures
 	mr.		r31, r8
 	beq+	Local_Panic
 

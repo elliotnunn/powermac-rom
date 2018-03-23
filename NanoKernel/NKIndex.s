@@ -28,7 +28,7 @@ InitIDIndex
 	mflr	r23
 
 	li		r8, Index.Size
-	bl		PoolAlloc
+	bl		PoolAllocClear
 
 	mr.		r22, r8
 	stw		r8, PSA.IndexPtr(r1)
@@ -46,7 +46,7 @@ InitIDIndex
 
 	;	Then what the hell is this?
 	li		r8,  0xfd8
-	bl		PoolAlloc
+	bl		PoolAllocClear
 
 	cmpwi	r8,  0
 	stw		r8, Index.IDsPtr(r22)
@@ -117,7 +117,7 @@ MakeID
 
 ;	r1 = kdp
 ;	r8 = size
-	bl		PoolAlloc
+	bl		PoolAllocClear
 ;	r8 = ptr
 
 	mr.		r18, r8

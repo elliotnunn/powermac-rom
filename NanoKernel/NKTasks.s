@@ -95,7 +95,7 @@ CreateTask
 ;	Create the 1k TASK struct in the pool and give it an ID, leave ptr in r28
 
 	li		r8, 0x400 ;Task.Size
-	bl		PoolAlloc
+	bl		PoolAllocClear
 	mr.		r28, r8
 	beq-	@fail_oom
 
@@ -120,7 +120,7 @@ CreateTask
 ;	Create a subordinate notification struct -- NOPENOPENOPE
 
 	li		r8, 0x1c ;Notification.Size
-	bl		PoolAlloc
+	bl		PoolAllocClear
 	cmpwi	r8, 0
 	stw		r8, Task.NotificationPtr(r28)
 	beq-	@fail_note_oom
@@ -170,7 +170,7 @@ CreateTask
 
 	;	Allocate and check
 	li		r8, 0x214 ;VectorSaveArea.Size		;	room for v registers plus 20 bytes
-	bl		PoolAlloc
+	bl		PoolAllocClear
 	andi.	r9, r8, 16-1		;	Sanity check: aligned to size of vector register?
 	cmpwi	cr1, r8, 0
 	bne+	Local_Panic
@@ -755,7 +755,7 @@ MPCall_58_0x44
 	lwz		r30,  0x0088(r31)
 	bc		BO_IF_NOT, 31, MPCall_58_0x68
 	li		r8,  0x1c
-	bl		PoolAlloc_with_crset
+	bl		PoolAlloc
 	cmpwi	r8,  0x00
 	beq+	ReleaseAndScrambleMPCall
 	li		r3,  0x00
@@ -805,7 +805,7 @@ FuncExportedFromTasks	;	OUTSIDE REFERER
 	stw		r16,  0x0000(r17)
 	InsertAsPrev	r17, r16, scratch=r18
 	li		r8,  0x1c
-	bl		PoolAlloc_with_crset
+	bl		PoolAlloc
 	lwz		r29, Task.Flags(r31)
 	_bset	r29, r29, 22
 

@@ -1,270 +1,357 @@
-Local_Panic		set		*
-				b		panic
+;	SEGMENTS
+;	
+;	The pool is made up of segments of contiguous memory. The first segment
+;	to be created is about 25k, running from 0x7000 below r1 to the start of
+;	the Primary System Area. It is initialised by InitPool. Every subsequent
+;	segment occupies a single page, plucked from the system free list by
+;	ExtendPool.
+;	
+;	
+;	BLOCKS
+;	
+;	Each segment is an array of variously sized blocks, with no gaps between
+;	them. The first block is a Begin (‡BGN) block, the last block is an End
+;	block (‡END), and all others are Allocated (‡loc) or Free (free) blocks.
+;	To allow the data in each Allocated block to be 16b-aligned, all
+;	Allocated and Free blocks start 8b below a 16b boundary.
+;	
+;	
+;	SINGLY LINKED LIST OF SEGMENTS
+;	
+;	PSA.FirstPoolSeg points to the start of the most recently added pool
+;	segment, i.e. to its Begin block. The OffsetToNext field of a Begin
+;	block points not to the block immediately beyond it in memory, but to
+;	the segment's End block. The OffsetToNext field of the End block points
+;	to the start of the next most recently added pool segment. If there is
+;	none, it contains zero.
+;	
+;	
+;	DOUBLY LINKED LIST OF FREE BLOCKS
+;	
+;	Every free block is a member of PSA.FreePool, a doubly linked list of
+;	free segments. The "LLL" structure occupies the first 16 bytes of the
+;	block.
 
 
 
-;	                       InitPool
+Block			record
 
-;	Allocate one page for the kernel pool. Same layout at
-;	Memtop starts at 7 pages below KDP.
-;	Take note of the structure from kdp-ab0 to kdp-aa0
+kBeginSize		equ		8	
+kEndSize		equ		24
 
-;	Xrefs:
-;	setup
+kPoolSig		equ		'POOL'
+kBeginSig		equ		'‡BGN'
+kEndSig			equ		'‡END'
+kAllocSig		equ		'‡loc'
+kFreeSig		equ		'free'
 
-;	> r1    = kdp
+;	For free and allocated blocks, points to the next block
+;	For begin blocks, points to corresponding end block
+;	For end blocks, points to another begin block (or zero)
+OffsetToNext	ds.l	1	; 0
 
-InitPool	;	OUTSIDE REFERER
+Signature		ds.l	1	; 4
 
-	;	r9 = LA_KD - 7 pages
+Data
+LogiNextSeg
+FreeNext		ds.l	1	; 8
+
+FreePrev		ds.l	1	; c
+
+				endr
+
+
+
+_PoolPanic
+
+	b		panic
+
+
+
+;	Use all the memory from r1 - 0x7000 to PSA
+
+InitPool
+
+	;	Add first segment to global singly linked list
+
 	lwz		r8, KDP.PA_ConfigInfo(r1)
 	lwz		r8, NKConfigurationInfo.LA_KernelData(r8)
-	lisori	r9, 0x7000
+	lisori	r9, -kPoolOffsetFromGlobals
 	subf	r9, r9, r8
-	stw		r9, -0x0a9c(r1)
+	stw		r9, PSA.FirstPoolSegLogical(r1)
 
-	lisori	r9, -0x7000
+	lisori	r9, kPoolOffsetFromGlobals
 	add		r9, r9, r1
-	stw		r9, -0x0aa0(r1)
+	stw		r9, PSA.FirstPoolSeg(r1)
 
-;	bit of a mystery
-	lisori	r8,  0x00006458
+
+	;	Decide how big the segment will be
+
+_pool_first_seg equ PSA.Base - kPoolOffsetFromGlobals
+
+
+	;	Begin block (leave ptr to End in r23)
+
+	lisori	r8, _pool_first_seg - Block.kEndSize
 	add		r23, r8, r9
-	stw		r8,  0x0000(r9)
+	stw		r8, Block.OffsetToNext(r9)
 
-	lisori	r8, '‡BGN'
-	stw		r8,  0x0004(r9)
+	lisori	r8, Block.kBeginSig
+	stw		r8, Block.Signature(r9)
 
-	addi	r9, r9,  0x08
-	lisori	r8,  0x00006450
-	stw		r8,  0x0000(r9)
 
-	lisori	r8, 'free'
-	stw		r8,  0x0004(r9)
+	;	Free block (leave ptr in r9)
 
-	li		r8,  0x00
-	stw		r8,  0x0000(r23)
+	addi	r9, r9, Block.kBeginSize
+	lisori	r8, _pool_first_seg - Block.kEndSize - Block.kBeginSize
+	stw		r8, Block.OffsetToNext(r9)
 
-	lisori	r8, '‡END'
-	stw		r8,  0x0004(r23)
+	lisori	r8, Block.kFreeSig
+	stw		r8, Block.Signature(r9)
 
-;	set up linked list
-		addi	r8, r1, PSA.FreePool
 
-		stw		r9, LLL.Next(r8)
-		stw		r9, LLL.Prev(r8)
-		stw		r8, LLL.Next(r9)
-		stw		r8, LLL.Prev(r9)
+	;	End block
 
-		lisori	r9, 'POOL'
-		stw		r9, LLL.Signature(r8)
+	li		r8, 0
+	stw		r8, Block.OffsetToNext(r23)
 
+	lisori	r8, Block.kEndSig
+	stw		r8, Block.Signature(r23)
+
+
+	;	Add Free block to global doubly linked list
+
+	addi	r8, r1, PSA.FreePool
+
+	stw		r9, Block.FreeNext(r8)
+	stw		r9, Block.FreePrev(r8)
+	stw		r8, Block.FreeNext(r9)
+	stw		r8, Block.FreePrev(r9)
+
+	lisori	r9, Block.kPoolSig
+	stw		r9, Block.Signature(r8)
+
+
+	;	Return
 
 	blr
 
 
 
-;	                      PoolAlloc
+;	The NanoKernel's malloc
 
-;	Easy to use! 0xfd8 (a page minus 10 words) is the
-;	largest request that can be satisfied.
+;	ARG		size r8
+;	RET		ptr r8
 
-;	Xrefs:
-;	setup
-;	major_0x02ccc
-;	KCCreateProcess
-;	KCCreateCpuStruct
-;	MPCall_15
-;	MPCall_39
-;	MPCall_17
-;	MPCall_20
-;	MPCall_25
-;	MPCall_49
-;	MPCall_40
-;	MPCall_31
-;	MPCall_64
-;	CauseNotification
-;	CreateTask
-;	MPCall_58
-;	convert_pmdts_to_areas
-;	NKCreateAddressSpaceSub
-;	MPCall_72
-;	createarea
-;	MPCall_73
-;	MPCall_130
-;	InitTMRQs
-;	InitIDIndex
-;	MakeID
+_poolalloc_noclr_cr_bit equ 30
 
-;	> r1    = kdp
-;	> r8    = size
-
-;	< r8    = ptr
-
-PoolAlloc	;	OUTSIDE REFERER
-	crclr	cr7_eq
-	b		PoolAllocCommon
-
-PoolAlloc_with_crset	;	OUTSIDE REFERER
-	crset	cr7_eq
-
-PoolAllocCommon
+PoolAllocClear
+	crclr	_poolalloc_noclr_cr_bit
+	b		_PoolAllocCommon
+PoolAlloc
+	crset	_poolalloc_noclr_cr_bit
+_PoolAllocCommon
 
 	;	Save LR and arg to EWA. Get lock.
-		mflr	r17
-		mfsprg	r18, 0
-	
-		_Lock			PSA.PoolLock, scratch1=r15, scratch2=r16
-	
-		;	These saves are my first real hint at the contents of that
-		;	large unexplored area of the EWA. This file, then, owns
-		;	part of the EWA, for its CPU-scoped globals. Because the
-		;	kernel runs stackless.
-		stw		r17, EWA.PoolSavedLR(r18)
-		stw		r8, EWA.PoolSavedSizeArg(r18)
 
-@try_again
-	;	Check that requested allocation is in the doable size range.
+	mflr	r17
+	mfsprg	r18, 0
+
+	_Lock			PSA.PoolLock, scratch1=r15, scratch2=r16
+
+	;	These saves are my first real hint at the contents of that
+	;	large unexplored area of the EWA. This file, then, owns
+	;	part of the EWA, for its CPU-scoped globals. Because the
+	;	kernel runs stackless.
+	stw		r17, EWA.PoolSavedLR(r18)
+	stw		r8, EWA.PoolSavedSizeArg(r18)
+
+
+@recheck_for_new_block
+
+	;	Sanity checks
+
 	cmpwi	r8, 0
 	cmpwi	cr1, r8, 0xfd8
-	ble+	Local_Panic						; zero-byte request => thud
+	ble+	_PoolPanic
 	bgt-	cr1, @request_too_large
 
-	addi	r8, r8, 39
-	rlwinm	r8, r8,  0,  0, 26
+
+	;	Up-align to 32b boundary and snatch an extra 8b
+	;	This is our minimum OffsetToNext field
+
+	addi	r8, r8, 8 + 31
+	rlwinm	r8, r8, 0, 0xffffffe0
 	
-	;	Check that the pool has any pages in it.
+
+	;	Iterate the free-block list
+
 	addi	r14, r1, PSA.FreePool
 	lwz		r15, LLL.Next(r14)
-@try_different_page
+@next_block
 	cmpw	r14, r15
+	bne+	@try_block
+
+
+	;	Global free-block list is empty (not great news)
 	
-	bne+	@pool_has_page
+	;	Got a free page in the system free list? It's ours.
+	li		r8, 0						; return zero if there is no page at all
+	li		r9, 1						; number of pages to grab
 	
-	;	No? Then claim a page from the system free list for the pool?
-	
-		;	Got a free page in the system free list? It's ours.
-		li		r8, 0						; return zero if there is no page at all
-		li		r9, 1						; number of pages to grab
-		
-		lwz		r16, PSA.FreePageCount(r1)
-		lwz		r17, PSA.UnheldFreePageCount(r1)
-		subf.	r16, r9, r16
-		subf	r17, r9, r17
-		blt-	PoolCommonReturn
-	
-		stw		r16, PSA.FreePageCount(r1)
-		stw		r17, PSA.UnheldFreePageCount(r1)
-	
-		;	Get that page, mofo. Macros FTW.
-		lwz		r8, PSA.FreeList + LLL.Next(r1)
-		RemoveFromList		r8, scratch1=r17, scratch2=r18
-	
-		;	There was probably once a mechanism for virtual addressing of the pool!
-		li		r9, 0
-		bl		ExtendPool			; r8=page, r9=virt=0
+	lwz		r16, PSA.FreePageCount(r1)
+	lwz		r17, PSA.UnheldFreePageCount(r1)
+	subf.	r16, r9, r16
+	subf	r17, r9, r17
+	blt-	_PoolReturn
+
+	stw		r16, PSA.FreePageCount(r1)
+	stw		r17, PSA.UnheldFreePageCount(r1)
+
+	;	Get that page, mofo. Macros FTW.
+	lwz		r8, PSA.FreeList + LLL.Next(r1)
+	RemoveFromList		r8, scratch1=r17, scratch2=r18
+
+	;	There was probably once a mechanism for virtual addressing of the pool!
+	li		r9, 0
+	bl		ExtendPool			; r8=page, r9=virt=0
 	
 	;	Now that the pool is not empty, start over.
 	mfsprg	r18, 0
 	lwz		r8, EWA.PoolSavedSizeArg(r18)
-	b		@try_again
+	b		@recheck_for_new_block
+
+
+	;	Request was greater than the maximum block size
 
 @request_too_large
-	li		r8, 0
-	b		PoolCommonReturn
 
-@pool_has_page
-	;	We have a page (r15) that might have room in it.
-	;	r8 contains the size describing our actual demand on the page!
-	
-	lwz		r16, PoolPage.FreeBytes(r15)
+	li		r8, 0
+	b		_PoolReturn
+
+
+	;	Try the free block that r15 points to
+
+@try_block
+@retry_newly_expanded_block
+
+	lwz		r16, Block.OffsetToNext(r15)
 	cmplw	r16, r8
 	
 	lis		r20, 'fr'
-	bgt-	@fits_with_leftover_space
-	beq-	@fits_perfectly
+	bgt-	@decide_whether_to_split
+	beq-	@do_not_split
 	ori		r20, r20, 'ee'
 	
-	lwz		r16, PoolPage.FreeBytes(r15)
-	add		r18, r16, r15					; r18 = ???
-	lwz		r19,  0x0004(r18)
+
+	;	This block is too small to fit our allocation, but can it be mashed together
+	;	with a physically adjacent free block? This might happen a few times before
+	;	we decide to give up and search for another block.
+
+	lwz		r16, Block.OffsetToNext(r15)
+	add		r18, r16, r15
+	lwz		r19, Block.Signature(r18)
 	cmplw	cr1, r18, r15
 	cmpw	r19, r20
-	ble+	cr1, Local_Panic
-	bne-	@_118
-	lwz		r17,  0x0000(r18)
-	rotlwi	r19, r19,  0x08
+	ble+	cr1, _PoolPanic
+	bne-	@physically_adjacent_block_is_not_free
+
+	lwz		r17, Block.OffsetToNext(r18)
+	rotlwi	r19, r19, 8
 	add		r17, r17, r16
-	stw		r17,  0x0000(r15)
-	stw		r19,  0x0004(r18)
-	lwz		r17,  0x000c(r18)
-	lwz		r16, LLL.Next(r18)
-	stw		r16, LLL.Next(r17)
-	stw		r17,  0x000c(r16)
-	b		@pool_has_page
+	stw		r17, Block.OffsetToNext(r15)
+	stw		r19, Block.Signature(r18)				; scramble old signature to clarify mem dumps
+	lwz		r17, Block.FreePrev(r18)
+	lwz		r16, Block.FreeNext(r18)
+	stw		r16, Block.FreeNext(r17)
+	stw		r17, Block.FreePrev(r16)
 
-@_118
-	lwz		r15, LLL.Next(r15)
-	b		@try_different_page
+	b		@retry_newly_expanded_block
+@physically_adjacent_block_is_not_free
 
-@fits_with_leftover_space
+	lwz		r15, Block.FreeNext(r15)
+	b		@next_block
+
+
+	;	Success: split the block if there is >=40b left over
+
+@decide_whether_to_split
+
 	subf	r16, r8, r16
-	cmpwi	r16,  0x28
-	blt-	@fits_perfectly
-	stw		r16,  0x0000(r15)
-	add		r15, r15, r16
-	stw		r8,  0x0000(r15)
-	b		@_14c
+	cmpwi	r16, 40
+	blt-	@do_not_split
 
-@fits_perfectly
+
+	;	Use the rightmost part of the block, leaving ptr in r15
+	;	(Leaving the leftmost part saves us touching the free block list)
+
+	stw		r16, Block.OffsetToNext(r15)
+	add		r15, r15, r16
+	stw		r8, Block.OffsetToNext(r15)
+	b		@proceed_with_block
+
+
+	;	Success: use the entire block, leaving ptr in r15
+
+@do_not_split
+
 	lwz		r14,  0x000c(r15)
 	lwz		r16, LLL.Next(r15)
 	stw		r16, LLL.Next(r14)
 	stw		r14,  0x000c(r16)
 
-@_14c
-	lisori	r8, '‡loc'
-	stw		r8,  0x0004(r15)
-	addi	r8, r15,  0x08
-	
-	beq-	cr7, PoolCommonReturn
-	lwz		r16,  0x0000(r15)
-	addi	r16, r16, -0x08
-	li		r14,  0x00
+
+	;	Sign the block and return data ptr in r8
+
+@proceed_with_block
+
+	lisori	r8, Block.kAllocSig
+	stw		r8, Block.Signature(r15)
+
+	addi	r8, r15, Block.Data
+
+
+	;	Optionally clear the block (quicker if we don't)
+
+	bc		BO_IF, _poolalloc_noclr_cr_bit, _PoolReturn
+	lwz		r16, Block.OffsetToNext(r15)
+	subi	r16, r16, Block.Data
+	li		r14, 0
 	add		r16, r16, r15
-	addi	r15, r15,  0x04
+	addi	r15, r15, 4
 
-@_174
-	stwu	r14,  0x0004(r15)
+@clrloop
+	stwu	r14, 4(r15)
 	cmpw	r15, r16
-	ble+	@_174
-	b		PoolCommonReturn
+	ble+	@clrloop
+
+	b		_PoolReturn
 
 
 
-;	                 PoolFree
+;	The NanoKernel's free
 
-;	ARG		void *r8
+;	ARG		r8 = ptr to contents of pool block
 
-PoolFree	;	OUTSIDE REFERER
+PoolFree
+
 	mflr	r17
 	mfsprg	r18, 0
 
 	_Lock			PSA.PoolLock, scratch1=r15, scratch2=r16
 
 	stw		r17, EWA.PoolSavedLR(r18)
-	bl		major_0x129fc
-	bl		major_0x12a34
+	bl		_PoolAddBlockToFreeList
+	bl		_PoolMergeAdjacentFreeBlocks
+
+	;	Fall through...
 
 
 
-;	File-internal
+;	PoolAlloc and PoolFree save LR on entry, then return this way
 
-;	Return path of most of these functions?
-;	Releases Pool lock and Returns to the link
-;	address saved in EWA.
+_PoolReturn
 
-PoolCommonReturn	;	OUTSIDE REFERER
 	mfsprg	r18, 0
 
 	_AssertAndRelease	PSA.PoolLock, scratch=r15
@@ -275,96 +362,91 @@ PoolCommonReturn	;	OUTSIDE REFERER
 
 
 
-;	                     major_0x129fc
+;	Re-label an Allocated block as Free, and add it to the global list
+;	Panics if block is not Allocated to start with!
 
-;	Xrefs:
-;	PoolFree
-;	ExtendPool
+;	ARG		r8 = ptr to contents of pool block
+;	RET		r15 = ptr to pool block itself (r8 - 8)
 
-;	ARG		Area *r8
+_PoolAddBlockToFreeList
 
-major_0x129fc	;	OUTSIDE REFERER
-	subi	r15, r8, 8
+	;	Get the block containing the data
+	subi	r15, r8, Block.Data
 
-	lis		r20, 'fr'
-	lhz		r16, 4(r15)
-	ori		r20, r20, 'ee'
-	cmplwi	r16, 0x876c
-	bne+	Local_Panic
-	stw		r20, 4(r15)
+	;	Change the signature
+	_lstart	r20, Block.kFreeSig
+	lhz		r16, Block.Signature(r15)
+	_lfinish
+	cmplwi	r16, 0x876c ; Block.kAllocSig >> 16
+	bne+	_PoolPanic
+	stw		r20, Block.Signature(r15)
 
+	;	Insert into the global free block list
 	addi	r16, r1, PSA.FreePool
-
 	InsertAsPrev	r15, r16, scratch=r17
 
 	blr
 
 
 
-;	                     major_0x12a34
+;	Merge a free block with any free blocks to the right
+;	(Cannot look to the left because list is singly linked)
 
-;	Xrefs:
-;	PoolFree
-;	ExtendPool
+;	ARG		r15 = ptr to free block
 
-major_0x12a34	;	OUTSIDE REFERER
-	lis		r20,  0x6672
-	lwz		r16,  0x0000(r15)
-	ori		r20, r20,  0x6565
-	add		r18, r16, r15
-	lwz		r19,  0x0004(r18)
+_PoolMergeAdjacentFreeBlocks
+
+@next_segment
+	_lstart	r20, Block.kFreeSig
+	lwz		r16, Block.OffsetToNext(r15)
+	_lfinish
+	add		r18, r16, r15						; r18 = block to the right
+	lwz		r19, Block.Signature(r18)			; r19 = signature of that block
 	cmplw	cr1, r18, r15
 	cmpw	r19, r20
-	ble+	cr1, Local_Panic
-	bnelr-
-	lwz		r17,  0x0000(r18)
-	rotlwi	r19, r19,  0x08
+	ble+	cr1, _PoolPanic						; die if block was of non-positive size!
+	bnelr-										; return if block to right is not free
+
+	lwz		r17, Block.OffsetToNext(r18)
+	rotlwi	r19, r19, 8							; scramble old signature to clarify mem dumps
 	add		r17, r17, r16
-	stw		r17,  0x0000(r15)
-	stw		r19,  0x0004(r18)
-	lwz		r17,  0x000c(r18)
-	lwz		r16, LLL.Next(r18)
-	stw		r16, LLL.Next(r17)
-	stw		r17,  0x000c(r16)
-	b		major_0x12a34
+	stw		r17, Block.OffsetToNext(r15)		; increase the size of the main block
+	stw		r19, Block.Signature(r18)		
+
+	lwz		r17, Block.FreePrev(r18)			; remove the absorbed block from the list of free blocks
+	lwz		r16, Block.FreeNext(r18)
+	stw		r16, Block.FreeNext(r17)
+	stw		r17, Block.FreePrev(r16)
+
+	b		@next_segment			
 
 
 
-;	                       ExtendPool
+;	Create a new pool segment from a physical page
 
-;	 0xed0(r1) = pool extends (I increment)
-;	-0xa9c(r1) = virt last page (I update)
-;	-0xaa0(r1) = phys last page (I update)
-;	Assumes that cache blocks are 32 bytes! Uh-oh.
-;	Page gets decorated like this:
-;	000: 00 00 0f e8
-;	004: 87 'B 'G 'N
-;	008: 00 00 0f e8
-;	00c: 87 'l 'o 'c
-;	...     zeros    << r8 passes ptr to here
-;	fe8: phys offset from here to prev page
-;	fec: 87 'E 'N 'D
-;	ff0: logical abs address of prev page
-;	ff4: 00 00 00 00
-;	ff8: 00 00 00 00
-;	ffc: 00 00 00 00
+;	ARG		PhysPtr r8, LogiPtr r9
 
-;	Xrefs:
-;	MPCall_0
-;	PoolAlloc
+ExtendPool
 
-;	> r1    = kdp
-;	> r8    = anywhere in new page (phys)
-;	> r9    = page_virt
-
-ExtendPool	;	OUTSIDE REFERER
 	mflr	r14
-	rlwinm	r17, r8,  0,  0, 19
+
+
+	;	This segment will occupy a page
+
+_pool_page_seg equ 0x1000
+
+	rlwinm	r17, r8, 0, -(_pool_page_seg)
+
+
+	;	Counter can be viewed from Apple System Profiler
 
 	lwz		r16, KDP.NanoKernelInfo + NKNanoKernelInfo.FreePoolExtendCount(r1)
 	addi	r16, r16, 1
 	stw		r16, KDP.NanoKernelInfo + NKNanoKernelInfo.FreePoolExtendCount(r1)
 	
+	
+	;	Bit of palaver
+
 	_log	'Extend free pool: phys 0x'
 	mr		r8, r17
 	bl		Printw
@@ -375,103 +457,164 @@ ExtendPool	;	OUTSIDE REFERER
 	mr		r8, r16
 	bl		Printd
 	_log	'^n'
-	li		r16,  0x1000
 
+
+	;	Clear the page
+
+	li		r16, _pool_page_seg
 @zeroloop
 	subi	r16, r16, 32
 	cmpwi	r16, 0
 	dcbz	r16, r17
 	bgt+	@zeroloop
 
-;	Put the funny stuff in
-	li		r16,  0xfe8
-	stw		r16,  0x0000(r17)
-	lisori	r16, '‡BGN'
-	stw		r16,  0x0004(r17)
-	addi	r15, r17,  0x08
-	li		r16,  0xfe0
-	stw		r16,  0x0000(r15)
-	lisori	r16, '‡loc'
-	stw		r16,  0x0004(r15)
-	addi	r15, r17,  0xfe8
-	lwz		r18, -0x0aa0(r1)
+
+	;	Begin block
+
+	li		r16, _pool_page_seg - Block.kEndSize
+	stw		r16, Block.OffsetToNext(r17)
+
+	lisori	r16, Block.kBeginSig
+	stw		r16, Block.Signature(r17)
+
+
+	;	Alloc block (_PoolAddBlockToFreeList will convert to Free)
+
+	addi	r15, r17, Block.kBeginSize
+	li		r16, _pool_page_seg - Block.kEndSize - Block.kBeginSize
+	stw		r16, Block.OffsetToNext(r15)
+
+	lisori	r16, Block.kAllocSig
+	stw		r16, Block.Signature(r15)
+
+
+	;	End block
+
+	addi	r15, r17, _pool_page_seg - Block.kEndSize
+	lwz		r18, PSA.FirstPoolSeg(r1)
 	subf	r18, r15, r18
-	stw		r18,  0x0000(r15)
-	lisori	r16, '‡END'
-	stw		r16,  0x0004(r15)
-	lwz		r16, -0x0a9c(r1)
-	stw		r16, LLL.Next(r15)
+	stw		r18, Block.OffsetToNext(r15)					; point to next-most-recently-added segment
 
-;	Update globals
-	stw		r9, -0x0a9c(r1)
-	stw		r17, -0x0aa0(r1)
+	lisori	r16, Block.kEndSig
+	stw		r16, Block.Signature(r15)
 
-;	Unknown func calls
-	addi	r8, r17,  0x10
-	bl		major_0x129fc
-	bl		major_0x12a34
+	lwz		r16, PSA.FirstPoolSegLogical(r1)				; vestigial?
+	stw		r16, Block.LogiNextSeg(r15)
+
+
+	;	Add new segment to global singly linked list
+
+	stw		r9, PSA.FirstPoolSegLogical(r1)
+	stw		r17, PSA.FirstPoolSeg(r1)
+
+
+	;	Free the Alloc block and add it to the global doubly linked list
+
+	addi	r8, r17, Block.kBeginSize + Block.Data
+	bl		_PoolAddBlockToFreeList
+
+
+	;	This won't do anything, because there is no other free block in the segment
+
+	bl		_PoolMergeAdjacentFreeBlocks
+
+
+	;	Return
+
 	mtlr	r14
 	blr
 
 
 
-;	                     major_0x12b94
+;	Check the pool for corruption (dead code)
 
-;	Xrefs:
-;	"HeapSegCorrupt"
+PoolCheck
 
 	mflr	r19
-	lwz		r20, -0x0aa0(r1)
+	lwz		r20, PSA.FirstPoolSeg(r1)
 
-major_0x12b94_0x8
-	addi	r8, r20,  0x08
-	bl		major_0x12b94_0x30
-	lwz		r17,  0x0000(r20)
+
+	;	Check this segment, starting with first Allocated block
+
+@next_segment
+	addi	r8, r20, Block.kBeginSize
+	bl		_PoolCheckBlocks
+
+
+	;	Get End block
+
+	lwz		r17, Block.OffsetToNext(r20)
 	add		r17, r17, r20
-	lwz		r18,  0x0000(r17)
-	cmpwi	r18,  0x00
+
+
+	;	Use that to get another Begin block
+
+	lwz		r18, Block.OffsetToNext(r17)
+	cmpwi	r18, 0							
 	add		r20, r18, r17
-	bne+	major_0x12b94_0x8
+	bne+	@next_segment
+
+
+	;	If there are no more Begins, we are done
+
 	mtlr	r19
 	blr
 
-major_0x12b94_0x30
+
+
+;	Only called by the above function
+;	Called on data ptrs? Or on block ptrs?
+
+;	ARG		ptr r8
+
+_PoolCheckBlocks
+
 	mflr	r14
-	addi	r16, r8, -0x08
+	subi	r16, r8, 8		; Block.kBeginSize or Block.Data?
 
-major_0x12b94_0x38
-	lwz		r17,  0x0004(r16)
-	lis		r18, -0x78bb
-	ori		r18, r18,  0x4e44
-	cmpw	r17, r18
-	li		r9,  0x00
-	beq-	major_0x12b94_0x1a4
-	lis		r18, -0x7894
-	ori		r18, r18,  0x6f63
-	cmpw	r17, r18
-	beq-	major_0x12b94_0x94
-	lis		r18,  0x6672
-	ori		r18, r18,  0x6565
-	li		r9,  0x04
-	cmpw	r17, r18
-	bne-	major_0x12b94_0xa8
-	lwz		r17,  0x000c(r16)
-	cmpwi	r17,  0x00
-	li		r9,  0x05
-	beq-	major_0x12b94_0xa8
-	lwz		r17, LLL.Next(r16)
-	cmpwi	r17,  0x00
-	li		r9,  0x06
-	beq-	major_0x12b94_0xa8
+@loop
+	lwz		r17, Block.Signature(r16)
 
-major_0x12b94_0x94
-	lwz		r17,  0x0000(r16)
+	lisori	r18, Block.kEndSig
+	cmpw	r17, r18
+	li		r9, 0
+	beq-	@return
+
+	lisori	r18, Block.kAllocSig
+	cmpw	r17, r18
+	beq-	@block_is_allocated
+
+	lisori	r18, Block.kFreeSig
+	li		r9, 4
+	cmpw	r17, r18
+	bne-	@block_corrupt
+
+	;	From now we assume Free
+	lwz		r17, Block.FreePrev(r16)
+	cmpwi	r17, 0
+	li		r9, 5
+	beq-	@block_corrupt
+
+	lwz		r17, Block.FreeNext(r16)
+	cmpwi	r17, 0
+	li		r9, 6
+	beq-	@block_corrupt
+
+@block_is_allocated
+;or block is free (fallthru)
+	lwz		r17, Block.OffsetToNext(r16)
 	add		r16, r16, r17
-	cmpwi	r17,  0x00
-	li		r9,  0x07
-	bgt+	major_0x12b94_0x38
+	cmpwi	r17, 0
+	li		r9, 7
+	bgt+	@loop
 
-major_0x12b94_0xa8
+
+	;	4: neither Allocated nor Free
+	;	5: Free with bad FreePrev ptr
+	;	6: Free with bad FreeNext ptr
+	;	7: bad OffsetToNext ptr
+
+@block_corrupt
 	mr		r18, r8
 	_log	'Heap segment corrupt '
 	mr		r8, r9
@@ -480,42 +623,56 @@ major_0x12b94_0xa8
 	mr		r8, r16
 	bl		Printw
 	_log	'^n'
-	addi	r16, r16, -0x40
-	li		r17,  0x08
 
-major_0x12b94_0x10c
+
+	;	Dump some memory
+
+	subi	r16, r16, 64
+	li		r17, 8				; 8 lines, 16 bytes each
+
+@dump_next_line
 	mr		r8, r16
 	bl		Printw
+
 	_log	' '
-	lwz		r8,  0x0000(r16)
+
+	lwz		r8, 0(r16)
 	bl		Printw
-	lwz		r8,  0x0004(r16)
+	lwz		r8, 4(r16)
 	bl		Printw
-	lwz		r8, LLL.Next(r16)
+	lwz		r8, 8(r16)
 	bl		Printw
-	lwz		r8,  0x000c(r16)
+	lwz		r8, 12(r16)
 	bl		Printw
+
 	_log	'  *'
-	li		r8,  0x10
-	addi	r16, r16, -0x01
+
+	li		r8, 16
+	subi	r16, r16, 1
 	mtctr	r8
 
-major_0x12b94_0x164
-	lbzu	r8,  0x0001(r16)
-	cmpwi	r8,  0x20
-	bgt-	major_0x12b94_0x174
-	li		r8,  0x20
+@dump_next_char
+	lbzu	r8, 1(r16)
 
-major_0x12b94_0x174
+	cmpwi	r8, ' '
+	bgt-	@dont_use_space
+	li		r8, ' '
+@dont_use_space
+
 	bl		Printc
-	bdnz+	major_0x12b94_0x164
+	bdnz+	@dump_next_char
+
 	_log	'*^n'
-	addi	r17, r17, -0x01
-	addi	r16, r16,  0x01
+
+	subi	r17, r17, 1
+	addi	r16, r16, 1
 	cmpwi	r17,  0x00
-	bne+	major_0x12b94_0x10c
+	bne+	@dump_next_line
+
+
 	mr		r8, r18
 
-major_0x12b94_0x1a4
+
+@return
 	mtlr	r14
 	blr

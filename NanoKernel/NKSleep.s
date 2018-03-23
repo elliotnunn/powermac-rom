@@ -184,7 +184,7 @@ MPCall_103_0x1fc
 	b		MPCall_103_0x1a4
 
 MPCall_103_0x204
-	lwz		r16, -0x0aa0(r1)
+	lwz		r16, PSA.FirstPoolSeg(r1)
 
 MPCall_103_0x208
 	lwz		r31,  0x0000(r16)
@@ -432,7 +432,7 @@ CoherenceFunc_0x80
 	add		r24, r24, r9
 	li		r9,  0x00
 	li		r14,  0x00
-	lwz		r16, -0x0aa0(r1)
+	lwz		r16, PSA.FirstPoolSeg(r1)
 
 CoherenceFunc_0xa8
 	lwz		r17,  0x0000(r16)

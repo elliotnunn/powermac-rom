@@ -41,8 +41,10 @@ kIntAlign				equ		5
 
 
 ;	IRP is 10 pages below KDP (measured start to start)
+;	This should be neatened up to describe the kernel global area
 IRPOffset	equ		(-10) * 4096
 kKDPfromIRP	equ		10 * 4096
+kPoolOffsetFromGlobals equ (-7) * 4096				; goes all the way up to 24 bytes short of PSA
 
 
 
