@@ -1,7 +1,55 @@
 EDP						record	0,INCR
 
-						org		0x70
-IplValue				ds.w	1	; 070 ; 68k int level or -1
+D0						ds.l	1	; 000 ; r8
+D1						ds.l	1	; 004 ; r9
+D2						ds.l	1	; 008 ; r10
+D3						ds.l	1	; 00c ; r11
+D4						ds.l	1	; 010 ; r12
+D5						ds.l	1	; 014 ; r13
+D6						ds.l	1	; 018 ; r14
+D7						ds.l	1	; 01c ; r15
+
+A0						ds.l	1	; 020 ; r16
+A1						ds.l	1	; 024 ; r17
+A2						ds.l	1	; 028 ; r18
+A3						ds.l	1	; 02c ; r19
+A4						ds.l	1	; 030 ; r20
+A5						ds.l	1	; 034 ; r30
+A6						ds.l	1	; 038 ; r31
+A7						ds.l	1	; 03c ; r1 (PowerPC SP)
+
+SR						ds.l	1	; 040
+PC						ds.l	1	; 044
+USP						ds.l	1	; 048
+ISP						ds.l	1	; 04c
+MSP						ds.l	1	; 050
+VBR						ds.l	1	; 054
+SFC						ds.l	1	; 058
+DFC						ds.l	1	; 05c
+						ds.l	1	; 060 ; these four are 'cac-ar,instr,trc_pc'
+						ds.l	1	; 064
+						ds.l	1	; 068
+						ds.l	1	; 06c
+INTM_L					ds.l	1	; 070 ; interrupt level or -1
+DISP					ds.l	1	; 074
+CODE					ds.l	1	; 078
+SP						ds.l	1	; 07c
+						ds.l	1	; 080 ; these four are 'ctxflg,info-adr,uea'
+						ds.l	1	; 084
+						ds.l	1	; 088
+						ds.l	1	; 08c
+						ds.l	1	; 090 ; these four are 'data_h-l,data,imm_d'
+						ds.l	1	; 094
+						ds.l	1	; 098
+						ds.l	1	; 09c
+B_DSP					ds.l	1	; 0a0
+SR_FLG					ds.l	1	; 0a4
+CTR						ds.l	1	; 0a8
+LR						ds.l	1	; 0ac
+NIA						ds.l	1	; 0b0
+XER						ds.l	1	; 0b4
+CRL_VFL					ds.l	1	; 0b8
+SSW						ds.l	1	; 0bc
 
 						org		0x100
 ContextBlock			ds.b	768	; 100:300 ; Emulator Context Block, ECB; NKv2 ties this to blue task

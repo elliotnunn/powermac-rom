@@ -639,7 +639,7 @@ ThudSavedR31			ds.l	1	; 77c
 ThudSavedCR				ds.l	1	; 780
 ThudSavedMQ				ds.l	1	; 784
 ThudSavedXER			ds.l	1	; 788
-ThudSavedSPRG2			ds.l	1	; 78c
+ThudSavedSPRG2			ds.l	1	; 78c ; 'LR'
 ThudSavedCTR			ds.l	1	; 790
 ThudSavedPVR			ds.l	1	; 794
 ThudSavedDSISR			ds.l	1	; 798
@@ -700,8 +700,8 @@ ThudSavedF28			ds.d	1	; 8e0
 ThudSavedF29			ds.d	1	; 8e8
 ThudSavedF30			ds.d	1	; 8f0
 ThudSavedF31			ds.d	1	; 8f8
-SomethingSerial			ds.l	1	; 900
-ThudSavedLR				ds.l	1	; 904
+SomethingSerial			ds.l	1	; 900 ; 'fpscr'
+ThudSavedLR				ds.l	1	; 904 ; 'caller'
 RTAS_Proc				ds.l	1	; 908 ; r8 on kernel entry
 EndOfPanicArea
 
