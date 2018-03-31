@@ -30,7 +30,7 @@ DFC						ds.l	1	; 05c
 						ds.l	1	; 064
 						ds.l	1	; 068
 						ds.l	1	; 06c
-INTM_L					ds.l	1	; 070 ; interrupt level or -1
+INTM_L					ds.l	1	; 070 ; interrupt level or -1 (halfword)
 DISP					ds.l	1	; 074
 CODE					ds.l	1	; 078
 SP						ds.l	1	; 07c
@@ -92,8 +92,6 @@ PriorityShifty			ds.l	1	; 0cc ; if low nybble is empty, SchInit sets this to 2
 SWIEventGroupID			ds.l	1	; 0d0 ; what?
 XER						ds.l	1	; 0d4
 VectorSaveArea			ds.l	1	; 0d8 ; AltiVec hack: vector registers don't fit in CB!
-
-						org		0xdc
 CR						ds.l	1	; 0dc ; from heartbeat code, unsure of meaning (ANDed with PostIntMaskInit) r13
 PageInSystemHeap		ds.l	1	; 0e0 ; these are set by StartInit.a:FiddleWithEmulator
 OtherPageInSystemHeap	ds.l	1	; 0e4

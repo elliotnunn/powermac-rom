@@ -196,7 +196,7 @@ major_0x18c08	;	OUTSIDE REFERER
 	mfsrin	r31, r27
 	cmpwi	r31,  0x00
 	beqlr
-	b		PagingFunc4
+	b		PagingL2PWithoutBATs
 
 
 

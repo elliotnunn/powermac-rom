@@ -287,3 +287,18 @@ _bclr_lbit set 31
 	ENDIF
 
 	ENDM
+
+
+	MACRO
+	_InvalNCBPointerCache &scratch==r0, &offset==0
+
+	IF &offset = 0
+	li		&scratch, -1
+	ENDIF
+
+	IF KDP.NCBPointerCache + &offset < KDP.NCBPointerCacheEnd
+	stw		&scratch, KDP.NCBPointerCache + &offset(r1)
+	_InvalNCBPointerCache scratch=&scratch, offset=(&offset+8)
+	ENDIF
+
+	ENDM

@@ -185,15 +185,15 @@ InitReplacement
 
 
 	lwz		r12,  0x0340(r11)
-	lwz		r10,  0x05b4(r11)
+	lwz		r10,  KDP.LA_NCB(r11)
 	cmpw	r12, r10
 
 	beq		replace_old_kernel_0x198
-	stw		r12,  0x05b4(r1)
+	stw		r12,  KDP.LA_NCB(r1)
 	stw		r0,  0x06b4(r1)
 	lwz		r10,  0x05b0(r11)
 	stw		r10,  0x06c0(r1)
-	lwz		r10,  0x05b4(r11)
+	lwz		r10,  KDP.LA_NCB(r11)
 	stw		r10,  0x06c4(r1)
 	lwz		r10,  0x05b8(r11)
 	stw		r10,  0x06c8(r1)

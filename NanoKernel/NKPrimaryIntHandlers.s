@@ -141,13 +141,13 @@ CommonPIHPath_0xc	;	OUTSIDE REFERER
 	or		r31, r31, r30
 	stw		r31, PSA.MCR(r1)
 
-	sth		r28, PSA.Int(r1)
+	sth		r28, PSA.Pending68kInt(r1)
 
 	lwz		r31, PSA.PA_BlueTask(r1)
 	mfsprg	r30, 0
 	lwz		r28, Task.Flags(r31)
 	lbz		r29, Task.State(r31)
-	_bset	r28, r28, Task.kFlag68kInterrupt
+	_bset	r28, r28, Task.kFlagSchToInterruptEmu
 	stw		r28, Task.Flags(r31)
 
 	cmpwi	r29, 0

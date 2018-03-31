@@ -139,16 +139,16 @@ kFlag17					equ		17
 kFlag18					equ		18
 kFlag19					equ		19
 kFlag20					equ		20
-kFlagPMF				equ		21	; set by MPMarkPMFTask, means perf monitor
-kFlag22					equ		22
+kFlagPerfMon			equ		21	; set by MPMarkPMFTask, means perf monitor
+kFlagStopped			equ		22
 kFlag23					equ		23
 kFlag24					equ		24
 kFlag25					equ		25	; set for idle1, idle2
-kFlag26					equ		26	; set for blue
-kFlag68kInterrupt		equ		27	; set on SWI (meaning 68k, or 68k interrupt?)
+kFlag26					equ		26	; set for blue, cleared when preempted, set when run
+kFlagSchToInterruptEmu	equ		27	; set when scheduler should trigger a 68k interrupt in this task
 kFlag28					equ		28	; set for blue
 kFlag29					equ		29
-kFlag30					equ		30
+kFlagAborted			equ		30
 kFlag31					equ		31
 
 						ds.l	1	; 068
@@ -164,16 +164,16 @@ VectorSaveArea			ds.l	1	; 08c
 						ds.l	1	; 094
 						ds.l	1	; 098
 NotificationPtr			ds.l	1	; 09c
-Semaphore				ds.b	32	; 0a0:0c0 ; Zero and One were fields
+PageFaultSema			ds.b	32	; 0a0:0c0 ; task blocks on this fake sema, only to run when high-priority blue is done
 Zero1					ds.l	1	; 0c0
 Zero2					ds.l	1	; 0c4
 CreateTime1				ds.d	1	; 0c8
 CreateTime2				ds.d	1	; 0d0
 						ds.l	1	; 0d8
 						ds.l	1	; 0dc
-Zero3					ds.l	1	; 0e0
-Zero4					ds.l	1	; 0e4
-Zero5					ds.l	1	; 0e8
+CodeFaultCtr			ds.l	1	; 0e0 ; these two only climb when VM is on
+DataFaultCtr			ds.l	1	; 0e4
+PreemptCtr				ds.l	1	; 0e8
 SomeLabelField			ds.l	1	; 0ec
 YellowVecTblPtr			ds.l	1	; 0f0
 ExceptionHandlerID		ds.l	1	; 0f4 ; a queue

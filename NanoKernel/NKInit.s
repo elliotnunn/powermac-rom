@@ -209,14 +209,14 @@ FinishInitBuiltin
 
 
 		;	Test MQ and save feature field
-		lis		r8, 1 << (15 - PSA.MQFeatureBit)
+		lis		r8, 1 << (15 - EWA.kFlagHasMQ)
 		mtspr	mq, r8
 		li		r8, 0
 		mfspr	r8, mq
-		stw		r8, PSA.GlobalCPUFlags(r1)
+		stw		r8, PSA.FlagsTemplate(r1)
 
 		;	Add AV and save that in scratch field
-		oris	r9, r8, 1 << (15 - PSA.AVFeatureBit)
+		_bset	r9, r8, EWA.kFlagVec
 		stw		r9, EWA.r0(r1)
 
 		;	Load from scratch field into a vector register
@@ -230,11 +230,11 @@ FinishInitBuiltin
 		stvewx	v0, 0, r9
 
 		;	Scratch field now contains AltiVec and MQ flags.
-		;	Copy it to GlobalCPUFlags
+		;	Copy it to FlagsTemplate
 		lwz		r8, EWA.r0(r1)
-		stw		r8, PSA.GlobalCPUFlags(r1)
+		stw		r8, PSA.FlagsTemplate(r1)
 
-		;	current flags = tested flags | CPU flag 8 | CPU flag 9
+		;	initial blue flags = global template + EWA.kFlagEmu + EWA.kFlag9
 		oris	r7, r8, 0xa0
 		stw		r7, EWA.Flags(r1)
 
@@ -298,9 +298,8 @@ ResetBuiltinKernel
 ;			r3 = 0
 ;			r4 = 0
 ;			r5 = SystemInfo
-;			r6 = PA_ECB
-;			r7 = AllCpuFeatures
-;			r8 = GlobalCPUFlags
+;			r6 = ECB
+;			r7 = Flags
 ;			r9 = even more altivec crud
 ;		r10 = LA_EmulatorKernelTrapTable
 ;		r11 = MSR
@@ -685,13 +684,9 @@ SetProcessorFlags
 @done
 
 
-;	These look like two-word structures. Not yet sure what they are.
+;	Init the NCB Pointer Cache
 
-	li		r23, -1
-	stw		r23, KDP.MinusOne1(r1) ; kdp.0x340
-	stw		r23, KDP.MinusOne2(r1) ; kdp.0x348
-	stw		r23, KDP.MinusOne3(r1) ; kdp.0x350
-	stw		r23, KDP.MinusOne4(r1) ; kdp.0x358
+	_InvalNCBPointerCache scratch=r23
 
 
 
@@ -1108,7 +1103,7 @@ SetProcessorFlags
 
 ;	Create the Blue MacOS task
 
-	;	ARG		GlobalCPUFlags r7, Process *r8
+	;	ARG		Flags r7, Process *r8
 	;	RET		Task *r8
 
 	lwz		r8, PSA.blueProcessPtr(r1)
@@ -1124,7 +1119,7 @@ SetProcessorFlags
 
 	;	Can equal -1 or a 68k interrupt number. PIHes touch it.
 	li		r8, -1
-	sth		r8, PSA.Int(r1)
+	sth		r8, PSA.Pending68kInt(r1)
 
 	;
 	stw		r31, PSA.PA_BlueTask(r1)
@@ -1206,20 +1201,20 @@ SetProcessorFlags
 
 ;	Create the idle task for the first CPU
 
-	;	Unset the AV bit in GlobalCPUFlags so that
+	;	Unset EWA.kFlagVec so that
 	;	idle task vector registers are not saved/restored
 	;	(Leave the old value in r31)
-av	set		PSA.AVFeatureBit
-	mr		r31, r7
-	rlwinm	r7, r7, 0, av + 1, av - 1
 
-	;	ARG		GlobalCPUFlags r7, Process *r8
+	mr		r31, r7
+	_bclr	r7, r7, EWA.kFlagVec
+
+	;	ARG		Flags r7, Process *r8
 	;	RET		Task *r8
 
 	lwz		r8, PSA.blueProcessPtr(r1)
 	bl		CreateTask
 
-	;	Restore GlobalCPUFlags
+	;	Restore Flags
 	mr		r7, r31
 
 	;	Check
@@ -1879,7 +1874,7 @@ finish_old_world
 	bl		ProbePerfMonitor
 	lwz		r27,  0x0630(r1)
 	lwz		r27,  0x0094(r27)
-	bl		PagingFunc4
+	bl		PagingL2PWithoutBATs
 	beq		setup_0x1160
 	li		r30,  0x00
 	stw		r30, -0x0004(r29)
@@ -1891,7 +1886,7 @@ setup_0x1160
 	bl		PagingFunc1
 	lwz		r27,  0x0630(r1)
 	lwz		r27,  0x009c(r27)
-	bl		PagingFunc4
+	bl		PagingL2PWithoutBATs
 	beq		setup_0x1188
 	li		r30,  0x00
 	stw		r30, -0x0004(r29)
@@ -1908,7 +1903,7 @@ setup_0x1188
 	subf	r19, r19, r27
 
 setup_0x11a0
-	bl		PagingFunc4
+	bl		PagingL2PWithoutBATs
 	beq		setup_0x11bc
 	li		r30,  0x00
 	stw		r30, -0x0004(r29)
@@ -1923,7 +1918,7 @@ setup_0x11bc
 	bgt		setup_0x11a0
 	lwz		r27,  0x0630(r1)
 	lwz		r27,  0x00a4(r27)
-	bl		PagingFunc4
+	bl		PagingL2PWithoutBATs
 	beq		setup_0x11f0
 	li		r30,  0x00
 	stw		r30, -0x0004(r29)
@@ -1936,7 +1931,7 @@ setup_0x11f0
 
 	_log	'Nanokernel replaced. Returning to boot process^n'
 
-	addi	r9, r1,  0x420
+	addi	r9, r1, KDP.OrangeVecBase
 	mtsprg	3, r9
 
 ;	r1 = kdp

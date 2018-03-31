@@ -3964,11 +3964,9 @@ MPCall_95_0x334
 
 MPCall_95_0x348	;	OUTSIDE REFERER
 	lwz		r14,  0x0000(r30)
-	li		r16, -0x01
-	stw		r16,  0x0340(r1)
-	stw		r16,  0x0348(r1)
-	stw		r16,  0x0350(r1)
-	stw		r16,  0x0358(r1)
+
+	_InvalNCBPointerCache scratch=r16
+
 	lwz		r16,  0x0e98(r1)
 	rlwinm	r14, r14,  0, 21, 19
 	addi	r16, r16,  0x01

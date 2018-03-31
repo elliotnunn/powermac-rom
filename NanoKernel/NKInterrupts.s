@@ -10,7 +10,7 @@ ecInstInvalidAddress		equ		10
 ecInstHardwareFault			equ		11
 ecInstPageFault				equ		12
 ecInstSupAccessViolation	equ		14
-ecDataInvalidAccess			equ		18
+ecDataInvalidAddress		equ		18
 ecDataHardwareFault			equ		19
 ecDataPageFault				equ		20
 ecDataWriteViolation		equ		21
@@ -38,19 +38,21 @@ major_0x02980	;	OUTSIDE REFERER
 	lwz		r9, EWA.Enables(r1)
 	rlwinm	r23, r17, 31, 27, 31
 	rlwnm.	r9, r9, r8,  0x00,  0x00
-	bsol	cr3, major_0x02980_0x100
+	bcl		BO_IF, 15, major_0x02980_0x100
 	lwz		r6, -0x0014(r1)
 	ori		r7, r16,  0x10
 	neg		r23, r23
-	mtcrf	 0x3f, r7
+	mtcrf	0x3f, r7
 	add		r19, r19, r23
 	rlwimi	r7, r8, 24,  0,  7
 	lwz		r1, -0x0004(r1)
-	slwi	r8, r8,  2
+
+	slwi	r8, r8, 2
 	add		r8, r8, r1
-	lwz		r9,  0x0dc0(r8)
-	addi	r9, r9,  0x01
-	stw		r9,  0x0dc0(r8)
+	lwz		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.ExceptionCauseCounts(r8)
+	addi	r9, r9, 1
+	stw		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.ExceptionCauseCounts(r8)
+
 	srwi	r9, r7, 24
 	mfsprg	r1, 0
 	lwz		r8,  0x0000(r1)
@@ -70,13 +72,16 @@ major_0x02980	;	OUTSIDE REFERER
 	lwz		r8,  0x0034(r1)
 	stw		r8,  0x016c(r6)
 	cmpwi	cr1, r9,  0x14
-	blt		cr4, major_0x04a20_0x18
-	bne		cr2, TaskApproachTwo
-	blt		major_0x02980_0xa8
-	bne		cr1, major_0x02980_0x178
-	b		TaskApproachTwo
+	bc		BO_IF, EWA.kFlagSIGP, _IntReturnFromSIGP
+	bc		BO_IF_NOT, EWA.kFlagBlue, _RecoverableDataFault
+	blt		ExceptionIsInEnables
+	bne		cr1, _IntReturnToSystemContext
+	b		_RecoverableDataFault
 
-major_0x02980_0xa8
+
+
+ExceptionIsInEnables
+
 	mfsprg	r1, 0
 	stw		r10,  0x0084(r6)
 	stw		r12,  0x008c(r6)
@@ -88,19 +93,25 @@ major_0x02980_0xa8
 	li		r8,  0x00
 	lwz		r10,  0x004c(r6)
 	stw		r8, EWA.Enables(r1)
-	lwz		r1, -0x0004(r1)
+	lwz		r1, EWA.PA_KDP(r1)
 	lwz		r4,  0x0054(r6)
-	lwz		r3,  0x0654(r1)
-	blt		cr2, major_0x02980_0xec
-	lwz		r3,  0x05b4(r1)
-	_bclr	r11, r11, 16
 
-major_0x02980_0xec
-	lwz		r12,  0x0648(r1)
-	bsol	cr6, PreferRegistersFromEWASavingContextBlock
-	rlwinm	r7, r7,  0, 29, 16
-	rlwimi	r11, r7,  0, 20, 23
+	lwz		r3, KDP.LA_ECB(r1)
+	bc		BO_IF, 8, @is_system_context
+	lwz		r3,  KDP.LA_NCB(r1)
+	_bclr	r11, r11, MSR_EEbit
+@is_system_context
+
+	;	exception handler will return via trap in emulator code
+	lwz		r12, KDP.LA_EmulatorKernelTrapTable + NanoKernelCallTable.ReturnFromException(r1)
+
+	bcl		BO_IF, EWA.kFlagLowSaves, PreferRegistersFromEWASavingContextBlock
+	rlwinm	r7, r7,  0, 29, 16							; unset 17-28
+	rlwimi	r11, r7, 0, 20, 23							; threfore unset MSR[FE0/SE/BE/FE1]
+
 	b		IntReturn
+
+
 
 major_0x02980_0x100
 	lwz		r2,  0x0008(r1)
@@ -140,48 +151,68 @@ major_0x02980_0x134	;	OUTSIDE REFERER
 
 	srwi	r9, r7, 24
 
-	bc		BO_IF, EWA.kFlag16, major_0x04a20_0x18
-	bc		BO_IF_NOT, EWA.kFlagBlue, TaskApproachOne
-	cmpwi	cr1, r9, ecInstPageFault
-	blt		major_0x02980_0xa8						; when Enables[cause] is set!
-	beq		cr1, TaskApproachOne
+	bc		BO_IF, EWA.kFlagSIGP, _IntReturnFromSIGP
+	bc		BO_IF_NOT, EWA.kFlagBlue, _RecoverableCodeFault
 
-major_0x02980_0x178	;	OUTSIDE REFERER
+	cmpwi	cr1, r9, ecInstPageFault
+	blt		ExceptionIsInEnables						; when Enables[cause] is set!
+	beq		cr1, _RecoverableCodeFault
+
+
+;	fall through if blue, exception not "enabled"
+
+_IntReturnToSystemContext
+
 	lwz		r1, EWA.PA_KDP(r1)
 	lwz		r9, KDP.PA_ECB(r1)
+
 	addi	r8, r1, KDP.YellowVecBase
 	mtsprg	3, r8
 
-	bcl		BO_IF, 8, SuspendBlueTask				; does not return
+	;	Exception came from emulator! Can't handle that with a 68k interrupt, can we?
+	bcl		BO_IF, EWA.kFlagEmu, SuspendBlueTask
 
-major_0x02980_0x18c	;	OUTSIDE REFERER
+
+
+;	Swap the blue task between the system and alternate contexts
+
+;	ARG		old_context r6, new_context r9
+
+_IntReturnToOppositeContext
+
 	mfsprg	r1, 0
+
 	lwz		r8, EWA.Enables(r1)
 	stw		r7, ContextBlock.Flags(r6)
 	stw		r8, ContextBlock.Enables(r6)
-	bc		BO_IF_NOT, 27, major_0x02980_0x1b8
+
+	bc		BO_IF_NOT, EWA.kFlagLowSaves, @not_low_saves
 	stw		r17,  0x0024(r6)
 	stw		r20,  0x0028(r6)
 	stw		r21,  0x002c(r6)
 	stw		r19,  0x0034(r6)
 	stw		r18,  0x003c(r6)
 	lmw		r14,  0x0038(r1)
+@not_low_saves
 
-major_0x02980_0x1b8
+
+	;	Save state to the old ContextBlock
+
 	mfxer	r8
-	stw		r13,  0x00dc(r6)
-	stw		r8,  0x00d4(r6)
-	stw		r12,  0x00ec(r6)
+	stw		r13, ContextBlock.CR(r6)
+	stw		r8, ContextBlock.XER(r6)
+	stw		r12, ContextBlock.LR(r6)
 	mfctr	r8
-	stw		r10,  0x00fc(r6)
-	stw		r8,  0x00f4(r6)
-	bc		BO_IF_NOT, 13, major_0x02980_0x1e8
-	lwz		r8,  0x00c4(r9)
+	stw		r10, ContextBlock.CodePtr(r6)
+	stw		r8, ContextBlock.KernelCTR(r6)
+
+	bc		BO_IF_NOT, EWA.kFlagHasMQ, @no_mq
+	lwz		r8, ContextBlock.MQ(r9)
 	mfspr	r12, mq
 	mtspr	mq, r8
-	stw		r12,  0x00c4(r6)
+	stw		r12, ContextBlock.MQ(r6)
+@no_mq
 
-major_0x02980_0x1e8
 	lwz		r8,  0x0004(r1)
 	stw		r8,  0x010c(r6)
 	stw		r2,  0x0114(r6)
@@ -203,48 +234,62 @@ major_0x02980_0x1e8
 	stw		r24,  0x01c4(r6)
 	stw		r25,  0x01cc(r6)
 	stw		r26,  0x01d4(r6)
-	andi.	r8, r11,  0x2000
+	_band.	r8, r11, MSR_FPbit
 	stw		r27,  0x01dc(r6)
 	stw		r28,  0x01e4(r6)
 	stw		r29,  0x01ec(r6)
 	stw		r30,  0x01f4(r6)
 	stw		r31,  0x01fc(r6)
-	bnel	major_0x03e18_0xb4
 
-	bc		BO_IF_NOT, 12, major_0x02980_0x260
+	bnel	bugger_around_with_floats
+
+	bc		BO_IF_NOT, EWA.kFlagVec, @no_vec
 	bl		Save_v0_v31
-major_0x02980_0x260
+@no_vec
 
-	stw		r11,  0x00a4(r6)
-	lwz		r8,  0x0000(r9)
-	stw		r9, -0x0014(r1)
-	xoris	r7, r7,  0x80
-	rlwimi	r11, r8,  0, 20, 23
+	stw		r11, ContextBlock.MSR(r6)
+
+
+	;	Load state from the new ContextBlock
+
+	lwz		r8, ContextBlock.Flags(r9)
+
+	stw		r9, EWA.PA_ContextBlock(r1)
+
+	xoris	r7, r7, 1 << (15 - EWA.kFlagEmu)			; toggle the emulator flag
+
+	rlwimi	r11, r8,  0, 20, 23							; MSR[FE0/SE/BE/FE1]
+
 	mr		r6, r9
-	rlwimi	r7, r8,  0, 17, 31
-	andi.	r8, r11,  0x900
-	lwz		r8,  0x0004(r6)
-	lwz		r13,  0x00dc(r6)
+	rlwimi	r7, r8,  0, 17, 31							; copy the flags that *do* differ between contexts
+
+	andi.	r8, r11, MSR_FE0 | MSR_FE1
+
+	lwz		r8, ContextBlock.Enables(r6)
+	lwz		r13, ContextBlock.CR(r6)
 	stw		r8, EWA.Enables(r1)
-	lwz		r8,  0x00d4(r6)
-	lwz		r12,  0x00ec(r6)
+	lwz		r8, ContextBlock.XER(r6)
+	lwz		r12, ContextBlock.LR(r6)
 	mtxer	r8
-	lwz		r8,  0x00f4(r6)
-	lwz		r10,  0x00fc(r6)
+	lwz		r8, ContextBlock.KernelCTR(r6)
+	lwz		r10, ContextBlock.CodePtr(r6)
 	mtctr	r8
-	bnel	major_0x03e18_0x8
+
+	bnel	IntHandleSpecialFPException
+
 	lwarx	r8, 0, r1
 	sync
 	stwcx.	r8, 0, r1
-	lwz		r29,  0x00d8(r6)
-	lwz		r8,  0x010c(r6)
-	cmpwi	r29,  0x00
-	stw		r8,  0x0004(r1)
-	lwz		r28,  0x0210(r29)
-	beq		major_0x02980_0x2d0
-	mtspr	vrsave, r28
 
-major_0x02980_0x2d0
+	lwz		r29, ContextBlock.VectorSaveArea(r6)
+	lwz		r8, ContextBlock.r1(r6)
+	cmpwi	r29, 0
+	stw		r8, EWA.r1(r1)
+	lwz		r28, 0x210(r29)
+	beq		@no_vrsave
+	mtspr	vrsave, r28
+@no_vrsave
+
 	lwz		r2,  0x0114(r6)
 	lwz		r3,  0x011c(r6)
 	lwz		r4,  0x0124(r6)
@@ -292,19 +337,19 @@ IntReturn	;	OUTSIDE REFERER
 
 major_0x02ccc	;	OUTSIDE REFERER
 
-	mtcrf	 0x3f, r7
+	mtcrf	0x3f, r7
 
-	bc		BO_IF_NOT, 27, @major_0x02ccc_0x18
-	_bclr	r7, r7, 27
+	bc		BO_IF_NOT, EWA.kFlagLowSaves, @major_0x02ccc_0x18
+	_bclr	r7, r7, EWA.kFlagLowSaves
 
-	bc		BO_IF, 31, major_0x02ccc_0x30
-	_bclr	r7, r7, 26
+	bc		BO_IF, EWA.kFlag31, major_0x02ccc_0x30
+	_bclr	r7, r7, EWA.kFlag26
 
 	b		@return
 @major_0x02ccc_0x18
 
-	bc		BO_IF_NOT, 26, @return
-	_bclr	r7, r7, 26
+	bc		BO_IF_NOT, EWA.kFlag26, @return
+	_bclr	r7, r7, EWA.kFlag26
 
 	stw		r7, EWA.Flags(r1)
 	li		r8, ecInstTrace
@@ -346,7 +391,7 @@ major_0x02ccc_0x30
 	lwz		r21,  0x002c(r9)
 	lwz		r19,  0x0034(r9)
 	lwz		r18,  0x003c(r9)
-	_bclr	r16, r7, 27
+	_bclr	r16, r7, EWA.kFlagLowSaves
 	lwz		r25,  0x0650(r8)
 	rlwinm.	r22, r17, 31, 27, 31
 	add		r19, r19, r22
@@ -391,7 +436,7 @@ SuspendBlueTask
 	_Lock			PSA.SchLock, scratch1=r8, scratch2=r9
 
 	lwz		r29, Task.Flags(r31)
-	_bset	r29, r29, Task.kFlag22
+	_bset	r29, r29, Task.kFlagStopped
 	_bset	r29, r29, Task.kFlag19
 	stw		r29, Task.Flags(r31)
 
@@ -444,9 +489,17 @@ SuspendBlueTask
 
 
 
-TaskApproachOne	;	OUTSIDE REFERER
+########     ###     ######   ########    ########    ###    ##     ## ##       ########  ######  
+##     ##   ## ##   ##    ##  ##          ##         ## ##   ##     ## ##          ##    ##    ## 
+##     ##  ##   ##  ##        ##          ##        ##   ##  ##     ## ##          ##    ##       
+########  ##     ## ##   #### ######      ######   ##     ## ##     ## ##          ##     ######  
+##        ######### ##    ##  ##          ##       ######### ##     ## ##          ##          ## 
+##        ##     ## ##    ##  ##          ##       ##     ## ##     ## ##          ##    ##    ## 
+##        ##     ##  ######   ########    ##       ##     ##  #######  ########    ##     ######  
 
-	bcl		BO_IF, 27, Local_Panic
+_RecoverableCodeFault
+
+	bcl		BO_IF, EWA.kFlagLowSaves, Local_Panic
 	bl		SchSaveStartingAtR14
 
 	mr		r30, r10
@@ -468,27 +521,27 @@ TaskApproachOne	;	OUTSIDE REFERER
 	srwi	r8, r7, 24
 	rlwinm.	r16, r16, 0, Task.kFlag9, Task.kFlag9
 	cmpwi	cr1, r8, ecInstPageFault
-	bne		TaskNotSuitableForWhatWeWantToDo
-	bne		cr1, TaskNotSuitableForWhatWeWantToDo
+	bne		_fault_throw_to_debugger
+	bne		cr1, _fault_throw_to_debugger
 	;	what is special about the upper 8 Flags? Are they Task-related?
 
-	lwz		r8, Task.Zero3(r31)
+	lwz		r8, Task.CodeFaultCtr(r31)
 	addi	r8, r8, 1
-	stw		r8, Task.Zero3(r31)
+	stw		r8, Task.CodeFaultCtr(r31)
 
-	b		CommonPathBetweenTaskIntFuncs
+	b		_CommonFaultPath
 
 
 
-TaskApproachTwo	;	OUTSIDE REFERER
+_RecoverableDataFault
 
-	bcl		BO_IF_NOT, 27, Local_Panic
+	bcl		BO_IF_NOT, EWA.kFlagLowSaves, Local_Panic
 
 	bl		PreferRegistersFromEWASavingContextBlock
 
 	stw		r10, ContextBlock.LA_EmulatorEntry(r6)
 
-	_bclr	r7, r7, EWA.kFlag27
+	_bclr	r7, r7, EWA.kFlagLowSaves
 
 
 	bl		SchSaveStartingAtR14
@@ -510,23 +563,23 @@ TaskApproachTwo	;	OUTSIDE REFERER
 	srwi	r8, r7, 24
 	rlwinm.	r16, r16, 0, Task.kFlag9, Task.kFlag9
 	cmpwi	cr1, r8, 0x14
-	bne		TaskNotSuitableForWhatWeWantToDo
-	bne		cr1, TaskNotSuitableForWhatWeWantToDo
+	bne		_fault_throw_to_debugger
+	bne		cr1, _fault_throw_to_debugger
 
-	lwz		r8, Task.Zero4(r31)
+	lwz		r8, Task.DataFaultCtr(r31)
 	addi	r8, r8, 1
-	stw		r8, Task.Zero4(r31)
+	stw		r8, Task.DataFaultCtr(r31)
 
 
 
-
-CommonPathBetweenTaskIntFuncs
+_CommonFaultPath
 
 	mfsprg	r14, 0
 
 	_bclr	r7, r7, EWA.kFlag26
 	_bclr	r7, r7, EWA.kFlag31
 
+	;	Panic if EWA.SpecialAreaPtr is invalid
 	lwz		r29, EWA.SpecialAreaPtr(r14)
 	lisori	r17, Area.kSignature
 	lwz		r16, Area.Signature(r29)
@@ -544,21 +597,24 @@ CommonPathBetweenTaskIntFuncs
 	cmpwi	cr0, r9, ecInstPageFault
 	cmpwi	cr1, r16, 0
 	mr		r26, r8
-	bne		cr0, CanSendMessage
-	beq		cr1, CantSendMessage
-	beq		cr2, CanSendMessage
+	bne		cr0, @can_use_page_queue
+	beq		cr1, @cannot_use_page_queue						; never seems to be taken (VMMaxVirtualPages never zero)
+	bc		BO_IF, EWA.kFlagBlue, @can_use_page_queue
 
-CantSendMessage
+
+
+@cannot_use_page_queue ; no, I'm wrong about this -- this code gets executed normally!
+
 	lwz		r16, Task.Flags(r31)
 	addi	r17, r31, Task.QueueMember
-	addi	r18, r31, Task.Semaphore
+	addi	r18, r31, Task.PageFaultSema
 
 	stw		r18, LLL.Freeform(r17)
 	InsertAsPrev	r17, r18, scratch=r19
 
 	li		r17, 1
 	_bset	r16, r16, Task.kFlag18
-	stw		r17, Task.Semaphore + Semaphore.Value(r31)
+	stw		r17, Task.PageFaultSema + Semaphore.Value(r31)
 	stw		r16, Task.Flags(r31)
 
 	rlwinm	r30, r30,  0,  0, 19
@@ -575,44 +631,74 @@ CantSendMessage
 	cmpwi	r8, 0
 	beq		IntLocalBlockMPCall				; jump if no error?
 
-CanSendMessage
+
+
+	;	Block the task on its internal semaphore (the page fault semaphore)
+
+@can_use_page_queue
+
 	mfcr	r28
 	li		r8, Message.Size
-	beq		cr2, major_0x02ccc_0x4a8
+	bc		BO_IF, EWA.kFlagBlue, @was_blues_fault
+
+
+	;	FAULT IN NON-BLUE TASK: send message to the page queue
+
 	bl		PoolAlloc
 	mr.		r26, r8
-	beq		major_0x02ccc_PoolAllocFailed
+	beq		@oom
+
+
+	;	Block the faulting NON-BLUE TASK on its own PageFaultSema,
+	;	put raise the semaphore, thus preparing it to unblock once
+	;	the latency-protected-priority blue task has served the fault
 
 	addi	r17, r31, Task.QueueMember
-	addi	r18, r31, Task.Semaphore
+	addi	r18, r31, Task.PageFaultSema
 	stw		r18, LLL.Freeform(r17)
-	InsertAsPrev	r17, r18, scratch=r19					; make this task wait on its own semaphore
+	InsertAsPrev	r17, r18, scratch=r19
 
 	li		r17, 1
-	stw		r17, Task.Semaphore + Semaphore.Value(r31)
+	stw		r17, Task.PageFaultSema + Semaphore.Value(r31)
 
-	;	message = area ID, semaphore ID, address (page aligned?)
+
+	;	Via the Page Queue, tell the blue task what it needs to know
+
 	lwz		r27, Area.ID(r29)
 	lisori	r8, Message.kSignature
-	lwz		r29, Task.Semaphore + Semaphore.BlockedTasks + LLL.Freeform(r31)
-	stw		r27, Message.Word1(r26)
-	stw		r29, Message.Word2(r26)
+	lwz		r29, Task.PageFaultSema(r31)
+	stw		r27, Message.Word1(r26)						; arg1 = area ID
+	stw		r29, Message.Word2(r26)						; arg2 = sempahore ID in its BlockedTasks linked list
 	stw		r8, Message.LLL + LLL.Signature(r26)
-	stw		r30, Message.Word3(r26)
+	stw		r30, Message.Word3(r26)						; arg3 = page address
 
 	mr		r8, r26
 	addi	r31, r1, PSA.PageQueue
 	bl		EnqueueMessage		; Message *r8, Queue *r31
-	lwz		r8, PSA.BlueSpinningOn(r1)
+
+
+	;	(Unconditionally) raise blue's priority to latency protection, and unblock it
+
+	lwz		r8, PSA.BlueSpinningOn(r1)						; this guarantees that blue will always be unblocked
 	bl		UnblockBlueIfCouldBePolling
+
+
+	;	Block the faulting task (this releases the scheduler lock)
+
 	b		BlockMPCall
 
-major_0x02ccc_0x4a8
+
+
+	;	FAULT IN BLUE TASK: switch it over to the system context
+
+@was_blues_fault
+
 	mr		r8, r31
 	bl		SchRdyTaskNow
 	_AssertAndRelease	PSA.SchLock, scratch=r31
 	mtcr	r28
-	bns		cr6, major_0x02ccc_0x504
+
+	bc		BO_IF_NOT, EWA.kFlagLowSaves, @nolo
 	lwz		r8,  0x0064(r6)
 	lwz		r9,  0x0068(r6)
 	stw		r8,  0x0024(r6)
@@ -623,14 +709,19 @@ major_0x02ccc_0x4a8
 	stw		r9,  0x0034(r6)
 	lwz		r8,  0x007c(r6)
 	stw		r8,  0x003c(r6)
-	crclr	EWA.kFlag27
+	crclr	EWA.kFlagLowSaves
+@nolo
 
-major_0x02ccc_0x504
 ;	r6 = ewa
 	bl		SchRestoreStartingAtR14
-	b		major_0x02980_0x178
+	b		_IntReturnToSystemContext
 
-major_0x02ccc_PoolAllocFailed
+
+;	We failed to service a page fault in a non-blue task, so just let it run
+;	Is this terrible? A don't-care?
+
+@oom
+
 	li		r16, Task.kNominalPriority
 	stb		r16, Task.Priority(r31)
 	mr		r8, r31
@@ -638,8 +729,10 @@ major_0x02ccc_PoolAllocFailed
 	bl		FlagSchEval
 	b		BlockMPCall
 
-TaskNotSuitableForWhatWeWantToDo
-	b		FuncExportedFromTasks
+
+
+_fault_throw_to_debugger
+	b		ThrowTaskToDebugger
 
 
 
@@ -777,7 +870,7 @@ major_0x03324_0x58
 	crclr	cr5_so
 	rlwimi	r17, r26,  6, 26,  5
 	add		r18, r18, r23
-	blelr	cr3
+	bclr	BO_IF_NOT, 13
 	neg		r23, r23
 	add		r18, r18, r23
 	blr
@@ -916,7 +1009,7 @@ FDP_TableBase		equ		0xa00
 	mtcr	r26
 	rlwimi	r17, r26,  6, 26,  5
 	crclr	23						; unset bit 23 = cr5_so
-	bgelr	cr3						; jump now if bit 12 is off
+	bclr	BO_IF_NOT, 12			; jump now if bit 12 is off
 
 	;	if bit 12 was on, turn on paging and fetch the offending insn
 	;	and also activate the Red vector table
@@ -1032,8 +1125,8 @@ IntDSIOtherOther_0xe0
 
 IntDSIOtherOther_0x100
 	andis.	r28, r31,  0x800
-	addi	r29, r1, 800
-	bnel	PagingFunc3
+	addi	r29, r1, KDP.BATs + 0xa0
+	bnel	PagingL2PWithBATs
 	li		r28,  0x43
 	and		r28, r31, r28
 	cmpwi	cr7, r28,  0x43
@@ -1093,7 +1186,7 @@ IntDSIOtherOther_0x1c8
 	mfsprg	r28, 2
 	mtlr	r28
 	beq		IntDSIOtherOther_0x19c
-	li		r8, ecDataInvalidAccess
+	li		r8, ecDataInvalidAddress
 	bge		major_0x02980
 	li		r8, ecDataPageFault
 	b		major_0x02980
@@ -1331,17 +1424,22 @@ IntDSIOther	;	OUTSIDE REFERER
 	rlwimi	r7, r7, 27, 26, 26
 
 kcReturnFromException	;	OUTSIDE REFERER
-	ori		r11, r11,  0x8000
-	mtcrf	 0x3f, r7
+
+	_bset	r11, r11, MSR_EEbit
+
+	mtcrf	0x3f, r7
 	cmplwi	cr1, r3,  0x01
-	blt		cr4, major_0x04a20_0x18
+	bc		BO_IF, EWA.kFlagSIGP, _IntReturnFromSIGP
+
 	blt		cr1, major_0x03be0_0x58
 	beq		cr1, major_0x03be0_0x90
+
+
 	addi	r8, r3, -0x20
-	lwz		r9,  0x0eac(r1)
+	lwz		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.ExceptionForcedCount(r1)
 	cmplwi	r8,  0xe0
-	addi	r9, r9,  0x01
-	stw		r9,  0x0eac(r1)
+	addi	r9, r9, 1
+	stw		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.ExceptionForcedCount(r1)
 	mfsprg	r1, 0
 	rlwimi	r7, r3, 24,  0,  7
 	blt		major_0x03be0_0xe8
@@ -1354,7 +1452,7 @@ major_0x03be0_0x58
 	lwz		r10,  0x0084(r6)
 	rlwimi	r7, r8,  0, 17,  7
 	lwz		r8,  0x0044(r6)
-	rlwimi	r11, r7,  0, 20, 23
+	rlwimi	r11, r7,  0, 20, 23 ; MSR[FE0/SE/BE/FE1]
 	stw		r8, EWA.Enables(r1)
 	andi.	r8, r11,  0x900
 	lwz		r12,  0x008c(r6)
@@ -1365,16 +1463,16 @@ major_0x03be0_0x58
 	b		IntReturn
 
 major_0x03be0_0x90
-	lwz		r9,  0x0ea8(r1)
+	lwz		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.ExceptionPropagateCount(r1)
 	lwz		r8,  0x0040(r6)
-	addi	r9, r9,  0x01
-	stw		r9,  0x0ea8(r1)
+	addi	r9, r9, 1
+	stw		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.ExceptionPropagateCount(r1)
 	mfsprg	r1, 0
 	lwz		r10,  0x0084(r6)
 	rlwimi	r7, r8,  0, 17,  7
 	lwz		r8,  0x0044(r6)
 	mtcrf	 0x0f, r7
-	rlwimi	r11, r7,  0, 20, 23
+	rlwimi	r11, r7,  0, 20, 23 ; MSR[FE0/SE/BE/FE1]
 	stw		r8, EWA.Enables(r1)
 	lwz		r12,  0x008c(r6)
 	lwz		r3,  0x0094(r6)
@@ -1389,7 +1487,7 @@ major_0x03be0_0x90
 	lwz		r18,  0x007c(r6)
 
 major_0x03be0_0xe8
-	beq		cr2, major_0x02980_0x178
+	beq		cr2, _IntReturnToSystemContext
 	crclr	cr6_so
 	mfspr	r10, srr0
 	li		r8, ecTrapInstr
@@ -1544,7 +1642,7 @@ major_0x03e18	;	OUTSIDE REFERER
 	rlwinm.	r8, r11,  0, 18, 18
 	bnelr
 
-major_0x03e18_0x8	;	OUTSIDE REFERER
+IntHandleSpecialFPException	;	OUTSIDE REFERER
 	lwz		r8,  0x00e4(r6)
 	rlwinm.	r8, r8,  1,  0,  0
 	mfmsr	r8
@@ -1595,7 +1693,7 @@ LoadFloatsFromContextBlock	;	OUTSIDE REFERER
 
 
 
-major_0x03e18_0xb4	;	OUTSIDE REFERER
+bugger_around_with_floats	;	OUTSIDE REFERER
 	mfmsr	r8
 	ori		r8, r8,  0x2000
 	mtmsr	r8
@@ -1807,114 +1905,162 @@ IntThermalEvent	;	OUTSIDE REFERER
 
 
 
+;	We can assume that this is being called from the emulator
+
+;	We accept a logical NCB ptr but the kernel needs a physical one.
+;	So we keep a four-entry cache in KDP, mapping logical NCB ptrs
+;	to physical ones. But when are there multiple alt contexts?
+
+;	ARG		flags? r3, mask r4
+
 	align	kIntAlign
 
-kcRunAlternateContext	;	OUTSIDE REFERER
+kcRunAlternateContext
 
 	mtcrf	0x3f, r7
 
-	bcl		BO_IF_NOT, 10, IntReturn
+	bcl		BO_IF_NOT, EWA.kFlagBlue, IntReturn
 
 	and.	r8, r4, r13
-	lwz		r9, KDP.MinusOne1(r1)
-	rlwinm	r8, r3,  0,  0, 25
+	lwz		r9, KDP.NCBCacheLA0(r1)
+	rlwinm	r8, r3, 0, 0, 25
 	cmpw	cr1, r8, r9
 	bne		IntReturn
-	lwz		r9,  0x0344(r1)
-	bne		cr1, major_0x043a0_0x48
+	lwz		r9, KDP.NCBCachePA0(r1)
+	bne		cr1, @search_cache
 
-major_0x043a0_0x24
-	addi	r8, r1,  0x420
+
+@found_physical_in_cache ; can come here from below after a more thorough search
+
+	addi	r8, r1, KDP.OrangeVecBase
 	mtsprg	3, r8
-	lwz		r8,  0x0648(r1)
-	mtcrf	 0x3f, r7
-	mfsprg	r1, 0
-	clrlwi	r7, r7,  0x08
-	stw		r8,  0x005c(r9)
-	stw		r9, -0x0014(r1)
-	b		major_0x02980_0x18c
 
-major_0x043a0_0x48
-	lwz		r9,  0x0348(r1)
-	cmpw	cr1, r8, r9
-	beq		cr1, major_0x043a0_0x130
-	lwz		r9,  0x0350(r1)
-	cmpw	cr1, r8, r9
-	beq		cr1, major_0x043a0_0x110
-	lwz		r9,  0x0358(r1)
-	cmpw	cr1, r8, r9
-	beq		cr1, major_0x043a0_0xf0
+	lwz		r8, KDP.LA_EmulatorKernelTrapTable(r1)
+	mtcrf	0x3f, r7
 	mfsprg	r1, 0
-	stmw	r14,  0x0038(r1)
-	lwz		r1, -0x0004(r1)
+	clrlwi	r7, r7, 8
+	stw		r8, ContextBlock.LA_EmulatorKernelTrapTable(r9)
+
+	stw		r9, EWA.PA_ContextBlock(r1)
+
+	b		_IntReturnToOppositeContext
+
+
+@search_cache
+
+	lwz		r9, KDP.NCBCacheLA1(r1)
+	cmpw	cr1, r8, r9
+	beq		cr1, @found_in_slot_1
+
+	lwz		r9, KDP.NCBCacheLA2(r1)
+	cmpw	cr1, r8, r9
+	beq		cr1, @found_in_slot_2
+
+	lwz		r9, KDP.NCBCacheLA3(r1)
+	cmpw	cr1, r8, r9
+	beq		cr1, @found_in_slot_3
+
+
+	;	No luck with the cache
+
+	mfsprg	r1, 0
+	stmw	r14, EWA.r14(r1)
+	lwz		r1, EWA.PA_KDP(r1)
+
 	cmpw	cr1, r8, r6
-	beq		cr1, major_0x043a0_0x154
+	beq		cr1, @fail
+
 	mr		r27, r8
-	addi	r29, r1, 800
-	bl		PagingFunc3
-	clrlwi	r23, r8,  0x14
-	beq		major_0x043a0_0x154
-	cmplwi	r23,  0xd00
+	addi	r29, r1, KDP.BATs + 0xa0
+	bl		PagingL2PWithBATs
+	clrlwi	r23, r8, 20
+	beq		@fail
+
+	cmplwi	r23, 0x0d00
 	mr		r9, r8
 	mr		r8, r31
-	ble		major_0x043a0_0xc4
-	addi	r27, r27,  0x1000
-	addi	r29, r1, 800
-	bl		PagingFunc3
-	beq		major_0x043a0_0x154
-	addi	r31, r31, -0x1000
+	ble		@not_straddling_pages
+
+	addi	r27, r27, 0x1000
+	addi	r29, r1, KDP.BATs + 0xa0
+	bl		PagingL2PWithBATs
+	beq		@fail
+
+	subi	r31, r31, 0x1000
 	xor		r23, r8, r31
-	rlwinm.	r23, r23,  0, 25, 22
-	bne		major_0x043a0_0x154
+	rlwinm.	r23, r23, 0, 25, 22
+	bne		@fail ; because physical pages are discontiguous
+@not_straddling_pages
 
-major_0x043a0_0xc4
-	clrlwi	r23, r31,  0x1e
-	cmpwi	r23,  0x03
-	rlwimi	r8, r9,  0, 20, 31
-	beq		major_0x043a0_0x154
-	lwz		r23,  0x0ea4(r1)
-	addi	r23, r23,  0x01
-	stw		r23,  0x0ea4(r1)
+	clrlwi	r23, r31, 30
+	cmpwi	r23, 3
+	rlwimi	r8, r9, 0, 20, 31
+	beq		@fail
+
+
+	;	Found a non-cached physical address for this NCB!
+
+	lwz		r23, KDP.NanoKernelInfo + NKNanoKernelInfo.NCBPtrCacheMissCount(r1)
+	addi	r23, r23, 1
+	stw		r23, KDP.NanoKernelInfo + NKNanoKernelInfo.NCBPtrCacheMissCount(r1)
+
+
+	;	Stick it in cache slot 3
+
 	mfsprg	r1, 0
-	lmw		r14,  0x0038(r1)
-	lwz		r1, -0x0004(r1)
-	stw		r8,  0x035c(r1)
+	lmw		r14, EWA.r14(r1)
+	lwz		r1, EWA.PA_KDP(r1)
+	stw		r8, KDP.NCBCachePA3(r1)
 
-major_0x043a0_0xf0
-	lwz		r8,  0x0350(r1)
-	stw		r9,  0x0350(r1)
-	stw		r8,  0x0358(r1)
-	lwz		r9,  0x035c(r1)
-	lwz		r8,  0x0354(r1)
-	stw		r9,  0x0354(r1)
-	stw		r8,  0x035c(r1)
-	lwz		r9,  0x0350(r1)
 
-major_0x043a0_0x110
-	lwz		r8,  0x0348(r1)
-	stw		r9,  0x0348(r1)
-	stw		r8,  0x0350(r1)
-	lwz		r9,  0x0354(r1)
-	lwz		r8,  0x034c(r1)
-	stw		r9,  0x034c(r1)
-	stw		r8,  0x0354(r1)
-	lwz		r9,  0x0348(r1)
+@found_in_slot_3 ; so promote to slot 2
 
-major_0x043a0_0x130
-	lwz		r8,  0x0340(r1)
-	stw		r9,  0x0340(r1)
-	stw		r9,  0x05b4(r1)
-	stw		r8,  0x0348(r1)
-	lwz		r9,  0x034c(r1)
-	lwz		r8,  0x0344(r1)
-	stw		r9,  0x0344(r1)
-	stw		r8,  0x034c(r1)
-	b		major_0x043a0_0x24
+	lwz		r8, KDP.NCBCacheLA2(r1)
+	stw		r9, KDP.NCBCacheLA2(r1)
+	stw		r8, KDP.NCBCacheLA3(r1)
 
-major_0x043a0_0x154
+	lwz		r9, KDP.NCBCachePA3(r1)
+	lwz		r8, KDP.NCBCachePA2(r1)
+	stw		r9, KDP.NCBCachePA2(r1)
+	stw		r8, KDP.NCBCachePA3(r1)
+
+	lwz		r9, KDP.NCBCacheLA2(r1)
+
+
+@found_in_slot_2 ; so promote to slot 1
+
+	lwz		r8, KDP.NCBCacheLA1(r1)
+	stw		r9, KDP.NCBCacheLA1(r1)
+	stw		r8, KDP.NCBCacheLA2(r1)
+
+	lwz		r9, KDP.NCBCachePA2(r1)
+	lwz		r8, KDP.NCBCachePA1(r1)
+	stw		r9, KDP.NCBCachePA1(r1)
+	stw		r8, KDP.NCBCachePA2(r1)
+
+	lwz		r9, KDP.NCBCacheLA1(r1)
+
+
+@found_in_slot_1 ; so promote to slot 0, save elsewhere, and push on
+
+	lwz		r8, KDP.NCBCacheLA0(r1)
+	stw		r9, KDP.NCBCacheLA0(r1)
+	stw		r9, KDP.LA_NCB(r1)
+	stw		r8, KDP.NCBCacheLA1(r1)
+
+	lwz		r9, KDP.NCBCachePA1(r1)
+	lwz		r8, KDP.NCBCachePA0(r1)
+	stw		r9, KDP.NCBCachePA0(r1)
+	stw		r8, KDP.NCBCachePA1(r1)
+
+	b		@found_physical_in_cache
+
+
+@fail
+
 	mfsprg	r1, 0
-	lmw		r14,  0x0038(r1)
-	lwz		r1, -0x0004(r1)
+	lmw		r14, EWA.r14(r1)
+	lwz		r1, EWA.PA_KDP(r1)
 	li		r8, ecTrapInstr
 	b		major_0x02980_0x134
 
@@ -2104,25 +2250,15 @@ major_0x046d0	;	OUTSIDE REFERER
 
 
 
+;	For when the alternate context is running?
+
 	align	kIntAlign
 
-IntExternalOrange	;	OUTSIDE REFERER
-;	r6 = saved at *(ewa + 0x18)
-;	sprg1 = saved at *(ewa + 4)
-;	rN (0,7,8,9,10,11,12,13, not r1) = saved at *(*(ewa - 0x14) + 0x104 + 8*N)
-	bl		int_prepare
-;	r0 = 0
-;	r1 = *(ewa - 4)
-;	r6 = kdp
-;	r7 = *(ewa - 0x10) # flags?
-;	r8 = ewa
-;	r10 = srr0
-;	r11 = srr1
-;	r12 = sprg2
-;	r13 = cr
+IntExternalOrange
 
-	mtcrf	 0x3f, r7
-	bnel	cr2, Local_Panic
+	bl		int_prepare
+	mtcrf	0x3f, r7
+	bcl		BO_IF_NOT, EWA.kFlagBlue, Local_Panic
 	li		r8, ecNoException
 	b		major_0x02980_0x134
 
@@ -2217,7 +2353,7 @@ IntProgram
 	lwz		r8, KDP.NanoKernelCallTable(r8)
 	mtlr	r8
 	addi	r10, r10, 4
-	rlwimi	r7, r7, 27, 26, 26						; copy EWA.kFlag22 into EWA.kFlag26
+	rlwimi	r7, r7, 27, 26, 26						; copy EWA.kFlagBE into EWA.kFlag26
 	blr
 
 @nonemu_mpdispatch
@@ -2231,7 +2367,7 @@ IntProgram
 
 	;	Non-emu MPDispatch trap with r0 == -1: muck around a bit?
 	addi	r10, r10, 4
-	rlwimi	r7, r7, 27, 26, 26						; copy EWA.kFlag22 into EWA.kFlag26
+	rlwimi	r7, r7, 27, 26, 26						; copy EWA.kFlagBE into EWA.kFlag26
 	mfsprg	r8, 0
 	rlwimi	r13, r7, 8, 2, 2
 	lwz		r9, EWA.PA_CurTask(r8)
@@ -2282,26 +2418,16 @@ IntProgram
 
 	bc		BO_IF, 15, major_0x02980_0x134			; if SRR0 points to subsequent instr
 	addi	r10, r10, 4								; if SRR0 points to offending instr
-	rlwimi	r7, r7, 27, 26, 26						; copy EWA.kFlag22 into EWA.kFlag26
+	rlwimi	r7, r7, 27, 26, 26						; copy EWA.kFlagBE into EWA.kFlag26
 	b		major_0x02980_0x134
 
 
 
 	align	kIntAlign
 
-IntExternalYellow	;	OUTSIDE REFERER
+IntExternalYellow
 
 	bl		int_prepare
-
-	;	RET		r0 = 0
-	;			r1 = KernelData
-	;			r6 = ECB
-	;			r7 = AllCpuFeatures
-	;			r8 = EWA (pretend KDP)
-	;			r10 = SRR0
-	;			r11 = SRR1
-	;			r12 = LR from SPRG2
-	;			r13 = CR
 
 
 	;	Sanity check
@@ -2378,7 +2504,7 @@ SIGP
 	lwz		r16, EWA.PA_CurAddressSpace(r23)
 	slwi	r20, r3, 2
 	stw		r16, EWA.SIGPSpacOnResume(r23)
-	bc		BO_IF, 16, major_0x04a20_0x18			; not sure about this
+	bc		BO_IF, EWA.kFlagSIGP, _IntReturnFromSIGP			; not sure about this
 	cmpwi	cr2, r8, 0
 	lwz		r18, EWA.SIGPSelector(r23)
 	beq		cr2, @args_in_registers
@@ -2458,7 +2584,7 @@ SIGP
 	srwi	r3, r16, 2
 
 	;	Flags |= 0x8000
-	ori		r7, r7,  0x8000
+	_bset	r7, r7, EWA.kFlagSIGP
 	mr		r16, r6
 	stw		r7, EWA.Flags(r23)
 
@@ -2500,44 +2626,49 @@ major_0x04a20	;	OUTSIDE REFERER
 	mfspr	r10, srr0
 	mfspr	r11, srr1
 
-major_0x04a20_0x18	;	OUTSIDE REFERER
+
+
+_IntReturnFromSIGP
+
 	mfsprg	r23, 0
-	lwz		r7, -0x02b0(r23)
-	andis.	r8, r11,  0x02
+	lwz		r7, EWA.SIGPSavedR7(r23)
+	andis.	r8, r11, 0x0002						; MSR bit 14??
 	stw		r7, -0x0010(r23)
-	bne		major_0x04a20_0x30
-	li		r3, -0x7265
+	bne		@msr_14_set
+	li		r3, -29285
+@msr_14_set
 
-major_0x04a20_0x30
+	;	Restore address space
 	lwz		r8, EWA.SIGPSpacOnResume(r23)
-	lwz		r9, -0x001c(r23)
+	lwz		r9, EWA.PA_CurAddressSpace(r23)
 	cmpw	r9, r8
-	beq		major_0x04a20_0x44
+	beq		@no_switch_space
 	bl		SchSwitchSpace
+@no_switch_space
 
-major_0x04a20_0x44
-	lwz		r10, -0x02d0(r23)
-	lwz		r11, -0x02cc(r23)
-	lwz		r12, -0x02c8(r23)
-	lwz		r13, -0x02c4(r23)
-	lwz		r8, -0x02c0(r23)
-	lwz		r9, -0x02bc(r23)
+	lwz		r10, EWA.SIGPSavedR10(r23)
+	lwz		r11, EWA.SIGPSavedR11(r23)
+	lwz		r12, EWA.SIGPSavedR12(r23)
+	lwz		r13, EWA.SIGPSavedR13(r23)
+	lwz		r8, EWA.SIGPSavedXER(r23)
+	lwz		r9, EWA.SIGPSavedCTR(r23)
 	mtxer	r8
-	lwz		r8, -0x02b8(r23)
-	lwz		r6, -0x02b4(r23)
+	lwz		r8, EWA.SIGPSavedLR(r23)
+	lwz		r6, EWA.SIGPSavedR6(r23)
 	mtctr	r9
-	stw		r6, -0x0014(r23)
+	stw		r6, EWA.PA_ContextBlock(r23)
 	mtlr	r8
 	mr		r8, r3
 	mr		r9, r4
-	lwz		r16,  0x010c(r6)
-	lwz		r2,  0x0114(r6)
-	lwz		r3,  0x011c(r6)
-	lwz		r4,  0x0124(r6)
-	lwz		r5,  0x012c(r6)
-	lwz		r17,  0x0134(r6)
-	stw		r16,  0x0004(r23)
-	stw		r17,  0x0018(r23)
+	lwz		r16, ContextBlock.r1(r6)
+	lwz		r2, ContextBlock.r2(r6)
+	lwz		r3, ContextBlock.r3(r6)
+	lwz		r4, ContextBlock.r4(r6)
+	lwz		r5, ContextBlock.r5(r6)
+	lwz		r17, ContextBlock.r6(r6)
+	stw		r16, EWA.r1(r23)
+	stw		r17, EWA.r6(r23)
+
 	blr
 
 
@@ -2575,11 +2706,11 @@ IntSyscall	;	OUTSIDE REFERER
 	mfsprg	r1, 0
 	bne		@not_minus_1
 
-	;	sc -1: mess around with flags
+	;	sc -1: quick-test whether "this task" is blue (cr0.eq if not blue)
 
 		lwz		r0, EWA.Flags(r1)
 		mfsprg	r1, 2
-		rlwinm.	r0, r0,  0, 10, 10
+		rlwinm.	r0, r0, 0, EWA.kFlagBlue, EWA.kFlagBlue
 		mtlr	r1
 		mfsprg	r1, 1
 		rfi
@@ -2604,23 +2735,6 @@ IntSyscall	;	OUTSIDE REFERER
 	;	Positive numbered syscalls are a fast path to MPDispatch (twi 31, r31, 8)
 
 	bl		int_prepare			;	Save the usual suspects and get comfy
-
-;		Reg		Contains			Original saved in
-;		---------------------------------------------
-;		 r0		0					ContextBlock
-;		 r1		KDP					EWA
-;		 r2		(itself)					
-;		 r3		(itself)
-;		 r4		(itself)
-;		 r5		(itself)
-;		 r6		ContextBlock		EWA
-;		 r7		AllCpuFeatures		ContextBlock
-;		 r8		EWA					ContextBlock
-;		 r9		(itself)			ContextBlock
-;		r10		SRR0				ContextBlock
-;		r11		SRR1				ContextBlock
-;		r12		LR					ContextBlock
-;		r13		CR					ContextBlock
 
 	lwz		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.NanoKernelCallCounts + 32(r1)
 	addi	r9, r9, 1

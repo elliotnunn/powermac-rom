@@ -2310,7 +2310,7 @@ FDPEmulateInstruction
 		rlwinm	r17, r27, 13, 25, 29
 		rlwinm	r18, r27, 18, 25, 29
 		beq		cr6, FDP_1214_0x2b4
-		mtcrf	 0x3f, r21
+		mtcrf	0x3f, r21
 		rlwinm	r19, r27, 23, 25, 29
 		beq		FDP_1bd0
 		bne		cr1, FDP_1324

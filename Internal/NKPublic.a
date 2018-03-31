@@ -131,13 +131,7 @@ NominalReadyQ			ds.l	8	; -9b0:-990 ; unblocked tasks with priority 2
 IdleReadyQ				ds.l	8	; -990:-970 ; unblocked tasks with priority 3
 PriorityFlags			ds.l	1	; -970 ; bit 0 is 0, bit 1 is 1, etc...
 ScrambledMPCallTime		ds.l	1	; -96c ; by MP call return
-GlobalCPUFlags			ds.l	1	; -968 ; Init.s saves MQ (should be possible) here
-MQFeatureBit			equ		13	; equals 0x00040000
-AVFeatureBit			equ		12	; equals 0x00080000
-;								8	         0x00800000
-;								10	         0x00200000
-;int vector checks				9	         0x00400000
-
+FlagsTemplate			ds.l	1	; -968 ; typically just EWA.kFlagVec
 UserModeMSR				ds.l	1	; -964
 ThudBuffer				ds.b	96	; -960:-900 ; that's the kernel debugger
 NoIdeaR23				ds.l	1	; -900 ; r23 copies here... replated to RTAS?
@@ -160,7 +154,7 @@ DiagInfo				ds.b	256	; -5d0:-4d0
 ProcessorState			ds.b	128	; -4d0:-450 ; interesting what this gets used by
 FreeList				ds.l	4	; -450:-440
 MCR						ds.l	1	; -440 ; reported by heartbeat code
-Int						ds.w	1	; -43c ; set by CommonPIHPath: a one-byte 68k int ID or -1
+Pending68kInt			ds.w	1	; -43c ; used when Sch interrupts blue task (-1 means "none")
 						ds.w	1	; -43a
 DecClockRateHzCopy		ds.l	1	; -438 ; copied by Init.s
 OtherTimerQueuePtr		ds.l	1	; -434 ; unsigned timer queue in the pool, set by InitTMRQs
@@ -311,7 +305,7 @@ SpacesSavedAreaBase		ds.l	1	; -270, cpu+0d0
 SpacesDeferredAreaPtr	ds.l	1	; -26c, cpu+0d4
 						ds.l	1	; -268, cpu+0d8
 						ds.l	1	; -264, cpu+0dc
-						ds.l	1	; -260, cpu+0e0
+SchSavedIncomingTask	ds.l	1	; -260, cpu+0e0
 						ds.l	1	; -25c, cpu+0e4
 TimerDispatchLR			ds.l	1	; -258, cpu+0e8
 						ds.l	1	; -254, cpu+0ec
@@ -408,7 +402,7 @@ WeMightClear			ds.l	1	; -114, cpu+22c ; still boots if not cleared
 						ds.l	1	; -0f0, cpu+250
 						ds.l	1	; -0ec, cpu+254
 						ds.l	1	; -0e8, cpu+258
-SpecialAreaPtr			ds.l	1	; -0e4, cpu+25c
+SpecialAreaPtr			ds.l	1	; -0e4, cpu+25c ; will panic on page fault if this is not valid
 						ds.l	1	; -0e0, cpu+260
 						ds.l	1	; -0dc, cpu+264
 						ds.l	1	; -0d8, cpu+268
@@ -512,26 +506,32 @@ kFlag4			equ		4
 kFlag5			equ		5
 kFlag6			equ		6
 kFlag7			equ		7
-kFlag8			equ		8
-kFlag9			equ		9
-kFlagBlue		equ		10	; could mean "currently in interrupt mode"
-kFlag11			equ		11
-kFlag12			equ		12
-kFlag13			equ		13
-kFlag14			equ		14
-kFlag15			equ		15
-kFlag16			equ		16
+
+							; PER-TASK FLAGS
+kFlagEmu		equ		8	; emulator is running
+kFlag9			equ		9	; * = preserved on alt>sys switch
+kFlagBlue		equ		10	; *
+kFlag11			equ		11	; *
+kFlagVec		equ		12	; *
+kFlagHasMQ		equ		13	; *
+kFlag14			equ		14	; *
+kFlag15			equ		15	; *
+kFlagSIGP		equ		16	; *
+
+							; PER-CONTEXT FLAGS
 kFlag17			equ		17
 kFlag18			equ		18
 kFlag19			equ		19
-kFlag20			equ		20
-kFlag21			equ		21
-kFlag22			equ		22
-kFlag23			equ		23
+
+kFlagFE0		equ		20	; these correspond with MSR bits
+kFlagSE			equ		21
+kFlagBE			equ		22
+kFlagFE1		equ		23
+
 kFlag24			equ		24
 kFlag25			equ		25
-kFlag26			equ		26
-kFlag27			equ		27
+kFlag26			equ		26	; can be copied from kFlagSE
+kFlagLowSaves	equ		27
 kFlag28			equ		28
 kFlag29			equ		29
 kFlag30			equ		30
@@ -562,14 +562,17 @@ BATs					ds.l	32	; 280:300
 
 ;	GAP
 						org		0x340
-MinusOne1				ds.l	1	; 340 ; several longs set at once
-						ds.l	1	; 344
-MinusOne2				ds.l	1	; 348
-						ds.l	1	; 34c
-MinusOne3				ds.l	1	; 350
-						ds.l	1	; 354
-MinusOne4				ds.l	1	; 358
-						ds.l	1	; 35c
+NCBPointerCache
+NCBCacheLA0				ds.l	1	; 340
+NCBCachePA0				ds.l	1	; 344
+NCBCacheLA1				ds.l	1	; 348
+NCBCachePA1				ds.l	1	; 34c
+NCBCacheLA2				ds.l	1	; 350
+NCBCachePA2				ds.l	1	; 354
+NCBCacheLA3				ds.l	1	; 358
+NCBCachePA3				ds.l	1	; 35c
+NCBPointerCacheEnd
+
 YellowVecBase			ds.l	48	; 360:420 ; used to ignore illegal AltiVec insns by Init.s
 OrangeVecBase			ds.l	48	; 420:4e0
 RedVecBase				ds.l	48	; 4e0:5a0
@@ -578,7 +581,7 @@ OtherFreeThing			ds.l	1	; 5a4
 TopOfFreePages			ds.l	1	; 5a8 ; gotten from the old SPRG0
 						ds.l	1	; 5ac
 PA_InterruptHandler		ds.l	1	; 5b0
-						ds.l	1	; 5b4
+LA_NCB					ds.l	1	; 5b4 ; most recent physical address found
 HiLevelPerfMonitorBits	ds.l	1	; 5b8
 						ds.l	1	; 5bc
 PerfMonitorBits			ds.l	1	; 5c0

@@ -850,7 +850,7 @@ SchSwitchSpace
 	bne		Local_Panic
 
 	;	Intend to skip the dssall instruction if Altivec is... present? absent?
-	rlwinm.	r16, r7, 0, 12, 12			;	seems to be leftover from Init.s Altivec testing
+	rlwinm.	r16, r7, 0, EWA.kFlagVec, EWA.kFlagVec			;	seems to be leftover from Init.s Altivec testing
 
 	;	Apply the address space to the segment registers
 	isync
@@ -1144,6 +1144,8 @@ SchReturn
 ;	Either fallen through from SchReturn, or jumped to by
 ;	TrulyCommonMPCallReturnPath when it wants to block the caller
 
+;	SchLock should be acquired before now!
+
 SchEval
 	mfsprg	r14, 0
 
@@ -1240,6 +1242,7 @@ major_0x142dc_0xd8	;	OUTSIDE REFERER
 major_0x142dc_0x140
 	lwz		r25,  0x0064(r30)
 	li		r26,  0x00
+
 	rlwinm.	r8, r25,  0, 21, 22
 	andc	r27, r25, r8
 	beq+	major_0x142dc_0x184
@@ -1251,12 +1254,16 @@ major_0x142dc_0x140
 	stw		r25,  0x0000(r26)
 	InsertAsPrev	r26, r25, scratch=r27
 	b		major_0x142dc_0x58
-
 major_0x142dc_0x184
+
 	cmpw	cr3, r30, r31
 	rlwinm.	r8, r25,  0, 27, 27
-	bne		cr3, major_0x14548
-	bne		major_0x14548
+	bne		cr3, _SchPreempt
+	bne		_SchPreempt
+
+
+	;	Don't preempt, keep running the same task
+
 	bl		GetTime
 	bl		major_0x148ec
 	lwz		r27,  0x0064(r31)
@@ -1280,34 +1287,9 @@ major_0x142dc_0x1bc
 
 
 
-########  ######## #### 
-##     ## ##        ##  
-##     ## ##        ##  
-########  ######    ##  
-##   ##   ##        ##  
-##    ##  ##        ##  
-##     ## ##       #### 
+;	SchLock should be released before here
 
-;	                      SchExitInterrupt
-
-;	All MPCalls get here?
-;	r0,7,8,9,10,11,12,13 restored from r6 area
-;	r1,6 restored from sprg0 area
-;	Apple used the "reserved" (not first three) bits of XER.
-;	If bit 27 of 0xedc(r1) is set:
-;	   Bit 22 of XER is cleared
-;	   Bit 10 of r7 is inserted into XER at bit 23
-
-;	> sprg0 = for r1 and r6
-;	> r1    = kdp
-;	> r6    = register restore area
-;	> r7    = flag to insert into XER
-;	> r10   = new srr0 (return location)
-;	> r11   = new srr1
-;	> r12   = lr restore
-;	> r13   = cr restore
-
-SchExitInterrupt	;	OUTSIDE REFERER
+SchExitInterrupt
 	lwz		r8,  0x0edc(r1)
 	mfsprg	r1, 0
 	mtlr	r12
@@ -1338,157 +1320,231 @@ SchExitInterrupt_0x2c
 
 
 
-major_0x14548	;	OUTSIDE REFERER
-	lwz		r16,  0x0064(r31)
-	stw		r30, -0x0260(r14)
-	rlwinm	r16, r16,  0, 27, 25
-	stw		r6,  0x0088(r31)
-	mfsprg	r8, 3
-	stw		r16,  0x0064(r31)
-	stw		r8,  0x00f0(r31)
-	lwz		r8, -0x000c(r14)
-	stw		r7,  0x0000(r6)
-	stw		r8,  0x0004(r6)
-	mfxer	r8
-	stw		r13,  0x00dc(r6)
-	stw		r8,  0x00d4(r6)
-	stw		r12,  0x00ec(r6)
-	mfctr	r8
-	stw		r10,  0x00fc(r6)
-	stw		r8,  0x00f4(r6)
-	mfspr	r8, pvr
-	rlwinm.	r8, r8,  0,  0, 14
-	bne		major_0x14548_0x58
-	mfspr	r8, mq
-	stw		r8,  0x00c4(r6)
+;	ARG		outgoing_cb *r6, EWA *r14, incoming_task *r30, task_to_save_to *r31
 
-major_0x14548_0x58
-	lwz		r8,  0x0004(r14)
-	stw		r8,  0x010c(r6)
-	stw		r2,  0x0114(r6)
-	stw		r3,  0x011c(r6)
-	andi.	r8, r11,  0x2000
-	stw		r4,  0x0124(r6)
-	lwz		r8,  0x0018(r14)
-	stw		r5,  0x012c(r6)
-	stw		r8,  0x0134(r6)
+_SchPreempt
+
+	;	Save info for the previous task
+
+	lwz		r16, Task.Flags(r31)
+	stw		r30, EWA.SchSavedIncomingTask(r14)					; will clobber r30
+	_bclr	r16, r16, Task.kFlag26
+	stw		r6, Task.ContextBlockPtr(r31)
+	mfsprg	r8, 3
+	stw		r16, Task.Flags(r31)
+	stw		r8, Task.YellowVecTblPtr(r31)
+
+
+	;	Spam its context block
+
+	lwz		r8, EWA.Enables(r14)
+	stw		r7, ContextBlock.Flags(r6)
+	stw		r8, ContextBlock.Enables(r6)
+	mfxer	r8
+	stw		r13, ContextBlock.CR(r6)
+	stw		r8, ContextBlock.XER(r6)
+	stw		r12, ContextBlock.LR(r6)
+	mfctr	r8
+	stw		r10, ContextBlock.CodePtr(r6)
+	stw		r8, ContextBlock.KernelCTR(r6)
+
+	mfspr	r8, pvr
+	rlwinm.	r8, r8, 0, 0, 14
+	bne		@not_601
+	mfspr	r8, mq
+	stw		r8, ContextBlock.MQ(r6)
+@not_601
+
+	lwz		r8, EWA.r1(r14)
+	stw		r8, ContextBlock.r1(r6)
+	stw		r2, ContextBlock.r2(r6)
+	stw		r3, ContextBlock.r3(r6)
+	andi.	r8, r11, MSR_FP
+	stw		r4, ContextBlock.r4(r6)
+	lwz		r8, EWA.r6(r14)
+	stw		r5, ContextBlock.r5(r6)
+	stw		r8, ContextBlock.r6(r6)
 	bnel	Save_f0_f31
-	lwz		r31, -0x0008(r14)
-	lwz		r30, -0x0260(r14)
-	rlwinm.	r8, r7,  0, 12, 12
+
+	lwz		r31, EWA.PA_CurTask(r14)							; sly aside: r30 = new, r31 = current
+	lwz		r30, EWA.SchSavedIncomingTask(r14)
+
+	rlwinm.	r8, r7, 0, EWA.kFlagVec, EWA.kFlagVec
 	bnel	Save_v0_v31
-	stw		r11,  0x00a4(r6)
-	lwz		r8,  0x00e8(r31)
-	addi	r8, r8,  0x01
-	stw		r8,  0x00e8(r31)
+	stw		r11, ContextBlock.MSR(r6)
+
+
+	;	Bump current task's preemption ctr
+
+	lwz		r8, Task.PreemptCtr(r31)
+	addi	r8, r8, 1
+	stw		r8, Task.PreemptCtr(r31)
+
+
+	;	No clue
+
 	bl		GetTime
 	bl		major_0x148ec
+
+
+	;	Update EWA global to match this task, and set task's state to 2
 	mfsprg	r14, 0
-	li		r27,  0x02
-	lbz		r28,  0x0019(r30)
-	stb		r27,  0x0018(r30)
-	stb		r28, -0x0117(r14)
+	li		r27, 2
+	lbz		r28, Task.Priority(r30)
+	stb		r27, Task.State(r30)
+	stb		r28, EWA.TaskPriority(r14)
+
+	;	If incoming task is not already running, and running task is not in a queue, re-ready the running task
 	cmplw	r30, r31
-	lwz		r16,  0x0010(r31)
-	beq		major_0x14548_0xd4
-	cmpwi	r16,  0x00
+	lwz		r16, Task.QueueMember + LLL.Next(r31)
+	beq		@no
+	cmpwi	r16, 0
 	mr		r8, r31
 	beql	SchRdyTaskNow
-major_0x14548_0xd4
+@no
+
+
+	;	Play more with the incoming task
 
 	mfsprg	r19, 0
-	li		r8,  0x00
+
+	li		r8, 0
 	stb		r8, EWA.SchEvalFlag(r19)
+
 	lhz		r8, EWA.CPUIndex(r19)
-	lwz		r6,  0x0088(r30)
-	lwz		r28, -0x0340(r19)
-	sth		r8,  0x001a(r30)
-	stw		r28,  0x0078(r30)
-	stw		r30, -0x0008(r19)
-	stw		r6, -0x0014(r19)
-	lwz		r7,  0x0000(r6)
-	lwz		r28,  0x0004(r6)
-	stw		r7, -0x0010(r19)
-	stw		r28, -0x000c(r19)
-	lwz		r27,  0x0064(r30)
-	lwz		r13,  0x00dc(r6)
-	ori		r27, r27,  0x20
+	lwz		r6, Task.ContextBlockPtr(r30)
+	lwz		r28, EWA.CPUBase + CPU.ID(r19)
+	sth		r8, Task.CPUIndex(r30)
+	stw		r28, Task.CpuID(r30)
+
+	stw		r30, EWA.PA_CurTask(r19)
+
+	stw		r6, EWA.PA_ContextBlock(r19)
+
+	lwz		r7, ContextBlock.Flags(r6)
+	lwz		r28, ContextBlock.Enables(r6)
+	stw		r7, EWA.Flags(r19)
+	stw		r28, EWA.Enables(r19)
+
+	lwz		r27, Task.Flags(r30)
+	lwz		r13, ContextBlock.CR(r6)
+	ori		r27, r27, 1 << (31 - Task.kFlag26)
 	lwz		r11,  0x00a4(r6)
 	lwz		r8,  0x00f0(r30)
 	rlwimi	r11, r27, 24, 29, 29
 	rlwinm	r27, r27,  0,  9,  7
 	mtsprg	3, r8
-	stw		r27,  0x0064(r30)
-	lwz		r18,  0x0070(r30)
-	lwz		r9, -0x001c(r19)
+	stw		r27, Task.Flags(r30)
+
+
+	;	Switch address space if necessary
+
+	lwz		r18, Task.AddressSpacePtr(r30)
+	lwz		r9, EWA.PA_CurAddressSpace(r19)
 	cmpw	r18, r9
-	beq		major_0x14548_0x148
+	beq		@same_space
 	mr		r8, r18
 	bl		SchSwitchSpace
+@same_space
 
-major_0x14548_0x148
+
 	mfsprg	r19, 0
+
+
+	;	Is this the blue task? If so, do we need to interrupt it?
+
 	mtcr	r7
-	lis		r28,  0x00
-	ori		r28, r28,  0x10
-	bne		cr2, major_0x14548_0x20c
+	lisori	r28, 1 << (31 - Task.kFlagSchToInterruptEmu)
+	bc		BO_IF_NOT, EWA.kFlagBlue, @NO_BLUE_INTERRUPT
 	and.	r28, r28, r27
-	li		r8,  0x00
-	beq		major_0x14548_0x20c
+	li		r8, 0
+	beq		@NO_BLUE_INTERRUPT
+
+
+	;	TRIGGER AN INTERRUPT IN THE BLUE TASK
+
 	andc	r27, r27, r28
 	lwz		r29, PSA.MCR(r1)
-	stw		r27,  0x0064(r30)
+	stw		r27, Task.Flags(r30)						; unset the task flag that got us here
 	stw		r8, PSA.MCR(r1)
-	blt		cr2, major_0x14548_0x1cc
-	bsol	cr6, Local_Panic
-	clrlwi	r8, r7,  0x08
-	stw		r8,  0x0000(r6)
+	bc		BO_IF, EWA.kFlagEmu, @already_in_system_context
+	bcl		BO_IF, 27, Local_Panic
+
+
+	;	Need to switch blue task from alternate context to system context
+
+	clrlwi	r8, r7, 8
+	stw		r8, ContextBlock.Flags(r6)
+
 	lwz		r6, KDP.PA_ECB(r1)
-	addi	r26, r1,  0x360
+
+	addi	r26, r1, KDP.YellowVecBase
 	mtsprg	3, r26
-	stw		r26,  0x00f0(r30)
-	stw		r6, -0x0014(r19)
-	stw		r6,  0x0088(r30)
-	lwz		r7,  0x0000(r6)
-	lwz		r26,  0x0004(r6)
+	stw		r26, Task.YellowVecTblPtr(r30)
+
+	stw		r6, EWA.PA_ContextBlock(r19)
+	stw		r6, Task.ContextBlockPtr(r30)
+
+	lwz		r7, ContextBlock.Flags(r6)
+	lwz		r26, ContextBlock.Enables(r6)
 	mtcr	r7
-	stw		r26, -0x000c(r19)
-	lwz		r13,  0x00dc(r6)
-	lwz		r11,  0x00a4(r6)
-	bsol	cr6, Local_Panic
-	rlwimi	r11, r7,  0, 20, 23
-	rlwimi	r7, r8,  0,  9, 16
-	rlwimi	r11, r27, 24, 29, 29
-	stw		r7, -0x0010(r19)
+	stw		r26, EWA.Enables(r19)
 
-major_0x14548_0x1cc
+	lwz		r13, ContextBlock.CR(r6)
+	lwz		r11, ContextBlock.MSR(r6)
+
+	bcl		BO_IF, 27, Local_Panic
+
+	rlwimi	r11, r7, 0, 20, 23							; apply MSR[FE0/SE/BE/FE1]
+	rlwimi	r7, r8, 0, 9, 16							; keep flags 9-16 from alternate context
+	rlwimi	r11, r27, 24, 29, 29						; MSR[PMM] = Task.kFlagPerfMon
+
+	stw		r7, EWA.Flags(r19)
+@already_in_system_context
+
+
+	;	Blue task now (or was already) in system context (i.e. 68k emulator is running)
+
 	lwz		r17, ContextBlock.PriorityShifty(r6)
-	ori		r17, r17,  0x100
+	ori		r17, r17, 0x100
 	stw		r17, ContextBlock.PriorityShifty(r6)
-	lhz		r17, -0x043c(r1)
-	lwz		r18,  0x067c(r1)
-	cmplwi	r17,  0xffff
-	lwz		r26,  KDP.PostIntMaskInit(r1)
-	beq		major_0x14548_0x1f8
-	sth		r17,  0x0000(r18)
-	li		r17, -0x01
-	sth		r17, -0x043c(r1)
 
-major_0x14548_0x1f8
-	cmpwi	r29,  0x00
+
+	;	EDP.INTM_L = PSA.Pending68kInt (presumably the emulator polls this)
+
+	lhz		r17, PSA.Pending68kInt(r1)
+	lwz		r18, KDP.PA_EmulatorIplValue(r1)
+	cmplwi	r17, 0xffff									; i.e. (short)(-1)
+	lwz		r26, KDP.PostIntMaskInit(r1)
+	beq		@no_change_to_int_level						; would this ever happen?
+
+	sth		r17, 0(r18)
+	li		r17, -1
+	sth		r17, PSA.Pending68kInt(r1)
+@no_change_to_int_level
+
+
+	;	Fiddle with the emulator's Condition Register ("int mask")
+
+	cmpwi	r29, 0
 	or		r13, r13, r29
-	bne		major_0x14548_0x20c
+	bne		@did_set_bits_in_mask
 	lwz		r29,  KDP.ClearIntMaskInit(r1)
 	and		r13, r13, r29
+@did_set_bits_in_mask
 
-major_0x14548_0x20c
+@NO_BLUE_INTERRUPT
+
+
+	;	Back to the common path for preemption (pretty boring)
+
 	lwz		r29,  0x00d8(r6)
 	cmpwi	r29,  0x00
 	lwz		r8,  0x0210(r29)
-	beq		major_0x14548_0x220
+	beq		_SchPreempt_0x220
 	mtspr	vrsave, r8
+_SchPreempt_0x220
 
-major_0x14548_0x220
 	lwz		r8,  0x00d4(r6)
 	lwz		r12,  0x00ec(r6)
 	mtxer	r8
@@ -1497,11 +1553,11 @@ major_0x14548_0x220
 	mtctr	r8
 	mfspr	r8, pvr
 	rlwinm.	r8, r8,  0,  0, 14
-	bne		major_0x14548_0x24c
+	bne		_SchPreempt_0x24c
 	lwz		r8,  0x00c4(r6)
 	mtspr	mq, r8
 
-major_0x14548_0x24c
+_SchPreempt_0x24c
 	li		r9,  0x124
 	lwz		r8,  0x010c(r6)
 	dcbt	r9, r6
@@ -1539,7 +1595,8 @@ major_0x14548_0x24c
 	lwz		r29,  0x01ec(r6)
 	lwz		r30,  0x01f4(r6)
 	lwz		r31,  0x01fc(r6)
-	beq		major_0x14548_0x380
+
+	beq		_SchPreempt_0x380
 	mfmsr	r8
 	ori		r8, r8,  0x2000
 	ori		r11, r11,  0x2000
@@ -1579,18 +1636,10 @@ major_0x14548_0x24c
 	lfd		f29,  0x02e8(r6)
 	lfd		f30,  0x02f0(r6)
 	lfd		f31,  0x02f8(r6)
+_SchPreempt_0x380
 
-major_0x14548_0x380
 	_AssertAndRelease	PSA.SchLock, scratch=r8
 
-;	sprg0 = for r1 and r6
-;	r1 = kdp
-;	r6 = register restore area
-;	r7 = flag to insert into XER
-;	r10 = new srr0 (return location)
-;	r11 = new srr1
-;	r12 = lr restore
-;	r13 = cr restore
 	b		SchExitInterrupt
 
 

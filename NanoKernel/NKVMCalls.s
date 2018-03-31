@@ -1781,11 +1781,9 @@ RemovePTEFromHTAB	;	OUTSIDE REFERER
 	addi	r8, r8,  0x01
 	stw		r8,  0x0e98(r1)
 	rlwimi	r16, r9,  0,  0, 19	;move page# back into PTE
-	li		r8, -0x01
-	stw		r8,  KDP. MinusOne1(r1)
-	stw		r8,  KDP. MinusOne2(r1)
-	stw		r8,  KDP. MinusOne3(r1)
-	stw		r8,  KDP. MinusOne4(r1)
+
+	_InvalNCBPointerCache scratch=r8
+
 	li		r8,  0x00	;0 upper HTAB word
 	li		r9,  0x00	;0 lower HTAB word
 	b		EditPTEInHTAB	;update stored PTE and invalidate HTAB entry

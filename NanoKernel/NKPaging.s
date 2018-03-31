@@ -356,11 +356,9 @@ PagingFunc1	;	OUTSIDE REFERER
 @_4b0
 	sync
 	isync
-	li		r8, -0x01
-	stw		r8,  0x0340(r1)
-	stw		r8,  0x0348(r1)
-	stw		r8,  0x0350(r1)
-	stw		r8,  0x0358(r1)
+
+	_InvalNCBPointerCache scratch=r8
+
 	mfsprg	r8, 0
 	mr		r9, r28
 	lwz		r8, -0x001c(r8)
@@ -598,7 +596,7 @@ PagingFunc2AndAHalf
 
 
 
-PagingFunc3	;	OUTSIDE REFERER
+PagingL2PWithBATs	;	OUTSIDE REFERER
 	lwz		r30,  0x0000(r29)
 	li		r28, -0x01
 	rlwimi	r28, r30, 15,  0, 14
@@ -619,7 +617,7 @@ PagingFunc3	;	OUTSIDE REFERER
 	rlwimi	r28, r30, 15,  0, 14
 	xor		r31, r27, r30
 	andc.	r31, r31, r28
-	bne		PagingFunc4
+	bne		PagingL2PWithoutBATs
 
 @_54
 	andi.	r31, r30,  0x01
@@ -631,7 +629,7 @@ PagingFunc3	;	OUTSIDE REFERER
 
 
 
-PagingFunc4	;	OUTSIDE REFERER
+PagingL2PWithoutBATs	;	OUTSIDE REFERER
 	mfsrin	r31, r27
 	rlwinm	r30, r27, 10, 26, 31
 	rlwimi	r30, r31,  7,  1, 24

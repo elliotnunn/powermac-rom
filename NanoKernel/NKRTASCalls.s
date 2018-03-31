@@ -25,7 +25,7 @@ rtas_is_available
 
 	_Lock			PSA.RTASLock, scratch1=r8, scratch2=r9
 
-	mtcrf	 0x3f, r7
+	mtcrf	0x3f, r7
 	lwz		r9, KDP.PA_ECB(r1)
 	lwz		r8, EWA.Enables(r1)
 	stw		r7,  0x0000(r6)
@@ -80,11 +80,11 @@ kcRTASDispatch_0x8c
 	stw		r29,  0x01ec(r6)
 	stw		r30,  0x01f4(r6)
 	stw		r31,  0x01fc(r6)
-	bnel	major_0x03e18_0xb4
+	bnel	bugger_around_with_floats
 	stw		r11,  0x00a4(r6)
 	mr		r27, r3
-	addi	r29, r1, 800
-	bl		PagingFunc3
+	addi	r29, r1, KDP.BATs + 0xa0
+	bl		PagingL2PWithBATs
 	beql	Local_Panic
 	rlwimi	r3, r31,  0,  0, 19
 	lhz		r8,  0x0004(r3)
@@ -92,8 +92,8 @@ kcRTASDispatch_0x8c
 	beq		kcRTASDispatch_0x14c
 	slwi	r8, r8,  2
 	lwzx	r27, r8, r3
-	addi	r29, r1, 800
-	bl		PagingFunc3
+	addi	r29, r1, KDP.BATs + 0xa0
+	bl		PagingL2PWithBATs
 	beql	Local_Panic
 	lwzx	r9, r8, r3
 	rlwimi	r9, r31,  0,  0, 19
@@ -142,7 +142,7 @@ kcRTASDispatch_0x190
 	lwz		r8,  0x00f4(r6)
 	lwz		r10,  0x00fc(r6)
 	mtctr	r8
-	bnel	major_0x03e18_0x8
+	bnel	IntHandleSpecialFPException
 	lwz		r8,  0x010c(r6)
 	stw		r8,  0x0004(r1)
 	lwz		r2,  0x0114(r6)

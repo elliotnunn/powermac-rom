@@ -1608,7 +1608,7 @@ SetEvent
 
 	lwz		r16, Task.Flags(r26)
 	lbz		r19, Task.State(r26)
-	ori		r16, r16, (1 << (31 - Task.kFlag68kInterrupt))
+	ori		r16, r16, (1 << (31 - Task.kFlagSchToInterruptEmu))
 	stw		r16, Task.Flags(r26)
 
 	;	But what *is* MCR?
@@ -2595,23 +2595,23 @@ UnblockBlueIfCouldBePolling
 	cmpwi	r17, 0
 
 	addi	r16, r19, Task.QueueMember
-	bne		major_0x0dce8_0x70
+	bne		@blue_already_running
 
 	RemoveFromList		r16, scratch1=r17, scratch2=r18
 
 	lbz		r17, Task.Timer + Timer.Byte3(r19)
 	cmpwi	r17, 1
-	bne		major_0x0dce8_0x60
+	bne		@no_timer_to_dequeue
 	addi	r8, r19, Task.Timer
 	bl		DequeueTimer
 	lwz		r19, PSA.PA_BlueTask(r1)
-major_0x0dce8_0x60
+@no_timer_to_dequeue
 
-	li		r16,  0x01
-	stb		r16,  0x0019(r19)
+	li		r16, Task.kLatencyProtectPriority
+	stb		r16, Task.Priority(r19)
 	lwz		r8, PSA.PA_BlueTask(r1)
 	bl		SchRdyTaskNow
-major_0x0dce8_0x70
+@blue_already_running
 
 	lwz		r8, PSA.PA_BlueTask(r1)
 	mtlr	r24

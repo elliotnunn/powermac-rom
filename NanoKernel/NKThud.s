@@ -951,7 +951,7 @@ print_memory_logical_0x48
 	b		print_memory_logical_0x6c
 
 print_memory_logical_0x5c
-	bl		PagingFunc4
+	bl		PagingL2PWithoutBATs
 	rlwimi	r31, r27,  0, 20, 31
 	lbz		r8,  0x0000(r31)
 	bl		print_unknown
@@ -977,7 +977,7 @@ print_memory_logical_0xac
 	bl		PagingFunc1
 	li		r8,  0x20
 	bne		print_memory_logical_0xdc
-	bl		PagingFunc4
+	bl		PagingL2PWithoutBATs
 	rlwimi	r31, r27,  0, 20, 31
 	lbz		r8,  0x0000(r31)
 	cmpwi	r8,  0xff

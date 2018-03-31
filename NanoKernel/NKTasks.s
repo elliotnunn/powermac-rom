@@ -82,7 +82,7 @@ MPCall_7	;	OUTSIDE REFERER
 
 
 
-;	ARG		GlobalCPUFlags r7, Process *r8
+;	ARG		Flags r7, Process *r8
 ;	RET		Task *r8
 
 CreateTask
@@ -132,7 +132,7 @@ CreateTask
 
 ;	Create a semaphore struct inside the task
 
-	addi				r16, r28, Task.Semaphore
+	addi				r16, r28, Task.PageFaultSema
 	_lstart				r17, Semaphore.kSignature
 	stw					r16, Semaphore.BlockedTasks + LLL.Next(r16)
 	_lfinish
@@ -140,23 +140,23 @@ CreateTask
 	stw					r17, Semaphore.BlockedTasks + LLL.Signature(r16)
 
 	li		r16, 1
-	stw		r16, Task.Semaphore + Semaphore.MaxValue(r28)
+	stw		r16, Task.PageFaultSema + Semaphore.MaxValue(r28)
 	li		r16, 0
-	stw		r16, Task.Semaphore + Semaphore.Value(r28)
+	stw		r16, Task.PageFaultSema + Semaphore.Value(r28)
 
-	addi	r8, r28, Task.Semaphore
+	addi	r8, r28, Task.PageFaultSema
 	li		r9, Semaphore.kIDClass
 	bl		MakeID
 	cmpwi	r8, 0
 	beq		@fail_semq_no_id
-	stw		r8, Task.Semaphore + Semaphore.BlockedTasks + LLL.Freeform(r28)
+	stw		r8, Task.PageFaultSema + Semaphore.BlockedTasks + LLL.Freeform(r28)
 
 
 
 ;	Allocate a vector (i.e. AltiVec) save area
 
 	;	Conditionally, that is 
-	rlwinm.	r8, r7, 0, PSA.AVFeatureBit, PSA.AVFeatureBit
+	rlwinm.	r8, r7, 0, 1 << (31 - EWA.kFlagVec)
 	beq		@non_altivec_task
 
 	;	Allocate and check
@@ -220,7 +220,7 @@ CreateTask
 	addi	r16, r28, Task.ContextBlock
 	stw		r16, Task.ContextBlockPtr(r28)		; overridden to real ECB on blue
 
-	lwz		r16, PSA.GlobalCPUFlags(r1)
+	lwz		r16, PSA.FlagsTemplate(r1)
 	stw		r16, Task.ContextBlock + ContextBlock.Flags(r28)
 
 	lwz		r16, PSA.UserModeMSR(r1)
@@ -239,9 +239,9 @@ CreateTask
 	li		r16, 0
 	stw		r16, Task.Zero1(r28)
 	stw		r16, Task.Zero2(r28)
-	stw		r16, Task.Zero3(r28)
-	stw		r16, Task.Zero4(r28)
-	stw		r16, Task.Zero5(r28)
+	stw		r16, Task.CodeFaultCtr(r28)
+	stw		r16, Task.DataFaultCtr(r28)
+	stw		r16, Task.PreemptCtr(r28)
 
 	;	Who knows that these are for
 	bl		GetTime
@@ -656,10 +656,10 @@ MPThrowException
 		mtcr	r16
 
 		li		r3, kMPTaskAbortedErr
-		bc		BO_IF, 30, ReleaseAndReturnMPCall
+		bc		BO_IF, Task.kFlagAborted, ReleaseAndReturnMPCall
 
 		li		r3, kMPTaskStoppedErr
-		bc		BO_IF, 22, ReleaseAndReturnMPCall
+		bc		BO_IF, Task.kFlagStopped, ReleaseAndReturnMPCall
 
 		bc		BO_IF, 14, ReleaseAndReturnMPCallOOM
 
@@ -777,7 +777,7 @@ MPCall_58_0xe0
 
 
 
-FuncExportedFromTasks	;	OUTSIDE REFERER
+ThrowTaskToDebugger	;	OUTSIDE REFERER
 	addi	r16, r1, PSA.DbugQueue
 	addi	r17, r31, Task.QueueMember
 	stw		r16, LLL.Freeform(r17)
@@ -785,13 +785,13 @@ FuncExportedFromTasks	;	OUTSIDE REFERER
 	li		r8,  0x1c
 	bl		PoolAlloc
 	lwz		r29, Task.Flags(r31)
-	_bset	r29, r29, 22
+	_bset	r29, r29, Task.kFlagStopped
 
 MPCall_58_0x114
 	mtcr	r29
 	mr		r28, r8
-	bc		BO_IF, 14, MPCall_58_0x13c
-	bc		BO_IF, 20, MPCall_58_0x13c
+	bc		BO_IF, Task.kFlag14, MPCall_58_0x13c
+	bc		BO_IF, Task.kFlag20, MPCall_58_0x13c
 	lwz		r8, -0x08e8(r1)
 
 ;	r8 = id
@@ -799,10 +799,10 @@ MPCall_58_0x114
 	cmpwi	r9, Queue.kIDClass
 
 	mr		r30, r8
-	ori		r29, r29,  0x800
+	_bset	r29, r29, Task.kFlag20
 	beq		MPCall_58_0x184
-
 MPCall_58_0x13c
+
 	bc		BO_IF, 19, MPCall_58_0x158
 	lwz		r8,  0x00f4(r31)
 
@@ -811,7 +811,7 @@ MPCall_58_0x13c
 	cmpwi	r9, Queue.kIDClass
 
 	mr		r30, r8
-	ori		r29, r29,  0x1000
+	_bset	r29, r29, Task.kFlag19
 	beq		MPCall_58_0x184
 
 MPCall_58_0x158
@@ -1001,7 +1001,7 @@ MPCall_60_0x144
 
 MPCall_60_0x150
 	lwz		r16,  0x0088(r31)
-	rlwinm.	r8, r7,  0, 12, 12
+	rlwinm.	r8, r7, 0, EWA.kFlagVec, EWA.kFlagVec
 	lwz		r16,  0x00d8(r16)
 	beq		ReleaseAndReturnMPCallOOM
 	cmplwi	cr3, r16,  0x00
@@ -1299,7 +1299,7 @@ MPCall_61_0xd8
 
 MPCall_61_0xe8
 	lwz		r16,  0x0088(r31)
-	rlwinm.	r8, r7,  0, 12, 12
+	rlwinm.	r8, r7, 0, EWA.kFlagVec, EWA.kFlagVec
 	lwz		r16,  0x00d8(r16)
 	beq		ReleaseAndReturnMPCallOOM
 	cmplwi	cr3, r16,  0x00
@@ -1399,7 +1399,7 @@ MPCall_61_0x1ec
 MPCall_61_0x1fc
 	li		r21,  0x04
 	lwz		r18,  0x00a4(r16)
-	rlwimi	r18, r17,  0, 20, 23
+	rlwimi	r18, r17,  0, 20, 23 ; MSR[FE0/SE/BE/FE1]
 	rlwimi	r18, r17,  0, 31, 31
 	stw		r18,  0x00a4(r16)
 	stw		r21,  0x0154(r6)

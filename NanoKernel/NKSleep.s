@@ -88,8 +88,8 @@ MPGetKernelState
 	stw		r5, ContextBlock.r5(r6)
 	stw		r8, ContextBlock.r6(r6)
 	bnel	Save_f0_f31
-	rlwinm.	r8, r7,  0, 12, 12 ; flags
-	bnel	Save_v0_v31
+	rlwinm.	r8, r7, 0, EWA.kFlagVec, EWA.kFlagVec ; flags
+	bnel+	Save_v0_v31
 
 	lwz		r3, ContextBlock.r3(r6)
 	lwz		r4, ContextBlock.r4(r6)
@@ -97,8 +97,8 @@ MPGetKernelState
 	
 	stw		r11,ContextBlock.MSR(r6)
 	mr		r27, r5
-	addi	r29, r1, 800
-	bl		PagingFunc3
+	addi	r29, r1, KDP.BATs + 0xa0
+	bl		PagingL2PWithBATs
 	beq		Local_ReturnInsufficientResourcesErrFromMPCall
 	rlwimi	r27, r31,  0,  0, 19
 	mr		r17, r27
@@ -107,8 +107,8 @@ MPGetKernelState
 
 MPGetKernelState_0xc8
 	mr		r27, r5
-	addi	r29, r1, 800
-	bl		PagingFunc3
+	addi	r29, r1, KDP.BATs + 0xa0
+	bl		PagingL2PWithBATs
 	beq		Local_ReturnInsufficientResourcesErrFromMPCall
 	rlwimi	r27, r31,  0,  0, 19
 	stwu	r27,  0x0004(r15)

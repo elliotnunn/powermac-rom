@@ -420,7 +420,7 @@ MPRegisterCpuPlugin
 	;	r18 = physical address of plugin (assumes page-aligned)
 	mr		r27, r4
 	addi	r29, r1, KDP.BATs + 0xa0
-	bl		PagingFunc3
+	bl		PagingL2PWithBATs
 	beq		ReleaseAndReturnMPCallOOM
 	rlwinm	r18, r31, 0, 0, 19
 
@@ -428,7 +428,7 @@ MPRegisterCpuPlugin
 	mr		r27, r16
 	mr		r19, r16
 	addi	r29, r1, KDP.BATs + 0xa0
-	bl		PagingFunc3
+	bl		PagingL2PWithBATs
 	beq		ReleaseAndReturnMPCallOOM
 	rlwimi	r19, r31, 0, 0, 19
 
@@ -448,7 +448,7 @@ MPRegisterCpuPlugin
 	;	Get physical ptr to table of stack pointers (one per CPU)
 	lwz		r27, 0(r19)
 	addi	r29, r1, KDP.BATs + 0xa0
-	bl		PagingFunc3
+	bl		PagingL2PWithBATs
 	beq		ReleaseAndReturnMPCallOOM
 	rlwimi	r27, r31, 0, 0, 19
 	stw		r27, CoherenceGroup.PA_CpuPluginStackPtrs(r14)
@@ -474,7 +474,7 @@ MPRegisterCpuPlugin
 @table_convert_loop
 	lwzu	r27, 4(r16)
 	addi	r29, r1, KDP.BATs + 0xa0
-	bl		PagingFunc3
+	bl		PagingL2PWithBATs
 	beq		ReleaseAndReturnMPCallOOM
 	subi	r17, r17, 1
 	rlwimi	r27, r31, 0, 0, 19
@@ -1285,7 +1285,7 @@ KCStartCPU	;	OUTSIDE REFERER
 	rlwinm	r7, r7, 0, 13, 11
 	lwz		r8, PSA.blueProcessPtr(r1)
 
-;	ARG		GlobalCPUFlags r7, Process *r8
+;	ARG		Flags r7, Process *r8
 	bl		CreateTask
 ;	RET		Task *r8
 
@@ -1456,7 +1456,7 @@ MPCpuPlugin
 	DeclareMPCall	47, MPCall_47
 
 MPCall_47	;	OUTSIDE REFERER
-	rlwinm.	r8, r7,  0, 12, 12
+	rlwinm.	r8, r7, 0, EWA.kFlagVec, EWA.kFlagVec
 	lwz		r15,  0x00d8(r6)
 	beq		ReturnMPCallOOM
 	cmpwi	r15,  0x00
@@ -1635,7 +1635,7 @@ KCMarkPMFTask	;	OUTSIDE REFERER
 
 ;	Insert bit 31 of r4 into bit 21 of these flags
 	lwz			r17, Task.Flags(r31)
-	rlwimi		r17, r4, 10, Task.kFlagPMF, Task.kFlagPMF
+	rlwimi		r17, r4, 10, Task.kFlagPerfMon, Task.kFlagPerfMon
 	stw			r17, Task.Flags(r31)
 
 
