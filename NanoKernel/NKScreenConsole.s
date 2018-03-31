@@ -16,13 +16,6 @@ ScreenConsoleFG			equ		0x44444444
 
 
 	align	6			; odd!
-;	                     InitScreenConsole
-
-;	Xrefs:
-;	replace_old_kernel
-;	new_world
-;	undo_failed_kernel_replacement
-
 ;	> r1    = kdp
 
 InitScreenConsole	;	OUTSIDE REFERER
@@ -62,14 +55,6 @@ InitScreenConsole_0x2c
 
 
 
-;	                   ScreenConsole_putchar
-
-;	Xrefs:
-;	PrintS
-;	Printd
-;	print_digity_common
-;	Printc
-
 ;	> r1    = kdp
 
 ScreenConsole_putchar	;	OUTSIDE REFERER
@@ -84,12 +69,6 @@ ScreenConsole_putchar	;	OUTSIDE REFERER
 	blr
 
 
-
-;	                    ScreenConsole_redraw
-
-;	Xrefs:
-;	MPCall_133
-;	PrintS
 
 ;	> r1    = kdp
 
@@ -202,12 +181,6 @@ ScreenConsole_redraw_0x150
 
 
 
-;	                     major_0x18bec
-
-;	Xrefs:
-;	ScreenConsole_redraw
-;	major_0x18c18
-
 major_0x18bec	;	OUTSIDE REFERER
 	mtsprg	3, r2
 	lwz		r14, -0x03f0(r1)
@@ -219,11 +192,6 @@ major_0x18bec	;	OUTSIDE REFERER
 
 
 
-;	                     major_0x18c08
-
-;	Xrefs:
-;	major_0x18c18
-
 major_0x18c08	;	OUTSIDE REFERER
 	mfsrin	r31, r27
 	cmpwi	r31,  0x00
@@ -231,11 +199,6 @@ major_0x18c08	;	OUTSIDE REFERER
 	b		PagingFunc4
 
 
-
-;	                     major_0x18c18
-
-;	Xrefs:
-;	ScreenConsole_redraw
 
 major_0x18c18	;	OUTSIDE REFERER
 	mflr	r13
@@ -331,11 +294,6 @@ major_0x18c18_0xe0
 
 
 
-;	                     major_0x18d5c
-
-;	Xrefs:
-;	major_0x18c18
-
 major_0x18d5c	;	OUTSIDE REFERER
 	cmpwi	cr4, r6,  0x02
 	bl		major_0x19ab0
@@ -400,11 +358,6 @@ major_0x18d5c_0x88
 
 
 
-;	                     major_0x18e24
-
-;	Xrefs:
-;	ScreenConsole_redraw
-
 major_0x18e24	;	OUTSIDE REFERER
 	mflr	r12
 
@@ -424,13 +377,6 @@ major_0x18e24_0x28
 	blr
 
 
-
-;	                     major_0x18e54
-
-;	Xrefs:
-;	ScreenConsole_redraw
-;	major_0x18e24
-;	funny_thing
 
 major_0x18e54	;	OUTSIDE REFERER
 	mflr	r13
@@ -542,11 +488,6 @@ major_0x18e54_0x174
 
 
 
-;	                      funny_thing
-
-;	Xrefs:
-;	ScreenConsole_redraw
-
 funny_thing	;	OUTSIDE REFERER
 	crclr	cr2_eq
 	b		funny_thing_0xc
@@ -578,9 +519,6 @@ funny_thing_0x3c
 
 
 
-;	Xrefs:
-;	ScreenConsole_redraw
-
 major_0x19018	;	OUTSIDE REFERER
 	
 	blrl
@@ -602,11 +540,6 @@ major_0x19018	;	OUTSIDE REFERER
 	align	2
 
 
-
-;	                     load_log_font
-
-;	Xrefs:
-;	major_0x18e54
 
 load_log_font	;	OUTSIDE REFERER
 	blrl
@@ -1253,11 +1186,6 @@ load_log_font	;	OUTSIDE REFERER
 
 
 
-;	                     major_0x19ab0
-
-;	Xrefs:
-;	major_0x18d5c
-
 	align	4
 
 major_0x19ab0	;	OUTSIDE REFERER
@@ -1281,11 +1209,6 @@ major_0x19ab0	;	OUTSIDE REFERER
 
 
 
-;	                     major_0x19b00
-
-;	Xrefs:
-;	major_0x18d5c
-
 	align	4
 
 major_0x19b00	;	OUTSIDE REFERER
@@ -1301,9 +1224,6 @@ major_0x19b00	;	OUTSIDE REFERER
 
 ;	Each word is RGB with the high byte ignored. Background
 ;	and text.
-
-;	Xrefs:
-;	major_0x18d5c
 
 	align	4
 

@@ -356,12 +356,6 @@ MPCall_8	;	OUTSIDE REFERER
 
 
 
-;	                     MPCall_9
-
-;	Xrefs:
-;	kcMPDispatch
-;	MPCall_58
-
 	DeclareMPCall	9, MPCall_9
 
 MPCall_9	;	OUTSIDE REFERER
@@ -709,13 +703,6 @@ KCThrowException_0xb8
 	b		MPCall_6_0x78
 
 
-
-;	                     MPCall_58
-
-;	Xrefs:
-;	major_0x02ccc
-;	kcMPDispatch
-;	MPCall_60
 
 	DeclareMPCall	58, MPCall_58
 

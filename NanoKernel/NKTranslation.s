@@ -3136,12 +3136,6 @@ FDP_1c18
 
 
 
-;	                     FDP_1c40
-
-;	Xrefs:
-;	"vec"
-;	major_0x07ac0
-
 		align	5
 
 FDP_1c40	;	OUTSIDE REFERER
@@ -3609,11 +3603,6 @@ major_0x07980_0x100	;	OUTSIDE REFERER
 
 
 
-;	                     major_0x07ac0
-
-;	Xrefs:
-;	FDP_1c40
-
 		align	6
 
 FDP_22c0
@@ -3799,11 +3788,6 @@ major_0x07ac0_0x24c	;	OUTSIDE REFERER
 		b		FDP_1c40_0x274
 
 
-
-;	                     major_0x07d80
-
-;	Xrefs:
-;	major_0x07ac0
 
 		align	5
 

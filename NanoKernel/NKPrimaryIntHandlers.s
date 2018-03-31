@@ -50,18 +50,6 @@ PIHTableEnd
 
 ;	At least I think so.
 
-;	Xrefs:
-;	KCPropogateExternalInterrupt
-;	PDM_PIH
-;	PBX_PIH
-;	GazellePIH
-;	TNT_PIH
-;	GossamerPIH
-;	NewWorldPowerBookPIH
-;	CordycepsPIH
-;	NewWorldPIH
-;	UnknownPIH
-
 ;	> r1    = kdp
 
 ;	ARG		r28 = 68k int number

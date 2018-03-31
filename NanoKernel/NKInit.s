@@ -1966,10 +1966,6 @@ CancelReplacement
 
 ;	            old_world_rfi_to_userspace_boot             
 
-;	Xrefs:
-;	setup
-;	CancelReplacement
-
 ;	> r1    = kdp
 
 old_world_rfi_to_userspace_boot	;	OUTSIDE REFERER

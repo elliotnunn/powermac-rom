@@ -3,11 +3,6 @@ Local_Panic		set		*
 
 
 
-;	                       InitTMRQs
-
-;	Xrefs:
-;	setup
-
 InitTMRQs	;	OUTSIDE REFERER
 	addi	r9, r1, -0xa84
 	lis		r8,  0x544d
@@ -112,12 +107,6 @@ InitTMRQs_0xb4
 	blr
 
 
-
-;	                     TimerDispatch
-
-;	Xrefs:
-;	IntDecrementer
-;	TimerFire0
 
 TimerTable
 
@@ -243,11 +232,6 @@ TimerDispatch_0x188
 
 
 
-;	                    StartTimeslicing
-
-;	Xrefs:
-;	setup
-
 StartTimeslicing	;	OUTSIDE REFERER
 	mfsprg	r19, 0
 
@@ -342,19 +326,12 @@ global_time_invalid
 
 ;	                     TimerFire0                      
 
-;	Xrefs:
-;	TimerDispatch
-
 TimerFireUnknownKind
 	_log	'TimerInformation.kind is zero??^n'
 
 
 
 ;	                     TimerFire1                      
-
-;	Xrefs:
-;	TimerDispatch
-;	TimerFire0
 
 TimerFire1	;	OUTSIDE REFERER
 	bl		Local_Panic
@@ -384,10 +361,6 @@ TimerFire1_0x64
 
 
 ;	                     TimerFire2                      
-
-;	Xrefs:
-;	TimerDispatch
-;	TimerFire1
 
 TimerFire2	;	OUTSIDE REFERER
 	bne+	TimerDispatch_0x144
@@ -447,10 +420,6 @@ TimerFire2_0x98
 
 
 ;	                     TimerFire3                      
-
-;	Xrefs:
-;	TimerDispatch
-;	TimerFire2
 
 TimerFire3	;	OUTSIDE REFERER
 	bl		FlagSchEvaluationIfTaskRequires
@@ -523,10 +492,6 @@ major_0x13258_0x80
 
 ;	                     TimerFire4                      
 
-;	Xrefs:
-;	TimerDispatch
-;	major_0x13258
-
 TimerFire4	;	OUTSIDE REFERER
 	bne-	TimerFire4_0xc
 	lwz		r8,  0x0030(r30)
@@ -566,10 +531,6 @@ TimerFire4_0x64
 
 
 ;	                     TimerFire5                      
-
-;	Xrefs:
-;	TimerDispatch
-;	TimerFire4
 
 TimerFire5	;	OUTSIDE REFERER
 	bl		SchRdyTaskNow
@@ -645,10 +606,6 @@ TimerFire5_0x8	;	OUTSIDE REFERER
 
 ;	                     TimerFire7                      
 
-;	Xrefs:
-;	TimerDispatch
-;	major_0x13364
-
 TimerFire7	;	OUTSIDE REFERER
 	addze	r16, r16
 	stw		r16,  0x0038(r30)
@@ -689,10 +646,6 @@ major_0x134d8_0x18
 
 
 ;	                     TimerFire8                      
-
-;	Xrefs:
-;	TimerDispatch
-;	major_0x134d8
 
 TimerFire8	;	OUTSIDE REFERER
 	addc	r17, r17, r18
@@ -752,10 +705,6 @@ major_0x13544_0x64
 
 ;	                     TimerFire6                      
 
-;	Xrefs:
-;	TimerDispatch
-;	major_0x13544
-
 TimerFire6	;	OUTSIDE REFERER
 	stw		r17,  0x003c(r30)
 
@@ -791,19 +740,6 @@ TimerFire6_0x4	;	OUTSIDE REFERER
 	b		TimerDispatch_0x144
 
 
-
-;	                  EnqueueTimer
-
-;	Xrefs:
-;	MPCall_55
-;	NKSetClockStep
-;	NKSetClockDriftCorrection
-;	MPCall_18
-;	MPCall_23
-;	MPCall_27
-;	MPCall_52
-;	MPCall_31
-;	InitTMRQs
 
 ;	ARG		Timer *r8
 ;	CLOB	r16-r20
@@ -904,16 +840,6 @@ DequeueTimer
 
 
 
-;	                 TimebaseTicksPerPeriod
-
-;	Xrefs:
-;	MPCall_18
-;	MPCall_23
-;	MPCall_27
-;	MPCall_52
-;	MPCall_31
-;	SchInit
-
 ;	Get the number of timebase ticks in a specified period
 
 ;	ARG		long r8 period (positive for ms, negative for us)
@@ -946,21 +872,6 @@ TimebaseTicksPerPeriod
 
 
 
-
-;	Xrefs:
-;	NKSetClockStep
-;	NKSetClockDriftCorrection
-;	MPCall_18
-;	MPCall_23
-;	MPCall_27
-;	MPCall_52
-;	MPCall_40
-;	MPCall_32
-;	CreateTask
-;	InitTMRQs
-;	SetTimeslice
-;	SchEval
-;	major_0x14548
 
 ;	RET		long r8 tbu, long r9 tbl
 ;	CLOB	r16, r17

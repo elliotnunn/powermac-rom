@@ -1256,9 +1256,6 @@ skip_cache_hackery_never
 
 ;	                     copied_code_1                      
 
-;	Xrefs:
-;	new_world
-
 copied_code_1	;	OUTSIDE REFERER
 	li		r10,  0x03
 
@@ -1316,9 +1313,6 @@ copied_code_1_end	;	OUTSIDE REFERER
 
 
 ;	                     copied_code_2                      
-
-;	Xrefs:
-;	new_world
 
 copied_code_2	;	OUTSIDE REFERER
 	li		r10,  0x03

@@ -24,9 +24,6 @@ InitFreeList
 
 ;	Pretty obvious from log output.
 
-;	Xrefs:
-;	setup
-
 convert_pmdts_to_areas	;	OUTSIDE REFERER
 
 	;	The kind of crap we have to do without a stack
@@ -856,13 +853,6 @@ MPCreateArea
 
 
 
-;	                       createarea
-
-;	Xrefs:
-;	convert_pmdts_to_areas
-;	MPCall_72
-;	MPCall_73
-
 ;	This function actually gets passed its own structure.
 ;	What the frick?
 
@@ -1299,11 +1289,6 @@ createarea_0x67c
 
 
 
-;	                     major_0x10284
-
-;	Xrefs:
-;	createarea
-
 major_0x10284	;	OUTSIDE REFERER
 	subi	r8, r8, 4
 	addi	r9, r9, -0x01
@@ -1319,11 +1304,6 @@ major_0x10284_0x10
 
 
 
-;	                     major_0x102a8
-
-;	Xrefs:
-;	createarea
-
 major_0x102a8	;	OUTSIDE REFERER
 	addi	r8, r8, -0x02
 	addi	r9, r9, -0x01
@@ -1337,11 +1317,6 @@ major_0x102a8_0xc
 	blr
 
 
-
-;	                     major_0x102c8
-
-;	Xrefs:
-;	createarea
 
 major_0x102c8	;	OUTSIDE REFERER
 	_AssertAndRelease	PSA.PoolLock, scratch=r16
@@ -1364,19 +1339,6 @@ major_0x102c8	;	OUTSIDE REFERER
 	b		major_0x10320_0x20
 
 
-
-;	                     major_0x10320
-
-;	Xrefs:
-;	IntDSIOtherOther
-;	PagingFunc1
-;	MPCall_60
-;	convert_pmdts_to_areas
-;	createarea
-;	major_0x102c8
-;	MPCall_80
-;	MPCall_125
-;	MPCall_95
 
 major_0x10320	;	OUTSIDE REFERER
 	mr		r8, r31
@@ -2200,13 +2162,6 @@ major_0x10cb8
 
 
 
-;	                     major_0x10d38
-
-;	Xrefs:
-;	convert_pmdts_to_areas
-;	KCSetAreaAccess
-;	MPCall_123
-
 major_0x10d38	;	OUTSIDE REFERER
 	andi.	r16, r17,  0x06
 	li		r18,  0x00
@@ -2752,12 +2707,6 @@ MPCall_82	;	OUTSIDE REFERER
 
 
 
-;	                     MPCall_83
-
-;	Xrefs:
-;	kcMPDispatch
-;	KCMapPage
-
 	DeclareMPCall	83, MPCall_83
 
 MPCall_83	;	OUTSIDE REFERER
@@ -2847,15 +2796,6 @@ MPCall_84_0x48
 	b		CommonMPCallReturnPath
 
 
-
-;	                   free_list_add_page
-
-;	Xrefs:
-;	setup
-;	MPCall_74
-;	MPCall_75
-;	MPCall_84
-;	KCUnmapPages
 
 ;	> r1    = kdp
 ;	> r8    = maybe the page
@@ -3390,10 +3330,6 @@ KCUnlockPages_0xc4
 ;	                      KCHoldPages
 
 
-;	Xrefs:
-;	kcMPDispatch
-;	KCMapPage
-
 	DeclareMPCall	89, KCHoldPages
 
 KCHoldPages	;	OUTSIDE REFERER
@@ -3796,34 +3732,6 @@ MPCall_129_0x6c
 	b		ReleaseAndReturnZeroFromMPCall
 
 
-
-;	                     MPCall_95
-
-;	Xrefs:
-;	major_0x03324
-;	IntDSIOtherOther
-;	PagingFunc1
-;	kcMPDispatch
-;	NKxprintf
-;	MPCall_115
-;	MPCall_75
-;	MPCall_130
-;	KCSetAreaAccess
-;	MPCall_123
-;	MPCall_81
-;	MPCall_98
-;	KCMapPage
-;	KCUnmapPages
-;	KCMakePhysicallyContiguous
-;	KCLockPages
-;	KCUnlockPages
-;	KCHoldPages
-;	KCUnholdPages
-;	MPCall_91
-;	MPCall_92
-;	MPCall_93
-;	MPCall_94
-;	MPCall_129
 
 	DeclareMPCall	95, MPCall_95
 

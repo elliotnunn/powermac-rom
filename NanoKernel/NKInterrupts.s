@@ -25,34 +25,10 @@ Local_Panic		set		*
 
 
 
-;	                     IntLocalBlockMPCall
-
-;	Xrefs:
-;	major_0x02ccc
-
 IntLocalBlockMPCall	;	OUTSIDE REFERER
 	b		BlockMPCall
 
 
-
-;	                     major_0x02980
-
-;	Xrefs:
-;	major_0x02ccc
-;	major_0x03548
-;	IntDSIOtherOther
-;	IntMachineCheckMemRetry
-;	major_0x039dc
-;	IntMachineCheck
-;	MaskedInterruptTaken
-;	major_0x03be0
-;	major_0x04180
-;	kcRunAlternateContext
-;	major_0x046d0
-;	IntExternalOrange
-;	IntProgram
-;	IntTrace
-;	FDP_1214
 
 	align	5
 
@@ -667,11 +643,6 @@ TaskNotSuitableForWhatWeWantToDo
 
 
 
-;	                     IntDecrementer
-
-;	Xrefs:
-;	"vec"
-
 	align	kIntAlign
 
 IntDecrementer	;	OUTSIDE REFERER
@@ -735,11 +706,6 @@ IntDecrementer_0x54
 
 
 
-;	                         IntDSI
-
-;	Xrefs:
-;	"vec"
-
 	align	kIntAlign
 
 IntDSI	;	OUTSIDE REFERER
@@ -770,12 +736,6 @@ IntDSI	;	OUTSIDE REFERER
 	isync
 
 
-
-;	                     major_0x03324
-
-;	Xrefs:
-;	IntDSI
-;	FDP_1214
 
 major_0x03324	;	OUTSIDE REFERER
 	rlwinm.	r18, r27, 18, 25, 29
@@ -867,11 +827,6 @@ major_0x03324_0x12c
 	b		FDP_0da0
 
 
-
-;	                      IntAlignment
-
-;	Xrefs:
-;	"vec"
 
 ;	This int handler is our best foothold into the FDP!
 
@@ -975,12 +930,6 @@ FDP_TableBase		equ		0xa00
 
 
 
-;	                     major_0x03548
-
-;	Xrefs:
-;	IntAlignment
-;	major_0x05808
-
 major_0x03548	;	OUTSIDE REFERER
 	sync
 	mtmsr	r14
@@ -1002,11 +951,6 @@ major_0x03548_0x20	;	OUTSIDE REFERER
 	b		major_0x02980
 
 
-
-;	                    IntDSIOtherOther
-
-;	Xrefs:
-;	"vec"
 
 	align	kIntAlign
 
@@ -1156,12 +1100,6 @@ IntDSIOtherOther_0x1c8
 
 
 
-;	                IntMachineCheckMemRetry
-
-;	Xrefs:
-;	"vec"
-;	IntDSIOtherOther
-
 IntMachineCheckMemRetry	;	OUTSIDE REFERER
 	mfsprg	r1, 0
 	mr		r28, r8
@@ -1230,11 +1168,6 @@ IntMachineCheckMemRetry_0x14c	;	OUTSIDE REFERER
 
 
 
-;	                         IntISI
-
-;	Xrefs:
-;	"vec"
-
 	align	kIntAlign
 
 IntISI	;	OUTSIDE REFERER
@@ -1283,12 +1216,6 @@ IntISI	;	OUTSIDE REFERER
 
 
 
-;	                     major_0x039dc
-
-;	Xrefs:
-;	IntISI
-;	IntDSIOther
-
 major_0x039dc	;	OUTSIDE REFERER
 	lmw		r14,  0x0038(r8)
 	li		r8, ecInstPageFault
@@ -1304,11 +1231,6 @@ major_0x039dc_0x14	;	OUTSIDE REFERER
 	b		major_0x02980_0x134
 
 
-
-;	                    IntMachineCheck
-
-;	Xrefs:
-;	"vec"
 
 IntMachineCheck	;	OUTSIDE REFERER
 ;	r6 = saved at *(ewa + 0x18)
@@ -1355,14 +1277,6 @@ IntMachineCheck	;	OUTSIDE REFERER
 
 
 
-;	                     MaskedInterruptTaken
-
-;	Xrefs:
-;	IntDecrementer
-;	IntPerfMonitor
-;	IntThermalEvent
-;	IntExternalYellow
-
 MaskedInterruptTaken	;	OUTSIDE REFERER
 	_log	'*** CPU MALFUNCTION - Masked interrupt punched through. SRR1/0 '
 	mr		r8, r11
@@ -1376,11 +1290,6 @@ MaskedInterruptTaken	;	OUTSIDE REFERER
 	b		major_0x02980_0x134
 
 
-
-;	                      IntDSIOther
-
-;	Xrefs:
-;	"vec"
 
 	align	kIntAlign
 
@@ -1409,11 +1318,6 @@ IntDSIOther	;	OUTSIDE REFERER
 
 
 
-
-;	                     major_0x03be0
-
-;	Xrefs:
-;	"sup"
 
 	align	kIntAlign
 
@@ -1492,12 +1396,6 @@ major_0x03be0_0xe8
 	b		major_0x02980_0x134
 
 
-
-;	                   save_all_registers
-
-;	Xrefs:
-;	IntPerfMonitor
-;	IntThermalEvent
 
 	align	5
 
@@ -1612,11 +1510,6 @@ int_prepare
 
 
 
-;	                      IntFPUnavail
-
-;	Xrefs:
-;	"vec"
-
 	align	kIntAlign
 
 IntFPUnavail	;	OUTSIDE REFERER
@@ -1646,14 +1539,6 @@ IntFPUnavail	;	OUTSIDE REFERER
 
 
 
-
-;	                     major_0x03e18
-
-;	Xrefs:
-;	major_0x02980
-;	major_0x03be0
-;	IntFPUnavail
-;	kcRTASDispatch
 
 major_0x03e18	;	OUTSIDE REFERER
 	rlwinm.	r8, r11,  0, 18, 18
@@ -1782,11 +1667,6 @@ FloatSaveJumpTable
 
 
 
-;	                     major_0x04180
-
-;	Xrefs:
-;	IntPerfMonitor
-
 	align	6
 
 major_0x04180	;	OUTSIDE REFERER
@@ -1849,11 +1729,6 @@ major_0x04180_0x9c
 	b		major_0x02980_0x134
 
 
-
-;	                     IntPerfMonitor
-
-;	Xrefs:
-;	"vec"
 
 	align	kIntAlign
 
@@ -1931,11 +1806,6 @@ IntThermalEvent	;	OUTSIDE REFERER
 	b		IntReturn
 
 
-
-;	                     kcRunAlternateContext
-
-;	Xrefs:
-;	"sup"
 
 	align	kIntAlign
 
@@ -2050,12 +1920,6 @@ major_0x043a0_0x154
 
 
 
-;	                        wordfill
-
-;	Xrefs:
-;	setup
-;	FillIndigo
-
 ;	> r8    = dest
 ;	> r22   = len in bytes
 ;	> r23   = fillword
@@ -2130,9 +1994,6 @@ kcResetSystem	;	OUTSIDE REFERER
 
 ;	A 68k reset trap without Gary Davidian's magic numbers.
 
-;	Xrefs:
-;	kcResetSystem
-
 NonGaryReset
 
 	_log	'ResetSystem trap entered^n'
@@ -2179,13 +2040,6 @@ NonGaryReset
 
 
 
-;	                      kcPrioritizeInterrupts
-
-;	Xrefs:
-;	"sup"
-;	setup
-;	IntExternalYellow
-
 ;	> r1    = kdp
 
 kcPrioritizeInterrupts	;	OUTSIDE REFERER
@@ -2230,12 +2084,6 @@ kcThud
 
 
 
-;	                     major_0x046d0
-
-;	Xrefs:
-;	"vec"
-;	kcThud
-
 major_0x046d0	;	OUTSIDE REFERER
 ;	r6 = saved at *(ewa + 0x18)
 ;	sprg1 = saved at *(ewa + 4)
@@ -2255,11 +2103,6 @@ major_0x046d0	;	OUTSIDE REFERER
 	b		major_0x02980_0x134
 
 
-
-;	                     IntExternalOrange
-
-;	Xrefs:
-;	"vec"
 
 	align	kIntAlign
 
@@ -2443,11 +2286,6 @@ IntProgram
 	b		major_0x02980_0x134
 
 
-
-;	                   IntExternalYellow
-
-;	Xrefs:
-;	"vec"
 
 	align	kIntAlign
 
@@ -2654,14 +2492,6 @@ SIGP
 
 
 
-;	                     major_0x04a20
-
-;	Xrefs:
-;	"vec"
-;	major_0x02980
-;	major_0x03be0
-;	SIGP
-
 major_0x04a20	;	OUTSIDE REFERER
 	mfsprg	r23, 0
 	lwz		r6, -0x0014(r23)
@@ -2715,9 +2545,6 @@ major_0x04a20_0x44
 ;	                       IntSyscall
 
 ;	Not fully sure about this one
-
-;	Xrefs:
-;	"vec"
 
 IntSyscall	;	OUTSIDE REFERER
 
@@ -2807,11 +2634,6 @@ IntSyscall	;	OUTSIDE REFERER
 
 
 
-;	                        IntTrace
-
-;	Xrefs:
-;	"vec"
-
 	align	kIntAlign
 
 IntTrace	;	OUTSIDE REFERER
@@ -2834,11 +2656,6 @@ IntTrace	;	OUTSIDE REFERER
 
 
 
-;	                   IgnoreSoftwareInt
-
-;	Xrefs:
-;	"vec"
-
 	align	kIntAlign
 
 IgnoreSoftwareInt	;	OUTSIDE REFERER
@@ -2853,11 +2670,6 @@ IgnoreSoftwareInt	;	OUTSIDE REFERER
 
 
 
-
-;	                     HandlePerfMonitorInt
-
-;	Xrefs:
-;	"vec"
 
 	align	kIntAlign
 

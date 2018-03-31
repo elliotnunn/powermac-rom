@@ -3,48 +3,6 @@
 ;	_log null-terminated string with a few special escapes.
 ;	Not done figuring this out, with the serial and stuff.
 
-;	Xrefs:
-;	replace_old_kernel
-;	new_world
-;	setup
-;	undo_failed_kernel_replacement
-;	AcquireLock
-;	spinlock_what
-;	major_0x02ccc
-;	IntMachineCheckMemRetry
-;	IntMachineCheck
-;	major_0x03ab0
-;	IntThermalEvent
-;	kcResetSystem
-;	non_skeleton_reset_trap
-;	PagingFunc1
-;	KCRegisterCpuPlugin
-;	KCStartCPU
-;	NKxprintf
-;	MPCall_108
-;	NKSetClockStep
-;	NKSetClockDriftCorrection
-;	convert_pmdts_to_areas
-;	NKCreateAddressSpaceSub
-;	createarea
-;	major_0x10320
-;	MPCall_95
-;	ExtendPool
-;	major_0x12b94
-;	InitTMRQs
-;	StartTimeslicing
-;	SchInit
-;	major_0x14bcc
-;	panic
-;	major_0x18040
-;	print_xpt_info
-;	print_sprgs
-;	print_sprs
-;	print_segment_registers
-;	print_gprs
-;	print_memory
-;	print_memory_logical
-
 prints	;	OUTSIDE REFERER
 	mfsprg	r1, 0
 	stmw	r24, -0x0108(r1)
@@ -152,15 +110,6 @@ prints_0x13c
 
 
 
-;	                      print_common
-
-;	Xrefs:
-;	PrintS
-;	Printd
-;	print_digity_common
-;	getchar
-;	Printc
-
 print_common	;	OUTSIDE REFERER
 	beq-	cr7, print_common_0x8c
 	mtmsr	r31
@@ -215,10 +164,6 @@ print_common_0x8c
 
 ;	Restores registers from EWA and returns.
 
-;	Xrefs:
-;	print_common
-;	getchar
-
 print_return	;	OUTSIDE REFERER
 	mfsprg	r1, 0
 	lwz		r24, -0x0110(r1)
@@ -234,15 +179,6 @@ print_return	;	OUTSIDE REFERER
 ;	                         printd
 
 ;	_log decimal
-
-;	Xrefs:
-;	setup
-;	NKPrintDecimal
-;	MPCall_108
-;	NKSetClockStep
-;	NKSetClockDriftCorrection
-;	ExtendPool
-;	major_0x12b94
 
 printd	;	OUTSIDE REFERER
 	mfsprg	r1, 0
@@ -344,33 +280,6 @@ printd_0x120
 
 ;	_log word (hex) then a space
 
-;	Xrefs:
-;	replace_old_kernel
-;	setup
-;	AcquireLock
-;	spinlock_what
-;	major_0x02ccc
-;	IntMachineCheckMemRetry
-;	IntMachineCheck
-;	major_0x03ab0
-;	kcResetSystem
-;	PagingFunc1
-;	NKPrintHex
-;	NKCreateAddressSpaceSub
-;	createarea
-;	ExtendPool
-;	major_0x12b94
-;	SchInit
-;	major_0x14bcc
-;	panic
-;	print_xpt_info
-;	print_sprgs
-;	print_sprs
-;	print_segment_registers
-;	print_gprs
-;	print_memory
-;	print_memory_logical
-
 printw	;	OUTSIDE REFERER
 	mfsprg	r1, 0
 	stmw	r24, -0x0108(r1)
@@ -387,13 +296,6 @@ printw	;	OUTSIDE REFERER
 ;	                         printh
 
 ;	_log halfword (hex) then a space
-
-;	Xrefs:
-;	replace_old_kernel
-;	new_world
-;	NKPrintHex
-;	major_0x14bcc
-;	panic
 
 printh	;	OUTSIDE REFERER
 	mfsprg	r1, 0
@@ -413,10 +315,6 @@ printh	;	OUTSIDE REFERER
 
 ;	_log byte (hex) then a space
 
-;	Xrefs:
-;	setup
-;	NKPrintHex
-
 printb	;	OUTSIDE REFERER
 	mfsprg	r1, 0
 	stmw	r24, -0x0108(r1)
@@ -431,11 +329,6 @@ printb	;	OUTSIDE REFERER
 
 
 
-;	                     print_unknown
-
-;	Xrefs:
-;	print_memory_logical
-
 print_unknown	;	OUTSIDE REFERER
 	mfsprg	r1, 0
 	stmw	r24, -0x0108(r1)
@@ -449,14 +342,6 @@ print_unknown	;	OUTSIDE REFERER
 	b		print_digity_common
 
 
-
-;	                  print_digity_common
-
-;	Xrefs:
-;	Printw
-;	Printh
-;	Printb
-;	print_unknown
 
 print_digity_common	;	OUTSIDE REFERER
 	lwz		r1, -0x0004(r1)
@@ -526,13 +411,6 @@ print_digity_common_0xd0
 
 
 
-;	                        getchar
-
-;	Xrefs:
-;	panic
-;	print_memory
-;	print_memory_logical
-
 getchar	;	OUTSIDE REFERER
 	mfsprg	r1, 0
 	stmw	r24, -0x0108(r1)
@@ -565,13 +443,6 @@ getchar	;	OUTSIDE REFERER
 ;	                         printc
 
 ;	_log char
-
-;	Xrefs:
-;	spinlock_what
-;	major_0x12b94
-;	panic
-;	print_memory
-;	print_memory_logical
 
 printc	;	OUTSIDE REFERER
 	mfsprg	r1, 0
@@ -625,12 +496,6 @@ printc_0x90
 ;	whatever.
 
 ;	Whoa. Turns on data but not code paging. Crikey.
-
-;	Xrefs:
-;	PrintS
-;	Printd
-;	print_digity_common
-;	Printc
 
 serial_flush	;	OUTSIDE REFERER
 	ori		r30, r31, MSR_DR
@@ -730,13 +595,6 @@ serial_flush	;	OUTSIDE REFERER
 
 ;	See disclaimer above.
 
-;	Xrefs:
-;	PrintS
-;	Printd
-;	print_digity_common
-;	getchar
-;	Printc
-
 serial_io	;	OUTSIDE REFERER
 	mfspr	r26, srr0
 	mfspr	r27, srr1
@@ -771,11 +629,6 @@ serial_io_0x50
 ;	                    serial_busywait
 
 ;	See disclaimer above.
-
-;	Xrefs:
-;	PrintS
-;	Printd
-;	print_digity_common
 
 serial_busywait	;	OUTSIDE 
 	beqlr-	cr7

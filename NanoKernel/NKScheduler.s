@@ -502,14 +502,6 @@ major_0x13988_0x2f8
 ##    ## ##     ##   ## ##   ##            ## ##   ##    ##  ##    ## 
  ######  ##     ##    ###    ########       ###    ##     ##  ######  
 
-;	                     Save_v0_v31
-
-;	Xrefs:
-;	major_0x02980
-;	MPCall_47
-;	major_0x14548
-;	MPCall_103
-
 	align	4		;	????
 
 Save_v0_v31	;	OUTSIDE REFERER
@@ -1306,12 +1298,6 @@ major_0x142dc_0x1bc
 ;	   Bit 22 of XER is cleared
 ;	   Bit 10 of r7 is inserted into XER at bit 23
 
-;	Xrefs:
-;	non_skeleton_reset_trap
-;	SchReturn
-;	SchEval
-;	major_0x14548
-
 ;	> sprg0 = for r1 and r6
 ;	> r1    = kdp
 ;	> r6    = register restore area
@@ -1351,11 +1337,6 @@ SchExitInterrupt_0x2c
 
 
 
-
-;	                     major_0x14548
-
-;	Xrefs:
-;	SchEval
 
 major_0x14548	;	OUTSIDE REFERER
 	lwz		r16,  0x0064(r31)
@@ -1614,12 +1595,6 @@ major_0x14548_0x380
 
 
 
-;	                     major_0x148ec
-
-;	Xrefs:
-;	SchEval
-;	major_0x14548
-
 major_0x148ec	;	OUTSIDE REFERER
 	mfxer	r20
 	mfsprg	r21, 0
@@ -1691,21 +1666,6 @@ major_0x148ec_0xc8
 	b		SetTimesliceFromCurTime
 
 
-
-;	                     major_0x149d4
-
-;	Xrefs:
-;	setup
-;	KCStopScheduling
-;	major_0x0c8b4
-;	SignalSemaphore
-;	MPCall_28
-;	SetEvent
-;	MPCall_8
-;	major_0x130f0
-;	SchEval
-;	major_0x14bcc
-;	CommonPIHPath
 
 ;	Almost certain this was hand-written. Has a typo, and some
 ;	instructions the compiler rarely touched, and is in hot path.
@@ -1797,22 +1757,11 @@ major_0x149d4_0xc:
 
 
 
-;	                      clear_cr0_lt
-
-;	Xrefs:
-;	major_0x130f0
-
 clear_cr0_lt	;	OUTSIDE REFERER
 	crclr	cr0_lt
 	blr
 
 
-
-;	                     SchFiddlePriorityShifty
-
-;	Xrefs:
-;	IntDecrementer
-;	SchEval
 
 SchFiddlePriorityShifty	;	OUTSIDE REFERER
 

@@ -8,9 +8,6 @@ Local_Panic		set		*
 ;	Only major that hits the RTAS globals.
 ;	RTAS requires some specific context stuff.
 
-;	Xrefs:
-;	"sup"
-
 ;	> r1    = kdp
 ;	> r6    = some kind of place
 ;	> r7    = some kind of flags

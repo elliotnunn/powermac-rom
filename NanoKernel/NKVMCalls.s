@@ -140,33 +140,6 @@ VMDispatchTableEnd
 
 ;	VMGetPhysicalAddress_one
 
-;	Xrefs:
-;	kcVMDispatch
-;	VMFinalInit
-;	VMInit
-;	VMExchangePages
-;	VMGetPhysicalPage
-;	getPTEntryGivenPage
-;	major_0x08d88
-;	VMIsInited
-;	VMIsResident
-;	VMIsUnmodified
-;	VMLRU
-;	VMMakePageCacheable
-;	VMMakePageWriteThrough
-;	PageSetCommon
-;	VMMakePageNonCacheable
-;	VMMarkBacking
-;	VMMarkCleanUnused
-;	VMMarkUndefined
-;	VMMarkResident
-;	VMPTest
-;	setPTEntryGivenPage
-;	VMShouldClean
-;	VMAllocateMemory
-;	GetPARPageInfo
-;	major_0x09c9c
-
 VMReturnMinus1	;	OUTSIDE REFERER
 	li		r3, -0x01
 	b		VMReturn
@@ -640,14 +613,6 @@ getPTEntryGivenPage_0x74
 
 ;	                     major_0x08d88                      
 
-;	Xrefs:
-;	VMGetPhysicalPage
-;	getPTEntryGivenPage
-;	VMIsResident
-;	VMMarkBacking
-;	VMMarkResident
-;	setPTEntryGivenPage
-
 major_0x08d88	;	OUTSIDE REFERER
 	mfsprg	r28, 0
 	mflr	r27
@@ -809,11 +774,6 @@ VMLRU_0x5c
 
 
 ;	                     major_0x08f14                      
-
-;	Xrefs:
-;	VMMakePageCacheable
-;	VMMakePageWriteThrough
-;	VMMakePageNonCacheable
 
 major_0x08f14	;	OUTSIDE REFERER
 	mflr	r28
@@ -989,11 +949,6 @@ VMMakePageWriteThrough_0xec
 
 
 ;	                     PageSetCommon                      
-
-;	Xrefs:
-;	VMMakePageCacheable
-;	VMMakePageWriteThrough
-;	VMMakePageNonCacheable
 
 PageSetCommon	;	OUTSIDE REFERER
 	lwz		r15, KDP.PTEGMask(r1)
@@ -1842,9 +1797,6 @@ VMSecondLastExportedFunc	;	OUTSIDE REFERER
 
 ;	                   VMLastExportedFunc                   
 
-;	Xrefs:
-;	RemovePTEFromHTAB
-
 
 VMLastExportedFunc
 	lwz		r14, KDP.HTABORG(r1)
@@ -1934,9 +1886,6 @@ VMLastExportedFunc_0xd7
 
 
 ;	                     major_0x09c9c                      
-
-;	Xrefs:
-;	VMInit
 
 major_0x09c9c	;	OUTSIDE REFERER
 	addi	r8, r1,  0x6c0

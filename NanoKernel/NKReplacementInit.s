@@ -416,8 +416,6 @@ replace_old_kernel_0x198
 
 ;	                     MoveRecord                      
 
-;	Xrefs:
-;	replace_old_kernel
 ;		r9 = base of kernel???
 
 ;	Seems to be code to relocate some old structures.

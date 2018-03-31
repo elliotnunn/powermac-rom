@@ -1,79 +1,3 @@
-;	                         panic
-
-;	Xrefs:
-;	"vec"
-;	Local_Panic
-;	Local_Panic
-;	major_0x02ccc
-;	IntDecrementer
-;	IntDSIOtherOther
-;	IntMachineCheckMemRetry
-;	IntISI
-;	IntDSIOther
-;	IntPerfMonitor
-;	IntThermalEvent
-;	Local_Panic
-;	FDP_1c40
-;	Local_Panic
-;	kcVMDispatch
-;	Local_Panic
-;	kcRTASDispatch
-;	ReleaseAndMPCallWasBad
-;	ReleaseAndReturnZeroFromMPCall
-;	ReleaseAndScrambleMPCall
-;	ReleaseAndReturnMPCallBlueBlocking
-;	major_0x0b054
-;	ReleaseAndReturnMPCallPrivilegedErr
-;	major_0x0b0cc
-;	BlockMPCall
-;	MPCall_0
-;	MPCall_6
-;	KCYieldWithHint
-;	KCStartCPU
-;	KCStopScheduling
-;	MPCall_115
-;	Local_Panic
-;	SetEvent
-;	MPCall_41
-;	Local_Panic
-;	MPCall_9
-;	KCThrowException
-;	Local_Panic
-;	MPCall_70
-;	MPCall_72
-;	createarea
-;	major_0x102c8
-;	MPCall_73
-;	MPCall_74
-;	MPCall_75
-;	MPCall_130
-;	KCSetAreaAccess
-;	MPCall_123
-;	MPCall_81
-;	MPCall_98
-;	MPCall_83
-;	MPCall_84
-;	KCMapPage
-;	KCUnmapPages
-;	KCMakePhysicallyContiguous
-;	KCLockPages
-;	KCUnlockPages
-;	KCHoldPages
-;	KCUnholdPages
-;	MPCall_91
-;	MPCall_92
-;	MPCall_94
-;	MPCall_95
-;	Local_Panic
-;	major_0x129cc
-;	Local_Panic
-;	Local_Panic
-;	SchEval
-;	major_0x14548
-;	Local_Panic
-;	CommonPIHPath
-;	print_common
-
 
 	align	5
 
@@ -756,11 +680,6 @@ panic_common
 
 
 
-;	                     major_0x18040
-
-;	Xrefs:
-;	"EightyForty"
-
 	mflr	r16
 	lwz		r17,  0x07b4(r1)
 	rlwinm	r17, r17, 16, 16, 27
@@ -792,11 +711,6 @@ major_0x18040_0x100
 	blr
 
 
-
-;	                     print_xpt_info
-
-;	Xrefs:
-;	panic
 
 print_xpt_info	;	OUTSIDE REFERER
 	mflr	r16
@@ -843,9 +757,6 @@ print_xpt_info_0xf8
 
 ;	Goldmine. Tells me what the SPRGs do!
 
-;	Xrefs:
-;	panic
-
 print_sprgs	;	OUTSIDE REFERER
 	mflr	r16
 	_log	'SPRGs  ewa: '
@@ -869,9 +780,6 @@ print_sprgs	;	OUTSIDE REFERER
 ;	                       print_sprs
 
 ;	Both user-mode and supervisor-only
-
-;	Xrefs:
-;	panic
 
 print_sprs	;	OUTSIDE REFERER
 	mflr	r16
@@ -902,11 +810,6 @@ print_sprs	;	OUTSIDE REFERER
 
 
 
-;	                print_segment_registers
-
-;	Xrefs:
-;	panic
-
 print_segment_registers	;	OUTSIDE REFERER
 	mflr	r16
 	_log	' sr0-sr7  '
@@ -933,11 +836,6 @@ print_segment_registers_0x5c
 	blr
 
 
-
-;	                       print_gprs
-
-;	Xrefs:
-;	panic
 
 print_gprs	;	OUTSIDE REFERER
 	mflr	r16
@@ -979,11 +877,6 @@ print_gprs_0xb8
 	blr
 
 
-
-;	                      print_memory
-
-;	Xrefs:
-;	panic
 
 print_memory	;	OUTSIDE REFERER
 	mflr	r18
@@ -1034,11 +927,6 @@ print_memory_0xb0
 	blr
 
 
-
-;	                  print_memory_logical
-
-;	Xrefs:
-;	panic
 
 print_memory_logical	;	OUTSIDE REFERER
 	mflr	r18
@@ -1119,11 +1007,6 @@ print_memory_logical_0x114
 
 
 
-;	                       cmd_lookup
-
-;	Xrefs:
-;	panic
-
 ;	> r16   = command strings
 ;	> r17   = lut
 
@@ -1169,11 +1052,6 @@ cmd_lookup_0x50
 
 
 
-;	                     next_cmd_word
-
-;	Xrefs:
-;	panic
-
 ;	> r15   = start
 
 ;	< r15   = ptr
@@ -1189,11 +1067,6 @@ next_cmd_word_0x4
 	blr
 
 
-
-;	                     major_0x187b0
-
-;	Xrefs:
-;	panic
 
 major_0x187b0	;	OUTSIDE REFERER
 	addi	r15, r15, -0x01

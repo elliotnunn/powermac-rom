@@ -128,105 +128,11 @@ MPCallBad	;	OUTSIDE REFERER
 
 
 
-;	                     ReleaseAndMPCallWasBad
-
-;	Xrefs:
-;	MPCall_75
-
 ReleaseAndMPCallWasBad	;	OUTSIDE REFERER
 	_AssertAndRelease	PSA.SchLock, scratch=r16
 	b		MPCallBad
 
 
-
-;	            ReleaseAndReturnZeroFromMPCall
-
-;	Xrefs:
-;	KCRegisterCpuPlugin
-;	KCCreateProcess
-;	MPCall_5
-;	MPCall_55
-;	KCCreateCpuStruct
-;	MPCall_43
-;	KCStartCPU
-;	KCStopScheduling
-;	KCRegisterThermalHandler
-;	KCRegisterPMFHandler
-;	KCMarkPMFTask
-;	NKSetClockStep
-;	NKSetClockDriftCorrection
-;	MPCall_115
-;	KCRegisterExternalHandler
-;	MPCall_133
-;	MPCall_15
-;	MPCall_16
-;	MPCall_39
-;	MPCall_17
-;	MPCall_18
-;	MPCall_19
-;	MPCall_20
-;	MPCall_23
-;	MPCall_24
-;	MPCall_21
-;	MPCall_25
-;	MPCall_27
-;	MPCall_29
-;	MPCall_28
-;	MPCall_26
-;	MPCall_49
-;	MPCall_50
-;	MPCall_51
-;	MPCall_52
-;	MPCall_53
-;	MPCall_54
-;	MPCall_40
-;	MPCall_30
-;	MPCall_31
-;	MPCall_32
-;	MPCall_64
-;	MPCall_65
-;	MPCall_66
-;	MPCall_128
-;	MPCall_120
-;	MPCall_7
-;	MPCall_8
-;	MPCall_10
-;	MPCall_14
-;	MPCall_56
-;	MPCall_58
-;	MPCall_59
-;	MPCall_60
-;	MPCall_61
-;	MPCall_63
-;	MPCall_114
-;	KCSetTaskType
-;	MPCall_71
-;	KCSetTaskAddressSpace
-;	MPCall_74
-;	MPCall_75
-;	MPCall_130
-;	KCSetAreaAccess
-;	MPCall_123
-;	MPCall_77
-;	MPCall_78
-;	MPCall_80
-;	MPCall_125
-;	MPCall_81
-;	MPCall_98
-;	MPCall_82
-;	KCMapPage
-;	KCUnmapPages
-;	KCMakePhysicallyContiguous
-;	KCLockPages
-;	KCUnlockPages
-;	KCHoldPages
-;	KCUnholdPages
-;	MPCall_91
-;	MPCall_92
-;	MPCall_93
-;	MPCall_94
-;	MPCall_129
-;	MPCall_95
 
 ;	> r1    = kdp
 
@@ -235,96 +141,11 @@ ReleaseAndReturnZeroFromMPCall	;	OUTSIDE REFERER
 
 
 
-;	                  ReturnZeroFromMPCall
-
-;	Xrefs:
-;	ReleaseAndReturnZeroFromMPCall
-;	MPCall_0
-;	MPCall_6
-;	MPCall_55
-;	MPCall_34
-;	MPCall_35
-;	MPCall_36
-;	KCGetNextID
-;	KCGetNextIDOwnedByProcess
-;	MPCall_38
-;	MPCall_62
-;	KCStartCPU
-;	MPCall_47
-;	NKxprintf
-;	KCSetBlueProcessID
-;	NKLocateInfoRecord
-;	MPCall_108
-;	NKSetClockDriftCorrection
-;	MPCall_41
-;	MPCall_79
-;	MPCall_83
-;	MPCall_102
-
 ReturnZeroFromMPCall	;	OUTSIDE REFERER
 	li		r3,  0x00
 	b		CommonMPCallReturnPath
 
 
-
-;	                     ReleaseAndScrambleMPCall
-
-;	Xrefs:
-;	KCRegisterCpuPlugin
-;	KCCreateProcess
-;	MPCall_5
-;	MPCall_6
-;	MPCall_34
-;	KCCreateCpuStruct
-;	MPCall_43
-;	KCStartCPU
-;	KCStopScheduling
-;	MPCall_115
-;	MPCall_15
-;	MPCall_39
-;	MPCall_17
-;	MPCall_18
-;	MPCall_19
-;	MPCall_20
-;	MPCall_23
-;	MPCall_24
-;	MPCall_25
-;	MPCall_27
-;	MPCall_29
-;	MPCall_28
-;	MPCall_49
-;	MPCall_52
-;	MPCall_53
-;	MPCall_40
-;	MPCall_31
-;	MPCall_64
-;	MPCall_7
-;	MPCall_8
-;	MPCall_9
-;	MPCall_10
-;	KCThrowException
-;	MPCall_58
-;	MPCall_60
-;	MPCall_61
-;	MPCall_114
-;	MPCall_70
-;	MPCall_71
-;	KCSetTaskAddressSpace
-;	MPCall_72
-;	MPCall_73
-;	MPCall_74
-;	MPCall_75
-;	MPCall_130
-;	MPCall_83
-;	KCMapPage
-;	KCUnmapPages
-;	KCMakePhysicallyContiguous
-;	KCLockPages
-;	KCHoldPages
-;	MPCall_91
-;	MPCall_92
-;	MPCall_94
-;	MPCall_95
 
 ReleaseAndScrambleMPCall	;	OUTSIDE REFERER
 	_AssertAndRelease	PSA.SchLock, scratch=r16
@@ -379,48 +200,16 @@ ReleaseAndReturnMPCallOOM	;	OUTSIDE REFERER
 
 
 
-;	        ReturnMPCallOOM
-
-;	Xrefs:
-;	ReleaseAndScrambleMPCall
-;	MPCall_0
-;	KCRegisterCpuPlugin
-;	MPCall_47
-;	NKxprintf
-;	KCSetBlueProcessID
-;	NKSetClockStep
-;	NKSetClockDriftCorrection
-;	MPCall_39
-;	MPCall_20
-;	MPCall_7
-;	MPCall_82
-;	KCPropogateExternalInterrupt
-;	major_0x16b80
-
 ReturnMPCallOOM	;	OUTSIDE REFERER
 	li		r3, kMPInsufficientResourcesErr
 	b		CommonMPCallReturnPath
 
 
 
-;	                     ReleaseAndReturnMPCallBlueBlocking
-
-;	Xrefs:
-;	MPCall_18
-;	MPCall_23
-;	MPCall_27
-;	MPCall_52
-
 ReleaseAndReturnMPCallBlueBlocking	;	OUTSIDE REFERER
 	_AssertAndRelease	PSA.SchLock + Lock.Count, scratch=r16
 
 
-
-;	               ReturnMPCallBlueBlocking
-
-;	Xrefs:
-;	ReleaseAndReturnMPCallBlueBlocking
-;	MPCall_33
 
 ReturnMPCallBlueBlocking	;	OUTSIDE REFERER
 	li		r3, kMPBlueBlockingErr
@@ -428,141 +217,16 @@ ReturnMPCallBlueBlocking	;	OUTSIDE REFERER
 
 
 
-;	                     ReleaseAndReturnParamErrFromMPCall
-
-;	Xrefs:
-;	MPCall_128
-;	MPCall_120
-;	MPCall_73
-;	MPCall_75
-;	MPCall_130
-;	KCSetAreaAccess
-;	MPCall_123
-;	MPCall_78
-;	MPCall_80
-;	MPCall_125
-;	MPCall_81
-;	MPCall_98
-;	KCMapPage
-;	KCUnmapPages
-;	KCMakePhysicallyContiguous
-;	KCLockPages
-;	KCUnlockPages
-;	KCHoldPages
-;	KCUnholdPages
-;	MPCall_91
-;	MPCall_92
-;	MPCall_93
-;	MPCall_94
-;	MPCall_129
-
 ReleaseAndReturnParamErrFromMPCall	;	OUTSIDE REFERER
 	_AssertAndRelease	PSA.SchLock + Lock.Count, scratch=r16
 
 
-
-;	                ReturnParamErrFromMPCall
-
-;	Xrefs:
-;	ReleaseAndReturnParamErrFromMPCall
-;	KCGetNextIDOwnedByProcess
-;	NKLocateInfoRecord
-;	MPCall_108
-;	NKSetClockStep
-;	KCGetPageSize
-;	MPCall_95
-;	KCPropogateExternalInterrupt
-;	major_0x16b80
 
 ReturnParamErrFromMPCall	;	OUTSIDE REFERER
 	li		r3, -0x32
 	b		CommonMPCallReturnPath
 
 
-
-;	                     ReleaseAndReturnMPCallPrivilegedErr
-
-;	Xrefs:
-;	KCRegisterCpuPlugin
-;	KCCreateProcess
-;	MPCall_5
-;	MPCall_6
-;	MPCall_43
-;	KCStartCPU
-;	KCStopScheduling
-;	KCRegisterThermalHandler
-;	KCRegisterPMFHandler
-;	KCMarkPMFTask
-;	MPCall_115
-;	KCRegisterExternalHandler
-;	MPCall_16
-;	MPCall_39
-;	MPCall_17
-;	MPCall_18
-;	MPCall_19
-;	MPCall_23
-;	MPCall_24
-;	MPCall_22
-;	MPCall_21
-;	MPCall_27
-;	MPCall_29
-;	MPCall_28
-;	MPCall_26
-;	MPCall_50
-;	MPCall_51
-;	MPCall_52
-;	MPCall_53
-;	MPCall_54
-;	MPCall_41
-;	MPCall_30
-;	MPCall_31
-;	MPCall_32
-;	MPCall_65
-;	MPCall_67
-;	MPCall_66
-;	MPCall_128
-;	MPCall_7
-;	MPCall_8
-;	MPCall_9
-;	MPCall_10
-;	MPCall_14
-;	MPCall_56
-;	KCThrowException
-;	MPCall_58
-;	MPCall_59
-;	MPCall_60
-;	MPCall_61
-;	MPCall_63
-;	MPCall_114
-;	KCSetTaskType
-;	MPCall_71
-;	KCSetTaskAddressSpace
-;	MPCall_72
-;	MPCall_73
-;	MPCall_74
-;	MPCall_75
-;	MPCall_130
-;	KCSetAreaAccess
-;	MPCall_123
-;	MPCall_77
-;	MPCall_78
-;	MPCall_80
-;	MPCall_125
-;	MPCall_81
-;	MPCall_98
-;	MPCall_82
-;	KCMapPage
-;	KCUnmapPages
-;	KCMakePhysicallyContiguous
-;	KCLockPages
-;	KCUnlockPages
-;	KCHoldPages
-;	KCUnholdPages
-;	MPCall_91
-;	MPCall_92
-;	MPCall_93
-;	MPCall_94
-;	MPCall_129
 
 ReleaseAndReturnMPCallPrivilegedErr	;	OUTSIDE REFERER
 	_AssertAndRelease	PSA.SchLock, scratch=r16
@@ -576,35 +240,11 @@ ReleaseAndReturnMPCallInvalidIDErr	;	OUTSIDE REFERER
 
 
 
-;	              ReturnMPCallInvalidIDErr
-
-;	Xrefs:
-;	ReleaseAndReturnMPCallPrivilegedErr
-;	KCRegisterCpuPlugin
-;	MPCall_35
-;	MPCall_36
-;	KCGetNextID
-;	KCGetNextIDOwnedByProcess
-;	MPCall_38
-;	MPCall_62
-;	KCCreateCpuStruct
-;	KCSetBlueProcessID
-;	MPCall_14
-;	MPCall_79
-
 ReturnMPCallInvalidIDErr	;	OUTSIDE REFERER
 	li		r3, kMPInvalidIDErr
 	b		CommonMPCallReturnPath
 
 
-
-;	                     major_0x0b0cc
-
-;	Xrefs:
-;	KCLockPages
-;	KCUnlockPages
-;	KCHoldPages
-;	KCUnholdPages
 
 major_0x0b0cc	;	OUTSIDE REFERER
 	_AssertAndRelease	PSA.SchLock + Lock.Count, scratch=r16
@@ -613,37 +253,11 @@ major_0x0b0cc	;	OUTSIDE REFERER
 
 
 
-;	               ReturnZeroFromMPCall_again
-
-;	Xrefs:
-;	MPCall_1
-
 ReturnZeroFromMPCall_again	;	OUTSIDE REFERER
 	li		r3,  0x00
 	b		CommonMPCallReturnPath
 
 
-
-;	                     BlockMPCall
-
-;	Xrefs:
-;	major_0x02964
-;	major_0x02ccc
-;	MPCall_55
-;	MPCall_18
-;	MPCall_23
-;	MPCall_22
-;	MPCall_27
-;	MPCall_52
-;	MPCall_67
-;	MPCall_9
-;	KCThrowException
-;	MPCall_58
-;	MPCall_60
-;	MPCall_61
-;	KCSetTaskAddressSpace
-;	MPCall_81
-;	MPCall_98
 
 BlockMPCall	;	OUTSIDE REFERER
 	crclr	10
@@ -653,40 +267,6 @@ ReleaseAndReturnMPCall	;	OUTSIDE REFERER
 	_AssertAndRelease	PSA.SchLock, scratch=r16
 
 
-
-;	                 CommonMPCallReturnPath
-
-;	Xrefs:
-;	MPCallBad
-;	ReturnZeroFromMPCall
-;	ReleaseAndScrambleMPCall
-;	ReturnMPCallOOM
-;	ReturnMPCallBlueBlocking
-;	ReturnParamErrFromMPCall
-;	ReleaseAndReturnMPCallPrivilegedErr
-;	ReturnMPCallInvalidIDErr
-;	major_0x0b0cc
-;	ReturnZeroFromMPCall_again
-;	BlockMPCall
-;	KCGetCpuCount
-;	MPCall_6
-;	MPYieldWithHint
-;	KCCpuPlugin
-;	NKPrintHex
-;	NKPrintDecimal
-;	MPCall_11
-;	MPCall_12
-;	KCGetPageSizeClasses
-;	KCGetPageSize
-;	MPCall_70
-;	KCCurrentAddressSpace
-;	KCHomeAddressSpace
-;	MPCall_72
-;	MPCall_73
-;	MPCall_84
-;	KCGetFreePageCount
-;	KCGetUnheldFreePageCount
-;	major_0x16b80
 
 CommonMPCallReturnPath	;	OUTSIDE REFERER
 	crset	10
@@ -2534,11 +2114,6 @@ MPCall_133_0xa0
 	b		ReleaseAndReturnZeroFromMPCall
 
 
-
-;	                 MPCall_Panic
-
-;	Xrefs:
-;	KCStartCPU
 
 MPCall_Panic
 	b		panic

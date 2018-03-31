@@ -3,16 +3,6 @@ Local_Panic		set		*
 
 
 
-;	                     PagingFunc1
-
-;	Xrefs:
-;	setup
-;	IntDSIOtherOther
-;	IntISI
-;	IntDSIOther
-;	kcVMDispatch
-;	print_memory_logical
-
 	align	5
 
 PagingFunc1	;	OUTSIDE REFERER
@@ -454,11 +444,6 @@ PagingFunc1	;	OUTSIDE REFERER
 
 
 
-;	                     PagingFunc2
-
-;	Xrefs:
-;	setup
-
 PagingFunc2	;	OUTSIDE REFERER
 	sync
 	isync
@@ -613,15 +598,6 @@ PagingFunc2AndAHalf
 
 
 
-;	                     PagingFunc3
-
-;	Xrefs:
-;	IntDSIOtherOther
-;	kcRunAlternateContext
-;	kcRTASDispatch
-;	KCRegisterCpuPlugin
-;	MPCall_103
-
 PagingFunc3	;	OUTSIDE REFERER
 	lwz		r30,  0x0000(r29)
 	li		r28, -0x01
@@ -654,14 +630,6 @@ PagingFunc3	;	OUTSIDE REFERER
 	bnelr-
 
 
-
-;	                     PagingFunc4
-
-;	Xrefs:
-;	setup
-;	PagingFunc3
-;	print_memory_logical
-;	major_0x18c08
 
 PagingFunc4	;	OUTSIDE REFERER
 	mfsrin	r31, r27
@@ -719,13 +687,6 @@ PagingFunc4	;	OUTSIDE REFERER
 	blr
 
 
-
-;	                       PagingFlushTLB
-
-;	Xrefs:
-;	setup
-;	major_0x14bcc
-;	MPCall_103
 
 pb	equ		12
 
