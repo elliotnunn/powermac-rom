@@ -95,7 +95,7 @@ SchInit
 	addi	r23, r23, 1
 	cmpwi	r23, 4
 	addi	r9, r9, 32 ;ReadyQueue.Size
-	blt+	@loop
+	blt		@loop
 
 
 
@@ -106,7 +106,7 @@ SchInit
 	lwz		r17, ContextBlock.PriorityShifty(r16)
 	andi.	r9, r17, 0xF
 	li		r17, 2
-	bnelr-
+	bnelr
 
 	stw		r17, ContextBlock.PriorityShifty(r16)
 	blr
@@ -299,193 +299,193 @@ Restore_v0_v31	;	OUTSIDE REFERER
 	li		r9, -0x8e0
 	lvx		v31, r8, r9
 	vor		v0, v31, v31
-	bge-	major_0x13988_0x108
+	bge		major_0x13988_0x108
 	li		r8,  0x00
 	lvx		v0, r8, r10
 
 major_0x13988_0x108
 	vor		v1, v31, v31
-	ble-	major_0x13988_0x118
+	ble		major_0x13988_0x118
 	li		r9,  0x10
 	lvx		v1, r9, r10
 
 major_0x13988_0x118
 	vor		v2, v31, v31
-	bne-	major_0x13988_0x128
+	bne		major_0x13988_0x128
 	li		r8,  0x20
 	lvx		v2, r8, r10
 
 major_0x13988_0x128
 	vor		v3, v31, v31
-	bns-	major_0x13988_0x138
+	bns		major_0x13988_0x138
 	li		r9,  0x30
 	lvx		v3, r9, r10
 
 major_0x13988_0x138
 	vor		v4, v31, v31
-	bge-	cr1, major_0x13988_0x148
+	bge		cr1, major_0x13988_0x148
 	li		r8,  0x40
 	lvx		v4, r8, r10
 
 major_0x13988_0x148
 	vor		v5, v31, v31
-	ble-	cr1, major_0x13988_0x158
+	ble		cr1, major_0x13988_0x158
 	li		r9,  0x50
 	lvx		v5, r9, r10
 
 major_0x13988_0x158
 	vor		v6, v31, v31
-	bne-	cr1, major_0x13988_0x168
+	bne		cr1, major_0x13988_0x168
 	li		r8,  0x60
 	lvx		v6, r8, r10
 
 major_0x13988_0x168
 	vor		v7, v31, v31
-	bns-	cr1, major_0x13988_0x178
+	bns		cr1, major_0x13988_0x178
 	li		r9,  0x70
 	lvx		v7, r9, r10
 
 major_0x13988_0x178
 	vor		v8, v31, v31
-	bge-	cr2, major_0x13988_0x188
+	bge		cr2, major_0x13988_0x188
 	li		r8,  0x80
 	lvx		v8, r8, r10
 
 major_0x13988_0x188
 	vor		v9, v31, v31
-	ble-	cr2, major_0x13988_0x198
+	ble		cr2, major_0x13988_0x198
 	li		r9,  0x90
 	lvx		v9, r9, r10
 
 major_0x13988_0x198
 	vor		v10, v31, v31
-	bne-	cr2, major_0x13988_0x1a8
+	bne		cr2, major_0x13988_0x1a8
 	li		r8, 160
 	lvx		v10, r8, r10
 
 major_0x13988_0x1a8
 	vor		v11, v31, v31
-	bns-	cr2, major_0x13988_0x1b8
+	bns		cr2, major_0x13988_0x1b8
 	li		r9,  0xb0
 	lvx		v11, r9, r10
 
 major_0x13988_0x1b8
 	vor		v12, v31, v31
-	bge-	cr3, major_0x13988_0x1c8
+	bge		cr3, major_0x13988_0x1c8
 	li		r8,  0xc0
 	lvx		v12, r8, r10
 
 major_0x13988_0x1c8
 	vor		v13, v31, v31
-	ble-	cr3, major_0x13988_0x1d8
+	ble		cr3, major_0x13988_0x1d8
 	li		r9,  0xd0
 	lvx		v13, r9, r10
 
 major_0x13988_0x1d8
 	vor		v14, v31, v31
-	bne-	cr3, major_0x13988_0x1e8
+	bne		cr3, major_0x13988_0x1e8
 	li		r8,  0xe0
 	lvx		v14, r8, r10
 
 major_0x13988_0x1e8
 	vor		v15, v31, v31
-	bns-	cr3, major_0x13988_0x1f8
+	bns		cr3, major_0x13988_0x1f8
 	li		r9, 240
 	lvx		v15, r9, r10
 
 major_0x13988_0x1f8
 	vor		v16, v31, v31
-	bge-	cr4, major_0x13988_0x208
+	bge		cr4, major_0x13988_0x208
 	li		r8,  0x100
 	lvx		v16, r8, r10
 
 major_0x13988_0x208
 	vor		v17, v31, v31
-	ble-	cr4, major_0x13988_0x218
+	ble		cr4, major_0x13988_0x218
 	li		r9,  0x110
 	lvx		v17, r9, r10
 
 major_0x13988_0x218
 	vor		v18, v31, v31
-	bne-	cr4, major_0x13988_0x228
+	bne		cr4, major_0x13988_0x228
 	li		r8,  0x120
 	lvx		v18, r8, r10
 
 major_0x13988_0x228
 	vor		v19, v31, v31
-	bns-	cr4, major_0x13988_0x238
+	bns		cr4, major_0x13988_0x238
 	li		r9,  0x130
 	lvx		v19, r9, r10
 
 major_0x13988_0x238
 	vor		v20, v31, v31
-	bge-	cr5, major_0x13988_0x248
+	bge		cr5, major_0x13988_0x248
 	li		r8, 320
 	lvx		v20, r8, r10
 
 major_0x13988_0x248
 	vor		v21, v31, v31
-	ble-	cr5, major_0x13988_0x258
+	ble		cr5, major_0x13988_0x258
 	li		r9,  0x150
 	lvx		v21, r9, r10
 
 major_0x13988_0x258
 	vor		v22, v31, v31
-	bne-	cr5, major_0x13988_0x268
+	bne		cr5, major_0x13988_0x268
 	li		r8,  0x160
 	lvx		v22, r8, r10
 
 major_0x13988_0x268
 	vor		v23, v31, v31
-	bns-	cr5, major_0x13988_0x278
+	bns		cr5, major_0x13988_0x278
 	li		r9,  0x170
 	lvx		v23, r9, r10
 
 major_0x13988_0x278
 	vor		v24, v31, v31
-	bge-	cr6, major_0x13988_0x288
+	bge		cr6, major_0x13988_0x288
 	li		r8,  0x180
 	lvx		v24, r8, r10
 
 major_0x13988_0x288
 	vor		v25, v31, v31
-	ble-	cr6, major_0x13988_0x298
+	ble		cr6, major_0x13988_0x298
 	li		r9, 400
 	lvx		v25, r9, r10
 
 major_0x13988_0x298
 	vor		v26, v31, v31
-	bne-	cr6, major_0x13988_0x2a8
+	bne		cr6, major_0x13988_0x2a8
 	li		r8,  0x1a0
 	lvx		v26, r8, r10
 
 major_0x13988_0x2a8
 	vor		v27, v31, v31
-	bns-	cr6, major_0x13988_0x2b8
+	bns		cr6, major_0x13988_0x2b8
 	li		r9,  0x1b0
 	lvx		v27, r9, r10
 
 major_0x13988_0x2b8
 	vor		v28, v31, v31
-	bge-	cr7, major_0x13988_0x2c8
+	bge		cr7, major_0x13988_0x2c8
 	li		r8,  0x1c0
 	lvx		v28, r8, r10
 
 major_0x13988_0x2c8
 	vor		v29, v31, v31
-	ble-	cr7, major_0x13988_0x2d8
+	ble		cr7, major_0x13988_0x2d8
 	li		r9,  0x1d0
 	lvx		v29, r9, r10
 
 major_0x13988_0x2d8
 	vor		v30, v31, v31
-	bne-	cr7, major_0x13988_0x2e8
+	bne		cr7, major_0x13988_0x2e8
 	li		r8, 480
 	lvx		v30, r8, r10
 
 major_0x13988_0x2e8
 	vor		v31, v31, v31
-	bns-	cr7, major_0x13988_0x2f8
+	bns		cr7, major_0x13988_0x2f8
 	li		r9,  0x1f0
 	lvx		v31, r9, r10
 
@@ -508,10 +508,10 @@ Save_v0_v31	;	OUTSIDE REFERER
 	mfspr	r5, vrsave
 	lwz		r2,  0x00d8(r6)
 	cmplwi	r2,  0x00
-	beqlr-
+	beqlr
 	andis.	r3, r11,  0x200
 	stw		r5,  0x0210(r2)
-	beqlr-
+	beqlr
 	mfmsr	r3
 	rlwinm	r11, r11,  0,  7,  5
 	oris	r3, r3,  0x200
@@ -525,152 +525,152 @@ Save_v0_v31	;	OUTSIDE REFERER
 	mfvscr	v0
 	li		r3,  0x200
 	stvx	v0, r3, r2
-	bne-	Save_v0_v31_0x5c
+	bne		Save_v0_v31_0x5c
 	li		r3,  0x20
 	stvx	v2, r3, r2
 
 Save_v0_v31_0x5c
-	bns-	Save_v0_v31_0x68
+	bns		Save_v0_v31_0x68
 	li		r4,  0x30
 	stvx	v3, r4, r2
 
 Save_v0_v31_0x68
-	bge-	cr1, Save_v0_v31_0x74
+	bge		cr1, Save_v0_v31_0x74
 	li		r3,  0x40
 	stvx	v4, r3, r2
 
 Save_v0_v31_0x74
-	ble-	cr1, Save_v0_v31_0x80
+	ble		cr1, Save_v0_v31_0x80
 	li		r4,  0x50
 	stvx	v5, r4, r2
 
 Save_v0_v31_0x80
-	bne-	cr1, Save_v0_v31_0x8c
+	bne		cr1, Save_v0_v31_0x8c
 	li		r3,  0x60
 	stvx	v6, r3, r2
 
 Save_v0_v31_0x8c
-	bns-	cr1, Save_v0_v31_0x98
+	bns		cr1, Save_v0_v31_0x98
 	li		r4,  0x70
 	stvx	v7, r4, r2
 
 Save_v0_v31_0x98
-	bge-	cr2, Save_v0_v31_0xa4
+	bge		cr2, Save_v0_v31_0xa4
 	li		r3,  0x80
 	stvx	v8, r3, r2
 
 Save_v0_v31_0xa4
-	ble-	cr2, Save_v0_v31_0xb0
+	ble		cr2, Save_v0_v31_0xb0
 	li		r4,  0x90
 	stvx	v9, r4, r2
 
 Save_v0_v31_0xb0
-	bne-	cr2, Save_v0_v31_0xbc
+	bne		cr2, Save_v0_v31_0xbc
 	li		r3, 160
 	stvx	v10, r3, r2
 
 Save_v0_v31_0xbc
-	bns-	cr2, Save_v0_v31_0xc8
+	bns		cr2, Save_v0_v31_0xc8
 	li		r4,  0xb0
 	stvx	v11, r4, r2
 
 Save_v0_v31_0xc8
-	bge-	cr3, Save_v0_v31_0xd4
+	bge		cr3, Save_v0_v31_0xd4
 	li		r3,  0xc0
 	stvx	v12, r3, r2
 
 Save_v0_v31_0xd4
-	ble-	cr3, Save_v0_v31_0xe0
+	ble		cr3, Save_v0_v31_0xe0
 	li		r4,  0xd0
 	stvx	v13, r4, r2
 
 Save_v0_v31_0xe0
-	bne-	cr3, Save_v0_v31_0xec
+	bne		cr3, Save_v0_v31_0xec
 	li		r3,  0xe0
 	stvx	v14, r3, r2
 
 Save_v0_v31_0xec
-	bns-	cr3, Save_v0_v31_0xf8
+	bns		cr3, Save_v0_v31_0xf8
 	li		r4, 240
 	stvx	v15, r4, r2
 
 Save_v0_v31_0xf8
-	bge-	cr4, Save_v0_v31_0x104
+	bge		cr4, Save_v0_v31_0x104
 	li		r3,  0x100
 	stvx	v16, r3, r2
 
 Save_v0_v31_0x104
-	ble-	cr4, Save_v0_v31_0x110
+	ble		cr4, Save_v0_v31_0x110
 	li		r4,  0x110
 	stvx	v17, r4, r2
 
 Save_v0_v31_0x110
-	bne-	cr4, Save_v0_v31_0x11c
+	bne		cr4, Save_v0_v31_0x11c
 	li		r3,  0x120
 	stvx	v18, r3, r2
 
 Save_v0_v31_0x11c
-	bns-	cr4, Save_v0_v31_0x128
+	bns		cr4, Save_v0_v31_0x128
 	li		r4,  0x130
 	stvx	v19, r4, r2
 
 Save_v0_v31_0x128
-	bge-	cr5, Save_v0_v31_0x134
+	bge		cr5, Save_v0_v31_0x134
 	li		r3, 320
 	stvx	v20, r3, r2
 
 Save_v0_v31_0x134
-	ble-	cr5, Save_v0_v31_0x140
+	ble		cr5, Save_v0_v31_0x140
 	li		r4,  0x150
 	stvx	v21, r4, r2
 
 Save_v0_v31_0x140
-	bne-	cr5, Save_v0_v31_0x14c
+	bne		cr5, Save_v0_v31_0x14c
 	li		r3,  0x160
 	stvx	v22, r3, r2
 
 Save_v0_v31_0x14c
-	bns-	cr5, Save_v0_v31_0x158
+	bns		cr5, Save_v0_v31_0x158
 	li		r4,  0x170
 	stvx	v23, r4, r2
 
 Save_v0_v31_0x158
-	bge-	cr6, Save_v0_v31_0x164
+	bge		cr6, Save_v0_v31_0x164
 	li		r3,  0x180
 	stvx	v24, r3, r2
 
 Save_v0_v31_0x164
-	ble-	cr6, Save_v0_v31_0x170
+	ble		cr6, Save_v0_v31_0x170
 	li		r4, 400
 	stvx	v25, r4, r2
 
 Save_v0_v31_0x170
-	bne-	cr6, Save_v0_v31_0x17c
+	bne		cr6, Save_v0_v31_0x17c
 	li		r3,  0x1a0
 	stvx	v26, r3, r2
 
 Save_v0_v31_0x17c
-	bns-	cr6, Save_v0_v31_0x188
+	bns		cr6, Save_v0_v31_0x188
 	li		r4,  0x1b0
 	stvx	v27, r4, r2
 
 Save_v0_v31_0x188
-	bge-	cr7, Save_v0_v31_0x194
+	bge		cr7, Save_v0_v31_0x194
 	li		r3,  0x1c0
 	stvx	v28, r3, r2
 
 Save_v0_v31_0x194
-	ble-	cr7, Save_v0_v31_0x1a0
+	ble		cr7, Save_v0_v31_0x1a0
 	li		r4,  0x1d0
 	stvx	v29, r4, r2
 
 Save_v0_v31_0x1a0
-	bne-	cr7, Save_v0_v31_0x1ac
+	bne		cr7, Save_v0_v31_0x1ac
 	li		r3, 480
 	stvx	v30, r3, r2
 
 Save_v0_v31_0x1ac
-	bns-	cr7, Save_v0_v31_0x1b8
+	bns		cr7, Save_v0_v31_0x1b8
 	li		r4,  0x1f0
 	stvx	v31, r4, r2
 
@@ -705,8 +705,8 @@ SchTaskUnrdy
 	;	Panic if State==0, return early if this task is not enqueued (i.e. LLL.Next==0)
 	cmpwi	cr1, r18, 0
 	cmpwi	r17, 0
-	beq+	cr1, Local_Panic
-	beq-	@return_early
+	beq		cr1, Local_Panic
+	beq		@return_early
 
 	RemoveFromList	r16, scratch1=r17, scratch2=r18
 
@@ -728,8 +728,8 @@ SchTaskUnrdy
 
 	cmpwi	r18, 0						;	Crash if we popped from an empty queue!
 	lwz		r16, PSA.PriorityFlags(r1)
-	blt+	Local_Panic
-	bne-	@return_early
+	blt		Local_Panic
+	bne		@return_early
 	lwz		r18, ReadyQueue.LLL + LLL.Freeform(r17)
 	andc	r16, r16, r18				;	If this queue is empty then unset the corresponding
 	stw		r16, PSA.PriorityFlags(r1)	;	bit in PSA.PriorityFlags
@@ -769,7 +769,7 @@ _SchRdyTaskCommon
 	lis		r17, 0x8000 ; ...0000
 	cmpwi	r16, 0
 	lbz		r18, Task.Priority(r8)
-	bne+	Local_Panic
+	bne		Local_Panic
 
 
 	;	Set the KDP priority flag for this task.
@@ -798,7 +798,7 @@ _SchRdyTaskCommon
 
 	addi	r16, r8, Task.QueueMember
 
-	bne-	cr1, @as_next
+	bne		cr1, @as_next
 
 
 	stw				r17, LLL.Freeform(r16)
@@ -847,7 +847,7 @@ SchSwitchSpace
 	lwz		r16, AddressSpace.Signature(r8)
 	lisori	r17, AddressSpace.kSignature
 	cmpw	r16, r17
-	bne+	Local_Panic
+	bne		Local_Panic
 
 	;	Intend to skip the dssall instruction if Altivec is... present? absent?
 	rlwinm.	r16, r7, 0, 12, 12			;	seems to be leftover from Init.s Altivec testing
@@ -887,7 +887,7 @@ SchSwitchSpace
 	mtsr	14, r16
 	mtsr	15, r17
 
-	beq-	@skip_dssall
+	beq		@skip_dssall
 	dssall					;	flush pending vector ops?
 @skip_dssall
 
@@ -901,7 +901,7 @@ SchSwitchSpace
 	mfpvr	r16
 	rlwinm.	r16, r16, 0, 0, 14
 	cmpwi	cr1, r9, 0			;	arg r9 is 0 when called from Init.s
-	beq-	@is_601
+	beq		@is_601
 
 
 	;	Fill the BATs on "real" PowerPC CPUs
@@ -911,8 +911,8 @@ SchSwitchSpace
 		cmplw	r16, r17
 
 		lwz		r17, AddressSpace.BAT0L(r8)
-		beq-	cr1, @definitely_set_BAT0
-		beq-	@skip_setting_BAT0
+		beq		cr1, @definitely_set_BAT0
+		beq		@skip_setting_BAT0
 
 @definitely_set_BAT0			; r9 is zero or the addrspc bats match low physical memory
 		mtspr	dbat0u, r0
@@ -929,8 +929,8 @@ SchSwitchSpace
 		lwz		r17, AddressSpace.BAT1U(r9)
 		cmplw	r16, r17
 		lwz		r17, AddressSpace.BAT1L(r8)
-		beq-	cr1, @definitely_set_BAT1
-		beq-	@skip_setting_BAT1
+		beq		cr1, @definitely_set_BAT1
+		beq		@skip_setting_BAT1
 
 @definitely_set_BAT1
 		mtspr	dbat1u, r0
@@ -947,8 +947,8 @@ SchSwitchSpace
 		lwz		r17, AddressSpace.BAT2U(r9)
 		cmplw	r16, r17
 		lwz		r17, AddressSpace.BAT2L(r8)
-		beq-	cr1, @definitely_set_BAT2
-		beq-	@skip_setting_BAT2
+		beq		cr1, @definitely_set_BAT2
+		beq		@skip_setting_BAT2
 
 @definitely_set_BAT2
 		mtspr	dbat2u, r0
@@ -965,8 +965,8 @@ SchSwitchSpace
 		lwz		r17, AddressSpace.BAT3U(r9)
 		cmplw	r16, r17
 		lwz		r17, AddressSpace.BAT3L(r8)
-		beq-	cr1, @definitely_set_BAT3
-		beq-	@skip_setting_BAT3
+		beq		cr1, @definitely_set_BAT3
+		beq		@skip_setting_BAT3
 @definitely_set_BAT3
 
 		mtspr	dbat3u, r0
@@ -986,11 +986,11 @@ SchSwitchSpace
 		lwz			r16, AddressSpace.ExtraBAT0U(r8)
 		rlwinm.		r17, r17, 0, 31-NKProcessorInfo.hasExtraBATs, 31-NKProcessorInfo.hasExtraBATs
 		lwz			r17, AddressSpace.ExtraBAT0U(r9)
-		beq-		@return
+		beq			@return
 		cmplw		r16, r17
 		lwz			r17, AddressSpace.ExtraBAT0L(r8)
-		beq-		cr1, @definitely_set_ExtraBAT0
-		beq-		@skip_setting_ExtraBAT0
+		beq			cr1, @definitely_set_ExtraBAT0
+		beq			@skip_setting_ExtraBAT0
 
 @definitely_set_ExtraBAT0
 		mtspr		0x238, r0
@@ -1006,8 +1006,8 @@ SchSwitchSpace
 		lwz			r17, AddressSpace.ExtraBAT1U(r9)
 		cmplw		r16, r17
 		lwz			r17, AddressSpace.ExtraBAT1L(r8)
-		beq-		cr1, @definitely_set_ExtraBAT1
-		beq-		@skip_setting_ExtraBAT1
+		beq			cr1, @definitely_set_ExtraBAT1
+		beq			@skip_setting_ExtraBAT1
 
 @definitely_set_ExtraBAT1
 		mtspr		0x23a, r0
@@ -1023,8 +1023,8 @@ SchSwitchSpace
 		lwz			r17, AddressSpace.ExtraBAT2U(r9)
 		cmplw		r16, r17
 		lwz			r17, AddressSpace.ExtraBAT2L(r8)
-		beq-		cr1, @definitely_set_ExtraBAT2
-		beq-		@skip_setting_ExtraBAT2
+		beq			cr1, @definitely_set_ExtraBAT2
+		beq			@skip_setting_ExtraBAT2
 
 @definitely_set_ExtraBAT2
 		mtspr		0x23c, r0
@@ -1040,8 +1040,8 @@ SchSwitchSpace
 		lwz			r17, AddressSpace.ExtraBAT3U(r9)
 		cmplw		r16, r17
 		lwz			r17, AddressSpace.ExtraBAT3L(r8)
-		beq-		cr1, @definitely_set_ExtraBAT3
-		beq-		@skip_setting_ExtraBAT3
+		beq			cr1, @definitely_set_ExtraBAT3
+		beq			@skip_setting_ExtraBAT3
 
 @definitely_set_ExtraBAT3
 		mtspr		0x23e, r0
@@ -1062,8 +1062,8 @@ SchSwitchSpace
 	lwz		r17, 0x0080(r9)
 	cmplw	r16, r17
 	lwz		r17, 0x0084(r8)
-	beq-	cr1, SetAddrSpcRegisters_0x284
-	beq-	SetAddrSpcRegisters_0x29c
+	beq		cr1, SetAddrSpcRegisters_0x284
+	beq		SetAddrSpcRegisters_0x29c
 
 SetAddrSpcRegisters_0x284:
 	rlwimi	r16, r17, 0, 25, 31
@@ -1078,8 +1078,8 @@ SetAddrSpcRegisters_0x29c:
 	lwz		r17, 0x0088(r9)
 	cmplw	r16, r17
 	lwz		r17, 0x008c(r8)
-	beq-	cr1, SetAddrSpcRegisters_0x2b4
-	beq-	SetAddrSpcRegisters_0x2cc
+	beq		cr1, SetAddrSpcRegisters_0x2b4
+	beq		SetAddrSpcRegisters_0x2cc
 
 SetAddrSpcRegisters_0x2b4:
 	rlwimi	r16, r17, 0, 25, 31
@@ -1094,8 +1094,8 @@ SetAddrSpcRegisters_0x2cc:
 	lwz		r17, 0x0090(r9)
 	cmplw	r16, r17
 	lwz		r17, 0x0094(r8)
-	beq-	cr1, SetAddrSpcRegisters_0x2e4
-	beq-	SetAddrSpcRegisters_0x2fc
+	beq		cr1, SetAddrSpcRegisters_0x2e4
+	beq		SetAddrSpcRegisters_0x2fc
 
 SetAddrSpcRegisters_0x2e4:
 	rlwimi	r16, r17, 0, 25, 31
@@ -1110,8 +1110,8 @@ SetAddrSpcRegisters_0x2fc:
 	lwz		r17, 0x0098(r9)
 	cmplw	r16, r17
 	lwz		r17, 0x009c(r8)
-	beq-	cr1, SetAddrSpcRegisters_0x314
-	beqlr-
+	beq		cr1, SetAddrSpcRegisters_0x314
+	beqlr
 
 SetAddrSpcRegisters_0x314:
 	rlwimi	r16, r17, 0, 25, 31
@@ -1133,7 +1133,7 @@ SchReturn
 	lwz		r1, EWA.PA_KDP(r1)
 	cmpwi	cr1, r8, 0
 
-	bne-	SchExitInterrupt
+	bne		SchExitInterrupt
 	beq+	cr1, SchExitInterrupt
 
 	bl		SchSaveStartingAtR14
@@ -1159,15 +1159,15 @@ SchEval
 
 	bl		SchFiddlePriorityShifty
 	lbz		r27,  0x0019(r31)
-	blt-	major_0x142dc_0x58
+	blt		major_0x142dc_0x58
 	li		r26,  0x01
-	beq-	major_0x142dc_0x38
+	beq		major_0x142dc_0x38
 	li		r26,  0x00
 
 major_0x142dc_0x38
 	cmpw	r27, r26
 	mr		r8, r31
-	beq-	major_0x142dc_0x58
+	beq		major_0x142dc_0x58
 	bl		SchTaskUnrdy
 	stb		r26,  0x0019(r31)
 	mr		r8, r31
@@ -1182,7 +1182,7 @@ major_0x142dc_0x5c
 	mr		r30, r31
 	cmpwi	r27,  0x00
 	cntlzw	r26, r27
-	beq-	major_0x142dc_0x140
+	beq		major_0x142dc_0x140
 	addi	r25, r1, -0x9f0
 	mulli	r26, r26,  0x20
 	add		r26, r26, r25
@@ -1195,12 +1195,12 @@ major_0x142dc_0x80
 	lhz		r25,  0x001a(r30)
 	rlwinm.	r8, r24,  0, 25, 26
 	cmpw	cr1, r25, r28
-	beq-	major_0x142dc_0xb8
-	beq-	cr1, major_0x142dc_0xb8
+	beq		major_0x142dc_0xb8
+	beq		cr1, major_0x142dc_0xb8
 	lwz		r29,  0x0008(r29)
 	addi	r30, r29, -0x08
 	cmpw	r29, r26
-	bne+	major_0x142dc_0x80
+	bne		major_0x142dc_0x80
 	lwz		r25,  0x0000(r26)
 	andc	r27, r27, r25
 	b		major_0x142dc_0x5c
@@ -1211,8 +1211,8 @@ major_0x142dc_0xb8
 	lbz		r27,  0x0019(r31)
 	cmpwi	cr1, r25,  0x02
 	cmpw	cr2, r28, r27
-	bne-	cr1, major_0x142dc_0xd8
-	blt-	cr2, major_0x142dc_0xd8
+	bne		cr1, major_0x142dc_0xd8
+	blt		cr2, major_0x142dc_0xd8
 	mr		r30, r31
 
 major_0x142dc_0xd8	;	OUTSIDE REFERER
@@ -1220,7 +1220,7 @@ major_0x142dc_0xd8	;	OUTSIDE REFERER
 	addi	r29, r30,  0x08
 	cmpwi	r28,  0x00
 	lwz		r26,  0x0008(r30)
-	beq-	major_0x142dc_0x140
+	beq		major_0x142dc_0x140
 	RemoveFromList		r29, scratch1=r28, scratch2=r27
 	lwz		r27,  0x001c(r30)
 	lwz		r28,  0x0014(r26)
@@ -1231,8 +1231,8 @@ major_0x142dc_0xd8	;	OUTSIDE REFERER
 	addi	r28, r28, -0x01
 	cmpwi	r28,  0x00
 	stw		r28,  0x0010(r26)
-	bltl+	Local_Panic
-	bne-	major_0x142dc_0x140
+	bltl	Local_Panic
+	bne		major_0x142dc_0x140
 	lwz		r28,  0x0000(r26)
 	andc	r27, r27, r28
 	stw		r27, -0x0970(r1)
@@ -1255,8 +1255,8 @@ major_0x142dc_0x140
 major_0x142dc_0x184
 	cmpw	cr3, r30, r31
 	rlwinm.	r8, r25,  0, 27, 27
-	bne-	cr3, major_0x14548
-	bne-	major_0x14548
+	bne		cr3, major_0x14548
+	bne		major_0x14548
 	bl		GetTime
 	bl		major_0x148ec
 	lwz		r27,  0x0064(r31)
@@ -1314,7 +1314,7 @@ SchExitInterrupt	;	OUTSIDE REFERER
 	mtspr	srr0, r10
 	mtspr	srr1, r11
 	rlwinm.	r8, r8,  0, 27, 27
-	beq-	SchExitInterrupt_0x2c
+	beq		SchExitInterrupt_0x2c
 	mfxer	r8
 	rlwinm	r8, r8,  0, 23, 21
 	rlwimi	r8, r7, 19, 23, 23
@@ -1358,7 +1358,7 @@ major_0x14548	;	OUTSIDE REFERER
 	stw		r8,  0x00f4(r6)
 	mfspr	r8, pvr
 	rlwinm.	r8, r8,  0,  0, 14
-	bne-	major_0x14548_0x58
+	bne		major_0x14548_0x58
 	mfspr	r8, mq
 	stw		r8,  0x00c4(r6)
 
@@ -1372,11 +1372,11 @@ major_0x14548_0x58
 	lwz		r8,  0x0018(r14)
 	stw		r5,  0x012c(r6)
 	stw		r8,  0x0134(r6)
-	bnel+	Save_f0_f31
+	bnel	Save_f0_f31
 	lwz		r31, -0x0008(r14)
 	lwz		r30, -0x0260(r14)
 	rlwinm.	r8, r7,  0, 12, 12
-	bnel+	Save_v0_v31
+	bnel	Save_v0_v31
 	stw		r11,  0x00a4(r6)
 	lwz		r8,  0x00e8(r31)
 	addi	r8, r8,  0x01
@@ -1390,10 +1390,10 @@ major_0x14548_0x58
 	stb		r28, -0x0117(r14)
 	cmplw	r30, r31
 	lwz		r16,  0x0010(r31)
-	beq-	major_0x14548_0xd4
+	beq		major_0x14548_0xd4
 	cmpwi	r16,  0x00
 	mr		r8, r31
-	beql+	SchRdyTaskNow
+	beql	SchRdyTaskNow
 major_0x14548_0xd4
 
 	mfsprg	r19, 0
@@ -1422,7 +1422,7 @@ major_0x14548_0xd4
 	lwz		r18,  0x0070(r30)
 	lwz		r9, -0x001c(r19)
 	cmpw	r18, r9
-	beq-	major_0x14548_0x148
+	beq		major_0x14548_0x148
 	mr		r8, r18
 	bl		SchSwitchSpace
 
@@ -1431,16 +1431,16 @@ major_0x14548_0x148
 	mtcr	r7
 	lis		r28,  0x00
 	ori		r28, r28,  0x10
-	bne-	cr2, major_0x14548_0x20c
+	bne		cr2, major_0x14548_0x20c
 	and.	r28, r28, r27
 	li		r8,  0x00
-	beq-	major_0x14548_0x20c
+	beq		major_0x14548_0x20c
 	andc	r27, r27, r28
 	lwz		r29, PSA.MCR(r1)
 	stw		r27,  0x0064(r30)
 	stw		r8, PSA.MCR(r1)
-	blt-	cr2, major_0x14548_0x1cc
-	bsol+	cr6, Local_Panic
+	blt		cr2, major_0x14548_0x1cc
+	bsol	cr6, Local_Panic
 	clrlwi	r8, r7,  0x08
 	stw		r8,  0x0000(r6)
 	lwz		r6, KDP.PA_ECB(r1)
@@ -1455,7 +1455,7 @@ major_0x14548_0x148
 	stw		r26, -0x000c(r19)
 	lwz		r13,  0x00dc(r6)
 	lwz		r11,  0x00a4(r6)
-	bsol+	cr6, Local_Panic
+	bsol	cr6, Local_Panic
 	rlwimi	r11, r7,  0, 20, 23
 	rlwimi	r7, r8,  0,  9, 16
 	rlwimi	r11, r27, 24, 29, 29
@@ -1469,7 +1469,7 @@ major_0x14548_0x1cc
 	lwz		r18,  0x067c(r1)
 	cmplwi	r17,  0xffff
 	lwz		r26,  KDP.PostIntMaskInit(r1)
-	beq-	major_0x14548_0x1f8
+	beq		major_0x14548_0x1f8
 	sth		r17,  0x0000(r18)
 	li		r17, -0x01
 	sth		r17, -0x043c(r1)
@@ -1477,7 +1477,7 @@ major_0x14548_0x1cc
 major_0x14548_0x1f8
 	cmpwi	r29,  0x00
 	or		r13, r13, r29
-	bne-	major_0x14548_0x20c
+	bne		major_0x14548_0x20c
 	lwz		r29,  KDP.ClearIntMaskInit(r1)
 	and		r13, r13, r29
 
@@ -1485,7 +1485,7 @@ major_0x14548_0x20c
 	lwz		r29,  0x00d8(r6)
 	cmpwi	r29,  0x00
 	lwz		r8,  0x0210(r29)
-	beq-	major_0x14548_0x220
+	beq		major_0x14548_0x220
 	mtspr	vrsave, r8
 
 major_0x14548_0x220
@@ -1497,7 +1497,7 @@ major_0x14548_0x220
 	mtctr	r8
 	mfspr	r8, pvr
 	rlwinm.	r8, r8,  0,  0, 14
-	bne-	major_0x14548_0x24c
+	bne		major_0x14548_0x24c
 	lwz		r8,  0x00c4(r6)
 	mtspr	mq, r8
 
@@ -1539,7 +1539,7 @@ major_0x14548_0x24c
 	lwz		r29,  0x01ec(r6)
 	lwz		r30,  0x01f4(r6)
 	lwz		r31,  0x01fc(r6)
-	beq-	major_0x14548_0x380
+	beq		major_0x14548_0x380
 	mfmsr	r8
 	ori		r8, r8,  0x2000
 	ori		r11, r11,  0x2000
@@ -1611,10 +1611,10 @@ major_0x148ec	;	OUTSIDE REFERER
 	lwz		r17,  0x00dc(r31)
 	lwz		r16,  0x00d8(r31)
 	andi.	r22, r17,  0x01
-	bne-	major_0x148ec_0x58
+	bne		major_0x148ec_0x58
 	subfc	r17, r19, r17
 	subfe.	r16, r18, r16
-	bge-	major_0x148ec_0x54
+	bge		major_0x148ec_0x54
 	li		r16,  0x00
 	li		r17,  0x00
 
@@ -1626,9 +1626,9 @@ major_0x148ec_0x58
 	stw		r17,  0x00dc(r31)
 	lwz		r17,  0x00fc(r31)
 	andi.	r22, r17,  0x01
-	bne-	major_0x148ec_0x78
+	bne		major_0x148ec_0x78
 	subf.	r17, r19, r17
-	bge-	major_0x148ec_0x78
+	bge		major_0x148ec_0x78
 	li		r17,  0x00
 
 major_0x148ec_0x78
@@ -1641,7 +1641,7 @@ major_0x148ec_0x78
 	lwz		r18,  0x0010(r18)
 	cmpwi	cr1, r19,  0x02
 	cmpwi	r18,  0x00
-	bge-	cr1, major_0x148ec_0xb0
+	bge		cr1, major_0x148ec_0xb0
 	lwz		r16,  0x00fc(r30)
 	lwz		r17,  0x00fc(r30)
 	srawi	r16, r16, 31
@@ -1650,8 +1650,8 @@ major_0x148ec_0x78
 major_0x148ec_0xb0
 	lwz		r16,  0x00d8(r30)
 	lwz		r17,  0x00dc(r30)
-	bgt-	major_0x148ec_0xc8
-	bne-	cr1, major_0x148ec_0xc8
+	bgt		major_0x148ec_0xc8
+	bne		cr1, major_0x148ec_0xc8
 	li		r16,  0x00
 	lwz		r17,  0x0f2c(r1)
 
@@ -1689,7 +1689,7 @@ major_0x149d4_0xc:
 	lwz		r16, Task.QueueMember + LLL.Freeform(r8)		; points to RDYQ
 	cmpwi	r18, 0
 	lwz		r17, Task.Weight(r8)
-	beq+	Local_Panic
+	beq		Local_Panic
 
 	;	Get queue info
 	lwz		r18, ReadyQueue.TotalWeight(r16)
@@ -1699,10 +1699,10 @@ major_0x149d4_0xc:
 	;	Skip calculation if only task in queue
 	cmpw	r18, r17
 	rlwinm	r17, r17, 10, 0, 22		; r17 *= 1024, but with minor masking typo?
-	beq-	@is_only_weighted_task
+	beq		@is_only_weighted_task
 
 	divw.	r18, r17, r18			; r8 = my share of this queue's weight, out of 1024
-	ble-	@no_time				; if not specified, fall back on 1/1024
+	ble		@no_time				; if not specified, fall back on 1/1024
 
 	;	t = t * r18 = my share of queue's time, out of 1024
 	mulhw	r17, r20, r18
@@ -1723,7 +1723,7 @@ major_0x149d4_0xc:
 	lbz		r18, Task.Priority(r8)
 	cmpwi	r18, Task.kNominalPriority
 	ori		r20, r20, 1						; why make this odd?
-	bge-	@nominal_or_idle
+	bge		@nominal_or_idle
 
 ;critical or latency protected
 	stw		r20, 0x00fc(r8)
@@ -1736,9 +1736,9 @@ major_0x149d4_0xc:
 
 	cmpwi	r16, 0
 	cmplwi	cr2, r17, 0
-	blt-	@definitely_do_the_thing
-	bgtlr-
-	bgtlr-	cr2
+	blt		@definitely_do_the_thing
+	bgtlr
+	bgtlr	cr2
 
 @definitely_do_the_thing
 ;double-int is negative or zero
@@ -1769,22 +1769,22 @@ SchFiddlePriorityShifty	;	OUTSIDE REFERER
 	lwz		r18, KDP.PA_ECB(r1)
 	nand.	r8, r8, r8
 	lwz		r17, ContextBlock.PriorityShifty(r18)
-	bltlr- ; return if flag 10 was unset
+	bltlr ; return if flag 10 was unset
 
 	cmpwi	r17, 0
 	rlwinm	r9, r17,  0, 22, 22
-	blt-	@pshifty_high_bit_set
+	blt		@pshifty_high_bit_set
 
 	cmpwi	r9,  0x200
 	lwz		r16, ContextBlock.r25(r18)
-	beq-	@pshifty_bit_22_set
+	beq		@pshifty_bit_22_set
 
 	clrlwi	r8, r16, 29
 	clrlwi	r9, r17, 28
 	cmpwi	r8, 6
-	bgt-	@pshifty_bit_22_set
+	bgt		@pshifty_bit_22_set
 	cmpw	r8, r9
-	bltlr-
+	bltlr
 	cmpw	r8, r8
 
 @pshifty_bit_22_set
@@ -1815,7 +1815,7 @@ FlagSchEvaluationIfTaskRequires	;	OUTSIDE REFERER
 	mfsprg	r15, 0
 
 	rlwinm.	r16, r16, 0, Task.kFlag25, Task.kFlag26
-	bne-	FlagSchEval
+	bne		FlagSchEval
 
 	addi	r16, r15, EWA.CPUBase
 	lbz		r17, Task.Priority(r8)
@@ -1827,7 +1827,7 @@ FlagSchEvaluationIfTaskRequires	;	OUTSIDE REFERER
 
 	lwz		r14, CoherenceGroup.ScheduledCpuCount(r19)
 	cmpwi	r14, 2
-	blt-	FlagSchEval
+	blt		FlagSchEval
 
 
 	;	Multiprocessor systems:
@@ -1855,8 +1855,8 @@ FlagSchEvaluationIfTaskRequires	;	OUTSIDE REFERER
 	cmpw	cr1, r17, r20
 	rlwinm.	r21, r21, 0, CPU.kFlagScheduled, CPU.kFlagScheduled
 
-	bge-	cr1, @cpu_not_best_for_task
-	beq-	@cpu_not_best_for_task
+	bge		cr1, @cpu_not_best_for_task
+	beq		@cpu_not_best_for_task
 
 	mr		r17, r20
 	mr		r18, r16
@@ -1867,8 +1867,8 @@ FlagSchEvaluationIfTaskRequires	;	OUTSIDE REFERER
 	cmpwi	cr1, r14, 0
 	cmpw	r16, r19
 
-	ble-	cr1, @exit_loop
-	beq+	@loop_hit_the_coherence_group		;	skip the owner of the linked list
+	ble		cr1, @exit_loop
+	beq		@loop_hit_the_coherence_group		;	skip the owner of the linked list
 
 	b		@loop
 @exit_loop
@@ -1879,13 +1879,13 @@ FlagSchEvaluationIfTaskRequires	;	OUTSIDE REFERER
 	;	No suitable CPU found (all running important-er tasks)
 	lbz		r16, Task.Priority(r8)
 	cmpw	r17, r16
-	blelr-
+	blelr
 
 	;	Was this CPU the most suitable?
 	lhz		r17, EWA.CPUIndex(r15)
 	lhz		r18, CPU.EWA + EWA.CPUIndex(r18)
 	cmpw	r18, r17
-	bne-	AlertSchEvalOnOtherCPU
+	bne		AlertSchEvalOnOtherCPU
 	; otherwise fall through to FlagSchEvalOnThisCPU
 
 
@@ -1907,7 +1907,7 @@ FlagSchEval
 	lhz		r18, Task.CPUIndex(r8)
 	lhz		r17, EWA.CPUIndex(r15)
 	cmpw	r17, r18
-	beq+	FlagSchEvalOnThisCPU
+	beq		FlagSchEvalOnThisCPU
 
 
 	;	To force a scheduler evaluation to run on *another* CPU, we interrupt it
@@ -2118,12 +2118,12 @@ SchIdleTask
 
 	;	If the loop started with r31==0, make another round of syscalls
 	cmpwi	r31, 0
-	beq-	@make_calls
+	beq		@make_calls
 
 	;	But if we counted down from >=1 to zero, then just do that again
 	subi	r31, r31, 1
 	cmplwi	r31, 0
-	bgt-	@startagain
+	bgt		@startagain
 
 @make_calls
 
@@ -2135,14 +2135,14 @@ SchIdleTask
 	li		r0, 46			; KCCpuPlugin
 	sc
 	cmpwi	r3, 0
-	beq-	@startagain
+	beq		@startagain
 
 
 	li		r3, 1
 	li		r4, 0
 	twi		31, r31, 5		; PowerCall(1)
 	cmpwi	r3, 0
-	beq-	@startagain
+	beq		@startagain
 
 	lisori	r31, 10*1000000
 

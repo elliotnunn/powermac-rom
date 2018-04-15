@@ -2141,14 +2141,14 @@ ProbePerfMonitor	;	OUTSIDE REFERER
 		TestSPR		r19, r18, r19, SIA
 		or.			r17, r17, r19
 
-		bne-		@dont_set_bit_31
+		bne			@dont_set_bit_31
 		_bset		r23, r23, 31
 @dont_set_bit_31
 
 	;	ONLY test for bits 28-30 if bit 31 was just set...
 
 		mr.			r23, r23
-		beq-		@stop_testing_perf_monitor
+		beq			@stop_testing_perf_monitor
 
 		;	SET BIT 30 if all the 750 perf monitor registers work
 
@@ -2158,7 +2158,7 @@ ProbePerfMonitor	;	OUTSIDE REFERER
 			TestSPR		r19, r18, r19, PMC4
 			or.			r17, r17, r19
 
-			bne-		@dont_set_bit_30
+			bne			@dont_set_bit_30
 			_bset		r23, r23, 30
 @dont_set_bit_30
 
@@ -2167,7 +2167,7 @@ ProbePerfMonitor	;	OUTSIDE REFERER
 			li			r18, 0xaaa0
 			TestSPR.	r17, r18, r19, SDA
 
-			beq-		@dont_set_bit_29
+			beq			@dont_set_bit_29
 			_bset		r23, r23, 29
 @dont_set_bit_29
 
@@ -2181,7 +2181,7 @@ ProbePerfMonitor	;	OUTSIDE REFERER
 
 			or.			r17, r17, r19
 
-			bne-		@dont_set_bit_28
+			bne			@dont_set_bit_28
 			_bset		r23, r23, 28
 @dont_set_bit_28
 
@@ -2204,7 +2204,7 @@ ProbePerfMonitor	;	OUTSIDE REFERER
 
 
 	;	SET BIT 18 if any perf monitor features present
-		beq-		* + 8
+		beq			* + 8
 			_bset	r23, r23, 18
 
 
@@ -2225,7 +2225,7 @@ ProbePerfMonitor	;	OUTSIDE REFERER
 		cmpw		cr1, r20, r19
 		addi		r23, r23,  0x02
 		xor.		r24, r24, r24
-		bge-		cr1, ProbePerfMonitor_0x180
+		bge			cr1, ProbePerfMonitor_0x180
 		addi		r23, r23, -0x01
 
 ProbePerfMonitor_0x160
@@ -2235,15 +2235,15 @@ ProbePerfMonitor_0x160
 		cmplw		cr2, r20, r19
 		rlwinm.		r24, r24,  1,  0, 30
 		slwi		r21, r21,  1
-		blt-		cr1, ProbePerfMonitor_0x180
-		blt-		cr2, ProbePerfMonitor_0x188
+		blt			cr1, ProbePerfMonitor_0x180
+		blt			cr2, ProbePerfMonitor_0x188
 
 ProbePerfMonitor_0x180
 		subf		r20, r19, r20
 		ori			r24, r24,  0x01
 
 ProbePerfMonitor_0x188
-		bge+		ProbePerfMonitor_0x160
+		bge			ProbePerfMonitor_0x160
 		stw			r24,  0x05bc(r1)
 		stb			r23,  0x05b8(r1)
 		li			r21,  0x20
@@ -2309,11 +2309,11 @@ FDPEmulateInstruction
 		mfsprg	r1, 0
 		rlwinm	r17, r27, 13, 25, 29
 		rlwinm	r18, r27, 18, 25, 29
-		beq-	cr6, FDP_1214_0x2b4
+		beq		cr6, FDP_1214_0x2b4
 		mtcrf	 0x3f, r21
 		rlwinm	r19, r27, 23, 25, 29
-		beq-	FDP_1bd0
-		bne-	cr1, FDP_1324
+		beq		FDP_1bd0
+		bne		cr1, FDP_1324
 		rlwinm	r21, r27,  2, 24, 28
 		add		r21, r21, r25
 		lwz		r20,  0x1374(r21)
@@ -2322,25 +2322,25 @@ FDPEmulateInstruction
 		rotlw.	r20, r20, r23
 		add		r21, r21, r25
 		mtlr	r21
-		bltlr-
+		bltlr
 
 FDP_1324
-		ble-	cr1, FDP_1338
+		ble		cr1, FDP_1338
 		lis		r20,  0x5556
 		ori		r20, r20,  0x5500
 		rotlw.	r20, r20, r23
-		blt-	FDP_1c18
+		blt		FDP_1c18
 
 FDP_1338
 		mtcrf	 0x70, r11
 		li		r8,  0x04
-		ble-	cr3, FDP_1354
+		ble		cr3, FDP_1354
 
 
 FDP_1344
 		mtcrf	 0x0f, r11
 		li		r8,  0x04
-		ble-	cr4, FDP_1354
+		ble		cr4, FDP_1354
 		li		r8,  0x05
 
 FDP_1354
@@ -2424,12 +2424,12 @@ FDP_14b0
 
 FDP_1214_0x2b4
 		mtcrf	0x3f, r21
-		bns+	cr2, FDP_1338
+		bns		cr2, FDP_1338
 		lwzx	r18, r1, r18
 		extsh	r19, r27
 		cmpw	cr1, r19, r18
 		subf	r21, r21, r21
-		blt+	cr1, FDP_1484
+		blt		cr1, FDP_1484
 		subf	r21, r18, r19
 		b		FDP_1484
 
@@ -3061,7 +3061,7 @@ FDP_1b50
 
 
 FDP_1b54
-		bns+	cr7, FDP_0da0
+		bns		cr7, FDP_0da0
 		mfcr	r23
 		rlwimi	r13, r23,  0,  0,  3
 		b		FDP_0da0
@@ -3104,7 +3104,7 @@ FDP_1bbc
 
 
 FDP_1bd0
-		bns+	cr2, FDP_1338
+		bns		cr2, FDP_1338
 		lwzx	r17, r1, r17
 		rlwinm	r20, r27, 26, 27, 31
 		lwzx	r19, r1, r19
@@ -3128,7 +3128,7 @@ FDP_1c08
 
 
 FDP_1c18
-		ble+	cr3, FDP_1338
+		ble		cr3, FDP_1338
 		b		major_0x03324
 		bgt		cr6, FDP_1C18
 		bge		cr4, FDP_1338
@@ -3267,9 +3267,9 @@ FDP_1c40	;	OUTSIDE REFERER
 		rlwinm	r17, r27, 15, 23, 27
 		rlwinm	r18, r27, 20, 23, 27
 		rlwinm	r19, r27, 25, 23, 27
-		blt-	FDP_1c40_0x398
-		beq-	cr2, FDP_1c40_0x43c
-		bgt-	cr1, FDP_1c40_0x278
+		blt		FDP_1c40_0x398
+		beq		cr2, FDP_1c40_0x43c
+		bgt		cr1, FDP_1c40_0x278
 		lvx		v3, r24, r19
 		vspltisw	v31,  0x00
 		vspltisw	v29,  0x01
@@ -3384,7 +3384,7 @@ FDP_1c40_0x278
 		mfsprg	r1, 0
 		mtspr	srr0, r10
 		mtspr	srr1, r11
-		bne+	FDP_0E30
+		bne		FDP_0E30
 		mtlr	r12
 		b		FDP_0DC8
 
@@ -3395,7 +3395,7 @@ FDP_1c40_0x398
 		mtmsr	r15
 		isync
 		rlwinm.	r8, r11,  0, 18, 18
-		beq-	FDP_1c40_0x3cc
+		beq		FDP_1c40_0x3cc
 		stfd	f0,  0x0200(r6)
 		mffs	f0
 		stfd	f1,  0x0208(r6)
@@ -3415,22 +3415,22 @@ FDP_1c40_0x3e0
 		addic.	r8, r8, -0x01
 		lfsx	f1, r24, r19
 		lfsx	f2, r24, r22
-		bne-	cr6, FDP_1c40_0x408
+		bne		cr6, FDP_1c40_0x408
 		fnmsubs	f3, f0, f2, f1
 		stfsx	f3, r24, r17
 		addi	r24, r24,  0x04
-		bge+	FDP_1c40_0x3e0
+		bge		FDP_1c40_0x3e0
 		b		FDP_1c40_0x418
 
 FDP_1c40_0x408
 		fmadds	f3, f0, f2, f1
 		stfsx	f3, r24, r17
 		addi	r24, r24,  0x04
-		bge+	FDP_1c40_0x3e0
+		bge		FDP_1c40_0x3e0
 
 FDP_1c40_0x418
 		addi	r24, r24, -0x10
-		beq+	cr7, FDP_1c40_0x278
+		beq		cr7, FDP_1c40_0x278
 		lfd		f0,  0x00e0(r6)
 		mtfsf	 0xff, f0
 		lfd		f0,  0x0200(r6)
@@ -3445,7 +3445,7 @@ FDP_1c40_0x43c
 		mtmsr	r15
 		isync
 		rlwinm.	r8, r11,  0, 18, 18
-		beq-	FDP_1c40_0x468
+		beq		FDP_1c40_0x468
 		stfd	f0,  0x0200(r6)
 		mffs	f0
 		stfd	f1,  0x0208(r6)
@@ -3463,22 +3463,22 @@ FDP_1c40_0x47c
 		lfsx	f0, r24, r18
 		addic.	r8, r8, -0x01
 		lfsx	f1, r24, r19
-		bne-	cr6, FDP_1c40_0x4a0
+		bne		cr6, FDP_1c40_0x4a0
 		fsubs	f3, f0, f1
 		stfsx	f3, r24, r17
 		addi	r24, r24,  0x04
-		bge+	FDP_1c40_0x47c
+		bge		FDP_1c40_0x47c
 		b		FDP_1c40_0x4b0
 
 FDP_1c40_0x4a0
 		fadds	f3, f0, f1
 		stfsx	f3, r24, r17
 		addi	r24, r24,  0x04
-		bge+	FDP_1c40_0x47c
+		bge		FDP_1c40_0x47c
 
 FDP_1c40_0x4b0
 		addi	r24, r24, -0x10
-		beq+	cr7, FDP_1c40_0x278
+		beq		cr7, FDP_1c40_0x278
 		lfd		f0,  0x00e0(r6)
 		mtfsf	 0xff, f0
 		lfd		f0,  0x0200(r6)

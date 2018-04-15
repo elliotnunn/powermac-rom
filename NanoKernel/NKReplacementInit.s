@@ -25,7 +25,7 @@ InitReplacement
 @wipeloop
 	subic.	r12, r12, 4
 	stwx	r0, r13, r12
-	bgt+	@wipeloop
+	bgt		@wipeloop
 
 
 	;	Copy the old KDP to r4 + 10 pages.
@@ -40,7 +40,7 @@ InitReplacement
 	subic.	r12, r12, 4
 	lwzx	r10, r11, r12
 	stwx	r10, r1, r12
-	bgt+	@kdp_copyloop
+	bgt		@kdp_copyloop
 
 
 	;	IRP goes at the base of the area we were given.
@@ -69,7 +69,7 @@ InitReplacement
 
 	;	discarded
 
-	bne-	@emulatordata_ptr_provided
+	bne		@emulatordata_ptr_provided
 	addi	r6, r1,  0x1000
 @emulatordata_ptr_provided
 
@@ -150,7 +150,7 @@ InitReplacement
 	lhz		r12, KDP.InfoRecord + InfoRecord.NKNanoKernelInfoVer(r11)
 	cmpwi	r12,  0x0101
 
-	bgt-	@replaces_later_than_0101
+	bgt		@replaces_later_than_0101
 
 	;	
 	lwz		r12, KDP.PA_ECB_Old(r1)
@@ -168,7 +168,7 @@ InitReplacement
 
 	;	Obviously cannot replace a v2 NanoKernel like myself
 	cmpwi	r12,  0x0200
-	bge-	CancelReplacement
+	bge		CancelReplacement
 
 	lwz		r12, EWA.PA_ContextBlock(r11)
 	stw		r12, EWA.PA_ContextBlock(r1)
@@ -188,7 +188,7 @@ InitReplacement
 	lwz		r10,  0x05b4(r11)
 	cmpw	r12, r10
 
-	beq-	replace_old_kernel_0x198
+	beq		replace_old_kernel_0x198
 	stw		r12,  0x05b4(r1)
 	stw		r0,  0x06b4(r1)
 	lwz		r10,  0x05b0(r11)
@@ -242,7 +242,7 @@ replace_old_kernel_0x198
 @wipeloop
 	subic.	r12, r12, 4
 	stwx	r0, r10, r12
-	bgt+	@wipeloop
+	bgt		@wipeloop
 
 
 
@@ -292,7 +292,7 @@ replace_old_kernel_0x198
 
 	lhz		r10, KDP.InfoRecord + InfoRecord.NKProcessorInfoVer(r1)
 	cmplwi	r10, 0x0112
-	bge-	@ProcessorInfo_version_already_current
+	bge		@ProcessorInfo_version_already_current
 
 	li		r12, 160
 	li		r10, 0x0112
@@ -359,7 +359,7 @@ replace_old_kernel_0x198
 	endif
 
 	cmplwi	r23, 0x27f3		;	set bit 27 on ROM 2.7f3 or later
-	blt-	@oldrom			;	means later than PDM and Cordyceps
+	blt		@oldrom			;	means later than PDM and Cordyceps
 	_bset	r8, r8, 27
 @oldrom
 
@@ -429,7 +429,7 @@ MoveRecord	;	OUTSIDE REFERER
 
 	subf	r9, r22, r9		; r9 = offset of old address in irp
 	cmplwi	r9, 0x1000
-	bge-	@kdp
+	bge		@kdp
 
 	add		r21, r9, r11	; r21 = the old address if it had been in KDP instead?
 
@@ -444,10 +444,10 @@ MoveRecord	;	OUTSIDE REFERER
 	;	
 @loop
 	subic.	r12, r12, 4
-	blt-	@exit_loop
+	blt		@exit_loop
 	lwzx	r9, r21, r12
 	stwx	r9, r10, r12
-	bgt+	@loop
+	bgt		@loop
 @exit_loop
 
 	lwz		r22, KDP.PA_ConfigInfo(r1)
@@ -456,7 +456,7 @@ MoveRecord	;	OUTSIDE REFERER
 	subf	r10, r1, r10
 	lisori	r21, -9 * 4096
 	cmpw	r10, r21			; if dest is nearer than 9 pages below kdp...
-	blt-	@0x50
+	blt		@0x50
 	add		r10, r10, r22
 	blr		
 @0x50

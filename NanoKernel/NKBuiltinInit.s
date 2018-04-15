@@ -49,7 +49,7 @@ InitBuiltin
 
 	mfspr	r12, pvr
 	rlwinm.	r12, r12, 0, 0, 14
-	bne-	@not601
+	bne		@not601
 
 	mtspr	rtcl, r0
 	mtspr	rtcu, r0
@@ -92,7 +92,7 @@ InitBuiltin
 @rambank_loop
 	lwzu	r11, 8(r10)		; Bank0Size, Bank1Size...
 	cmpwi	r11, 0
-	beq+	@rambank_loop
+	beq		@rambank_loop
 
 	;	r10 points to BankXSize, r11 contains BankXSize
 
@@ -127,7 +127,7 @@ InitBuiltin
 	lwz		r11, NKSystemInfo.PhysicalMemorySize(r5)
 	addis	r15, r11, 1
 	cmpwi	r15, 0
-	bgt-	@skip_reducing_ram
+	bgt		@skip_reducing_ram
 	addi	r11, r11, -4096
 @skip_reducing_ram
 	subf	r11, r12, r11
@@ -212,9 +212,9 @@ InitBuiltin
 	andc	r13, r11, r14			;	end % HTABSIZE
 	subf	r13, r15, r13			;	end % HTABSIZE - r15
 	cmplw	r13, r12
-	blt+	@try_another_bank
+	blt		@try_another_bank
 	cmplw	r13, r11
-	bgt+	@try_another_bank
+	bgt		@try_another_bank
 
 	add		r12, r13, r15
 
@@ -265,7 +265,7 @@ InitBuiltin
 	cmpw	r12, r11
 	lis		r11, 0x7fff
 
-	bne-	@did_not_panic
+	bne		@did_not_panic
 	subf	r11, r13, r1
 	addi	r11, r11, KDP.StartOfPanicArea
 @did_not_panic
@@ -279,11 +279,11 @@ InitBuiltin
 	subf	r10, r11, r12
 	cmplwi	cr7, r10, KDP.EndOfPanicArea - KDP.StartOfPanicArea - 4
 
-	ble-	cr7, @skipwrite
+	ble		cr7, @skipwrite
 	stwx	r0, r13, r12
 @skipwrite
 
-	bne+	@eraseloop
+	bne		@eraseloop
 
 
 
@@ -317,7 +317,7 @@ InitBuiltin
 
 	lisori	r12, 'RTAS'
 	cmpw	r7, r12
-	bne-	@RTAS_absent
+	bne		@RTAS_absent
 
 	stw		r8, KDP.RTAS_Proc(r1)
 
@@ -332,7 +332,7 @@ InitBuiltin
 	addic. r10, r10, -4
 	lwzx	r12, r9, r10
 	stwx	r12, r11, r10
-	bgt+	@RTAS_copyloop
+	bgt		@RTAS_copyloop
 
 	stw		r23, PSA.NoIdeaR23(r1)
 	b		@RTAS_done
@@ -354,7 +354,7 @@ InitBuiltin
 	addic. r10, r10, -4
 	lwzx	r12, r4, r10
 	stwx	r12, r11, r10
-	bgt+	@ProcessorInfo_copyloop
+	bgt		@ProcessorInfo_copyloop
 
 
 
@@ -367,14 +367,14 @@ InitBuiltin
 	addic. r10, r10, -4
 	lwzx	r12, r5, r10
 	stwx	r12, r11, r10
-	bgt+	@SystemInfo_copyloop
+	bgt		@SystemInfo_copyloop
 
 
 
 ;	If DiagnosticInfo != 0, copy it to PSA
 
 	cmpwi	r6, 0
-	beq-	@DiagInfo_skipcopy
+	beq		@DiagInfo_skipcopy
 
 	addi	r11, r1, PSA.DiagInfo
 	li		r10, 256; NKDiagInfo.Size
@@ -383,7 +383,7 @@ InitBuiltin
 	addic. r10, r10, -4
 	lwzx	r12, r6, r10
 	stwx	r12, r11, r10
-	bgt+	@DiagInfo_copyloop
+	bgt		@DiagInfo_copyloop
 
 @DiagInfo_skipcopy
 
@@ -405,11 +405,11 @@ InitBuiltin
 	lwz		r8, KDP.NanoKernelInfo + NKNanoKernelInfo.ConfigFlags(r1)
 
 	if		&TYPE('NKShowLog') = 'UNDEFINED'
-		blt-	@no_screen_log
+		blt		@no_screen_log
 		lwz		r8, NKConfigurationInfo.DebugFlags(r9)
 		rlwinm.	r8, r8, 0, NKConfigurationInfo.LogFlagBit, NKConfigurationInfo.LogFlagBit
 		lwz		r8, KDP.NanoKernelInfo + NKNanoKernelInfo.ConfigFlags(r1)
-		beq-	@no_screen_log
+		beq		@no_screen_log
 	endif
 
 	;	Enable the screen log
@@ -741,7 +741,7 @@ InitBuiltin
 @LowMem_zeroloop
 	addic.	r9, r9, -4
 	stwx		r0, r10, r9
-	bne+	@LowMem_zeroloop
+	bne		@LowMem_zeroloop
 
 
 	;	Populate from LowMemInit "key-value" table.
@@ -751,7 +751,7 @@ InitBuiltin
 	lwzux	r9, r11, r3			;	get first word and point r11 at it
 @LowMem_setloop
 	mr.		r9, r9
-	beq-	@LowMem_done
+	beq		@LowMem_done
 	lwzu	r12, 4(r11)
 	stwx	r12, r10, r9
 	lwzu		r9, 4(r11)
@@ -772,7 +772,7 @@ InitBuiltin
 	lwz		r11, IRP.HWInfo + NKHWInfo.Signature(r11)
 	lisori	r12, 'Hnfo'
 	cmplw	r12, r11
-	beq-	FinishInitBuiltin
+	beq		FinishInitBuiltin
 
 
 
@@ -789,41 +789,41 @@ InitBuiltin
 ;	check for several (some unknown) pre-7410 CPUs, and load their info
 	cmpwi	r12, 0x0001												; 601
 	addi	r11, r11, ProcessorInfoTable - NKTop
-	beq-	OverrideProcessorInfo
+	beq		OverrideProcessorInfo
 
 	cmpwi	r12, 0x0003												; 603
 	addi	r11, r11, NKProcessorInfo.OvrEnd - NKProcessorInfo.Ovr
-	beq-	OverrideProcessorInfo
+	beq		OverrideProcessorInfo
 
 	cmpwi	r12, 0x0004												; 604
 	addi	r11, r11, NKProcessorInfo.OvrEnd - NKProcessorInfo.Ovr
-	beq-	OverrideProcessorInfo
+	beq		OverrideProcessorInfo
 
 	cmpwi	r12, 0x0006												; 603e
 	addi	r11, r11, NKProcessorInfo.OvrEnd - NKProcessorInfo.Ovr
-	beq-	OverrideProcessorInfo
+	beq		OverrideProcessorInfo
 
 	cmpwi	r12, 0x0007												; 750FX
 	addi	r11, r11, NKProcessorInfo.OvrEnd - NKProcessorInfo.Ovr
-	beq-	OverrideProcessorInfo
+	beq		OverrideProcessorInfo
 
 	cmpwi	r12, 0x0008												; 750
 	addi	r11, r11, NKProcessorInfo.OvrEnd - NKProcessorInfo.Ovr
-	beq-	OverrideProcessorInfo
+	beq		OverrideProcessorInfo
 
 	cmpwi	r12, 0x0009												; ???
 	addi	r11, r11, NKProcessorInfo.OvrEnd - NKProcessorInfo.Ovr
-	beq-	OverrideProcessorInfo
+	beq		OverrideProcessorInfo
 	cmpwi	r12, 0x000a												; ???
-	beq-	OverrideProcessorInfo
+	beq		OverrideProcessorInfo
 
 	cmpwi	r12, 0x000c												; 7400
 	addi	r11, r11, NKProcessorInfo.OvrEnd - NKProcessorInfo.Ovr
-	beq-	OverrideProcessorInfo
+	beq		OverrideProcessorInfo
 
 	cmpwi	r12, 0x000d												; ???
 	addi	r11, r11, NKProcessorInfo.OvrEnd - NKProcessorInfo.Ovr
-	beq-	OverrideProcessorInfo
+	beq		OverrideProcessorInfo
 
 
 
@@ -849,17 +849,17 @@ new_world_0x60c
 	lwzu	r12, -0x0008(r10)
 	subf	r9, r12, r21
 	cmplw	r9, r11
-	bge-	new_world_0x624
+	bge		new_world_0x624
 	mr		r11, r9
 
 new_world_0x624
 	cmplw	r11, r15
-	ble-	new_world_0x634
+	ble		new_world_0x634
 	mr		r13, r12
 	mr		r15, r11
 
 new_world_0x634
-	bdnz+	new_world_0x60c
+	bdnz	new_world_0x60c
 	addi	r12, r22, -0x01
 	neg		r11, r13
 	and		r12, r11, r12
@@ -874,14 +874,14 @@ new_world_0x634
 new_world_0x660
 	subic.	r10, r10, 4
 	stwx	r11, r21, r10
-	bne+	new_world_0x660
+	bne		new_world_0x660
 	dcbz	0, r21
 
 new_world_0x670
 	addi	r10, r10,  0x01
 	lbzx	r11, r21, r10
 	cmpwi	r11,  0x00
-	beq+	new_world_0x670
+	beq		new_world_0x670
 	sth		r10,  0x0f3c(r1)
 	sth		r10,  0x0f3e(r1)
 	sth		r10,  0x0f46(r1)
@@ -899,7 +899,7 @@ new_world_0x6a4
 	cmpw	r10, r21
 	rlwinm	r9, r10,  9,  7, 19
 	tlbie	r9
-	bne+	new_world_0x6a4
+	bne		new_world_0x6a4
 	sync	
 	isync	
 	lwz		r11,  0x064c(r1)
@@ -914,7 +914,7 @@ new_world_0x6dc
 	dcbst	0, r20
 	sync	
 	icbi	0, r20
-	bdnz+	new_world_0x6dc
+	bdnz	new_world_0x6dc
 	sync	
 	isync	
 	stw		r0,  0x0f34(r1)
@@ -927,12 +927,12 @@ new_world_0x6dc
 new_world_0x714
 	addi	r17, r17,  0x200
 	cmplw	r17, r15
-	bge-	new_world_0x734
+	bge		new_world_0x734
 
 new_world_0x720
 	mtlr	r20
 	blrl	
-	ble+	new_world_0x714
+	ble		new_world_0x714
 	addi	r12, r17, -0x200
 	stw		r12,  0x0f34(r1)
 
@@ -948,12 +948,12 @@ new_world_0x734
 new_world_0x750
 	add		r17, r17, r18
 	cmplw	r17, r15
-	bge-	new_world_0x774
+	bge		new_world_0x774
 
 new_world_0x75c
 	mtlr	r20
 	blrl	
-	ble+	new_world_0x750
+	ble		new_world_0x750
 	subf	r17, r18, r17
 	divwu	r12, r17, r18
 	sth		r12,  0x0f4e(r1)
@@ -972,14 +972,14 @@ new_world_0x774
 new_world_0x798
 	lhz		r12,  0x0f4a(r1)
 	cmplw	r14, r12
-	ble-	new_world_0x7bc
+	ble		new_world_0x7bc
 	srwi	r14, r14,  1
 	subf	r19, r14, r19
 
 new_world_0x7ac
 	mtlr	r20
 	blrl	
-	ble+	new_world_0x798
+	ble		new_world_0x798
 	slwi	r12, r14,  1
 
 new_world_0x7bc
@@ -998,7 +998,7 @@ new_world_0x7e4
 	add		r17, r17, r18
 	lis		r12,  0x3f
 	cmplw	r17, r12
-	bge-	new_world_0x82c
+	bge		new_world_0x82c
 
 new_world_0x7f4
 	mtlr	r20
@@ -1011,7 +1011,7 @@ new_world_0x7f4
 	rlwinm	r12, r12,  0, 28, 26
 	mtmsr	r12
 	isync	
-	ble+	new_world_0x7e4
+	ble		new_world_0x7e4
 	subf	r17, r18, r17
 	divwu	r12, r17, r18
 	sth		r12,  0x0f50(r1)
@@ -1029,7 +1029,7 @@ new_world_0x848
 	add		r17, r17, r18
 	lis		r12,  0x200
 	cmplw	r17, r12
-	bge-	new_world_0x890
+	bge		new_world_0x890
 
 new_world_0x858
 	mtlr	r20
@@ -1042,7 +1042,7 @@ new_world_0x858
 	rlwinm	r12, r12,  0, 28, 26
 	mtmsr	r12
 	isync	
-	ble+	new_world_0x848
+	ble		new_world_0x848
 	subf	r17, r18, r17
 	divwu	r12, r17, r18
 	sth		r12,  0x0f52(r1)
@@ -1079,7 +1079,7 @@ new_world_0x890
 	blrl	
 	sth		r11,  0x0f40(r1)
 	cmpwi	r11,  0x01
-	beq-	skip_cache_hackery_never
+	beq		skip_cache_hackery_never
 	lwz		r11,  0x064c(r1)
 	li		r12, (copied_code_2_end - copied_code_2) / 4
 	mtctr	r12
@@ -1092,13 +1092,13 @@ new_world_0x924
 	dcbst	0, r20
 	sync	
 	icbi	0, r20
-	bdnz+	new_world_0x924
+	bdnz	new_world_0x924
 	sync	
 	isync	
 	subf	r12, r21, r20
 	mulli	r12, r12,  0x80
 	cmplw	r12, r15
-	bge-	new_world_0x958
+	bge		new_world_0x958
 	mr		r15, r12
 
 new_world_0x958
@@ -1115,7 +1115,7 @@ new_world_0x968
 	dcbst	0, r12
 	sync	
 	icbi	0, r12
-	bne+	new_world_0x968
+	bne		new_world_0x968
 	sync	
 	isync	
 	stw		r0,  0x0f38(r1)
@@ -1128,12 +1128,12 @@ new_world_0x968
 new_world_0x9a8
 	addi	r17, r17,  0x200
 	cmplw	r17, r15
-	bge-	new_world_0x9c8
+	bge		new_world_0x9c8
 
 new_world_0x9b4
 	mtlr	r20
 	blrl	
-	ble+	new_world_0x9a8
+	ble		new_world_0x9a8
 	addi	r12, r17, -0x200
 	stw		r12,  0x0f38(r1)
 
@@ -1149,12 +1149,12 @@ new_world_0x9c8
 new_world_0x9e4
 	add		r17, r17, r18
 	cmplw	r17, r15
-	bge-	new_world_0xa08
+	bge		new_world_0xa08
 
 new_world_0x9f0
 	mtlr	r20
 	blrl	
-	ble+	new_world_0x9e4
+	ble		new_world_0x9e4
 	subf	r17, r18, r17
 	divwu	r12, r17, r18
 	sth		r12,  0x0f4c(r1)
@@ -1170,7 +1170,7 @@ new_world_0xa10
 	dcbst	0, r12
 	sync	
 	icbi	0, r12
-	bne+	new_world_0xa10
+	bne		new_world_0xa10
 	sync	
 	isync	
 	lwz		r17,  0x0f38(r1)
@@ -1203,9 +1203,9 @@ new_world_0xa54
 	dcbst	r12, r14
 	sync	
 	icbi	r12, r14
-	bne+	new_world_0xa54
+	bne		new_world_0xa54
 	cmpw	r12, r13
-	bne+	new_world_0xa4c
+	bne		new_world_0xa4c
 	sync	
 	isync	
 	mr		r19, r18
@@ -1218,14 +1218,14 @@ new_world_0xa54
 new_world_0xac8
 	li		r12,  0x08
 	cmplw	r14, r12
-	ble-	new_world_0xaec
+	ble		new_world_0xaec
 	srwi	r14, r14,  1
 	subf	r19, r14, r19
 
 new_world_0xadc
 	mtlr	r20
 	blrl	
-	ble+	new_world_0xac8
+	ble		new_world_0xac8
 	slwi	r12, r14,  1
 
 new_world_0xaec
@@ -1245,9 +1245,9 @@ new_world_0xb04
 	addi	r14, r14,  0x04
 	lwzu	r9,  0x0004(r11)
 	stwx	r9, r12, r14
-	bne+	new_world_0xb04
+	bne		new_world_0xb04
 	cmpw	r12, r13
-	bne+	new_world_0xafc
+	bne		new_world_0xafc
 
 skip_cache_hackery_never
 	;	Clearly can't just fall through
@@ -1275,21 +1275,21 @@ copied_code_1_0x18
 	lbzx	r12, r19, r11
 	add		r12, r12, r12
 	add		r11, r11, r18
-	bdnz+	copied_code_1_0x18
+	bdnz	copied_code_1_0x18
 	subf	r19, r13, r19
 	mfdec	r12
 	neg		r12, r12
 	cmplw	r12, r16
-	bgt-	copied_code_1_0x54
+	bgt		copied_code_1_0x54
 	mr		r16, r12
 
 copied_code_1_0x54
 	srwi	r11, r12,  7
 	subf	r12, r11, r12
 	cmpw	r12, r16
-	blelr-	
+	blelr	
 	addic.	r10, r10, -0x01
-	bgt+	copied_code_1_0x4
+	bgt		copied_code_1_0x4
 	cmpw	r12, r16
 	blr		
 	isync
@@ -1336,12 +1336,12 @@ copied_code_2_0x1c
 	mtlr	r12
 	blrl	
 	add		r11, r11, r18
-	bdnz+	copied_code_2_0x1c
+	bdnz	copied_code_2_0x1c
 	subf	r19, r13, r19
 	mfdec	r12
 	neg		r12, r12
 	cmplw	r12, r16
-	bgt-	copied_code_2_0x60
+	bgt		copied_code_2_0x60
 	mr		r16, r12
 
 copied_code_2_0x60
@@ -1349,9 +1349,9 @@ copied_code_2_0x60
 	subf	r12, r11, r12
 	cmpw	r12, r16
 	mtlr	r9
-	blelr-	
+	blelr	
 	addic.	r10, r10, -0x01
-	bgt+	copied_code_2_0x8
+	bgt		copied_code_2_0x8
 	cmpw	r12, r16
 	blr		
 	isync

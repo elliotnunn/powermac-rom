@@ -55,22 +55,22 @@ PagingFunc1	;	OUTSIDE REFERER
 	lwz		r17,  0x0020(r31)
 	cmplw	r16, r27
 	lwz		r18,  0x007c(r31)
-	bgt-	@_1a0
-	bgt+	@_44
+	bgt		@_1a0
+	bgt		@_44
 	and		r28, r27, r18
 	rlwinm.	r26, r17,  0, 16, 16
 	lwz		r17,  0x0038(r31)
-	beq-	@_fc
+	beq		@_fc
 	lwz		r18,  0x0070(r31)
 	subf	r19, r16, r28
 	clrlwi	r31, r18,  0x1e
 	cmpwi	cr7, r17, -0x01
 	cmpwi	cr6, r31,  0x00
-	beq-	cr7, @_1a0
-	beq+	cr6, @_44
+	beq		cr7, @_1a0
+	beq		cr6, @_44
 	cmpwi	r17,  0x01
 	add		r31, r18, r19
-	blt+	@_44
+	blt		@_44
 	li		r26,  0x00
 	b		@_208
 
@@ -81,10 +81,10 @@ PagingFunc1	;	OUTSIDE REFERER
 	mr		r26, r30
 	mr		r8, r27
 	bl		MPCall_95_0x254
-	beq-	@_12c
+	beq		@_12c
 	lhz		r16,  0x0000(r30)
 	rlwinm.	r8, r16,  0, 16, 16
-	bne-	@_12c
+	bne		@_12c
 	srwi	r16, r16,  1
 	sth		r16,  0x0000(r30)
 
@@ -95,8 +95,8 @@ PagingFunc1	;	OUTSIDE REFERER
 	cmpwi	cr6, r9,  0x00
 	li		r8,  0x801
 	li		r9,  0x01
-	bne-	@_154
-	beq-	cr6, @_154
+	bne		@_154
+	beq		cr6, @_154
 	li		r8,  0x881
 	li		r9,  0x81
 
@@ -106,7 +106,7 @@ PagingFunc1	;	OUTSIDE REFERER
 	rlwimi	r31, r28,  0,  0, 19
 	cmplwi	cr6, r30,  0x800
 	cmplwi	r30,  0x01
-	bge-	cr6, @_2ec
+	bge		cr6, @_2ec
 	cmplw	cr7, r30, r9
 	ori		r31, r31,  0x100
 	rlwimi	r31, r28, 28, 28, 28
@@ -117,8 +117,8 @@ PagingFunc1	;	OUTSIDE REFERER
 	rlwimi	r31, r28, 30, 31, 31
 	rlwimi	r31, r28,  0, 30, 30
 	xori	r31, r31,  0x02
-	beq-	@_208
-	blt+	cr7, @_44
+	beq		@_208
+	blt		cr7, @_44
 	bl		Local_Panic
 
 @_1a0
@@ -136,17 +136,17 @@ PagingFunc1	;	OUTSIDE REFERER
 	lhz		r31,  0x0002(r29)
 	subf	r30, r30, r28
 	cmplw	cr7, r30, r31
-	bgt+	cr7, @_1b8
+	bgt		cr7, @_1b8
 	lwz		r28,  0x0690(r1)
 	lwz		r31,  0x0004(r29)
 	cmpwi	cr7, r28,  0x00
-	bnel-	cr7, @_314
+	bnel	cr7, @_314
 	rlwinm.	r26, r31, 23, 29, 30
 	cmplwi	cr7, r26,  0x06
-	beq-	@_200
+	beq		@_200
 	cmplwi	cr6, r26,  0x02
-	beq-	cr7, @_368
-	beq-	cr6, @_3b8
+	beq		cr7, @_368
+	beq		cr6, @_3b8
 	b		@_44
 	dc.l	0x41800168
 	dc.l	0x418101bc
@@ -172,28 +172,28 @@ PagingFunc1	;	OUTSIDE REFERER
 	lwz		r30,  0x0010(r29)
 	cmpwi	cr7, r28,  0x00
 	lwzu	r28,  0x0018(r29)
-	bge-	cr6, @_298
+	bge		cr6, @_298
 	cmpwi	cr6, r30,  0x00
 	lwzu	r30,  0x0008(r29)
-	bge-	cr7, @_298
+	bge		cr7, @_298
 	cmpwi	cr7, r28,  0x00
 	lwzu	r28,  0x0008(r29)
-	bge-	cr6, @_298
+	bge		cr6, @_298
 	cmpwi	cr6, r30,  0x00
 	lwzu	r30,  0x0008(r29)
-	bge-	cr7, @_298
+	bge		cr7, @_298
 	cmpwi	cr7, r28,  0x00
 	lwzu	r28,  0x0008(r29)
-	bge-	cr6, @_298
+	bge		cr6, @_298
 	cmpwi	cr6, r30,  0x00
 	addi	r29, r29,  0x08
-	bge-	cr7, @_298
+	bge		cr7, @_298
 	cmpwi	cr7, r28,  0x00
 	addi	r29, r29,  0x08
-	bge-	cr6, @_298
+	bge		cr6, @_298
 	rlwinm	r28, r31,  0, 26, 26
 	addi	r29, r29,  0x08
-	blt-	cr7, @_3e0
+	blt		cr7, @_3e0
 
 @_298
 	cmpwi	r26,  0x00
@@ -213,9 +213,9 @@ PagingFunc1	;	OUTSIDE REFERER
 	stw		r29,  0x0698(r1)
 	addi	r28, r28,  0x01
 	stw		r28,  0x0e94(r1)
-	beq+	@_44
+	beq		@_44
 	cmpwi	r26,  0x5a5a
-	bne-	@_2f4
+	bne		@_2f4
 	stw		r29,  0x0690(r1)
 
 @_2ec
@@ -246,7 +246,7 @@ PagingFunc1	;	OUTSIDE REFERER
 	rlwinm.	r28, r28,  0,  0, 14
 	sync
 	tlbie	r29
-	beq-	@_354
+	beq		@_354
 	sync
 	tlbsync
 
@@ -267,7 +267,7 @@ PagingFunc1	;	OUTSIDE REFERER
 	cmplwi	cr6, r30,  0x800
 	cmplwi	cr7, r30,  0x81
 	cmplwi	r30,  0x01
-	bge+	cr6, @_2ec
+	bge		cr6, @_2ec
 	cmplwi	cr7, r30,  0x81
 	ori		r31, r31,  0x100
 	rlwimi	r31, r28,  3, 24, 24
@@ -275,8 +275,8 @@ PagingFunc1	;	OUTSIDE REFERER
 	rlwimi	r31, r28,  1, 25, 25
 	xori	r31, r31,  0x40
 	rlwimi	r31, r28, 30, 31, 31
-	beq+	@_208
-	blt+	cr7, @_44
+	beq		@_208
+	blt		cr7, @_44
 	bl		Local_Panic
 
 @_3b8
@@ -294,12 +294,12 @@ PagingFunc1	;	OUTSIDE REFERER
 @_3e0
 	cmplw	cr6, r28, r26
 	addi	r29, r29, -0x50
-	ble-	cr6, @_400
+	ble		cr6, @_400
 	crnot	2, 2
 	lwz		r30, KDP.PTEGMask(r1)
 	xori	r31, r31,  0x800
 	xor		r29, r29, r30
-	beq+	@_228
+	beq		@_228
 
 @_400
 	lwz		r26,  0x069c(r1)
@@ -319,16 +319,16 @@ PagingFunc1	;	OUTSIDE REFERER
 	rlwimi	r29, r26,  0,  0, 25
 	lwz		r31,  0x0004(r29)
 	lwz		r30,  0x0000(r29)
-	beq-	cr6, @_444
+	beq		cr6, @_444
 	rlwinm	r28, r31, 30, 25, 25
 	andc.	r28, r28, r30
-	bne+	@_420
+	bne		@_420
 
 @_444
 	addi	r9, r9, -0x01
 	cmpwi	cr7, r9,  0x00
 	rlwinm	r31, r30,  0, 25, 25
-	blel+	cr7, Local_Panic
+	blel	cr7, Local_Panic
 	rlwinm	r28, r30,  1,  0,  3
 	neg		r31, r31
 	rlwimi	r28, r30, 22,  4,  9
@@ -349,7 +349,7 @@ PagingFunc1	;	OUTSIDE REFERER
 	mfspr	r31, pvr
 	rlwinm.	r31, r31,  0,  0, 14
 	tlbie	r28
-	beq-	@_4b0
+	beq		@_4b0
 	sync
 	tlbsync
 
@@ -369,11 +369,11 @@ PagingFunc1	;	OUTSIDE REFERER
 	mr		r31, r8
 	cmplw	r16, r28
 	mr		r8, r28
-	bgt-	@_600
-	bgt+	Local_Panic
+	bgt		@_600
+	bgt		Local_Panic
 	bl		MPCall_95_0x1e4
 	mr		r26, r30
-	beql+	@_88
+	beql	@_88
 
 @_500
 	lwz		r28,  0x0000(r26)
@@ -381,10 +381,10 @@ PagingFunc1	;	OUTSIDE REFERER
 	andi.	r30, r28,  0x800
 	rlwinm	r30, r28, 23,  9, 28
 	xor		r30, r30, r29
-	beq+	Local_Panic
+	beq		Local_Panic
 	andi.	r30, r30,  0xffff
 	xori	r28, r28,  0x800
-	bne+	Local_Panic
+	bne		Local_Panic
 	rlwimi	r28, r31,  0,  0, 19
 	rlwimi	r28, r31, 29, 27, 27
 	rlwimi	r28, r31, 27, 28, 28
@@ -431,15 +431,15 @@ PagingFunc1	;	OUTSIDE REFERER
 	lwz		r31, -0x0004(r26)
 	andi.	r31, r31,  0xe01
 	cmpwi	r31,  0xa01
-	bgt+	cr7, @_60c
-	beq+	@_60c
+	bgt		cr7, @_60c
+	beq		@_60c
 	lwz		r26, -0x0004(r26)
 	slwi	r30, r30,  2
 	rlwinm	r31, r26, 22, 30, 31
 	cmpwi	cr7, r31,  0x03
 	rlwinm	r26, r26, 22,  0, 29
 	add		r26, r26, r30
-	bnel+	cr7, @_88
+	bnel	cr7, @_88
 	b		@_500
 
 
@@ -457,7 +457,7 @@ PagingFunc2	;	OUTSIDE REFERER
 	addis	r31, r31, -0x1000
 	mr.		r31, r31
 	mtsrin	r30, r31
-	bne+	@_18
+	bne		@_18
 	isync
 
 PagingFunc2AndAHalf
@@ -466,7 +466,7 @@ PagingFunc2AndAHalf
 	rlwinm.	r31, r31,  0,  0, 14
 	addi	r29, r1,  0x00
 	stw		r28,  0x05ec(r1)
-	beq-	@_168
+	beq		@_168
 	li		r30,  0x00
 	mtspr	ibat0u, r30
 	mtspr	ibat1u, r30
@@ -604,22 +604,22 @@ PagingFunc3	;	OUTSIDE REFERER
 	rlwimi	r28, r30, 15,  0, 14
 	xor		r31, r27, r30
 	andc.	r31, r31, r28
-	beq-	@_54
+	beq		@_54
 	lwzu	r30,  0x0008(r29)
 	rlwimi	r28, r30, 15,  0, 14
 	xor		r31, r27, r30
 	andc.	r31, r31, r28
-	beq-	@_54
+	beq		@_54
 	lwzu	r30,  0x0008(r29)
 	rlwimi	r28, r30, 15,  0, 14
 	xor		r31, r27, r30
 	andc.	r31, r31, r28
-	beq-	@_54
+	beq		@_54
 	lwzu	r30,  0x0008(r29)
 	rlwimi	r28, r30, 15,  0, 14
 	xor		r31, r27, r30
 	andc.	r31, r31, r28
-	bne-	PagingFunc4
+	bne		PagingFunc4
 
 @_54
 	andi.	r31, r30,  0x01
@@ -627,7 +627,7 @@ PagingFunc3	;	OUTSIDE REFERER
 	lwzu	r31,  0x0004(r29)
 	and		r28, r27, r28
 	or		r31, r31, r28
-	bnelr-
+	bnelr
 
 
 
@@ -651,7 +651,7 @@ PagingFunc4	;	OUTSIDE REFERER
 	lwz		r31,  0x0010(r29)
 	cmpw	cr7, r30, r28
 	lwzu	r28,  0x0018(r29)
-	bne-	cr6, @_50
+	bne		cr6, @_50
 
 @_48
 	lwzu	r31, -0x0014(r29)
@@ -660,30 +660,30 @@ PagingFunc4	;	OUTSIDE REFERER
 @_50
 	cmpw	cr6, r30, r31
 	lwzu	r31,  0x0008(r29)
-	beq+	cr7, @_48
+	beq		cr7, @_48
 	cmpw	cr7, r30, r28
 	lwzu	r28,  0x0008(r29)
-	beq+	cr6, @_48
+	beq		cr6, @_48
 	cmpw	cr6, r30, r31
 	lwzu	r31,  0x0008(r29)
-	beq+	cr7, @_48
+	beq		cr7, @_48
 	cmpw	cr7, r30, r28
 	lwzu	r28,  0x0008(r29)
-	beq+	cr6, @_48
+	beq		cr6, @_48
 	cmpw	cr6, r30, r31
 	lwzu	r31, -0x000c(r29)
-	beqlr-	cr7
+	beqlr	cr7
 	cmpw	cr7, r30, r28
 	lwzu	r31,  0x0008(r29)
-	beqlr-	cr6
+	beqlr	cr6
 	lwzu	r31,  0x0008(r29)
-	beqlr-	cr7
+	beqlr	cr7
 	lwz		r31, KDP.PTEGMask(r1)
 	xori	r30, r30,  0x40
 	andi.	r28, r30,  0x40
 	addi	r29, r29, -0x3c
 	xor		r29, r29, r31
-	bne+	@_2c
+	bne		@_2c
 	blr
 
 
@@ -698,14 +698,14 @@ PagingFlushTLB	;	OUTSIDE REFERER
 	subi	r29, r29, 1 << pb
 	cmpwi	r29, 0
 	tlbie	r29
-	bgt+	@loop
+	bgt		@loop
 
 	mfspr	r29, pvr
 	rlwinm.	r29, r29, 0, 0, 14
 
 	;	All cpus
 	sync
-	beqlr-
+	beqlr
 
 	;	Non-601 stuff
 	tlbsync

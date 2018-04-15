@@ -29,7 +29,7 @@ InitScreenConsole	;	OUTSIDE REFERER
 InitScreenConsole_0x18
 	cmplw	r30, r31
 	addi	r29, r31,  0x04
-	bge-	InitScreenConsole_0x2c
+	bge		InitScreenConsole_0x2c
 	stwu	r29, -0x1000(r31)
 	b		InitScreenConsole_0x18
 
@@ -63,7 +63,7 @@ ScreenConsole_putchar	;	OUTSIDE REFERER
 	addi	r30, r30,  0x01
 	andi.	r29, r30,  0xfff
 	stw		r30, -0x0404(r1)
-	bnelr-
+	bnelr
 	lwz		r30, -0x1000(r30)
 	stw		r30, -0x0404(r1)
 	blr
@@ -83,11 +83,11 @@ ScreenConsole_redraw	;	OUTSIDE REFERER
 	mtsprg	3, r26
 	lwz		r26,  0x0edc(r1)
 	andi.	r26, r26,  0x08
-	beq-	major_0x18bec
+	beq		major_0x18bec
 	lwz		r14, -0x0404(r1)
 	lwz		r15, -0x0400(r1)
 	cmpw	r14, r15
-	beq-	major_0x18bec
+	beq		major_0x18bec
 	bl		major_0x18c18
 
 ScreenConsole_redraw_0x40
@@ -107,7 +107,7 @@ ScreenConsole_redraw_0x40
 
 ScreenConsole_redraw_0x74
 	cmpw	r14, r15
-	beq-	ScreenConsole_redraw_0x118
+	beq		ScreenConsole_redraw_0x118
 	lbz		r25,  0x0000(r15)
 	addi	r15, r15,  0x01
 	andi.	r17, r15,  0xfff
@@ -117,27 +117,27 @@ ScreenConsole_redraw_0x74
 ScreenConsole_redraw_0x90
 	cmplwi	r25,  0x0d
 	cmplwi	cr1, r25,  0x0a
-	beq+	ScreenConsole_redraw_0x74
-	beq-	cr1, ScreenConsole_redraw_0xc0
+	beq		ScreenConsole_redraw_0x74
+	beq		cr1, ScreenConsole_redraw_0xc0
 	cmpwi	r25,  0x00
 	cmpwi	cr1, r25,  0x07
-	beq+	ScreenConsole_redraw_0x74
-	beq-	cr1, ScreenConsole_redraw_0xe4
+	beq		ScreenConsole_redraw_0x74
+	beq		cr1, ScreenConsole_redraw_0xe4
 	bl		major_0x18e54
 	lhz		r17, -0x0358(r1)
 	cmpw	r9, r17
-	blt+	ScreenConsole_redraw_0x74
+	blt		ScreenConsole_redraw_0x74
 
 ScreenConsole_redraw_0xc0
 	cmpwi	r16,  0x00
-	bne-	ScreenConsole_redraw_0xcc
+	bne		ScreenConsole_redraw_0xcc
 	mr		r16, r15
 
 ScreenConsole_redraw_0xcc
 	bl		funny_thing
 	lhz		r17, -0x0356(r1)
 	cmpw	r10, r17
-	blt+	ScreenConsole_redraw_0x74
+	blt		ScreenConsole_redraw_0x74
 	stw		r16, -0x0400(r1)
 	b		ScreenConsole_redraw_0x40
 
@@ -145,7 +145,7 @@ ScreenConsole_redraw_0xe4
 	lhz		r17, -0x0356(r1)
 	addi	r17, r17, -0x01
 	cmpw	r10, r17
-	blt+	ScreenConsole_redraw_0x74
+	blt		ScreenConsole_redraw_0x74
 	lwz		r17, -0x0438(r1)
 	slwi	r25, r17,  2
 	add		r25, r25, r17
@@ -155,7 +155,7 @@ ScreenConsole_redraw_0xe4
 ScreenConsole_redraw_0x108
 	mfspr	r25, dec
 	subf.	r25, r17, r25
-	bge+	ScreenConsole_redraw_0x108
+	bge		ScreenConsole_redraw_0x108
 	b		ScreenConsole_redraw_0x74
 
 ScreenConsole_redraw_0x118
@@ -163,7 +163,7 @@ ScreenConsole_redraw_0x118
 	mfspr	r31, pvr
 	rlwinm.	r31, r31,  0,  0, 14
 	li		r31,  0x00
-	bne-	ScreenConsole_redraw_0x140
+	bne		ScreenConsole_redraw_0x140
 	mtspr	ibat3l, r31
 	isync
 	mtspr	ibat3u, r18
@@ -195,7 +195,7 @@ major_0x18bec	;	OUTSIDE REFERER
 major_0x18c08	;	OUTSIDE REFERER
 	mfsrin	r31, r27
 	cmpwi	r31,  0x00
-	beqlr-
+	beqlr
 	b		PagingFunc4
 
 
@@ -204,14 +204,14 @@ major_0x18c18	;	OUTSIDE REFERER
 	mflr	r13
 	lwz		r27, -0x08f8(r1)
 	cmpwi	r27,  0x00
-	bne-	major_0x18c18_0x40
+	bne		major_0x18c18_0x40
 	lwz		r27,  0x0630(r1)
 	lhz		r31,  0x0378(r27)
 	cmpwi	r31,  0x00
-	beq-	major_0x18c18_0x40
+	beq		major_0x18c18_0x40
 	lwz		r31,  0x037c(r27)
 	cmpwi	r31,  0x00
-	beq-	major_0x18c18_0x40
+	beq		major_0x18c18_0x40
 	stw		r31, -0x08f8(r1)
 	lhz		r31,  0x0384(r27)
 	sth		r31, -0x08f4(r1)
@@ -221,33 +221,33 @@ major_0x18c18	;	OUTSIDE REFERER
 major_0x18c18_0x40
 	li		r27,  0x8a4
 	bl		major_0x18c08
-	beq-	major_0x18c18_0xe0
+	beq		major_0x18c18_0xe0
 	rlwimi.	r27, r31,  0,  0, 19
-	ble-	major_0x18c18_0xe0
+	ble		major_0x18c18_0xe0
 	lwz		r27,  0x0000(r27)
 	cmpwi	r27,  0x00
-	ble-	major_0x18c18_0xe0
+	ble		major_0x18c18_0xe0
 	bl		major_0x18c08
-	beq-	major_0x18c18_0xe0
+	beq		major_0x18c18_0xe0
 	rlwimi	r27, r31,  0,  0, 19
 	lwz		r27,  0x0000(r27)
 	cmpwi	r27,  0x00
-	ble-	major_0x18c18_0xe0
+	ble		major_0x18c18_0xe0
 	addi	r27, r27,  0x16
 	bl		major_0x18c08
-	beq-	major_0x18c18_0xe0
+	beq		major_0x18c18_0xe0
 	rlwimi	r27, r31,  0,  0, 19
 	lwz		r27,  0x0000(r27)
 	cmpwi	r27,  0x00
-	ble-	major_0x18c18_0xe0
+	ble		major_0x18c18_0xe0
 	bl		major_0x18c08
-	beq-	major_0x18c18_0xe0
+	beq		major_0x18c18_0xe0
 	rlwimi	r27, r31,  0,  0, 19
 	lwz		r27,  0x0000(r27)
 	cmpwi	r27,  0x00
-	ble-	major_0x18c18_0xe0
+	ble		major_0x18c18_0xe0
 	bl		major_0x18c08
-	beq-	major_0x18c18_0xe0
+	beq		major_0x18c18_0xe0
 	rlwimi	r27, r31,  0,  0, 19
 	lwz		r3,  0x0000(r27)
 	lhz		r5,  0x0004(r27)
@@ -255,7 +255,7 @@ major_0x18c18_0x40
 	lhz		r6,  0x0020(r27)
 	srwi	r6, r6,  3
 	cmplwi	r6,  0x08
-	bgt-	major_0x18c18_0xe0
+	bgt		major_0x18c18_0xe0
 	stw		r3, -0x08f8(r1)
 	sth		r5, -0x08f4(r1)
 	sth		r6, -0x08f2(r1)
@@ -265,7 +265,7 @@ major_0x18c18_0xe0
 	lhz		r5, -0x08f4(r1)
 	lhz		r6, -0x08f2(r1)
 	cmpwi	r3,  0x00
-	bne-	major_0x18d5c
+	bne		major_0x18d5c
 	b		major_0x18bec
 
 
@@ -297,9 +297,9 @@ major_0x18c18_0xe0
 major_0x18d5c	;	OUTSIDE REFERER
 	cmpwi	cr4, r6,  0x02
 	bl		major_0x19ab0
-	blt-	cr4, major_0x18d5c_0x18
+	blt		cr4, major_0x18d5c_0x18
 	bl		major_0x19b00
-	beq-	cr4, major_0x18d5c_0x18
+	beq		cr4, major_0x18d5c_0x18
 	bl		load_log_colours
 
 major_0x18d5c_0x18
@@ -307,7 +307,7 @@ major_0x18d5c_0x18
 	mfspr	r31, pvr
 	rlwinm.	r31, r31,  0,  0, 14
 	li		r31,  0x00
-	bne-	major_0x18d5c_0x3c
+	bne		major_0x18d5c_0x3c
 	mfspr	r19, ibat3l
 	mfspr	r18, ibat3u
 	mtspr	ibat3l, r31
@@ -321,7 +321,7 @@ major_0x18d5c_0x3c
 major_0x18d5c_0x48
 	isync
 	rlwinm	r29, r3,  0,  0,  7
-	beq-	major_0x18d5c_0x70
+	beq		major_0x18d5c_0x70
 	li		r30,  0x7e
 	or		r30, r30, r29
 	li		r31,  0x32
@@ -367,8 +367,8 @@ major_0x18e24_0x4
 	lbz		r25,  0x0000(r21)
 	cmplwi	r25,  0x00
 	addi	r21, r21,  0x01
-	beq-	major_0x18e24_0x28
-	bge+	cr1, major_0x18e24_0x4
+	beq		major_0x18e24_0x28
+	bge		cr1, major_0x18e24_0x4
 	bl		major_0x18e54
 	b		major_0x18e24_0x4
 
@@ -397,12 +397,12 @@ major_0x18e54	;	OUTSIDE REFERER
 	add		r7, r7, r27
 	add		r7, r7, r28
 	subf.	r27, r3, r7
-	blt-	major_0x18e54_0x174
+	blt		major_0x18e54_0x174
 	li		r8,  0x00
 
 major_0x18e54_0x50
-	beq-	cr4, major_0x18e54_0x9c
-	bgt-	cr4, major_0x18e54_0xe0
+	beq		cr4, major_0x18e54_0x9c
+	bgt		cr4, major_0x18e54_0xe0
 	lbz		r27,  0x0000(r23)
 	rlwinm	r27, r27, 28, 28, 29
 	lwzx	r28, r24, r27
@@ -479,7 +479,7 @@ major_0x18e54_0x160
 	cmplwi	r8,  0x0a
 	add		r7, r7, r5
 	addi	r23, r23,  0x100
-	blt+	major_0x18e54_0x50
+	blt		major_0x18e54_0x50
 
 major_0x18e54_0x174
 	addi	r9, r9,  0x01
@@ -501,13 +501,13 @@ funny_thing_0xc
 funny_thing_0x10
 	lhz		r25, -0x0358(r1)
 	cmpw	r9, r25
-	bge-	funny_thing_0x28
+	bge		funny_thing_0x28
 	li		r25,  0x20
 	bl		major_0x18e54
 	b		funny_thing_0x10
 
 funny_thing_0x28
-	beq-	cr2, funny_thing_0x3c
+	beq		cr2, funny_thing_0x3c
 	li		r9,  0x00
 	addi	r10, r10,  0x01
 	li		r25,  0x20

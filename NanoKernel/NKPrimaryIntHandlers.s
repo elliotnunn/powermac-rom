@@ -65,9 +65,9 @@ CommonPIHPath	;	OUTSIDE REFERER
 CommonPIHPath_0xc	;	OUTSIDE REFERER
 	cmpwi	cr7, r28, 0
 	li		r31, 0
-	blt-	cr7, @negative
+	blt		cr7, @negative
 
-	beq-	cr7, @zero_rupt
+	beq		cr7, @zero_rupt
 	ori		r28, r28, 0x8000
 	lwz		r31, KDP.PostIntMaskInit(r1)
 @zero_rupt
@@ -76,16 +76,16 @@ CommonPIHPath_0xc	;	OUTSIDE REFERER
 	cmpwi	cr1, r27, 0
 	lwz		r29, KDP.ClearIntMaskInit(r1)
 
-	bne-	@noperf
-	bne-	cr1, @CommonPIHPath_0x78
+	bne		@noperf
+	bne		cr1, @CommonPIHPath_0x78
 @noperf
 
 	rlwinm.	r8, r7,  0, 10, 10
-	beq-	@actual_meat
+	beq		@actual_meat
 
 	sth		r28,  0x0000(r23)
 	or		r13, r13, r31
-	bgt-	cr7, @negative
+	bgt		cr7, @negative
 	and		r13, r13, r29
 
 @negative
@@ -103,7 +103,7 @@ CommonPIHPath_0xc	;	OUTSIDE REFERER
  	bl		LookupID
 	cmpwi	r9, Notification.kIDClass
 	mr		r30, r8
-	bne-	@no_handler_notification
+	bne		@no_handler_notification
 
 	clrlwi	r9, r28, 17
 	stw		r9, Notification.MsgWord1(r30)
@@ -152,12 +152,12 @@ CommonPIHPath_0xc	;	OUTSIDE REFERER
 
 	cmpwi	r29, 0
 	lhz		r16, Task.CPUIndex(r31)
-	beq-	@task_not_running
+	beq		@task_not_running
 	lhz		r17, EWA.CPUIndex(r30)
 	cmpw	cr1, r16, r17
 	rlwinm.	r8, r28, 0, Task.kFlag26, Task.kFlag26
-	beq-	cr1, @running_on_this_cpu
-	bne-	@flag_and_run
+	beq		cr1, @running_on_this_cpu
+	bne		@flag_and_run
 
 @running_on_this_cpu
 	mr		r8, r31
@@ -169,7 +169,7 @@ CommonPIHPath_0xc	;	OUTSIDE REFERER
 	RemoveFromList		r16, scratch1=r17, scratch2=r18
 	lbz		r17, Task.Timer + Timer.Byte3(r31)
 	cmpwi	r17, 1
-	bne-	@task_timer_not_in_use
+	bne		@task_timer_not_in_use
 	addi	r8, r31, Task.Timer
 	bl		DequeueTimer
 @task_timer_not_in_use
@@ -202,8 +202,8 @@ CommonPIHPath_0xc	;	OUTSIDE REFERER
 KCPropogateExternalInterrupt	;	OUTSIDE REFERER
 	rlwinm.	r8, r7, 0, 10, 10
 	cmplwi	cr1, r3, 7
-	bne-	@notthegumdropbuttons
-	bgt-	cr1, @too_high
+	bne		@notthegumdropbuttons
+	bgt		cr1, @too_high
 
 	_Lock			PSA.PIHLock, scratch1=r8, scratch2=r9
 
@@ -213,7 +213,7 @@ KCPropogateExternalInterrupt	;	OUTSIDE REFERER
 
 	;	r28 = max(current level, desired level)
 	cmpw	r3, r28
-	ble-	@desired_is_lower
+	ble		@desired_is_lower
 	mr		r28, r3
 @desired_is_lower
 
@@ -300,7 +300,7 @@ PDM_PIH
 
 	mfsprg		r30, 3
 
-	bne-		@nocount
+	bne			@nocount
 	lwz			r21, KDP.NanoKernelInfo + NKNanoKernelInfo.ExternalIntCount(r1)
 	addi		r21, r21,  0x01
 	stw			r21, KDP.NanoKernelInfo + NKNanoKernelInfo.ExternalIntCount(r1)
@@ -377,7 +377,7 @@ PBX_PIH
 	addi	r9, r1, -0x750
 	andis.	r8, r11,  0x02
 	mfsprg	r30, 3
-	bne-	PBX_PIH_0x38
+	bne		PBX_PIH_0x38
 	lwz		r21,  0x0e80(r1)
 	addi	r21, r21,  0x01
 	stw		r21,  0x0e80(r1)
@@ -441,7 +441,7 @@ GazellePIH
 	addi	r9, r1, -0x750
 	andis.	r8, r11,  0x02
 	mfsprg	r30, 3
-	bne-	GazellePIH_0x38
+	bne		GazellePIH_0x38
 	lwz		r21,  0x0e80(r1)
 	addi	r21, r21,  0x01
 	stw		r21,  0x0e80(r1)
@@ -485,18 +485,18 @@ GazellePIH_0x38
 	isync
 	andis.	r28, r23,  0x10
 	li		r28,  0x07
-	bne-	GazellePIH_0x104
+	bne		GazellePIH_0x104
 	rlwinm	r28, r23,  0, 15, 16
 	rlwimi.	r28, r23,  0, 22, 31
 	li		r28,  0x04
-	bne-	GazellePIH_0x104
+	bne		GazellePIH_0x104
 	andis.	r28, r23,  0x5fca
 	rlwimi.	r28, r23,  0, 17, 20
 	li		r28,  0x02
-	bne-	GazellePIH_0x104
+	bne		GazellePIH_0x104
 	andis.	r28, r23,  0x04
 	li		r28,  0x01
-	bne-	GazellePIH_0x104
+	bne		GazellePIH_0x104
 	li		r28,  0x00
 
 GazellePIH_0x104
@@ -529,7 +529,7 @@ TNT_PIH
 	addi	r9, r1, -0x750
 	andis.	r8, r11,  0x02
 	mfsprg	r30, 3
-	bne-	TNT_PIH_0x38
+	bne		TNT_PIH_0x38
 	lwz		r21,  0x0e80(r1)
 	addi	r21, r21,  0x01
 	stw		r21,  0x0e80(r1)
@@ -562,18 +562,18 @@ TNT_PIH_0x38
 	isync
 	rlwinm.	r28, r23,  0, 11, 11
 	li		r28,  0x07
-	bne-	TNT_PIH_0xd8
+	bne		TNT_PIH_0xd8
 	rlwinm	r28, r23,  0, 15, 16
 	rlwimi.	r28, r23,  0, 21, 31
 	li		r28,  0x04
-	bne-	TNT_PIH_0xd8
+	bne		TNT_PIH_0xd8
 	rlwinm.	r28, r23,  0, 17, 17
 	li		r28,  0x03
-	bne-	TNT_PIH_0xd8
+	bne		TNT_PIH_0xd8
 	andis.	r28, r23,  0x7fea
 	rlwimi.	r28, r23,  0, 18, 19
 	li		r28,  0x02
-	bne-	TNT_PIH_0xd8
+	bne		TNT_PIH_0xd8
 	rlwinm.	r28, r23, 14, 31, 31
 
 TNT_PIH_0xd8
@@ -605,7 +605,7 @@ GossamerPIH
 	addi	r9, r1, -0x750
 	andis.	r8, r11,  0x02
 	mfsprg	r30, 3
-	bne-	GossamerPIH_0x38
+	bne		GossamerPIH_0x38
 	lwz		r21,  0x0e80(r1)
 	addi	r21, r21,  0x01
 	stw		r21,  0x0e80(r1)
@@ -648,24 +648,24 @@ GossamerPIH_0x38
 	isync
 	rlwinm.	r28, r23,  0, 11, 11
 	li		r28,  0x07
-	bne-	GossamerPIH_0x118
+	bne		GossamerPIH_0x118
 	rlwinm	r28, r23,  0, 15, 16
 	rlwimi.	r28, r23,  0, 22, 31
 	li		r28,  0x04
-	bne-	GossamerPIH_0x118
+	bne		GossamerPIH_0x118
 	clrlwi.	r28, r24,  0x1e
 	li		r28,  0x04
-	bne-	GossamerPIH_0x118
+	bne		GossamerPIH_0x118
 	rlwinm.	r28, r24,  0, 21, 21
 	li		r28,  0x03
-	bne-	GossamerPIH_0x118
+	bne		GossamerPIH_0x118
 	andis.	r28, r23,  0x3fea
 	rlwimi.	r28, r23,  0, 17, 20
 	li		r28,  0x02
-	bne-	GossamerPIH_0x118
+	bne		GossamerPIH_0x118
 	rlwinm.	r28, r24,  0, 20, 20
 	li		r28,  0x01
-	bne-	GossamerPIH_0x118
+	bne		GossamerPIH_0x118
 	rlwinm.	r28, r23, 14, 31, 31
 
 GossamerPIH_0x118
@@ -698,7 +698,7 @@ NewWorldPowerBookPIH
 	addi	r9, r1, -0x750
 	andis.	r8, r11,  0x02
 	mfsprg	r30, 3
-	bne-	NewWorldPowerBookPIH_0x38
+	bne		NewWorldPowerBookPIH_0x38
 	lwz		r21,  0x0e80(r1)
 	addi	r21, r21,  0x01
 	stw		r21,  0x0e80(r1)
@@ -738,13 +738,13 @@ NewWorldPowerBookPIH_0x38
 NewWorldPowerBookPIH_0xb0
 	lwz		r26,  0x001c(r25)
 	and.	r26, r24, r26
-	bne-	NewWorldPowerBookPIH_0xd4
+	bne		NewWorldPowerBookPIH_0xd4
 	lwzu	r26, -0x0004(r25)
 	and.	r26, r23, r26
-	bne-	NewWorldPowerBookPIH_0xd4
+	bne		NewWorldPowerBookPIH_0xd4
 	addi	r28, r28, -0x01
 	cmplwi	r28,  0x00
-	bne+	NewWorldPowerBookPIH_0xb0
+	bne		NewWorldPowerBookPIH_0xb0
 
 NewWorldPowerBookPIH_0xd4
 	mtsrin	r21, r22
@@ -775,7 +775,7 @@ CordycepsPIH
 	addi	r9, r1, -0x750
 	andis.	r8, r11,  0x02
 	mfsprg	r30, 3
-	bne-	CordycepsPIH_0x38
+	bne		CordycepsPIH_0x38
 	lwz		r21,  0x0e80(r1)
 	addi	r21, r21,  0x01
 	stw		r21,  0x0e80(r1)
@@ -839,7 +839,7 @@ NewWorldPIH
 	addi	r9, r1, -0x750
 	andis.	r8, r11,  0x02
 	mfsprg	r30, 3
-	bne-	NewWorldPIH_0x38
+	bne		NewWorldPIH_0x38
 	lwz		r21,  0x0e80(r1)
 	addi	r21, r21,  0x01
 	stw		r21,  0x0e80(r1)
@@ -860,8 +860,8 @@ NewWorldPIH_0x38
 	isync
 	cmpwi	cr1, r27,  0x00
 	andis.	r26, r11,  0x02
-	beq-	cr1, NewWorldPIH_0x23c
-	beq-	NewWorldPIH_0x150
+	beq		cr1, NewWorldPIH_0x23c
+	beq		NewWorldPIH_0x150
 	lbz		r29,  0x0f93(r20)
 	stb		r28,  0x0f93(r20)
 	addi	r26, r1,  0x912
@@ -869,7 +869,7 @@ NewWorldPIH_0x38
 	cmplwi	r27,  0x01
 	bne+	cr1, NewWorldPIH_0xa8
 	addi	r27, r27, -0x01
-	ble-	NewWorldPIH_0x1fc
+	ble		NewWorldPIH_0x1fc
 	lbzx	r26, r26, r27
 	lbz		r28,  0x3f00(r26)
 	b		NewWorldPIH_0x1fc
@@ -877,7 +877,7 @@ NewWorldPIH_0x38
 NewWorldPIH_0xa8
 	cmplwi	r27,  0x01
 	addi	r27, r27, -0x01
-	ble-	NewWorldPIH_0x1fc
+	ble		NewWorldPIH_0x1fc
 	add		r26, r26, r27
 	addi	r27, r20,  0xf93
 	lbz		r24,  0x0000(r26)
@@ -886,8 +886,8 @@ NewWorldPIH_0xc0
 	lbzu	r28, -0x0001(r27)
 	cmpw	r24, r28
 	cmpwi	cr1, r28,  0xfe
-	beq-	NewWorldPIH_0xdc
-	bne+	cr1, NewWorldPIH_0xc0
+	beq		NewWorldPIH_0xdc
+	bne		cr1, NewWorldPIH_0xc0
 	li		r28, -0x01
 	b		NewWorldPIH_0x1fc
 
@@ -936,8 +936,8 @@ NewWorldPIH_0x150
 	cmplwi	r26,  0x40
 	cmplwi	cr1, r26,  0x41
 	li		r29,  0x00
-	beq-	NewWorldPIH_0x208
-	bge-	cr1, NewWorldPIH_0x218
+	beq		NewWorldPIH_0x208
+	bge		cr1, NewWorldPIH_0x218
 	cmplw	r26, r27
 	lis		r27,  0x02
 	ori		r27, r27,  0xb0
@@ -1027,7 +1027,7 @@ UnknownPIH
 	addi	r9, r1, -0x750
 	andis.	r8, r11,  0x02
 	mfsprg	r30, 3
-	bne-	UnknownPIH_0x38
+	bne		UnknownPIH_0x38
 	lwz		r21,  0x0e80(r1)
 	addi	r21, r21,  0x01
 	stw		r21,  0x0e80(r1)
@@ -1048,10 +1048,10 @@ UnknownPIH_0x38
 	isync
 	cmpwi	cr1, r27,  0x00
 	andis.	r26, r11,  0x02
-	beq-	cr1, UnknownPIH_0x23c
-	beq-	UnknownPIH_0x170
+	beq		cr1, UnknownPIH_0x23c
+	beq		UnknownPIH_0x170
 	cmplwi	r27,  0x01
-	ble-	UnknownPIH_0x1f8
+	ble		UnknownPIH_0x1f8
 	addi	r27, r27, -0x01
 	addi	r26, r1,  0x912
 	add		r26, r26, r27
@@ -1068,7 +1068,7 @@ UnknownPIH_0xac
 	lis		r28, -0x8000
 	srw		r28, r28, r24
 	and.	r27, r27, r28
-	bne-	UnknownPIH_0xc8
+	bne		UnknownPIH_0xc8
 	li		r28, -0x01
 	b		UnknownPIH_0x1f8
 
@@ -1094,7 +1094,7 @@ UnknownPIH_0xf4
 	addi	r26, r26, -0x01
 	lbz		r26,  0x0000(r26)
 	cmpwi	r26,  0xff
-	beq-	UnknownPIH_0x114
+	beq		UnknownPIH_0x114
 	b		UnknownPIH_0x118
 
 UnknownPIH_0x114
@@ -1110,7 +1110,7 @@ UnknownPIH_0x118
 	stwx	r28, r22, r27
 	eieio
 	cmpwi	r26,  0x800
-	beq-	UnknownPIH_0x158
+	beq		UnknownPIH_0x158
 	lis		r28,  0x01
 	ori		r28, r28,  0x00
 	rlwinm	r27, r26,  5, 16, 31
@@ -1138,8 +1138,8 @@ UnknownPIH_0x170
 	clrlwi	r26, r26,  0x14
 	cmplwi	r26,  0x31
 	cmplwi	cr1, r26,  0x28
-	beq-	UnknownPIH_0x204
-	bge-	cr1, UnknownPIH_0x214
+	beq		UnknownPIH_0x204
+	bge		cr1, UnknownPIH_0x214
 	rlwinm	r27, r26,  5, 16, 31
 	add		r28, r28, r27
 	lwbrx	r28, r22, r28

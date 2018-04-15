@@ -173,8 +173,8 @@ _PoolAllocCommon
 
 	cmpwi	r8, 0
 	cmpwi	cr1, r8, 0xfd8
-	ble+	_PoolPanic
-	bgt-	cr1, @request_too_large
+	ble		_PoolPanic
+	bgt		cr1, @request_too_large
 
 
 	;	Up-align to 32b boundary and snatch an extra 8b
@@ -203,7 +203,7 @@ _PoolAllocCommon
 	lwz		r17, PSA.UnheldFreePageCount(r1)
 	subf.	r16, r9, r16
 	subf	r17, r9, r17
-	blt-	_PoolReturn
+	blt		_PoolReturn
 
 	stw		r16, PSA.FreePageCount(r1)
 	stw		r17, PSA.UnheldFreePageCount(r1)
@@ -239,8 +239,8 @@ _PoolAllocCommon
 	cmplw	r16, r8
 	
 	lis		r20, 'fr'
-	bgt-	@decide_whether_to_split
-	beq-	@do_not_split
+	bgt		@decide_whether_to_split
+	beq		@do_not_split
 	ori		r20, r20, 'ee'
 	
 
@@ -253,8 +253,8 @@ _PoolAllocCommon
 	lwz		r19, Block.Signature(r18)
 	cmplw	cr1, r18, r15
 	cmpw	r19, r20
-	ble+	cr1, _PoolPanic
-	bne-	@physically_adjacent_block_is_not_free
+	ble		cr1, _PoolPanic
+	bne		@physically_adjacent_block_is_not_free
 
 	lwz		r17, Block.OffsetToNext(r18)
 	rotlwi	r19, r19, 8
@@ -279,7 +279,7 @@ _PoolAllocCommon
 
 	subf	r16, r8, r16
 	cmpwi	r16, 40
-	blt-	@do_not_split
+	blt		@do_not_split
 
 
 	;	Use the rightmost part of the block, leaving ptr in r15
@@ -323,7 +323,7 @@ _PoolAllocCommon
 @clrloop
 	stwu	r14, 4(r15)
 	cmpw	r15, r16
-	ble+	@clrloop
+	ble		@clrloop
 
 	b		_PoolReturn
 
@@ -378,7 +378,7 @@ _PoolAddBlockToFreeList
 	lhz		r16, Block.Signature(r15)
 	_lfinish
 	cmplwi	r16, 0x876c ; Block.kAllocSig >> 16
-	bne+	_PoolPanic
+	bne		_PoolPanic
 	stw		r20, Block.Signature(r15)
 
 	;	Insert into the global free block list
@@ -404,8 +404,8 @@ _PoolMergeAdjacentFreeBlocks
 	lwz		r19, Block.Signature(r18)			; r19 = signature of that block
 	cmplw	cr1, r18, r15
 	cmpw	r19, r20
-	ble+	cr1, _PoolPanic						; die if block was of non-positive size!
-	bnelr-										; return if block to right is not free
+	ble		cr1, _PoolPanic						; die if block was of non-positive size!
+	bnelr										; return if block to right is not free
 
 	lwz		r17, Block.OffsetToNext(r18)
 	rotlwi	r19, r19, 8							; scramble old signature to clarify mem dumps
@@ -466,7 +466,7 @@ _pool_page_seg equ 0x1000
 	subi	r16, r16, 32
 	cmpwi	r16, 0
 	dcbz	r16, r17
-	bgt+	@zeroloop
+	bgt		@zeroloop
 
 
 	;	Begin block
@@ -552,7 +552,7 @@ PoolCheck
 	lwz		r18, Block.OffsetToNext(r17)
 	cmpwi	r18, 0							
 	add		r20, r18, r17
-	bne+	@next_segment
+	bne		@next_segment
 
 
 	;	If there are no more Begins, we are done
@@ -578,27 +578,27 @@ _PoolCheckBlocks
 	lisori	r18, Block.kEndSig
 	cmpw	r17, r18
 	li		r9, 0
-	beq-	@return
+	beq		@return
 
 	lisori	r18, Block.kAllocSig
 	cmpw	r17, r18
-	beq-	@block_is_allocated
+	beq		@block_is_allocated
 
 	lisori	r18, Block.kFreeSig
 	li		r9, 4
 	cmpw	r17, r18
-	bne-	@block_corrupt
+	bne		@block_corrupt
 
 	;	From now we assume Free
 	lwz		r17, Block.FreePrev(r16)
 	cmpwi	r17, 0
 	li		r9, 5
-	beq-	@block_corrupt
+	beq		@block_corrupt
 
 	lwz		r17, Block.FreeNext(r16)
 	cmpwi	r17, 0
 	li		r9, 6
-	beq-	@block_corrupt
+	beq		@block_corrupt
 
 @block_is_allocated
 ;or block is free (fallthru)
@@ -606,7 +606,7 @@ _PoolCheckBlocks
 	add		r16, r16, r17
 	cmpwi	r17, 0
 	li		r9, 7
-	bgt+	@loop
+	bgt		@loop
 
 
 	;	4: neither Allocated nor Free
@@ -655,19 +655,19 @@ _PoolCheckBlocks
 	lbzu	r8, 1(r16)
 
 	cmpwi	r8, ' '
-	bgt-	@dont_use_space
+	bgt		@dont_use_space
 	li		r8, ' '
 @dont_use_space
 
 	bl		Printc
-	bdnz+	@dump_next_char
+	bdnz	@dump_next_char
 
 	_log	'*^n'
 
 	subi	r17, r17, 1
 	addi	r16, r16, 1
 	cmpwi	r17,  0x00
-	bne+	@dump_next_line
+	bne		@dump_next_line
 
 
 	mr		r8, r18

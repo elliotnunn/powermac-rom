@@ -14,10 +14,10 @@ NKDebug
 	rlwinm.	r9, r11, 0, MSR_DRbit, MSR_DRbit	;	IntSyscall sets this
 	mr		r8, r3
 
-	beq-	@already_physical
+	beq		@already_physical
 	li		r9, 0
 	bl		V2P			; takes page EA in r8, r9=0, returns page PA in r17
-	beq-	@fail
+	beq		@fail
 	rlwimi	r8, r17,  0,  0, 19
 @already_physical
 	

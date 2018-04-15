@@ -56,7 +56,7 @@ EndOfNanoKernelHeader
 
 	mfmsr	r0
 	rlwinm.	r0, r0, 0, MSR_DRbit, MSR_DRbit
-	beql-	InitBuiltin
+	beql	InitBuiltin
 
 
 	;	But if data paging is on, do some very strange things...
@@ -118,7 +118,7 @@ InitIRP
 	stw		r10, 4(r12)
 	addi	r12, r12, 8
 	andi.	r10, r12, 0xfff
-	bne+	@wipe_loop
+	bne		@wipe_loop
 	blr
 
 
@@ -350,7 +350,7 @@ InitHighLevel
 	subic.	r22, r22, 4
 	lwzx	r0, r22, r8
 	stwx	r0, r22, r9
-	bgt+	@loop
+	bgt		@loop
 
 
 
@@ -583,7 +583,7 @@ InitHighLevel
 @kctab_initloop
 	subic.	r22, r22, 4
 	stwx	r23, r8, r22
-	bne+	@kctab_initloop
+	bne		@kctab_initloop
 
 
 	;	Then some overrides (names still pretty poor)
@@ -639,11 +639,11 @@ SetProcessorFlags
 	mfpvr	r23
 	srwi	r23, r23, 16
 	andi.	r8, r23,  0x8000
-	bne-	@pvr_has_high_bit_set
+	bne		@pvr_has_high_bit_set
 
 	;	PVR < 0x8000 (therefore probably equals 000*)
 	cmplwi	r23,  0x000f	; but if not, pretend it's zero
-	ble-	@pvr_not_low
+	ble		@pvr_not_low
 	li		r23,  0x0000
 @pvr_not_low
 
@@ -664,7 +664,7 @@ SetProcessorFlags
 	andi.	r23, r23, 0x7fff
 
 	cmplwi	r23, 0x000f
-	ble-	@other_pvr_not_low
+	ble		@other_pvr_not_low
 	li		r23, -0x10
 @other_pvr_not_low
 
@@ -763,7 +763,7 @@ SetProcessorFlags
 	bl		PoolAllocClear		; takes size and returns ptr, all in r8
 
 	mr.		r31, r8
-	beq-	Init_Panic
+	beq		Init_Panic
 
 	;	Get opaque ID
 	li		r9, Process.kIDClass
@@ -802,7 +802,7 @@ SetProcessorFlags
 	li		r8, 0x58 ;CoherenceGroup.Size
 	bl		PoolAllocClear
 	mr.		r31, r8
-	beq-	Init_Panic
+	beq		Init_Panic
 
 
 	;	Append to the global CGRP list
@@ -926,13 +926,13 @@ SetProcessorFlags
 	rlwinm	r23, r21, 0, 23, 21		; munge the second byte
 	cmpw	r21, r23
 
-	beq-	@bitnotset
+	beq		@bitnotset
 	add		r21, r23, r26
 @bitnotset
 
 	addic.	r22, r22, -8
 	stwu	r21, 4(r8)				; but store it eventually
-	bgt+	@BAT_copyloop
+	bgt		@BAT_copyloop
 
 
 
@@ -953,7 +953,7 @@ SetProcessorFlags
 
 	cmpwi	r8, 0
 	mr		r30, r9
-	bne-	Init_Panic
+	bne		Init_Panic
 
 
 	;	The relationship between SPACes and PROCs is still unclear...
@@ -1116,7 +1116,7 @@ SetProcessorFlags
 
 	;	Check
 	mr.		r31, r8
-	beq-	Init_Panic
+	beq		Init_Panic
 
 	lwz		r8, Task.ID(r31)
 	stw		r8, KDP.NanoKernelInfo + NKNanoKernelInfo.blueTaskID(r1)
@@ -1224,7 +1224,7 @@ av	set		PSA.AVFeatureBit
 
 	;	Check
 	mr.		r31, r8
-	beq-	Init_Panic
+	beq		Init_Panic
 
 	;	Misc population
 	lisori	r8, 'idle'
@@ -1302,7 +1302,7 @@ av	set		PSA.AVFeatureBit
 		cmpwi	r8, 0
 		mr		r30, r9
 		lwz		r31, EWA.CPUBase + CPU.IdleTaskPtr(r1)
-		bne-	Init_Panic
+		bne		Init_Panic
 
 		stw		r30, Task.AddressSpacePtr(r31)
 
@@ -1317,7 +1317,7 @@ av	set		PSA.AVFeatureBit
 
 ;	Put HTABORG and PTEGMask in KDP, and zero out the last PTEG
 
-	beq-	cr5, @skip_zeroing_pteg
+	beq		cr5, @skip_zeroing_pteg
 	mfspr	r8, sdr1
 
 	;	get settable HTABMASK bits
@@ -1339,7 +1339,7 @@ av	set		PSA.AVFeatureBit
 @loop
 	subic.	r22, r22, 4
 	stwx	r23, r8, r22
-	bgt+	@loop
+	bgt		@loop
 @skip_zeroing_pteg
 
 
@@ -1352,7 +1352,7 @@ av	set		PSA.AVFeatureBit
 ;	Copy the ConfigInfo pagemap into KDP, absolut-ising entries
 ;	whose physical addresses are relative to ConfigInfo.
 
-	beq-	cr5, @skip_copying_pagemap
+	beq		cr5, @skip_copying_pagemap
 	lwz		r9, NKConfigurationInfo.PageMapInitOffset(r26)	; from base of CI
 	lwz		r22, NKConfigurationInfo.PageMapInitSize(r26)
 	add		r9, r9, r26
@@ -1363,7 +1363,7 @@ av	set		PSA.AVFeatureBit
 
 	andi.	r23, r21, PMDT.DaddyFlag | PMDT.PhysicalIsRelativeFlag
 	cmpwi	r23, PMDT.PhysicalIsRelativeFlag
-	bne-	@physical_address_not_relative_to_config_info
+	bne		@physical_address_not_relative_to_config_info
 
 	rlwinm	r21, r21, 0, ~PMDT.PhysicalIsRelativeFlag
 	add		r21, r21, r26
@@ -1374,7 +1374,7 @@ av	set		PSA.AVFeatureBit
 	subic.	r22, r22, 4
 	lwzx	r20, r9, r22	;	load another word, but no be cray
 	stwx	r20, r18, r22	;	just save it in KDP
-	bgt+	@copyloop_pagemap
+	bgt		@copyloop_pagemap
 @skip_copying_pagemap
 
 
@@ -1455,7 +1455,7 @@ IRPTopOffset	equ		IRPOffset + 0x1000
 	oris	r23, r23, 0x2000	;	no clue?
 	stwu	r23, 4(r8)
 
-	bgt+	@copyloop_segmaps
+	bgt		@copyloop_segmaps
 
 
 
@@ -1523,14 +1523,14 @@ IRPTopOffset	equ		IRPOffset + 0x1000
 
 	cmplwi	cr7, r30, 0xffff								;	if not at base:
 	rlwinm.	r31, r31, 0, PMDT.DaddyFlag | PMDT.CountingFlag ;						if neither flag:
-	bgt-	cr7, @finish_count								;	stop counting
+	bgt		cr7, @finish_count								;	stop counting
 	cmpwi	cr6, r31, PMDT.DaddyFlag | PMDT.CountingFlag 	;											if both flags:
-	beq-	@finish_count									;						stop counting
-	beq+	cr6, @skip_pmdt									;											next PMDT instead
+	beq		@finish_count									;						stop counting
+	beq		cr6, @skip_pmdt									;											next PMDT instead
 
 	add		r22, r22, r30
 	addi	r22, r22, 1
-	beq+	cr7, @next_segment		;	else count and move on to next segment descriptor
+	beq		cr7, @next_segment		;	else count and move on to next segment descriptor
 
 @finish_count
 	stw		r22, KDP.VMMaxVirtualPages(r1)
@@ -1555,7 +1555,7 @@ IRPTopOffset	equ		IRPOffset + 0x1000
 
 ListFreePhysicalPages
 
-	beq-	cr5, @skip
+	beq		cr5, @skip
 
 	lwz		r21, KDP.KernelMemoryBase(r1)
 	lwz		r20, KDP.KernelMemoryEnd(r1)
@@ -1583,7 +1583,7 @@ ListFreePhysicalPages
 
 @nextbank
 	subic.	r23, r23, 1
-	blt-	@done
+	blt		@done
 
 	lwzu	r31, 8(r19)		;	bank start address
 	lwz		r22, 4(r19)		;	bank size
@@ -1594,11 +1594,11 @@ ListFreePhysicalPages
 	cmplw	cr6, r31, r21
 	cmplw	cr7, r31, r20
 	subi	r22, r22, 4096
-	blt+	@nextbank
+	blt		@nextbank
 
 	;	Check that this page is outside the kernel's reserved area
-	blt-	cr6, @below_reserved
-	blt-	cr7, @in_reserved
+	blt		cr6, @below_reserved
+	blt		cr7, @in_reserved
 @below_reserved
 	stwu	r31, 4(r29)		;	write that part-PTE at the base of kernel memory
 @in_reserved
@@ -1613,7 +1613,7 @@ ListFreePhysicalPages
 
 PrimeFreeListFromBanks
 
-	beq-	cr5, PrimeFreeListFromSystemHeap
+	beq		cr5, PrimeFreeListFromSystemHeap
 
 	;	Add ~18 to 20 of these pages to the free list, depending on RAM size
 	subf	r22, r21, r29
@@ -1636,7 +1636,7 @@ PrimeFreeListFromBanks
 	subi	r17, r17, 1
 	subi	r29, r29, 4
 	cmpwi	r17, 0
-	bgt+	@loop
+	bgt		@loop
 
 	b		DonePrimingFreeList
 
@@ -1651,7 +1651,7 @@ PrimeFreeListFromSystemHeap
 	lwz		r8, 0x05a8(r1) ; kdp.0x5a8
 	addi	r18, r1, 0x2000 ; kdp.0x2000
 	subf.	r8, r18, r8
-	blt-	DonePrimingFreeList
+	blt		DonePrimingFreeList
 	addi	r8, r8, 0x1000
 	srwi	r17, r8, 12
 
@@ -1670,7 +1670,7 @@ PrimeFreeListFromSystemHeap
 	addi	r17, r17, -0x01
 	addi	r18, r18, 0x1000
 	cmpwi	r17, 0x00
-	bgt+	@stupidloop
+	bgt		@stupidloop
 
 
 
@@ -1714,7 +1714,7 @@ DonePrimingFreeList
 ;	The replacement kernel needs to return to the Mac OS
 ;	boot process.
 
-	beq-	cr5, finish_old_world
+	beq		cr5, finish_old_world
 
 
 
@@ -1740,7 +1740,7 @@ ReconcileMemory
 	slwi	r8, r8, 2
 
 	;	Memory We Have versus Memory We Could Use
-	;	(see blt- below)
+	;	(see blt  below)
 	cmplw	r22, r8
 
 	;	TotalPhysicalPages equals pages not yet in free list but that could go in.
@@ -1750,7 +1750,7 @@ ReconcileMemory
 	stw		r19, KDP.TotalPhysicalPages(r1)
 
 	;	r22 = pages in array destined to be mapped to blue area
-	blt-	@less_than_VMMaxVirtualPages
+	blt		@less_than_VMMaxVirtualPages
 	subi	r22, r8, 4
 @less_than_VMMaxVirtualPages
 
@@ -1794,7 +1794,7 @@ ReconcileMemory
 			stwu	r21, 0x0004(r29)
 			addis	r21, r21, 4			;	we just used a segment's worth of pages on this
 			subis	r22, r22, 1			;	pages in a segment
-	bgt+	@persegment
+	bgt		@persegment
 
 	;	Number of pages in that last segment
 	sth		r22, 0x0002(r8)
@@ -1807,7 +1807,7 @@ ReconcileMemory
 	;	If any, they will be chucked on the free list
 	subf.	r18, r17, r18
 	slwi	r31, r17, 12		;	does this work with discontiguous banks? hmm...
-	ble-	@no_leftover_ram
+	ble		@no_leftover_ram
 
 	;	See?
 	_log	'Physical RAM greater than the initial logical area.^n Moving '
@@ -1824,7 +1824,7 @@ ReconcileMemory
 	addi	r31, r31, 4096
 	subi	r18, r18, 1
 	cmpwi	r18, 0
-	bgt+	@loop
+	bgt		@loop
 
 @no_leftover_ram
 
@@ -1880,7 +1880,7 @@ finish_old_world
 	lwz		r27,  0x0630(r1)
 	lwz		r27,  0x0094(r27)
 	bl		PagingFunc4
-	beq-	setup_0x1160
+	beq		setup_0x1160
 	li		r30,  0x00
 	stw		r30, -0x0004(r29)
 	eieio	
@@ -1892,7 +1892,7 @@ setup_0x1160
 	lwz		r27,  0x0630(r1)
 	lwz		r27,  0x009c(r27)
 	bl		PagingFunc4
-	beq-	setup_0x1188
+	beq		setup_0x1188
 	li		r30,  0x00
 	stw		r30, -0x0004(r29)
 	eieio	
@@ -1909,7 +1909,7 @@ setup_0x1188
 
 setup_0x11a0
 	bl		PagingFunc4
-	beq-	setup_0x11bc
+	beq		setup_0x11bc
 	li		r30,  0x00
 	stw		r30, -0x0004(r29)
 	eieio	
@@ -1920,11 +1920,11 @@ setup_0x11bc
 	bl		PagingFunc1
 	cmplw	r27, r19
 	addi	r27, r27, -0x1000
-	bgt+	setup_0x11a0
+	bgt		setup_0x11a0
 	lwz		r27,  0x0630(r1)
 	lwz		r27,  0x00a4(r27)
 	bl		PagingFunc4
-	beq-	setup_0x11f0
+	beq		setup_0x11f0
 	li		r30,  0x00
 	stw		r30, -0x0004(r29)
 	eieio	

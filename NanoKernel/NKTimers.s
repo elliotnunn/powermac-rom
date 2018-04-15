@@ -23,7 +23,7 @@ InitTMRQs	;	OUTSIDE REFERER
 	stw		r8,  0x003c(r9)
 	mfspr	r8, pvr
 	rlwinm.	r8, r8,  0,  0, 14
-	beq-	InitTMRQs_0x7c
+	beq		InitTMRQs_0x7c
 	mflr	r30
 	li		r8,  0x40
 
@@ -33,7 +33,7 @@ InitTMRQs	;	OUTSIDE REFERER
 ;	r8 = ptr
 
 	mr.		r31, r8
-	beq+	Local_Panic
+	beq		Local_Panic
 	stw		r31, -0x0434(r1)
 	li		r9,  0x07
 	stb		r9,  0x0014(r31)
@@ -44,7 +44,7 @@ InitTMRQs	;	OUTSIDE REFERER
 InitTMRQs_0x7c
 	mfspr	r8, pvr
 	rlwinm.	r8, r8,  0,  0, 14
-	beq-	InitTMRQs_0xb4
+	beq		InitTMRQs_0xb4
 	mflr	r30
 	li		r8,  0x40
 
@@ -54,7 +54,7 @@ InitTMRQs_0x7c
 ;	r8 = ptr
 
 	mr.		r31, r8
-	beq+	Local_Panic
+	beq		Local_Panic
 	stw		r31, -0x0364(r1)
 	li		r9,  0x08
 	stb		r9,  0x0014(r31)
@@ -70,11 +70,11 @@ InitTMRQs_0xb4
 	lwz		r30, KDP.PA_ConfigInfo(r1)
 	lhz		r31, NKConfigurationInfo.Debug(r30)
 	cmplwi	r31, NKConfigurationInfo.DebugThreshold
-	blt-	@nodebug
+	blt		@nodebug
 
 	lwz		r31, NKConfigurationInfo.DebugFlags(r30)
 	rlwinm.	r8, r31, 0, NKConfigurationInfo.NanodbgrFlagBit, NKConfigurationInfo.NanodbgrFlagBit
-	beq-	@nodebug
+	beq		@nodebug
 
 	lwz		r8, KDP.NanoKernelInfo + NKNanoKernelInfo.ConfigFlags(r1)
 	_bset	r8, r8, NKNanoKernelInfo.NanodbgrFlagBit
@@ -85,7 +85,7 @@ InitTMRQs_0xb4
 	li		r8, Timer.Size
 	bl		PoolAllocClear					;	one of those weird queue structures
 	mr.		r31, r8
-	beq+	Local_Panic
+	beq		Local_Panic
 
 	li		r9, Timer.kKind6
 	stb		r9, Timer.Kind(r31)
@@ -128,7 +128,7 @@ TimerDispatch	;	OUTSIDE REFERER
 TimerDispatch_0x30	;	OUTSIDE REFERER
 	mfspr	r8, pvr
 	rlwinm.	r8, r8,  0,  0, 14
-	beq-	@is_601
+	beq		@is_601
 
 ;not 601
 @gettime_loop_non_601
@@ -171,7 +171,7 @@ TimerDispatch_0x30	;	OUTSIDE REFERER
 	addi	r30, r18, EWA.Base
 	cmpwi	r19, 1
 	lwz		r16, EWA.GlobalTime - EWA.Base(r30)
-	bne-	timer_earlier_than_sometime
+	bne		timer_earlier_than_sometime
 	lwz		r17, EWA.GlobalTime + 4 - EWA.Base(r30)
 
 	_b_if_time_gt	r16, r8, timer_earlier_than_sometime
@@ -196,7 +196,7 @@ timer_earlier_than_sometime
 	llabel	r20, TimerTable
 	li		r21,  0x00
 	add		r20, r20, r19
-	bgel+	Local_Panic
+	bgel	Local_Panic
 	stb		r21,  0x0017(r30)
 	lwz		r20,  0x0000(r20)
 	add		r20, r20, r19
@@ -210,13 +210,13 @@ TimerDispatch_0x144
 	lbz		r19,  0x0016(r30)
 	cmpwi	r19,  0x01
 	lwz		r8,  0x0000(r30)
-	beq+	TimerDispatch_0x30
+	beq		TimerDispatch_0x30
 	bl		DeleteID
 	mr		r8, r30
 	bl		PoolFree
 	lwz		r8,  0x001c(r30)
 	cmpwi	r8,  0x00
-	beq-	TimerDispatch_0x180
+	beq		TimerDispatch_0x180
 	bl		PoolFree
 	li		r8,  0x00
 	stw		r8,  0x001c(r30)
@@ -288,7 +288,7 @@ SetTimesliceFromCurTimeAndTripTime
 
 	;	r16/r17 = soonest(last timer, global PSA time if available)
 
-	bne-	global_time_invalid
+	bne		global_time_invalid
 	lwz		r18, EWA.GlobalTime(r19)
 	lwz		r19, EWA.GlobalTime+4(r19)
 
@@ -304,10 +304,10 @@ global_time_invalid
 	subfe.	r16, r8, r16
 	mtxer	r20
 
-	blt-	@that_time_has_passed				;	hi bit of r16 = 1
-	bne-	@that_time_is_in_future				;	
+	blt		@that_time_has_passed				;	hi bit of r16 = 1
+	bne		@that_time_is_in_future				;	
 	cmplw	r16, r21							;	typo? should be r17???
-	bgt-	@that_time_is_in_future				;	will never be taken...
+	bgt		@that_time_is_in_future				;	will never be taken...
 
 ;	When the times are roughly equal?
 	mtspr	dec, r17
@@ -344,7 +344,7 @@ TimerFire1	;	OUTSIDE REFERER
 	lwz		r19,  0x0088(r8)
 	cmpwi	r17,  0x00
 	stw		r16,  0x011c(r19)
-	bne-	TimerFire1_0x64
+	bne		TimerFire1_0x64
 	addi	r16, r8,  0x08
 	RemoveFromList		r16, scratch1=r17, scratch2=r19
 	li		r17,  0x01
@@ -363,7 +363,7 @@ TimerFire1_0x64
 ;	                     TimerFire2                      
 
 TimerFire2	;	OUTSIDE REFERER
-	bne+	TimerDispatch_0x144
+	bne		TimerDispatch_0x144
 	bl		Local_Panic
 	lwz		r18,  0x0018(r30)
 	stw		r16,  0x0080(r18)
@@ -373,7 +373,7 @@ TimerFire2	;	OUTSIDE REFERER
 	lbz		r17,  0x0018(r8)
 	lwz		r18,  0x0088(r8)
 	cmpwi	r17,  0x00
-	bne-	TimerFire3_0x8
+	bne		TimerFire3_0x8
 	stw		r16,  0x011c(r18)
 	lwz		r8,  0x0008(r8)
 	lwz		r8,  0x0000(r8)
@@ -383,12 +383,12 @@ TimerFire2	;	OUTSIDE REFERER
 	cmpwi	r9, Queue.kIDClass
 
 	cmpwi	cr1, r9,  0x05
-	beq-	TimerFire2_0x8c
-	beq-	cr1, TimerFire2_0x7c
+	beq		TimerFire2_0x8c
+	beq		cr1, TimerFire2_0x7c
 	cmpwi	r9,  0x09
 	cmpwi	cr1, r9,  0x06
-	beq-	TimerFire2_0x6c
-	bne+	cr1, Local_Panic
+	beq		TimerFire2_0x6c
+	bne		cr1, Local_Panic
 	lwz		r16,  0x0020(r8)
 	addi	r16, r16, -0x01
 	stw		r16,  0x0020(r8)
@@ -441,21 +441,21 @@ TimerFire3_0x8	;	OUTSIDE REFERER
 	cmpwi	r9, Queue.kIDClass
 
 	mr		r31, r8
-	bne-	major_0x13258_0x68
+	bne		major_0x13258_0x68
 	lwz		r16,  0x0024(r31)
 	lwz		r8,  0x001c(r30)
 	cmpwi	r16,  0x00
 	cmpwi	cr1, r8,  0x00
-	beq-	major_0x13258_0x40
+	beq		major_0x13258_0x40
 	lwz		r17,  0x0028(r31)
 	mr.		r8, r17
 	lwz		r17,  0x0008(r17)
-	beq-	major_0x13258_0x68
+	beq		major_0x13258_0x68
 	stw		r17,  0x0028(r31)
 	b		major_0x13258_0x4c
 
 major_0x13258_0x40
-	beq-	cr1, major_0x13258_0x68
+	beq		cr1, major_0x13258_0x68
 	li		r16,  0x00
 	stw		r16,  0x001c(r30)
 
@@ -476,7 +476,7 @@ major_0x13258_0x68
 	cmpwi	r9, Semaphore.kIDClass
 
 	mr		r31, r8
-	bne-	major_0x13258_0x80
+	bne		major_0x13258_0x80
 	bl		SignalSemaphore
 
 major_0x13258_0x80
@@ -493,7 +493,7 @@ major_0x13258_0x80
 ;	                     TimerFire4                      
 
 TimerFire4	;	OUTSIDE REFERER
-	bne-	TimerFire4_0xc
+	bne		TimerFire4_0xc
 	lwz		r8,  0x0030(r30)
 	bl		SetEvent
 
@@ -507,12 +507,12 @@ TimerFire4_0x10	;	OUTSIDE REFERER
 	bl		SchTaskUnrdy
 	lbz		r17,  0x0019(r29)
 	cmpwi	r17,  0x02
-	bge-	TimerFire4_0x64
+	bge		TimerFire4_0x64
 	mr		r8, r29
 	lwz		r16,  0x0038(r30)
 	lwz		r17,  0x003c(r30)
 	bl		clear_cr0_lt
-	bge-	TimerFire4_0x50
+	bge		TimerFire4_0x50
 	mr		r8, r29
 	bl		SchRdyTaskNow
 	bl		CalculateTimeslice
@@ -624,7 +624,7 @@ TimerFire7	;	OUTSIDE REFERER
 	lwz		r18, -0x0438(r1)
 	lwz		r19,  0x0f88(r1)
 	subf.	r19, r18, r19
-	ble-	TimerFire8_0x1c
+	ble		TimerFire8_0x1c
 	srwi	r19, r19, 11
 	mfxer	r20
 
@@ -669,7 +669,7 @@ TimerFire8_0x1c	;	OUTSIDE REFERER
 	mfxer	r20
 	cmpwi	cr1, r19,  0x00
 	srawi	r8, r19, 31
-	beq-	cr1, TimerFire6_0x4
+	beq		cr1, TimerFire6_0x4
 
 major_0x13544_0x14
 	mftbu	r16
@@ -683,7 +683,7 @@ major_0x13544_0x14
 	adde	r18, r16, r8
 	mttbu	r18
 	mttb	r19
-	bgt-	cr1, major_0x13544_0x64
+	bgt		cr1, major_0x13544_0x64
 
 major_0x13544_0x44
 	mftbu	r18
@@ -693,7 +693,7 @@ major_0x13544_0x44
 	bne-	major_0x13544_0x44
 	subfc	r19, r17, r19
 	subfe.	r18, r16, r18
-	blt+	major_0x13544_0x44
+	blt		major_0x13544_0x44
 
 major_0x13544_0x64
 	lwz		r18, -0x0368(r1)
@@ -710,7 +710,7 @@ TimerFire6	;	OUTSIDE REFERER
 
 TimerFire6_0x4	;	OUTSIDE REFERER
 	mtxer	r20
-	beq+	cr1, TimerDispatch_0x144
+	beq		cr1, TimerDispatch_0x144
 	mr		r8, r30
 	bl		EnqueueTimer
 	b		TimerDispatch_0x144
@@ -735,7 +735,7 @@ TimerFire6_0x4	;	OUTSIDE REFERER
 	bl		EnqueueTimer
 	bl		getchar
 	cmpwi	r8, -0x01
-	beq+	TimerDispatch_0x144
+	beq		TimerDispatch_0x144
 	bl		panic_non_interactive
 	b		TimerDispatch_0x144
 
@@ -759,9 +759,9 @@ EnqueueTimer	;	OUTSIDE REFERER
 	;	First try to insert at head of global TMRQ
 	cmpw	r16, r18
 	cmplw	cr1, r17, r19
-	bgt-	@insert_further_ahead
-	blt-	@insert_at_tail
-	bge-	cr1, @insert_further_ahead
+	bgt		@insert_further_ahead
+	blt		@insert_at_tail
+	bge		cr1, @insert_further_ahead
 
 @insert_at_tail
 	addi	r20, r1, PSA.TimerQueue + TimerQueueStruct.LLL
@@ -790,9 +790,9 @@ EnqueueTimer	;	OUTSIDE REFERER
 	lwz		r19, Timer.Time+4(r20)
 	cmpw	r16, r18
 	cmplw	cr1, r17, r19
-	bgt-	@insert_after_this_one
-	blt-	@next
-	bge-	cr1, @insert_after_this_one
+	bgt		@insert_after_this_one
+	blt		@next
+	bge		cr1, @insert_after_this_one
 
 @next
 	lwz		r20, LLL.Prev(r20)
@@ -826,7 +826,7 @@ DequeueTimer
 	lwz		r16, Timer.QueueLLL + LLL.FreeForm(r8)
 	cmpwi	r16, 0
 	lwz		r18, PSA.TimerQueue + TimerQueueStruct.LLL + LLL.Next(r1)
-	beq+	Local_Panic
+	beq		Local_Panic
 
 	RemoveFromList		r8, scratch1=r16, scratch2=r17
 
@@ -834,7 +834,7 @@ DequeueTimer
 	cmpw	r18, r8
 	stb		r16, Timer.Byte3(r8)
 
-	beq+	SetTimeslice
+	beq		SetTimeslice
 
 	blr
 
@@ -880,7 +880,7 @@ GetTime
 
 	mfpvr	r8
 	rlwinm.	r8, r8, 0, 0, 14
-	beq-	@is_601
+	beq		@is_601
 
 @retry_timebase:
 	mftbu	r8

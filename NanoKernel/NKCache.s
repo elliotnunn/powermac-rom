@@ -52,24 +52,24 @@ kcCacheDispatch
 
 	clrlwi	r8, r3, 16							; bad selector
 	cmplwi	r8, 2
-	bgt-	@fail_bad_selector
+	bgt		@fail_bad_selector
 
 	lwz		r8, KDP.ProcessorInfo + NKProcessorInfo.ProcessorFlags(r1)
 	andi.	r8, r8, 1 << NKProcessorInfo.hasL2CR
-	beq-	CacheCallFailNoL2					; no L2CR => fail (what about 601?)
+	beq		CacheCallFailNoL2					; no L2CR => fail (what about 601?)
 
 	rlwinm.	r9, r3, 0, 2, 2						; if flagged, get cache state in r23
-	bnel-	CacheCallGetInfoForReturnValue		; (otherwise, r23 is undefined)
+	bnel	CacheCallGetInfoForReturnValue		; (otherwise, r23 is undefined)
 
 	srwi	r8, r3, 30							; cannot enable *and* disable
 	cmpwi	r8, 3
-	beq-	CacheCallFailBadFlags
+	beq		CacheCallFailBadFlags
 
 	clrlwi	r8, r3, 16							; go to main code for level 1/2 cache
 	cmplwi	r8, 1
-	beq-	CacheCallDispatchL1
+	beq		CacheCallDispatchL1
 	cmplwi	r8, 2
-	beq-	CacheCallDispatchL2
+	beq		CacheCallDispatchL2
 
 @fail_bad_selector								; fall through => bad selector
 	lisori	r3, -2
@@ -88,10 +88,10 @@ kcCacheDispatch
 CacheCallDispatchL1
 
 	rlwinm.	r9, r3, 0, 1, 1
-	bne-	CacheCallL1DisableSelected
+	bne		CacheCallL1DisableSelected
 
 	rlwinm.	r9, r3, 0, 0, 0
-	bne-	CacheCallL1EnableSelected
+	bne		CacheCallL1EnableSelected
 
 	rlwinm.	r9, r3, 0, 3, 3						; ???
 
@@ -142,18 +142,18 @@ CacheCallL1EnableSelected
 CacheCallDispatchL2
 
 	rlwinm.	r9, r3, 0, 1, 1
-	bne-	CacheCallL2DisableSelected
+	bne		CacheCallL2DisableSelected
 
 	rlwinm.	r9, r3, 0, 0, 0
-	bne-	CacheCallL2EnableSelected
+	bne		CacheCallL2EnableSelected
 
 	rlwinm.	r9, r3, 0, 3, 3
-	bne-	CacheCallL2Flag3					; goes to DisableSelected
+	bne		CacheCallL2Flag3					; goes to DisableSelected
 
 	rlwinm.	r9, r3, 0, 2, 2
 	;bne removed?
 
-	bne-	CacheCallReturn
+	bne		CacheCallReturn
 
 
 
@@ -175,11 +175,11 @@ CacheCallL2EnableSelected
 	mfspr	r21, l2cr							; fail if L2CR[L2E] already set
 	sync
 	andis.	r21, r21, 0x8000
-	bne-	CacheCallReturn
+	bne		CacheCallReturn
 
 	lwz		r8, KDP.ProcessorInfo + NKProcessorInfo.ProcessorL2DSize(r1)
 	and.	r8, r8, r8
-	beq-	CacheCallFailNoL2					; fail if zero-sized cache reported
+	beq		CacheCallFailNoL2					; fail if zero-sized cache reported
 
 	mfspr	r21, hid0							; save HID0
 
@@ -190,7 +190,7 @@ CacheCallL2EnableSelected
 	addi	r8, r1, PSA.ProcessorState
 	lwz		r8, NKProcessorState.saveL2CR(r8)
 	and.	r8, r8, r8
-	beq-	CacheCallReturn						; fail if zero L2CR was saved?
+	beq		CacheCallReturn						; fail if zero L2CR was saved?
 	sync
 
 	lis		r9, 0x0020							; set L2CR[GI] (global invalidate)
@@ -201,7 +201,7 @@ CacheCallL2EnableSelected
 	mfspr	r8, l2cr							; check L2CR[IP] (invalidate progress)
 	sync
 	andi.	r9, r8, 1
-	bne+	@inval_loop
+	bne		@inval_loop
 
 	lis		r9, 0x0020							; clear L2CR[GI]
 	andc	r8, r8, r9
@@ -233,7 +233,7 @@ CacheCallL2DisableSelected
 	mfspr	r22, l2cr							; return if already disabled per L2CR[L2E]
 	sync
 	andis.	r22, r22, 0x8000
-	beq-	CacheCallReturn
+	beq		CacheCallReturn
 
 	bl		FlushCaches
 
@@ -298,9 +298,9 @@ CacheCallGetInfoForReturnValue
 	clrlwi	r8, r3, 16
 
 	cmplwi	r8, 1
-	beq-	@level1
+	beq		@level1
 	cmplwi	r8, 2
-	beq-	@level2
+	beq		@level2
 
 	lisori	r3, -5
 	b		CacheCallReturnWithoutFlags
@@ -308,7 +308,7 @@ CacheCallGetInfoForReturnValue
 @level1
 	mfspr	r21, hid0
 	rlwinm.	r21, r21, 12, 4, 5
-	beq-	@all_off
+	beq		@all_off
 
 	oris	r23, r21, 0x8000
 	blr
@@ -316,7 +316,7 @@ CacheCallGetInfoForReturnValue
 @level2
 	lwz		r8, KDP.ProcessorInfo + NKProcessorInfo.ProcessorL2DSize(r1)
 	and.	r8, r8, r8
-	beq+	CacheCallFailNoL2
+	beq		CacheCallFailNoL2
 
 	mfspr	r21, hid0				; same bits as above
 	rlwinm	r21, r21, 12, 4, 5
@@ -327,7 +327,7 @@ CacheCallGetInfoForReturnValue
 
 	mfspr	r22, l2cr				; then again, both L2s are off if L2CR[L2E] is cleared
 	andis.	r22, r22, 0x8000
-	beq-	@all_off
+	beq		@all_off
 
 	or		r23, r21, r22
 	blr
@@ -369,12 +369,12 @@ FlushCaches
 	lhz		r25, KDP.ProcessorInfo + NKProcessorInfo.DataCacheLineSize(r1)
 	and.	r25, r25, r25					; r25 = L1-D line size
 	cntlzw	r8, r25
-	beq-	@return
+	beq		@return
 	subfic	r9, r8, 31						; r9 = logb(L1-D line size)
 
 	lwz		r8, KDP.ProcessorInfo + NKProcessorInfo.DataCacheTotalSize(r1)
 	and.	r8, r8, r8						; r8 = L1-D size
-	beq-	@return
+	beq		@return
 
 	lwz		r24, KDP.ProcessorInfo + NKProcessorInfo.ProcessorFlags(r1)
 	mtcr	r24
@@ -397,28 +397,28 @@ FlushCaches
 
 @loop_L1
 	lwzux	r9, r8, r25
-	bdnz+	@loop_L1
+	bdnz	@loop_L1
 
 
 	;	Flush level 2 (very similar to above)
 
 	lwz		r24, KDP.ProcessorInfo + NKProcessorInfo.ProcessorFlags(r1)
 	andi.	r24, r24, 1 << NKProcessorInfo.hasL2CR
-	beq-	@return							; return if L2CR unavailable
+	beq		@return							; return if L2CR unavailable
 
 	mfspr	r24, l2cr
 	andis.	r24, r24, 0x8000
-	beq-	@return							; return if L2 off (per L2CR[L2E])
+	beq		@return							; return if L2 off (per L2CR[L2E])
 
 	lhz		r25, KDP.ProcessorInfo + NKProcessorInfo.ProcessorL2DBlockSize(r1)
 	and.	r25, r25, r25					; r25 = L2-D line size
 	cntlzw	r8, r25
-	beq-	@return
+	beq		@return
 	subfic	r9, r8, 31						; r9 = logb(L2-D line size)
 
 	lwz		r8, KDP.ProcessorInfo + NKProcessorInfo.ProcessorL2DSize(r1)
 	and.	r8, r8, r8						; r8 = L2-D size
-	beq-	@return
+	beq		@return
 
 	srw		r8, r8, r9
 	mtctr	r8								; loop counter = cache/line
@@ -437,7 +437,7 @@ FlushCaches
 
 @loop_L2
 	lwzux	r9, r8, r25
-	bdnz+	@loop_L2
+	bdnz	@loop_L2
 
 	rlwinm	r24, r24, 0, 10, 8
 	mtspr	l2cr, r24						; clear L2CR[DO] (reenables L2-I)
@@ -474,7 +474,7 @@ FlushCaches
 	mfspr	r8, msscr0
 	sync
 	andis.	r8, r8, 0x0080
-	bne+	@loop_msscr0
+	bne		@loop_msscr0
 
 
 	;	Flush level 2: set L2CR[4] and spin until it clears
@@ -487,7 +487,7 @@ FlushCaches
 	mfspr	r8, l2cr
 	sync
 	andi.	r8, r8, 0x0800
-	bne+	@loop_l2cr
+	bne		@loop_l2cr
 
 
 	;	Jump back up to main code path to return
@@ -524,6 +524,6 @@ FlushL1CacheUsingMSSCR0
 	mfspr	r8, msscr0
 	sync
 	andis.	r8, r8, 0x0080
-	bne+	@loop_msscr0
+	bne		@loop_msscr0
 
 	blr

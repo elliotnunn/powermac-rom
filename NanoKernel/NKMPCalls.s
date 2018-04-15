@@ -103,7 +103,7 @@ MPCallTableEnd
 	lwz		r16, KDP.NanoKernelInfo + NKNanoKernelInfo.MPDispatchCountTblPtr(r1)
 	rlwinm	r17, r15,  2, 20, 29
 	cmplwi	r16, 0
-	beq-	@no_count
+	beq		@no_count
 	lwzx	r18, r16, r17
 	addi	r18, r18, 1
 	stwx	r18, r16, r17
@@ -115,7 +115,7 @@ MPCallTableEnd
 	lwzx	r15, r16, r14
 	add		r15, r15, r14
 	mtlr	r15
-	bltlr-
+	bltlr
 
 
 
@@ -158,7 +158,7 @@ ScrambleMPCall	;	OUTSIDE REFERER
 	mfspr	r16, pvr
 	rlwinm.	r16, r16,  0,  0, 14
 
-	beq-	@is_601
+	beq		@is_601
 	mftb	r4
 	b		@not_601
 @is_601
@@ -295,24 +295,24 @@ MPCall_0	;	OUTSIDE REFERER
 	andi.	r16, r3,  0xfff
 	mr		r30, r7
 	mr		r29, r6
-	bne+	ReturnMPCallOOM
+	bne		ReturnMPCallOOM
 
 	;	Fail if this page is outside of the PAR
 	rlwinm.	r4, r3, 20, 12, 31
 	lwz		r9, KDP.PrimaryAddrRangePages(r1)
-	beq+	ReturnMPCallOOM
+	beq		ReturnMPCallOOM
 	cmplw	r4, r9
-	bge+	ReturnMPCallOOM
+	bge		ReturnMPCallOOM
 
 	_Lock			PSA.HTABLock, scratch1=r17, scratch2=r18
 
 	bl		GetPARPageInfo
-	bge-	cr4, MPCall_0_0xd8
-	bgt-	cr5, MPCall_0_0xd8
-	bns-	cr7, MPCall_0_0xd8
-	bgt-	cr7, MPCall_0_0xd8
-	bltl+	cr5, RemovePageFromTLB
-	bgel+	cr5, VMSecondLastExportedFunc
+	bge		cr4, MPCall_0_0xd8
+	bgt		cr5, MPCall_0_0xd8
+	bns		cr7, MPCall_0_0xd8
+	bgt		cr7, MPCall_0_0xd8
+	bltl	cr5, RemovePageFromTLB
+	bgel	cr5, VMSecondLastExportedFunc
 	ori		r16, r16,  0x404
 	li		r31,  0x03
 	rlwimi	r9, r31,  0, 30, 31
@@ -376,17 +376,17 @@ MPRegisterCpuPlugin
 	;	Check that address of CPU plugin is page-aligned,
 	;	and that CPU plugin size if page-aligned and nonzero.
 	andi.	r8, r4, 0xfff
-	bne+	ReturnMPCallOOM
+	bne		ReturnMPCallOOM
 	andi.	r8, r5, 0xfff
 	cmpwi	cr1, r5, 0
-	bne+	ReturnMPCallOOM
-	beq+	cr1, ReturnMPCallOOM
+	bne		ReturnMPCallOOM
+	beq		cr1, ReturnMPCallOOM
 
 	_Lock			PSA.SchLock, scratch1=r18, scratch2=r19
 
 	;	r14 = coherence group ptr (motherpboard CGRP if not specified in first argument)
 	mr.		r8, r3
-	bne-	@use_specified_cgrp
+	bne		@use_specified_cgrp
 	mfsprg	r15, 0
 	lwz		r14, EWA.CPUBase + CPU.LLL + LLL.Freeform(r15)
 	b		@cgrp_done
@@ -394,12 +394,12 @@ MPRegisterCpuPlugin
  	bl		LookupID
 	cmpwi	r9, CoherenceGroup.kIDClass
 	mr		r14, r8
-	bne+	ReturnMPCallInvalidIDErr
+	bne		ReturnMPCallInvalidIDErr
 @cgrp_done
 
 	;	Fail if no CPU plugin descriptor is passed in fourth argument
 	cmpwi	r16, 0
-	bne-	@no_table_ptr
+	bne		@no_table_ptr
 	stw		r16, CoherenceGroup.PA_CpuPluginDesc(r14)
 	stw		r16, CoherenceGroup.LA_CpuPluginDesc(r14)
 	b		ReleaseAndReturnMPCallInvalidIDErr
@@ -409,19 +409,19 @@ MPRegisterCpuPlugin
 	add		r17, r4, r5
 	cmplw	r16, r4
 	cmplw	cr1, r16, r17
-	blt+	ReleaseAndReturnMPCallOOM
-	bge+	cr1, ReleaseAndReturnMPCallOOM
+	blt		ReleaseAndReturnMPCallOOM
+	bge		cr1, ReleaseAndReturnMPCallOOM
 
 	;	What the hell? Wouldn't this always fail?
 	lwz		r19, CoherenceGroup.PA_CpuPluginDesc(r14)
 	mr.		r19, r19
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 
 	;	r18 = physical address of plugin (assumes page-aligned)
 	mr		r27, r4
 	addi	r29, r1, KDP.BATs + 0xa0
 	bl		PagingFunc3
-	beq+	ReleaseAndReturnMPCallOOM
+	beq		ReleaseAndReturnMPCallOOM
 	rlwinm	r18, r31, 0, 0, 19
 
 	;	r18 = physical address of descriptor (does not assume page-aligned)
@@ -429,7 +429,7 @@ MPRegisterCpuPlugin
 	mr		r19, r16
 	addi	r29, r1, KDP.BATs + 0xa0
 	bl		PagingFunc3
-	beq+	ReleaseAndReturnMPCallOOM
+	beq		ReleaseAndReturnMPCallOOM
 	rlwimi	r19, r31, 0, 0, 19
 
 	;	Populate the coherence group structure.
@@ -449,7 +449,7 @@ MPRegisterCpuPlugin
 	lwz		r27, 0(r19)
 	addi	r29, r1, KDP.BATs + 0xa0
 	bl		PagingFunc3
-	beq+	ReleaseAndReturnMPCallOOM
+	beq		ReleaseAndReturnMPCallOOM
 	rlwimi	r27, r31, 0, 0, 19
 	stw		r27, CoherenceGroup.PA_CpuPluginStackPtrs(r14)
 
@@ -468,19 +468,19 @@ MPRegisterCpuPlugin
 	lwz		r17, 0x1c(r19)
 	cmplwi	r17, 64
 	stw		r17, CoherenceGroup.CpuPluginSelectorCount(r14)
-	bgt+	ReleaseAndReturnMPCallOOM
+	bgt		ReleaseAndReturnMPCallOOM
 
 	;	Convert those entries to physical addresses
 @table_convert_loop
 	lwzu	r27, 4(r16)
 	addi	r29, r1, KDP.BATs + 0xa0
 	bl		PagingFunc3
-	beq+	ReleaseAndReturnMPCallOOM
+	beq		ReleaseAndReturnMPCallOOM
 	subi	r17, r17, 1
 	rlwimi	r27, r31, 0, 0, 19
 	cmpwi	r17, 0
 	stw		r27, 0(r16)
-	bgt+	@table_convert_loop
+	bgt		@table_convert_loop
 
 
 
@@ -505,7 +505,7 @@ MPProcessors
 	mr.		r8, r3
 
 	lwz		r3, CoherenceGroup.CpuCount(r14)
-	beq+	CommonMPCallReturnPath
+	beq		CommonMPCallReturnPath
 
 	lwz		r3, CoherenceGroup.ScheduledCpuCount(r14)
 	b		CommonMPCallReturnPath
@@ -522,7 +522,7 @@ MPCreateProcess
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
 	mr.		r8, r3
-	bne-	@spac_id_supplied
+	bne		@spac_id_supplied
 	lwz		r3, PSA.SystemAddressSpaceID(r1)
 	mr		r8, r3
 @spac_id_supplied
@@ -533,19 +533,19 @@ MPCreateProcess
 
 	cmpwi	r9, AddressSpace.kIDClass
 	mr		r30, r8
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 
 	li		r8, 0x20 ;Process.Size
 	bl		PoolAllocClear
 
 	mr.		r31, r8
-	beq+	ReleaseAndScrambleMPCall
+	beq		ReleaseAndScrambleMPCall
 
 	li		r9, Process.kIDClass
 	bl		MakeID
 
 	cmpwi	r8,  0x00
-	bne-	@did_not_fail
+	bne		@did_not_fail
 	mr		r8, r31
 	bl		PoolFree
 	b		ReleaseAndScrambleMPCall
@@ -582,11 +582,11 @@ MPTerminateProcess
  	bl		LookupID
 	cmpwi	r9, Process.kIDClass
 
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
 	lwz		r16,  0x0008(r31)
 	rlwinm.	r17, r16,  0, 30, 30
-	bne+	ReleaseAndReturnMPCallOOM
+	bne		ReleaseAndReturnMPCallOOM
 	ori		r16, r16,  0x02
 	stw		r16,  0x0008(r31)
 	mr		r8, r3
@@ -608,15 +608,15 @@ MPDeleteProcess
 	mr		r8, r3
  	bl		LookupID
 	cmpwi	r9, Process.kIDClass
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
 
 	lwz		r16, Process.Flags(r31)
 	lwz		r17, Process.TaskCount(r31)
 	rlwinm.	r8, r16, 0, Process.kFlag30, Process.kFlag30
 	cmpwi	cr1, r17, 0
-	beq+	ReleaseAndReturnMPCallOOM
-	bne+	cr1, ReleaseAndReturnMPCallOOM
+	beq		ReleaseAndReturnMPCallOOM
+	bne		cr1, ReleaseAndReturnMPCallOOM
 
 	mr		r8, r3
 	bl		DeleteID
@@ -639,7 +639,7 @@ MPCall_6_0x78	;	OUTSIDE REFERER
 	lwz		r17, KDP.PA_ECB(r1)
 	lwz		r31, EWA.PA_CurTask(r16)
 
-	beq-	MPCall_6_0xb4
+	beq		MPCall_6_0xb4
 	lwz		r8, ContextBlock.PriorityShifty(r17)
 	rlwinm	r8, r8,  0, 24, 21
 	oris	r8, r8,  0x8000
@@ -679,19 +679,19 @@ MPYieldWithHint
 	rlwinm.	r8, r7,  0, 10, 10
 	lwz		r17, KDP.PA_ECB(r1)
 	lwz		r31, EWA.PA_CurTask(r16)
-	beq-	@i_am_important							;	not 68k mode?
+	beq		@i_am_important							;	not 68k mode?
 
 	clrlwi.	r8, r3, 31
 	lwz		r8, ContextBlock.PriorityShifty(r17)
 	rlwinm	r8, r8,  0, 24, 21
 	oris	r8, r8,  0x8000
 	stw		r8, ContextBlock.PriorityShifty(r17)
-	beq-	@i_am_important							;	MPYield call
+	beq		@i_am_important							;	MPYield call
 
 	;	If this task is 
 	lbz		r16, Task.Priority(r31)
 	cmpwi	r16, Task.kNominalPriority
-	bge-	@return
+	bge		@return
 	mr		r8, r31
 	bl		SchTaskUnrdy
 	li		r16, Task.kNominalPriority
@@ -722,7 +722,7 @@ MPYieldWithHint
 MPDelayUntil
 
 	rlwinm.	r8, r7, 0, EWA.kFlagBlue, EWA.kFlagBlue
-	bne+	ReturnMPCallBlueBlocking
+	bne		ReturnMPCallBlueBlocking
 
 	_Lock	PSA.SchLock, scratch1=r16, scratch2=r17
 	b		_MPDelayUntilCommon
@@ -740,14 +740,14 @@ MPDelayUntilSys
 
 	rlwinm.	r8, r7, 0, EWA.kFlagBlue, EWA.kFlagBlue
 	lwz		r16, KDP.NanoKernelInfo + NKNanoKernelInfo.ExternalIntCount(r1)
-	beq-	_MPDelayUntilCommon
+	beq		_MPDelayUntilCommon
 
 	;	Why the hell are we counting interrupts?
 	lwz		r17, PSA.OtherSystemContextPtr(r1)
 	lwz		r18, KDP.PA_ECB(r1)
 	cmpw	r16, r17
 	stw		r16, PSA.OtherSystemContextPtr(r1)
-	bne+	ReturnZeroFromMPCall
+	bne		ReturnZeroFromMPCall
 
 	lwz		r8, ContextBlock.PriorityShifty(r18)
 	rlwinm	r8, r8, 0, 24, 21
@@ -759,7 +759,7 @@ MPDelayUntilSys
 	lwz		r16, PSA.BlueSpinningOn(r1)
 	cmpwi	r16, -1
 	li		r16, 0
-	bne-	_MPDelayUntilCommon
+	bne		_MPDelayUntilCommon
 	stw		r16, PSA.BlueSpinningOn(r1)
 	b		ReleaseAndReturnZeroFromMPCall
 
@@ -809,7 +809,7 @@ MPCall_34	;	OUTSIDE REFERER
 ;	r9 = kind
 	bl		MakeID
 	cmpwi	r8,  0x00
-	beq+	ScrambleMPCall
+	beq		ScrambleMPCall
 	mr		r5, r8
 	b		ReturnZeroFromMPCall
 
@@ -821,7 +821,7 @@ MPCall_35	;	OUTSIDE REFERER
 	mr		r8, r3
 	bl		DeleteID
 	cmpwi	r8,  0x01
-	beq+	ReturnZeroFromMPCall
+	beq		ReturnZeroFromMPCall
 	b		ReturnMPCallInvalidIDErr
 
 
@@ -837,7 +837,7 @@ MPCall_36	;	OUTSIDE REFERER
 
 	mr		r4, r9
 	mr		r5, r8
-	bne+	ReturnZeroFromMPCall
+	bne		ReturnZeroFromMPCall
 	b		ReturnMPCallInvalidIDErr
 
 
@@ -868,7 +868,7 @@ KCGetNextID	;	OUTSIDE REFERER
 	bl		GetNextIDOfClass
 	cmpwi	r8,  0x00
 	mr		r4, r8
-	bne+	ReturnZeroFromMPCall
+	bne		ReturnZeroFromMPCall
 	b		ReturnMPCallInvalidIDErr
 
 
@@ -895,7 +895,7 @@ KCGetNextIDOwnedByProcess	;	OUTSIDE REFERER
 	mr		r8, r3
 	bl		LookupID
 	cmpwi	r9, Process.kIDClass
-	bne+	ReturnMPCallInvalidIDErr
+	bne		ReturnMPCallInvalidIDErr
 
 
 	;	Loop over IDs (and resolve them) until one is owned by the Process
@@ -909,7 +909,7 @@ KCGetNextIDOwnedByProcess	;	OUTSIDE REFERER
 ;	RET		ID r8
 
 	mr.		r5, r8
-	beq+	ReturnMPCallInvalidIDErr
+	beq		ReturnMPCallInvalidIDErr
 
 ;	ARG		ID r8
 	bl		LookupID
@@ -917,28 +917,28 @@ KCGetNextIDOwnedByProcess	;	OUTSIDE REFERER
 
 	cmpwi	r4, 				Task.kIDClass
 	cmpwi	cr1, r4,			Timer.kIDClass
-	beq-						@task
-	beq-	cr1,				@timer
+	beq							@task
+	beq		cr1,				@timer
 
 	cmpwi	r4,					Queue.kIDClass
 	cmpwi	cr1, r4,			Semaphore.kIDClass
-	beq-						@queue
-	beq-	cr1,				@semaphore
+	beq							@queue
+	beq		cr1,				@semaphore
 
 	cmpwi	r4,					CriticalRegion.kIDClass
 	cmpwi	cr1, r4,			AddressSpace.kIDClass
-	beq-						@critical_region
-	beq-	cr1,				@address_space
+	beq							@critical_region
+	beq		cr1,				@address_space
 
 	cmpwi	r4,					EventGroup.kIDClass
 	cmpwi	cr1, r4,			Area.kIDClass
-	beq-						@event_group
-	beq-	cr1,				@area
+	beq							@event_group
+	beq		cr1,				@area
 
 	cmpwi	r4,					Notification.kIDClass
 	cmpwi	cr1, r4,			ConsoleLog.kIDClass
-	beq-						@notification
-	beq-	cr1,				@console_log
+	beq							@notification
+	beq		cr1,				@console_log
 
 	b		ReturnParamErrFromMPCall
 
@@ -947,67 +947,67 @@ KCGetNextIDOwnedByProcess	;	OUTSIDE REFERER
 	lwz		r9,  Task.ProcessID(r8)
 
 	rlwinm.	r17, r17,  0, 15, 15
-	beq-	@not_owned_by_blue_process
+	beq		@not_owned_by_blue_process
 	lwz		r9, PSA.blueProcessPtr(r1)
 	lwz		r9, Task.ID(r9)
 @not_owned_by_blue_process
 
 	cmpw	r9, r3
-	bne+	@try_another_id
+	bne		@try_another_id
 	b		ReturnZeroFromMPCall
 
 @timer
 	lwz		r9, Timer.ProcessID(r8)
 	cmpw	r9, r3
-	bne+	@try_another_id
+	bne		@try_another_id
 	b		ReturnZeroFromMPCall
 
 @queue
 	lwz		r9, Queue.ProcessID(r8)
 	cmpw	r9, r3
-	bne+	@try_another_id
+	bne		@try_another_id
 	b		ReturnZeroFromMPCall
 
 @semaphore
 	lwz		r9, Semaphore.ProcessID(r8)
 	cmpw	r9, r3
-	bne+	@try_another_id
+	bne		@try_another_id
 	b		ReturnZeroFromMPCall
 
 @critical_region
 	lwz		r9, CriticalRegion.ProcessID(r8)
 	cmpw	r9, r3
-	bne+	@try_another_id
+	bne		@try_another_id
 	b		ReturnZeroFromMPCall
 
 @address_space
 	lwz		r9, AddressSpace.ProcessID(r8)
 	cmpw	r9, r3
-	bne+	@try_another_id
+	bne		@try_another_id
 	b		ReturnZeroFromMPCall
 
 @event_group
 	lwz		r9, EventGroup.ProcessID(r8)
 	cmpw	r9, r3
-	bne+	@try_another_id
+	bne		@try_another_id
 	b		ReturnZeroFromMPCall
 
 @area
 	lwz		r9, Area.ProcessID(r8)
 	cmpw	r9, r3
-	bne+	@try_another_id
+	bne		@try_another_id
 	b		ReturnZeroFromMPCall
 
 @notification
 	lwz		r9, Notification.ProcessID(r8)
 	cmpw	r9, r3
-	bne+	@try_another_id
+	bne		@try_another_id
 	b		ReturnZeroFromMPCall
 
 @console_log
 	lwz		r9, ConsoleLog.ProcessID(r8)
 	cmpw	r9, r3
-	bne+	@try_another_id
+	bne		@try_another_id
 	b		ReturnZeroFromMPCall
 
 
@@ -1021,7 +1021,7 @@ MPCall_38	;	OUTSIDE REFERER
  	bl		LookupID
 	cmpwi	r9, Process.kIDClass
 
-	bne+	ReturnMPCallInvalidIDErr
+	bne		ReturnMPCallInvalidIDErr
 	mr		r31, r8
 
 MPCall_38_0x14
@@ -1029,7 +1029,7 @@ MPCall_38_0x14
 	li		r9,  0x02
 	bl		GetNextIDOfClass
 	cmpwi	r8,  0x00
-	beq+	ReturnMPCallInvalidIDErr
+	beq		ReturnMPCallInvalidIDErr
 	mr		r4, r8
 
 ;	r8 = id
@@ -1040,13 +1040,13 @@ MPCall_38_0x14
 	lwz		r17,  0x0064(r8)
 	lwz		r16,  0x0060(r8)
 	rlwinm.	r17, r17,  0, 15, 15
-	beq-	MPCall_38_0x48
+	beq		MPCall_38_0x48
 	lwz		r16, -0x041c(r1)
 	lwz		r16,  0x0000(r16)
 
 MPCall_38_0x48
 	cmpw	r16, r3
-	beq+	ReturnZeroFromMPCall
+	beq		ReturnZeroFromMPCall
 	b		MPCall_38_0x14
 
 
@@ -1055,7 +1055,7 @@ MPCall_38_0x48
 
 MPCall_62	;	OUTSIDE REFERER
 	mr.		r8, r3
-	bne-	MPCall_62_0x18
+	bne		MPCall_62_0x18
 	mfsprg	r15, 0
 	lwz		r31, EWA.CPUBase + CPU.LLL + LLL.Freeform(r15)
 	lwz		r3,  0x0000(r31)
@@ -1066,14 +1066,14 @@ MPCall_62_0x18
  	bl		LookupID
 	cmpwi	r9, CoherenceGroup.kIDClass
 
-	bne+	ReturnMPCallInvalidIDErr
+	bne		ReturnMPCallInvalidIDErr
 
 MPCall_62_0x24
 	mr		r8, r4
 	li		r9,  0x07
 	bl		GetNextIDOfClass
 	cmpwi	r8,  0x00
-	beq+	ReturnMPCallInvalidIDErr
+	beq		ReturnMPCallInvalidIDErr
 	mr		r4, r8
 
 ;	r8 = id
@@ -1084,7 +1084,7 @@ MPCall_62_0x24
 	lwz		r16,  0x0008(r8)
 	lwz		r17,  0x0000(r16)
 	cmpw	r17, r3
-	bne+	MPCall_62_0x24
+	bne		MPCall_62_0x24
 	b		ReturnZeroFromMPCall
 
 
@@ -1093,7 +1093,7 @@ MPCall_62_0x24
 
 KCCreateCpuStruct	;	OUTSIDE REFERER
 	mr.		r8, r3
-	bne-	KCCreateCpuStruct_0x14
+	bne		KCCreateCpuStruct_0x14
 	mfsprg	r15, 0
 	lwz		r30, EWA.CPUBase + CPU.LLL + LLL.Freeform(r15)
 	b		KCCreateCpuStruct_0x24
@@ -1104,7 +1104,7 @@ KCCreateCpuStruct_0x14
 	cmpwi	r9, CoherenceGroup.kIDClass
 
 	mr		r30, r8
-	bne+	ReturnMPCallInvalidIDErr
+	bne		ReturnMPCallInvalidIDErr
 
 KCCreateCpuStruct_0x24
 	li		r8, 960
@@ -1115,7 +1115,7 @@ KCCreateCpuStruct_0x24
 ;	r8 = ptr
 
 	mr.		r31, r8
-	beq+	ScrambleMPCall
+	beq		ScrambleMPCall
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
@@ -1210,12 +1210,12 @@ MPDeleteProcessor
  	bl		LookupID
 	cmpwi	r9, CPU.kIDClass
 	mr		r31, r8
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 
 	lwz		r16, CPU.Flags(r31)
 	lisori	r17, 9
 	and.	r17, r17, r16
-	bne+	ReleaseAndReturnMPCallOOM
+	bne		ReleaseAndReturnMPCallOOM
 
 	mfsprg	r15, 0
 
@@ -1253,12 +1253,12 @@ KCStartCPU	;	OUTSIDE REFERER
 	mr		r8, r3
 	bl		LookupID
 	cmpwi	r9, CPU.kIDClass
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 
 	mr		r30, r8
 	lwz		r16, CPU.Flags(r30)
 	rlwinm.	r8, r16,  0, 28, 28
-	bne+	ReleaseAndReturnZeroFromMPCall
+	bne		ReleaseAndReturnZeroFromMPCall
 
 	mfsprg	r15, 0
 	li		r16, kResetProcessor
@@ -1274,8 +1274,8 @@ KCStartCPU	;	OUTSIDE REFERER
 	bl		SIGP
 	cmpwi	r8, -0x7264
 	cmpwi	cr1, r8, 0
-	beq+	ReleaseAndReturnMPCallOOM
-	bne+	cr1, ReleaseAndReturnMPCallOOM
+	beq		ReleaseAndReturnMPCallOOM
+	bne		cr1, ReleaseAndReturnMPCallOOM
 
 
 ;	Every CPU gets an idle task
@@ -1291,7 +1291,7 @@ KCStartCPU	;	OUTSIDE REFERER
 
 	mr		r7, r31
 	mr.		r31, r8
-	beq+	ReleaseAndScrambleMPCall
+	beq		ReleaseAndScrambleMPCall
 
 	stw		r31, CPU.IdleTaskPtr(r30)
 
@@ -1344,10 +1344,10 @@ MPCall_44_0x15c
 	bl		SIGP
 	cmpwi	r8, -0x7264
 	cmpwi	cr1, r8,  0x00
-	beq+	MPCall_44_0x15c
+	beq		MPCall_44_0x15c
 
 
-	bne-	cr1, MPCall_Panic
+	bne		cr1, MPCall_Panic
 
 	mfsprg	r15, 0
 
@@ -1371,8 +1371,8 @@ MPCall_44_0x15c
 
 	cmpwi	r8, -0x7264
 	cmpwi	cr1, r8, 0
-	beq+	@retry
-	bne-	cr1, MPCall_Panic
+	beq		@retry
+	bne		cr1, MPCall_Panic
 
 	_log	'Processor scheduled^n'
 
@@ -1395,19 +1395,19 @@ KCStopScheduling	;	OUTSIDE REFERER
  	bl		LookupID
 	cmpwi	r9, CPU.kIDClass
 
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r30, r8
 	lwz		r16,  0x0018(r30)
 	rlwinm.	r8, r16,  0, 28, 28
 
 ;	r1 = kdp
-	beq+	ReleaseAndReturnZeroFromMPCall
+	beq		ReleaseAndReturnZeroFromMPCall
 	lwz		r31,  0x001c(r30)
 	clrlwi.	r8, r16,  0x1f
-	bne+	ReleaseAndReturnMPCallOOM
+	bne		ReleaseAndReturnMPCallOOM
 	lbz		r17,  0x0019(r31)
 	cmpwi	r17,  0x00
-	beq-	KCStopScheduling_0x94
+	beq		KCStopScheduling_0x94
 	lwz		r17,  0x0064(r31)
 	oris	r17, r17,  0x80
 	stw		r17,  0x0064(r31)
@@ -1458,10 +1458,10 @@ MPCpuPlugin
 MPCall_47	;	OUTSIDE REFERER
 	rlwinm.	r8, r7,  0, 12, 12
 	lwz		r15,  0x00d8(r6)
-	beq+	ReturnMPCallOOM
+	beq		ReturnMPCallOOM
 	cmpwi	r15,  0x00
 	mr		r16, r2
-	beq+	ReturnMPCallOOM
+	beq		ReturnMPCallOOM
 	mr		r17, r3
 	mr		r18, r4
 	mr		r19, r5
@@ -1492,10 +1492,10 @@ MPCall_48_Bad	;	OUTSIDE REFERER
 NKxprintf	;	OUTSIDE REFERER
 	rlwinm.	r9, r11,  0, 27, 27
 	mr		r8, r3
-	beq-	NKxprintf_0x1c
+	beq		NKxprintf_0x1c
 	li		r9,  0x00
 	bl		V2P
-	beq-	NKxprintf_0x24
+	beq		NKxprintf_0x24
 	rlwimi	r8, r17,  0,  0, 19
 
 NKxprintf_0x1c
@@ -1518,8 +1518,8 @@ NKPrintHex
 	cmpwi	r4, 1
 	cmpwi	cr1, r4, 2
 
-	beq-	@byte
-	beq-	cr1, @half
+	beq		@byte
+	beq		cr1, @half
 
 
 	bl		Printw
@@ -1553,7 +1553,7 @@ KCSetBlueProcessID	;	OUTSIDE REFERER
 	mfsprg	r16, 0
 	rlwinm.	r8, r7,  0, 10, 10
 	lwz		r31, EWA.PA_CurTask(r16)
-	beq+	ReturnMPCallOOM
+	beq		ReturnMPCallOOM
 	mr		r8, r3
 
 ;	r8 = id
@@ -1562,7 +1562,7 @@ KCSetBlueProcessID	;	OUTSIDE REFERER
 ;	r9 = 0:inval, 1:proc, 2:task, 3:timer, 4:q, 5:sema, 6:cr, 7:cpu, 8:addrspc, 9:evtg, 10:cohg, 11:area, 12:not, 13:log
 
 	cmpwi	r9, Process.kIDClass
-	bne+	ReturnMPCallInvalidIDErr
+	bne		ReturnMPCallInvalidIDErr
 	stw		r3, Task.ProcessID(r31)
 	stw		r4, 0x00ec(r31)
 	b		ReturnZeroFromMPCall
@@ -1579,10 +1579,10 @@ KCRegisterThermalHandler	;	OUTSIDE REFERER
 	_Lock		PSA.SchLock, scratch1=r16, scratch2=r17
 
 	mr.			r8, r3
-	beq-		@is_zero
+	beq			@is_zero
 	bl			LookupID
 	cmpwi		r9, Notification.kIDClass
-	bne+		ReleaseAndReturnMPCallInvalidIDErr
+	bne			ReleaseAndReturnMPCallInvalidIDErr
 @is_zero
 
 	stw			r3, PSA.ThermalHandlerID(r1)
@@ -1601,10 +1601,10 @@ KCRegisterPMFHandler	;	OUTSIDE REFERER
 	_Lock		PSA.SchLock, scratch1=r16, scratch2=r17
 
 	mr.			r8, r3
-	beq-		@is_zero
+	beq			@is_zero
 	bl			LookupID
 	cmpwi		r9, Notification.kIDClass
-	bne+		ReleaseAndReturnMPCallInvalidIDErr
+	bne			ReleaseAndReturnMPCallInvalidIDErr
 @is_zero
 
 	stw			r3, PSA.PMFHandlerID(r1)
@@ -1626,11 +1626,11 @@ KCMarkPMFTask	;	OUTSIDE REFERER
 	mr.			r8, r3
 	lwz			r31, EWA.PA_CurTask(r30)
 
-	beq-		@use_blue_task_instead
+	beq			@use_blue_task_instead
 	bl			LookupID
 	cmpwi		r9, Task.kIDClass
 	mr			r31, r8
-	bne+		ReleaseAndReturnMPCallInvalidIDErr
+	bne			ReleaseAndReturnMPCallInvalidIDErr
 @use_blue_task_instead
 
 ;	Insert bit 31 of r4 into bit 21 of these flags
@@ -1663,18 +1663,18 @@ NKLocateInfoRecord
 
 	cmpwi	r3, 5
 	cmpwi	cr1, r3, 2
-	beq-	@ProcessorInfo
-	beq-	cr1, @SystemInfo
+	beq		@ProcessorInfo
+	beq		cr1, @SystemInfo
 
 	cmpwi	r3, 3
 	cmpwi	cr1, r3, 4
-	beq-	@DiagInfo
-	beq-	cr1, @NanoKernelInfo
+	beq		@DiagInfo
+	beq		cr1, @NanoKernelInfo
 
 	cmpwi	r3, 7
 	cmpwi	cr1, r3, 6
-	beq-	@ProcessorState
-	bne+	cr1, ReturnParamErrFromMPCall
+	beq		@ProcessorState
+	bne		cr1, ReturnParamErrFromMPCall
 
 	lwz		r4, KDP.InfoRecord + InfoRecord.NKHWInfoPtr(r1)
 	lhz		r16, KDP.InfoRecord + InfoRecord.NKHWInfoLen(r1)
@@ -1730,7 +1730,7 @@ NKLocateInfoRecord
 NKSetPrInfoClockRates
 
 	cmplwi	r3, 2
-	bge+	ReturnParamErrFromMPCall
+	bge		ReturnParamErrFromMPCall
 
 	mulli	r17, r3, 16
 	addi	r18, r1, KDP.ProcessorInfo + NKProcessorInfo.ClockRates
@@ -1773,7 +1773,7 @@ NKSetClockStep	;	OUTSIDE REFERER
 	lwz		r8, EWA.CPUBase + CPU.LLL + LLL.Freeform(r9)
 	lwz		r9,  0x0024(r8)
 	cmpwi	r9,  0x01
-	bgt+	ReturnMPCallOOM
+	bgt		ReturnMPCallOOM
 	lhz		r19,  0x0f7e(r1)
 	_log	'NKSetClockStep - current '
 	mr		r8, r19
@@ -1784,8 +1784,8 @@ NKSetClockStep	;	OUTSIDE REFERER
 	_log	'^n'
 	cmplwi	r3,  0x02
 	cmpw	cr1, r3, r19
-	bge+	ReturnParamErrFromMPCall
-	beq+	cr1, ReturnMPCallOOM
+	bge		ReturnParamErrFromMPCall
+	beq		cr1, ReturnMPCallOOM
 	mulli	r17, r3,  0x10
 	addi	r18, r1,  0xf80
 	sth		r17,  0x0f7e(r1)
@@ -1801,13 +1801,13 @@ NKSetClockStep	;	OUTSIDE REFERER
 
 	lwz		r16,  0x0008(r18)
 	stw		r16, -0x0438(r1)
-	bgt-	cr1, NKSetClockStep_0xec
+	bgt		cr1, NKSetClockStep_0xec
 	lwz		r31, -0x0434(r1)
 	lbz		r18,  0x0017(r31)
 	cmpwi	r18,  0x00
 
 ;	r1 = kdp
-	beq+	ReleaseAndReturnZeroFromMPCall
+	beq		ReleaseAndReturnZeroFromMPCall
 	mr		r8, r31
 	bl		DequeueTimer
 
@@ -1820,7 +1820,7 @@ NKSetClockStep_0xec
 	cmpwi	r18,  0x01
 
 ;	r1 = kdp
-	beq+	ReleaseAndReturnZeroFromMPCall
+	beq		ReleaseAndReturnZeroFromMPCall
 	bl		GetTime
 	stw		r8,  0x0038(r31)
 	stw		r9,  0x003c(r31)
@@ -1847,24 +1847,24 @@ NKSetClockDriftCorrection	;	OUTSIDE REFERER
 	lwz		r31, -0x0364(r1)
 	mfsprg	r9, 0
 	cmpwi	r31,  0x00
-	beq+	ReturnMPCallOOM
+	beq		ReturnMPCallOOM
 	lwz		r8, EWA.CPUBase + CPU.LLL + LLL.Freeform(r9)
 	lwz		r9,  0x0024(r8)
 	cmpwi	r9,  0x01
-	bgt+	ReturnMPCallOOM
+	bgt		ReturnMPCallOOM
 	lwz		r19,  0x0fa0(r1)
 	cmpwi	r3,  0x00
 	cmpw	cr1, r3, r19
 	stw		r3,  0x0fa0(r1)
-	beq-	NKSetClockDriftCorrection_0x12c
-	beq+	cr1, ReturnZeroFromMPCall
+	beq		NKSetClockDriftCorrection_0x12c
+	beq		cr1, ReturnZeroFromMPCall
 	lis		r16,  0x3b9a
 	ori		r16, r16,  0xca00
 	lwz		r17,  0x0f88(r1)
 	srwi	r17, r17,  7
 	divw	r18, r16, r3
 	cmpw	r18, r17
-	bge-	NKSetClockDriftCorrection_0x64
+	bge		NKSetClockDriftCorrection_0x64
 	divw	r16, r16, r17
 	mr		r18, r17
 	divw	r17, r3, r16
@@ -1895,7 +1895,7 @@ NKSetClockDriftCorrection_0x6c
 	cmpwi	r18,  0x01
 
 ;	r1 = kdp
-	beq+	ReleaseAndReturnZeroFromMPCall
+	beq		ReleaseAndReturnZeroFromMPCall
 	bl		GetTime
 	stw		r8,  0x0038(r31)
 	stw		r9,  0x003c(r31)
@@ -1917,7 +1917,7 @@ NKSetClockDriftCorrection_0x12c
 	cmpwi	r18,  0x00
 
 ;	r1 = kdp
-	beq+	ReleaseAndReturnZeroFromMPCall
+	beq		ReleaseAndReturnZeroFromMPCall
 	mr		r8, r31
 	bl		DequeueTimer
 
@@ -1939,10 +1939,10 @@ MPCall_115	;	OUTSIDE REFERER
 	cmpwi	r9, ConsoleLog.kIDClass
 
 	mr		r31, r8
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	lwz		r30,  0x000c(r31)
 	cmpwi	r30,  0x00
-	bne-	MPCall_115_0x94
+	bne		MPCall_115_0x94
 
 	_Lock			PSA.DbugLock, scratch1=r16, scratch2=r17
 
@@ -1951,32 +1951,32 @@ MPCall_115	;	OUTSIDE REFERER
 MPCall_115_0x54
 	addi	r30, r30,  0x01
 	andi.	r29, r30,  0xfff
-	bne-	MPCall_115_0x64
+	bne		MPCall_115_0x64
 	lwz		r30, -0x1000(r30)
 
 MPCall_115_0x64
 	lbz		r16,  0x0000(r30)
 	cmpwi	r16,  0x00
-	beq+	MPCall_115_0x54
+	beq		MPCall_115_0x54
 	stw		r30,  0x000c(r31)
 	_AssertAndRelease	PSA.DbugLock, scratch=r16
 
 MPCall_115_0x94
 	cmpwi	r5,  0x00
-	ble+	ReleaseAndReturnMPCallOOM
+	ble		ReleaseAndReturnMPCallOOM
 	rlwinm.	r9, r11,  0, 27, 27
 	mr		r8, r4
 	crmove	30, 2
-	beq-	MPCall_115_0xd0
+	beq		MPCall_115_0xd0
 	li		r9,  0x00
 	bl		MPCall_95_0x45c
-	beq+	ReleaseAndReturnMPCallOOM
+	beq		ReleaseAndReturnMPCallOOM
 	add		r8, r4, r5
 	li		r9,  0x00
 	addi	r8, r8, -0x01
 	mr		r30, r8
 	bl		MPCall_95_0x45c
-	beq+	ReleaseAndReturnMPCallOOM
+	beq		ReleaseAndReturnMPCallOOM
 
 MPCall_115_0xd0
 	lwz		r28, -0x0404(r1)
@@ -1987,18 +1987,18 @@ MPCall_115_0xd0
 MPCall_115_0xe0
 	cmpw	r28, r29
 	cmplw	cr1, r4, r30
-	beq-	MPCall_115_0x144
-	bgt-	cr1, MPCall_115_0x144
+	beq		MPCall_115_0x144
+	bgt		cr1, MPCall_115_0x144
 	rlwinm	r16, r4,  0,  0, 19
 	mr		r8, r4
-	beq-	cr7, MPCall_115_0x11c
+	beq		cr7, MPCall_115_0x11c
 	cmpw	r16, r27
 	mr		r17, r26
-	beq-	MPCall_115_0x11c
+	beq		MPCall_115_0x11c
 	mr		r27, r16
 	li		r9,  0x00
 	bl		MPCall_95_0x45c
-	beq+	ReleaseAndReturnMPCallOOM
+	beq		ReleaseAndReturnMPCallOOM
 	mr		r26, r17
 
 MPCall_115_0x11c
@@ -2035,10 +2035,10 @@ KCRegisterExternalHandler
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
 	mr.				r8, r3
-	beq-			@zero
+	beq				@zero
 	bl				LookupID
 	cmpwi			r9, Notification.kIDClass
-	bne+			ReleaseAndReturnMPCallInvalidIDErr
+	bne				ReleaseAndReturnMPCallInvalidIDErr
 @zero
 
 	stw				r3, PSA.ExternalHandlerID(r1)
@@ -2056,7 +2056,7 @@ MPCall_133	;	OUTSIDE REFERER
 	cmpw	r3, r0
 	lwz		r16,  0x0edc(r1)
 	li		r17,  0x0b
-	blt-	MPCall_133_0x34
+	blt		MPCall_133_0x34
 	and		r3, r3, r17
 	or		r16, r16, r3
 	b		MPCall_133_0x3c
@@ -2071,16 +2071,16 @@ MPCall_133_0x3c
 	extsh	r17, r4
 	cmpwi	r16, -0x01
 	cmpwi	cr1, r17, -0x01
-	beq-	MPCall_133_0x60
-	bgt-	MPCall_133_0x5c
+	beq		MPCall_133_0x60
+	bgt		MPCall_133_0x5c
 	li		r16,  0x00
 
 MPCall_133_0x5c
 	sth		r16, -0x0360(r1)
 
 MPCall_133_0x60
-	beq-	cr1, MPCall_133_0x70
-	bgt-	cr1, MPCall_133_0x6c
+	beq		cr1, MPCall_133_0x70
+	bgt		cr1, MPCall_133_0x6c
 	li		r17,  0x00
 
 MPCall_133_0x6c
@@ -2091,16 +2091,16 @@ MPCall_133_0x70
 	extsh	r17, r5
 	cmpwi	r16, -0x01
 	cmpwi	cr1, r17, -0x01
-	beq-	MPCall_133_0x90
-	bgt-	MPCall_133_0x8c
+	beq		MPCall_133_0x90
+	bgt		MPCall_133_0x8c
 	li		r16,  0x00
 
 MPCall_133_0x8c
 	sth		r16, -0x035c(r1)
 
 MPCall_133_0x90
-	beq-	cr1, MPCall_133_0xa0
-	bgt-	cr1, MPCall_133_0x9c
+	beq		cr1, MPCall_133_0xa0
+	bgt		cr1, MPCall_133_0x9c
 	li		r17,  0x00
 
 MPCall_133_0x9c

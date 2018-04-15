@@ -28,7 +28,7 @@ MPGetKernelStateSize
 	lwz		r8, EWA.CPUBase + CPU.LLL + LLL.Freeform(r9)
 	lwz		r9, CoherenceGroup.ScheduledCpuCount(r8)
 	cmpwi	r9, 1
-	bgt+	Local_ReturnInsufficientResourcesErrFromMPCall
+	bgt		Local_ReturnInsufficientResourcesErrFromMPCall
 
 	bl		KernelStateSize
 
@@ -50,16 +50,16 @@ MPGetKernelState
 	lwz		r8, EWA.CPUBase + CPU.LLL + LLL.Freeform(r9)
 	lwz		r9, CoherenceGroup.ScheduledCpuCount(r8)
 	cmpwi	r9, 1
-	bgt+	Local_ReturnInsufficientResourcesErrFromMPCall
+	bgt		Local_ReturnInsufficientResourcesErrFromMPCall
 
 	clrlwi.	r8, r5, 20
-	bne+	Local_ReturnParamErrFromMPCall
+	bne		Local_ReturnParamErrFromMPCall
 
 	bl		KernelStateSize
 	cmpw	r3, r8
-	blt+	Local_ReturnParamErrFromMPCall
+	blt		Local_ReturnParamErrFromMPCall
 	cmpw	r4, r9
-	blt+	Local_ReturnParamErrFromMPCall
+	blt		Local_ReturnParamErrFromMPCall
 
 	bl		PagingFlushTLB
 	mfsprg	r9, 0
@@ -73,7 +73,7 @@ MPGetKernelState
 
 	mfpvr	r8
 	rlwinm.	r8, r8, 0, 0, 14
-	bne-	@not_601
+	bne		@not_601
 	mfspr	r8, mq
 	stw		r8, ContextBlock.MQ(r6)
 @not_601
@@ -87,9 +87,9 @@ MPGetKernelState
 	lwz		r8, EWA.r6(r9)
 	stw		r5, ContextBlock.r5(r6)
 	stw		r8, ContextBlock.r6(r6)
-	bnel+	Save_f0_f31
+	bnel	Save_f0_f31
 	rlwinm.	r8, r7,  0, 12, 12 ; flags
-	bnel+	Save_v0_v31
+	bnel	Save_v0_v31
 
 	lwz		r3, ContextBlock.r3(r6)
 	lwz		r4, ContextBlock.r4(r6)
@@ -99,7 +99,7 @@ MPGetKernelState
 	mr		r27, r5
 	addi	r29, r1, 800
 	bl		PagingFunc3
-	beq+	Local_ReturnInsufficientResourcesErrFromMPCall
+	beq		Local_ReturnInsufficientResourcesErrFromMPCall
 	rlwimi	r27, r31,  0,  0, 19
 	mr		r17, r27
 	addi	r15, r17,  0x34
@@ -109,13 +109,13 @@ MPGetKernelState_0xc8
 	mr		r27, r5
 	addi	r29, r1, 800
 	bl		PagingFunc3
-	beq+	Local_ReturnInsufficientResourcesErrFromMPCall
+	beq		Local_ReturnInsufficientResourcesErrFromMPCall
 	rlwimi	r27, r31,  0,  0, 19
 	stwu	r27,  0x0004(r15)
 	addi	r3, r3, -0x01
 	addi	r5, r5,  0x1000
 	cmpwi	r3,  0x00
-	bge+	MPGetKernelState_0xc8
+	bge		MPGetKernelState_0xc8
 	addi	r15, r15,  0x04
 	subf	r15, r17, r15
 	stw		r15,  0x0034(r17)
@@ -174,7 +174,7 @@ MPGetKernelState_0x1a4
 	andi.	r19, r18,  0xe00
 	lhz		r16,  0x0002(r30)
 	cmplwi	r19,  0xc00
-	bne-	MPGetKernelState_0x1dc
+	bne		MPGetKernelState_0x1dc
 	addi	r16, r16,  0x01
 	slwi	r16, r16,  2
 	stw		r16,  0x0000(r29)
@@ -186,12 +186,12 @@ MPGetKernelState_0x1a4
 
 MPGetKernelState_0x1dc
 	cmpwi	r15,  0x00
-	bne-	MPGetKernelState_0x1fc
+	bne		MPGetKernelState_0x1fc
 	cmplwi	r16,  0xffff
-	bne-	MPGetKernelState_0x1fc
+	bne		MPGetKernelState_0x1fc
 	addis	r31, r31,  0x1000
 	cmpwi	r31,  0x00
-	bne+	MPGetKernelState_0x1a0
+	bne		MPGetKernelState_0x1a0
 	b		MPGetKernelState_0x204
 
 MPGetKernelState_0x1fc
@@ -211,7 +211,7 @@ MPGetKernelState_0x208
 	addi	r29, r29,  0x0c
 	addi	r14, r14,  0x01
 	cmpwi	r19,  0x00
-	beq-	MPGetKernelState_0x238
+	beq		MPGetKernelState_0x238
 	add		r16, r19, r18
 	b		MPGetKernelState_0x208
 
@@ -221,7 +221,7 @@ MPGetKernelState_0x238
 
 MPGetKernelState_0x240
 	cmpw	r31, r19
-	beq-	MPGetKernelState_0x264
+	beq		MPGetKernelState_0x264
 	li		r18,  0x10
 	stw		r18,  0x0000(r29)
 	stw		r31,  0x0004(r29)
@@ -246,7 +246,7 @@ MPGetKernelState_0x270
 	addi	r30, r30,  0x0c
 	addi	r14, r14, -0x01
 	cmpwi	r14,  0x00
-	bne+	MPGetKernelState_0x270
+	bne		MPGetKernelState_0x270
 	subf	r8, r17, r29
 	stw		r8,  0x0020(r17)
 	lwz		r24,  0x001c(r17)
@@ -308,7 +308,7 @@ RestoreKernelState_0x38
 	addi	r30, r30,  0x0c
 	addi	r14, r14, -0x01
 	cmpwi	r14,  0x00
-	bne+	RestoreKernelState_0x38
+	bne		RestoreKernelState_0x38
 	lwz		r16,  0x0024(r17)
 	mtsprg	0, r16
 	lwz		r8,  0x0028(r17)
@@ -340,7 +340,7 @@ RestoreKernelState_0x38
 
 	mfpvr	r8
 	rlwinm.	r8, r8,  0,  0, 14
-	bne-	RestoreKernelState_0xf8
+	bne		RestoreKernelState_0xf8
 	lwz		r8,  0x00c4(r6)
 	DIALECT	POWER
 	mtmq	r8
@@ -364,7 +364,7 @@ RestoreKernelState_0xf8
 	lwz		r29,  0x00d8(r6)
 	cmpwi	r29,  0x00
 	lwz		r8,  0x0210(r29)
-	beq-	RestoreKernelState_0x144
+	beq		RestoreKernelState_0x144
 	mtspr	vrsave, r8
 
 RestoreKernelState_0x144
@@ -436,7 +436,7 @@ KernelStateSize
 	andi.	r18, r18, PMDT.TopFieldMask		; r18 = 3b field at top of pageAttr
 	lhz		r16, PMDT.PageCount(r17)		; PageCountMinus1(16b)
 	cmplwi	r18, PMDT.DaddyFlag | PMDT.CountingFlag
-	bne-	@entry_seems_blank
+	bne		@entry_seems_blank
 
 	addi	r16, r16, 1
 	add		r19, r19, r16
@@ -445,14 +445,14 @@ KernelStateSize
 @entry_seems_blank
 
 	cmpwi	r15, 0							; if not full-segment, might not be blank?
-	bne-	@continue_next_entry
+	bne		@continue_next_entry
 	cmplwi	r16, 0xffff
-	bne-	@continue_next_entry
+	bne		@continue_next_entry
 
 	;	This is the "normal" way to loop to the next segment
 	addis	r31, r31, 0x1000
 	cmpwi	r31, 0
-	bne+	@next_segment
+	bne		@next_segment
 	b		@exit
 
 @continue_next_entry
@@ -467,7 +467,7 @@ KernelStateSize
 	add		r8, r8, r19
 
 	cmpwi	r14,  0x00						; no entries? fail!
-	beq+	Local_ReturnInsufficientResourcesErrFromMPCall
+	beq		Local_ReturnInsufficientResourcesErrFromMPCall
 	mulli	r9, r14, 12
 	add		r8, r8, r9						; 12 bytes per SegMap entry
 
@@ -492,7 +492,7 @@ KernelStateSize
 
 	cmpwi	r19, 0							; last segment?
 	add		r16, r19, r18
-	beq-	@exit_pool_counter
+	beq		@exit_pool_counter
 	b		@next_pool_segment				; odd... what happened here?
 @exit_pool_counter
 
@@ -504,7 +504,7 @@ KernelStateSize
 
 @next_page_in_freelist
 	cmpw	r18, r16
-	beq-	@exit_freelist_counter
+	beq		@exit_freelist_counter
 	addi	r9, r9, 16
 	addi	r14, r14, 1
 	lwz		r18, LLL.Next(r18)
@@ -544,7 +544,7 @@ CoherenceFunc_0x138	;	OUTSIDE REFERER
 
 AnotherCoherenceFunc	;	OUTSIDE REFERER
 	cmpwi	r26,  0x00
-	beqlr-
+	beqlr
 	mflr	r22
 	addi	r24, r24, -0x01
 	mr		r28, r25
@@ -554,7 +554,7 @@ AnotherCoherenceFunc_0x14
 	clrlwi	r25, r23,  0x14
 	subfic	r25, r25,  0x1000
 	cmplw	r25, r26
-	blt-	AnotherCoherenceFunc_0x2c
+	blt		AnotherCoherenceFunc_0x2c
 	mr		r25, r26
 
 AnotherCoherenceFunc_0x2c
@@ -566,12 +566,12 @@ AnotherCoherenceFunc_0x2c
 AnotherCoherenceFunc_0x3c
 	lbzu	r27,  0x0001(r24)
 	stbu	r27,  0x0001(r23)
-	bdnz+	AnotherCoherenceFunc_0x3c
+	bdnz	AnotherCoherenceFunc_0x3c
 	bl		YetAnotherCoherenceFunc_0x64
 	subf	r26, r25, r26
 	add		r28, r28, r25
 	cmpwi	r26,  0x00
-	bne+	AnotherCoherenceFunc_0x14
+	bne		AnotherCoherenceFunc_0x14
 	mtlr	r22
 	blr
 
@@ -579,7 +579,7 @@ AnotherCoherenceFunc_0x3c
 
 YetAnotherCoherenceFunc	;	OUTSIDE REFERER
 	cmpwi	r26,  0x00
-	beqlr-
+	beqlr
 	mr		r19, r25
 	mr		r20, r26
 	mflr	r22
@@ -591,7 +591,7 @@ YetAnotherCoherenceFunc_0x1c
 	clrlwi	r24, r23,  0x14
 	subfic	r24, r24,  0x1000
 	cmplw	r24, r26
-	blt-	YetAnotherCoherenceFunc_0x34
+	blt		YetAnotherCoherenceFunc_0x34
 	mr		r24, r26
 
 YetAnotherCoherenceFunc_0x34
@@ -601,11 +601,11 @@ YetAnotherCoherenceFunc_0x34
 YetAnotherCoherenceFunc_0x3c
 	lbzu	r27,  0x0001(r23)
 	stbu	r27,  0x0001(r25)
-	bdnz+	YetAnotherCoherenceFunc_0x3c
+	bdnz	YetAnotherCoherenceFunc_0x3c
 	add		r28, r28, r24
 	subf	r26, r24, r26
 	cmpwi	r26,  0x00
-	bne+	YetAnotherCoherenceFunc_0x1c
+	bne		YetAnotherCoherenceFunc_0x1c
 	bl		YetAnotherCoherenceFunc_0x64
 	mtlr	r22
 	blr
@@ -627,7 +627,7 @@ YetAnotherCoherenceFunc_0x88
 	icbi	0, r19
 	add		r19, r19, r21
 	cmpw	r19, r20
-	blt+	YetAnotherCoherenceFunc_0x88
+	blt		YetAnotherCoherenceFunc_0x88
 	sync
 	isync
 	blr

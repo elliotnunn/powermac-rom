@@ -15,7 +15,7 @@ Local_Panic		set		*
 
 MPCall_7	;	OUTSIDE REFERER
 	rlwinm.	r8, r5,  0, 31, 28
-	bne+	ReturnMPCallOOM
+	bne		ReturnMPCallOOM
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
@@ -23,18 +23,18 @@ MPCall_7	;	OUTSIDE REFERER
  	bl		LookupID
 	cmpwi	r9, Process.kIDClass
 	mr		r30, r8
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 
 	lwz		r16, Process.Flags(r30)
 	rlwinm.	r17, r16, 0, 30, 30
-	bne+	ReleaseAndReturnMPCallOOM
+	bne		ReleaseAndReturnMPCallOOM
 
 	;	ARG		CPUFlags r7, Process *r8
 	bl		CreateTask
 	;	RET		Task *r8
 
 	mr.		r31, r8
-	beq+	ReleaseAndScrambleMPCall
+	beq		ReleaseAndScrambleMPCall
 
 
 	mfsprg	r15, 0
@@ -66,12 +66,12 @@ MPCall_7	;	OUTSIDE REFERER
 	lwz		r16, Task.Flags(r28)
 
 	rlwinm.	r8, r5, 0, 30, 30
-	beq-	@noflag
+	beq		@noflag
 	oris	r16, r16, 0x40 ; Task.kFlag9
 @noflag
 
 	rlwinm.	r8, r5, 0, 29, 29
-	beq-	@noflag2
+	beq		@noflag2
 	oris	r16, r16, 0x02 ; Task.kFlag14
 @noflag2
 
@@ -97,13 +97,13 @@ CreateTask
 	li		r8, 0x400 ;Task.Size
 	bl		PoolAllocClear
 	mr.		r28, r8
-	beq-	@fail_oom
+	beq		@fail_oom
 
 	;	Allocate an opaque ID for it
 	li		r9, Task.kIDClass
 	bl		MakeID
 	cmpwi	r8, 0
-	beq-	@fail_no_id
+	beq		@fail_no_id
 
 	;	ID and sign it
 	stw		r8, Task.ID(r28)
@@ -123,7 +123,7 @@ CreateTask
 	bl		PoolAllocClear
 	cmpwi	r8, 0
 	stw		r8, Task.NotificationPtr(r28)
-	beq-	@fail_note_oom
+	beq		@fail_note_oom
 
 	lisori	r9, 'note'
 	stw		r9, 4(r8)
@@ -148,7 +148,7 @@ CreateTask
 	li		r9, Semaphore.kIDClass
 	bl		MakeID
 	cmpwi	r8, 0
-	beq-	@fail_semq_no_id
+	beq		@fail_semq_no_id
 	stw		r8, Task.Semaphore + Semaphore.BlockedTasks + LLL.Freeform(r28)
 
 
@@ -157,15 +157,15 @@ CreateTask
 
 	;	Conditionally, that is 
 	rlwinm.	r8, r7, 0, PSA.AVFeatureBit, PSA.AVFeatureBit
-	beq-	@non_altivec_task
+	beq		@non_altivec_task
 
 	;	Allocate and check
 	li		r8, 0x214 ;VectorSaveArea.Size		;	room for v registers plus 20 bytes
 	bl		PoolAllocClear
 	andi.	r9, r8, 16-1		;	Sanity check: aligned to size of vector register?
 	cmpwi	cr1, r8, 0
-	bne+	Local_Panic
-	beq-	cr1, @fail_altivec_oom
+	bne		Local_Panic
+	beq		cr1, @fail_altivec_oom
 
 	;	Point to it (from inside and outside the ECB-like area)
 	stw		r8, Task.VectorSaveArea(r28)
@@ -179,7 +179,7 @@ CreateTask
 	subi	r16, r16, 1
 	stwu	r17, 4(r8)
 	cmpwi	r16, 0
-	bgt+	@vectorarea_copyloop
+	bgt		@vectorarea_copyloop
 @non_altivec_task
 
 
@@ -317,20 +317,20 @@ MPCall_8	;	OUTSIDE REFERER
 	cmpwi	r9, Task.kIDClass
 
 	mr		r31, r8
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	lbz		r16,  0x0018(r31)
 	cmpwi	r16,  0x00
-	bne+	ReleaseAndReturnMPCallOOM
+	bne		ReleaseAndReturnMPCallOOM
 	lwz		r8,  0x0060(r31)
 
 ;	r8 = id
  	bl		LookupID
 	cmpwi	r9, Process.kIDClass
 
-	bne+	Local_Panic
+	bne		Local_Panic
 	lwz		r16,  0x0008(r8)
 	rlwinm.	r17, r16,  0, 30, 30
-	bne+	ReleaseAndReturnMPCallOOM
+	bne		ReleaseAndReturnMPCallOOM
 	lwz		r30,  0x0088(r31)
 	stw		r4,  0x0074(r31)
 	stw		r5,  0x011c(r30)
@@ -371,18 +371,18 @@ MPCall_9	;	OUTSIDE REFERER
 
 	mr		r31, r8
 	cmpwi	r9,  0x02
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	lwz		r16,  0x0064(r31)
 	lbz		r17,  0x0018(r31)
 	rlwinm.	r18, r16,  0, 30, 30
 	cmpwi	cr1, r17,  0x00
-	bne+	ReleaseAndReturnMPCallOOM
-	beq-	cr1, MPCall_9_0xb4
+	bne		ReleaseAndReturnMPCallOOM
+	beq		cr1, MPCall_9_0xb4
 	mfsprg	r15, 0
 	lhz		r18,  0x001a(r31)
 	lhz		r17, EWA.CPUIndex(r15)
 	cmpw	r18, r17
-	beq-	MPCall_9_0xe0
+	beq		MPCall_9_0xe0
 	ori		r16, r16,  0x400
 	stw		r16,  0x0064(r31)
 	li		r17,  0x01
@@ -427,7 +427,7 @@ MPCall_9_0xfc
 	InsertAsPrev	r17, r16, scratch=r18
 	lbz		r8,  0x0037(r31)
 	cmpwi	r8,  0x01
-	bne-	MPCall_9_0x130
+	bne		MPCall_9_0x130
 	addi	r8, r31,  0x20
 	bl		DequeueTimer
 
@@ -441,7 +441,7 @@ MPCall_9_0x130
 	li		r18,  0x00
 	lwz		r17,  0x009c(r31)
 	stw		r18,  0x009c(r31)
-	bne-	MPCall_9_0x15c
+	bne		MPCall_9_0x15c
 	mr		r31, r8
 	mr		r8, r17
 	bl		EnqueueMessage		; Message *r8, Queue *r31
@@ -466,14 +466,14 @@ MPCall_10	;	OUTSIDE REFERER
  	bl		LookupID
 	cmpwi	r9, Task.kIDClass
 
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
 	lbz		r16,  0x0018(r31)
 	cmpwi	r16,  0x00
-	bne+	ReleaseAndReturnMPCallOOM
+	bne		ReleaseAndReturnMPCallOOM
 	lwz		r16,  0x0064(r31)
 	rlwinm.	r16, r16,  0, 30, 30
-	beq+	ReleaseAndReturnMPCallOOM
+	beq		ReleaseAndReturnMPCallOOM
 	mr		r8, r31
 	bl		TasksFuncThatIsNotAMPCall
 
@@ -493,13 +493,13 @@ TasksFuncThatIsNotAMPCall
 	bl		DeleteID
 	lwz		r8,  0x009c(r26)
 	cmpwi	r8,  0x00
-	beq-	@_0x98
+	beq		@_0x98
 	bl		PoolFree
 
 @_0x98
 	lwz		r8,  0x008c(r26)
 	cmpwi	r8,  0x00
-	beq-	@_0xa8
+	beq		@_0xa8
 	bl		PoolFree
 
 @_0xa8
@@ -529,13 +529,13 @@ MPCall_11	;	OUTSIDE REFERER
 	lwz		r17, PSA.PA_BlueTask(r1)
 	lwz		r18, -0x0008(r16)
 	lwz		r19,  0x0000(r17)
-	bne-	MPCall_11_0x1c
+	bne		MPCall_11_0x1c
 	lwz		r3,  0x0000(r18)
 
 MPCall_11_0x1c
 	cmpw	r3, r19
 	li		r3,  0x01
-	beq+	CommonMPCallReturnPath
+	beq		CommonMPCallReturnPath
 	li		r3,  0x00
 	b		CommonMPCallReturnPath
 
@@ -557,8 +557,8 @@ MPCall_12	;	OUTSIDE REFERER
 MPCall_14	;	OUTSIDE REFERER
 	cmpwi	r4,  0x01
 	cmpwi	cr1, r4, 10000
-	blt+	ReturnMPCallInvalidIDErr
-	bgt+	cr1, ReturnMPCallInvalidIDErr
+	blt		ReturnMPCallInvalidIDErr
+	bgt		cr1, ReturnMPCallInvalidIDErr
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
@@ -568,11 +568,11 @@ MPCall_14	;	OUTSIDE REFERER
  	bl		LookupID
 	cmpwi	r9, Task.kIDClass
 
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
 	lbz		r16,  0x0018(r31)
 	cmpwi	r16,  0x01
-	bne-	MPCall_14_0x70
+	bne		MPCall_14_0x70
 	lwz		r16,  0x0008(r31)
 	lwz		r17,  0x001c(r31)
 	lwz		r18,  0x0014(r16)
@@ -580,7 +580,7 @@ MPCall_14	;	OUTSIDE REFERER
 	add		r18, r17, r18
 	cmpwi	r17,  0x00
 	stw		r18,  0x0014(r16)
-	beq-	MPCall_14_0x70
+	beq		MPCall_14_0x70
 	mr		r8, r31
 	bl		FlagSchEval
 
@@ -611,7 +611,7 @@ MPSetExceptionHandler
 	mr		r8, r3
  	bl		LookupID
 	cmpwi	r9, Task.kIDClass
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 
 	mr		r31, r8
 
@@ -620,8 +620,8 @@ MPSetExceptionHandler
 
 	cmpwi	r9, 0
 	cmpwi	cr1, r9, Queue.kIDClass
-	beq-	@isnil
-	bne+	cr1, ReleaseAndReturnMPCallInvalidIDErr
+	beq		@isnil
+	bne		cr1, ReleaseAndReturnMPCallInvalidIDErr
 @isnil
 
 	mr		r30, r8
@@ -648,7 +648,7 @@ MPThrowException
 	mr		r8, r3
  	bl		LookupID
 	cmpwi	r9, Task.kIDClass
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
 
 	;	This is gold!
@@ -677,7 +677,7 @@ MPThrowException
 KCThrowException_0x70
 	lhz		r19, EWA.CPUIndex(r15)
 	cmpw	r19, r18
-	bne-	KCThrowException_0xb8
+	bne		KCThrowException_0xb8
 	ori		r16, r16,  0x200
 	stw		r4,  0x00f8(r31)
 	stw		r16,  0x0064(r31)
@@ -716,7 +716,7 @@ MPCall_58	;	OUTSIDE REFERER
  	bl		LookupID
 	cmpwi	r9, Task.kIDClass
 
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
 
 	lwz		r29, Task.Flags(r31)
@@ -735,7 +735,7 @@ MPCall_58_0x44
 	li		r8,  0x1c
 	bl		PoolAlloc
 	cmpwi	r8,  0x00
-	beq+	ReleaseAndScrambleMPCall
+	beq		ReleaseAndScrambleMPCall
 	li		r3,  0x00
 	b		MPCall_58_0x114
 
@@ -744,11 +744,11 @@ MPCall_58_0x68
 	rlwinm.	r8, r29,  0, 18, 18
 	andc	r29, r29, r17
 	li		r17,  0x00
-	bne-	cr7, MPCall_58_0x80
+	bne		cr7, MPCall_58_0x80
 	ori		r17, r17,  0x400
 
 MPCall_58_0x80
-	ble-	cr7, MPCall_58_0x88
+	ble		cr7, MPCall_58_0x88
 	ori		r17, r17,  0x200
 
 MPCall_58_0x88
@@ -761,8 +761,8 @@ MPCall_58_0x88
 	andc	r29, r29, r19
 	cmpw	cr1, r17, r18
 	stw		r29,  0x0064(r31)
-	bne-	MPCall_58_0xb4
-	bne-	cr1, MPCall_58_0xe0
+	bne		MPCall_58_0xb4
+	bne		cr1, MPCall_58_0xe0
 
 MPCall_58_0xb4
 	addi	r16, r31,  0x08
@@ -800,7 +800,7 @@ MPCall_58_0x114
 
 	mr		r30, r8
 	ori		r29, r29,  0x800
-	beq-	MPCall_58_0x184
+	beq		MPCall_58_0x184
 
 MPCall_58_0x13c
 	bc		BO_IF, 19, MPCall_58_0x158
@@ -812,11 +812,11 @@ MPCall_58_0x13c
 
 	mr		r30, r8
 	ori		r29, r29,  0x1000
-	beq-	MPCall_58_0x184
+	beq		MPCall_58_0x184
 
 MPCall_58_0x158
 	mr.		r8, r28
-	bnel-	PoolFree
+	bnel	PoolFree
 	addi	r16, r31,  0x08
 	RemoveFromList		r16, scratch1=r17, scratch2=r18
 	b		MPCall_9_0x98
@@ -824,10 +824,10 @@ MPCall_58_0x158
 MPCall_58_0x184
 	mr.		r8, r28
 	stw		r29,  0x0064(r31)
-	bne-	MPCall_58_0x1a4
+	bne		MPCall_58_0x1a4
 	lwz		r8,  0x0028(r30)
 	cmpwi	r8,  0x00
-	beq+	MPCall_58_0x114
+	beq		MPCall_58_0x114
 	lwz		r17,  0x0008(r8)
 	stw		r17,  0x0028(r30)
 
@@ -873,13 +873,13 @@ MPCall_59	;	OUTSIDE REFERER
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
 	mr.		r8, r3
-	beq-	MPCall_59_0x30
+	beq		MPCall_59_0x30
 
 ;	r8 = id
  	bl		LookupID
 	cmpwi	r9, Queue.kIDClass
 
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
 
 MPCall_59_0x30
@@ -902,10 +902,10 @@ MPCall_60	;	OUTSIDE REFERER
  	bl		LookupID
 	cmpwi	r9, Task.kIDClass
 
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
 	cmpwi	r4,  0x05
-	beq-	MPCall_60_0x288
+	beq		MPCall_60_0x288
 
 	lwz		r16, Task.Flags(r31)
 	mtcr	r16
@@ -919,27 +919,27 @@ MPCall_60	;	OUTSIDE REFERER
 MPCall_60_0x4c
 	lbz		r16,  0x0018(r31)
 	cmpwi	r16,  0x00
-	bne+	ReleaseAndReturnMPCallOOM
+	bne		ReleaseAndReturnMPCallOOM
 	cmpwi	r4,  0x00
 	cmpwi	cr1, r4,  0x01
-	beq-	MPCall_60_0xf8
-	beq-	cr1, MPCall_60_0x10c
+	beq		MPCall_60_0xf8
+	beq		cr1, MPCall_60_0x10c
 	cmpwi	r4,  0x02
 	cmpwi	cr1, r4,  0x03
-	beq-	MPCall_60_0x150
-	beq-	cr1, MPCall_60_0x1c0
+	beq		MPCall_60_0x150
+	beq		cr1, MPCall_60_0x1c0
 	cmpwi	r4,  0x04
-	bne+	ReleaseAndReturnMPCallOOM
+	bne		ReleaseAndReturnMPCallOOM
 	lwz		r16,  0x0088(r31)
 	li		r17,  0x00
 	cmplwi	r5,  0x00
 	cmplwi	cr1, r5,  0x04
-	beq-	MPCall_60_0xac
-	beq-	cr1, MPCall_60_0xc0
+	beq		MPCall_60_0xac
+	beq		cr1, MPCall_60_0xc0
 	cmplwi	r5,  0x08
 	cmplwi	cr1, r5,  0x0c
-	beq-	MPCall_60_0xc8
-	beq-	cr1, MPCall_60_0xd0
+	beq		MPCall_60_0xc8
+	beq		cr1, MPCall_60_0xd0
 	b		ReleaseAndReturnMPCallOOM
 
 MPCall_60_0xac
@@ -962,10 +962,10 @@ MPCall_60_0xd0
 	lwz		r18,  0x0064(r16)
 	rlwinm.	r8, r17,  0, 27, 27
 	li		r17,  0x02
-	beq-	MPCall_60_0x36c
+	beq		MPCall_60_0x36c
 	rlwinm.	r8, r18,  0,  1,  1
 	li		r17,  0x01
-	bne-	MPCall_60_0x36c
+	bne		MPCall_60_0x36c
 	li		r17,  0x00
 	b		MPCall_60_0x36c
 
@@ -980,14 +980,14 @@ MPCall_60_0x10c
 	lwz		r16,  0x0088(r31)
 	cmplwi	r5,  0x100
 	cmplwi	cr1, r5,  0xf8
-	beq-	MPCall_60_0x144
+	beq		MPCall_60_0x144
 	andi.	r17, r5,  0x07
 	addi	r16, r16,  0x1fc
 
 MPCall_60_0x124
 	add		r16, r16, r5
-	bgt+	cr1, ReleaseAndReturnMPCallOOM
-	bne+	ReleaseAndReturnMPCallOOM
+	bgt		cr1, ReleaseAndReturnMPCallOOM
+	bne		ReleaseAndReturnMPCallOOM
 	lwzu	r17,  0x0004(r16)
 	lwzu	r18,  0x0004(r16)
 	lwzu	r19,  0x0004(r16)
@@ -1003,19 +1003,19 @@ MPCall_60_0x150
 	lwz		r16,  0x0088(r31)
 	rlwinm.	r8, r7,  0, 12, 12
 	lwz		r16,  0x00d8(r16)
-	beq+	ReleaseAndReturnMPCallOOM
+	beq		ReleaseAndReturnMPCallOOM
 	cmplwi	cr3, r16,  0x00
 	cmplwi	r5,  0x200
 	cmplwi	cr2, r5,  0x210
 	cmplwi	cr1, r5,  0x1f0
-	beql+	cr3, Local_Panic
-	beq-	MPCall_60_0x1a4
-	beq-	cr2, MPCall_60_0x1b8
+	beql	cr3, Local_Panic
+	beq		MPCall_60_0x1a4
+	beq		cr2, MPCall_60_0x1b8
 	andi.	r8, r5,  0x0f
 	add		r16, r16, r5
 	subi	r16, r16, 4
-	bgt+	cr1, ReleaseAndReturnMPCallOOM
-	bne+	ReleaseAndReturnMPCallOOM
+	bgt		cr1, ReleaseAndReturnMPCallOOM
+	bne		ReleaseAndReturnMPCallOOM
 	lwzu	r17,  0x0004(r16)
 	lwzu	r18,  0x0004(r16)
 	lwzu	r19,  0x0004(r16)
@@ -1038,24 +1038,24 @@ MPCall_60_0x1c0
 	li		r17,  0x00
 	cmplwi	r5,  0x00
 	cmplwi	cr1, r5,  0x08
-	beq-	MPCall_60_0x21c
-	beq-	cr1, MPCall_60_0x228
+	beq		MPCall_60_0x21c
+	beq		cr1, MPCall_60_0x228
 	cmplwi	r5,  0x10
 	cmplwi	cr1, r5,  0x30
-	beq-	MPCall_60_0x234
-	beq-	cr1, MPCall_60_0x240
+	beq		MPCall_60_0x234
+	beq		cr1, MPCall_60_0x240
 	cmplwi	r5,  0x1c
 	cmplwi	cr1, r5,  0x20
-	beq-	MPCall_60_0x24c
-	beq-	cr1, MPCall_60_0x254
+	beq		MPCall_60_0x24c
+	beq		cr1, MPCall_60_0x254
 	cmplwi	r5,  0x24
 	cmplwi	cr1, r5,  0x28
-	beq-	MPCall_60_0x25c
-	beq-	cr1, MPCall_60_0x264
+	beq		MPCall_60_0x25c
+	beq		cr1, MPCall_60_0x264
 	cmplwi	r5,  0x2c
 	cmplwi	cr1, r5,  0x18
-	beq-	MPCall_60_0x278
-	beq-	cr1, MPCall_60_0x280
+	beq		MPCall_60_0x278
+	beq		cr1, MPCall_60_0x280
 	b		ReleaseAndReturnMPCallOOM
 
 MPCall_60_0x21c
@@ -1108,18 +1108,18 @@ MPCall_60_0x280
 MPCall_60_0x288
 	cmplwi	cr1, r5,  0x04
 	cmplwi	r5,  0x14
-	beq-	cr1, MPCall_60_0x2c4
-	beq-	MPCall_60_0x2e4
+	beq		cr1, MPCall_60_0x2c4
+	beq		MPCall_60_0x2e4
 	cmplwi	cr1, r5,  0x20
 	cmplwi	r5,  0x30
-	beq-	cr1, MPCall_60_0x2f4
-	beq-	MPCall_60_0x308
+	beq		cr1, MPCall_60_0x2f4
+	beq		MPCall_60_0x308
 	cmpwi	cr1, r5,  0x40
 	cmplwi	r5,  0x3c
-	beq-	cr1, MPCall_60_0x320
-	beq-	MPCall_60_0x318
+	beq		cr1, MPCall_60_0x320
+	beq		MPCall_60_0x318
 	cmpwi	cr1, r5,  0x50
-	beq-	cr1, MPCall_60_0x34c
+	beq		cr1, MPCall_60_0x34c
 	b		ReleaseAndReturnMPCallOOM
 
 MPCall_60_0x2c4
@@ -1164,7 +1164,7 @@ MPCall_60_0x320
 	lwz		r19,  0x0094(r31)
 	lwz		r20,  0x0090(r31)
 	lwz		r18,  0x0000(r18)
-	bne-	MPCall_60_0x3a8
+	bne		MPCall_60_0x3a8
 	lwz		r17,  0x0000(r16)
 	b		MPCall_60_0x3a8
 
@@ -1174,7 +1174,7 @@ MPCall_60_0x34c
 	lwz		r19, -0x0008(r18)
 	cmpw	r19, r31
 	lwz		r17,  0x0004(r18)
-	beq-	MPCall_60_0x36c
+	beq		MPCall_60_0x36c
 	lwz		r17,  0x010c(r20)
 	b		MPCall_60_0x36c
 
@@ -1230,7 +1230,7 @@ MPCall_61	;	OUTSIDE REFERER
  	bl		LookupID
 	cmpwi	r9, Task.kIDClass
 
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
 
 	lwz		r16, Task.Flags(r31)
@@ -1245,19 +1245,19 @@ MPCall_61	;	OUTSIDE REFERER
 MPCall_61_0x44
 	lbz		r16,  0x0018(r31)
 	cmpwi	r16,  0x00
-	bne+	ReleaseAndReturnMPCallOOM
+	bne		ReleaseAndReturnMPCallOOM
 	lwz		r17,  0x0134(r6)
 	lwz		r18,  0x013c(r6)
 	lwz		r19,  0x0144(r6)
 	lwz		r20,  0x014c(r6)
 	cmpwi	r4,  0x00
 	cmpwi	cr1, r4,  0x01
-	beq-	MPCall_61_0x84
-	beq-	cr1, MPCall_61_0x98
+	beq		MPCall_61_0x84
+	beq		cr1, MPCall_61_0x98
 	cmpwi	r4,  0x02
 	cmpwi	cr1, r4,  0x03
-	beq-	MPCall_61_0xe8
-	beq-	cr1, MPCall_61_0x170
+	beq		MPCall_61_0xe8
+	beq		cr1, MPCall_61_0x170
 	b		ReleaseAndReturnMPCallOOM
 
 MPCall_61_0x84
@@ -1271,14 +1271,14 @@ MPCall_61_0x98
 	lwz		r16,  0x0088(r31)
 	cmplwi	r5,  0x100
 	cmplwi	cr1, r5,  0xf8
-	beq-	MPCall_61_0xd8
+	beq		MPCall_61_0xd8
 	andi.	r8, r5,  0x07
 	addi	r16, r16,  0x1fc
 
 MPCall_61_0xb0
 	add		r16, r16, r5
-	bgt+	cr1, ReleaseAndReturnMPCallOOM
-	bne+	ReleaseAndReturnMPCallOOM
+	bgt		cr1, ReleaseAndReturnMPCallOOM
+	bne		ReleaseAndReturnMPCallOOM
 	li		r21,  0x10
 	stwu	r17,  0x0004(r16)
 	stwu	r18,  0x0004(r16)
@@ -1301,19 +1301,19 @@ MPCall_61_0xe8
 	lwz		r16,  0x0088(r31)
 	rlwinm.	r8, r7,  0, 12, 12
 	lwz		r16,  0x00d8(r16)
-	beq+	ReleaseAndReturnMPCallOOM
+	beq		ReleaseAndReturnMPCallOOM
 	cmplwi	cr3, r16,  0x00
 	cmplwi	r5,  0x200
 	cmplwi	cr2, r5,  0x210
 	cmplwi	cr1, r5,  0x1f0
-	beql+	cr3, Local_Panic
-	beq-	MPCall_61_0x144
-	beq-	cr2, MPCall_61_0x160
+	beql	cr3, Local_Panic
+	beq		MPCall_61_0x144
+	beq		cr2, MPCall_61_0x160
 	andi.	r8, r5,  0x0f
 	add		r16, r16, r5
 	subi	r16, r16, 4
-	bgt+	cr1, ReleaseAndReturnMPCallOOM
-	bne+	ReleaseAndReturnMPCallOOM
+	bgt		cr1, ReleaseAndReturnMPCallOOM
+	bne		ReleaseAndReturnMPCallOOM
 	li		r21,  0x10
 	stwu	r17,  0x0004(r16)
 	stwu	r18,  0x0004(r16)
@@ -1347,18 +1347,18 @@ MPCall_61_0x170
 	lwz		r16,  0x0088(r31)
 	cmplwi	r5,  0x00
 	cmplwi	cr1, r5,  0x08
-	beq-	MPCall_61_0x1b0
-	beq-	cr1, MPCall_61_0x1c4
+	beq		MPCall_61_0x1b0
+	beq		cr1, MPCall_61_0x1c4
 	cmplwi	r5,  0x10
-	beq-	MPCall_61_0x1d8
+	beq		MPCall_61_0x1d8
 	cmplwi	r5,  0x1c
 	cmplwi	cr1, r5,  0x20
-	beq-	MPCall_61_0x1ec
-	beq-	cr1, MPCall_61_0x1fc
+	beq		MPCall_61_0x1ec
+	beq		cr1, MPCall_61_0x1fc
 	cmplwi	r5,  0x24
 	cmplwi	cr1, r5,  0x18
-	beq-	MPCall_61_0x218
-	beq-	cr1, MPCall_61_0x228
+	beq		MPCall_61_0x218
+	beq		cr1, MPCall_61_0x228
 	b		ReleaseAndReturnMPCallOOM
 
 MPCall_61_0x1b0
@@ -1437,7 +1437,7 @@ MPCall_63	;	OUTSIDE REFERER
  	bl		LookupID
 	cmpwi	r9, Task.kIDClass
 
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	stw		r4,  0x00ec(r8)
 
 ;	r1 = kdp
@@ -1458,7 +1458,7 @@ MPCall_114	;	OUTSIDE REFERER
 	cmpwi	r9, Task.kIDClass
 
 	mr		r31, r8
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r8, r4
 
 ;	r8 = id
@@ -1466,17 +1466,17 @@ MPCall_114	;	OUTSIDE REFERER
 	cmpwi	r9, CPU.kIDClass
 
 	mr		r30, r8
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	lwz		r16,  0x0064(r31)
 	lwz		r17,  0x00e8(r31)
 	rlwinm.	r8, r16,  0, 30, 30
 	cmplw	cr1, r17, r5
 	lwz		r18,  0x0018(r30)
-	bne+	ReleaseAndReturnMPCallOOM
-	bne+	cr1, ReleaseAndReturnMPCallOOM
+	bne		ReleaseAndReturnMPCallOOM
+	bne		cr1, ReleaseAndReturnMPCallOOM
 	rlwinm.	r8, r18,  0, 28, 28
 	cmplwi	cr1, r17,  0x04
-	beq+	ReleaseAndReturnMPCallOOM
+	beq		ReleaseAndReturnMPCallOOM
 	lwz		r16,  0x0064(r31)
 	lhz		r17, CPU.EWA + EWA.CPUIndex(r30)
 	ori		r16, r16,  0x40
@@ -1484,7 +1484,7 @@ MPCall_114	;	OUTSIDE REFERER
 	sth		r17,  0x001a(r31)
 	rlwinm.	r8, r16,  0, 26, 26
 	mr		r8, r31
-	bne-	MPCall_114_0x90
+	bne		MPCall_114_0x90
 	bl		SchTaskUnrdy
 	bl		SchRdyTaskNow
 
@@ -1508,7 +1508,7 @@ KCSetTaskType
 	mr		r8, r3
  	bl		LookupID
 	cmpwi	r9, Task.kIDClass
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 
 	stw		r4, Task.Name(r8)
 

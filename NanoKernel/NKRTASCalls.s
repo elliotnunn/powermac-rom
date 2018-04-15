@@ -17,7 +17,7 @@ Local_Panic		set		*
 kcRTASDispatch	;	OUTSIDE REFERER
 	lwz		r8,  0x0908(r1)
 	cmpwi	r8,  0x00
-	bne-	rtas_is_available
+	bne		rtas_is_available
 	li		r3, -0x01
 	b		IntReturn
 
@@ -30,7 +30,7 @@ rtas_is_available
 	lwz		r8, EWA.Enables(r1)
 	stw		r7,  0x0000(r6)
 	stw		r8,  0x0004(r6)
-	bns-	cr6, kcRTASDispatch_0x5c
+	bns		cr6, kcRTASDispatch_0x5c
 	stw		r17,  0x0024(r6)
 	stw		r20,  0x0028(r6)
 	stw		r21,  0x002c(r6)
@@ -46,7 +46,7 @@ kcRTASDispatch_0x5c
 	mfctr	r8
 	stw		r10,  0x00fc(r6)
 	stw		r8,  0x00f4(r6)
-	ble-	cr3, kcRTASDispatch_0x8c
+	ble		cr3, kcRTASDispatch_0x8c
 	lwz		r8,  0x00c4(r9)
 	mfspr	r12, mq
 	mtspr	mq, r8
@@ -80,21 +80,21 @@ kcRTASDispatch_0x8c
 	stw		r29,  0x01ec(r6)
 	stw		r30,  0x01f4(r6)
 	stw		r31,  0x01fc(r6)
-	bnel+	major_0x03e18_0xb4
+	bnel	major_0x03e18_0xb4
 	stw		r11,  0x00a4(r6)
 	mr		r27, r3
 	addi	r29, r1, 800
 	bl		PagingFunc3
-	beql+	Local_Panic
+	beql	Local_Panic
 	rlwimi	r3, r31,  0,  0, 19
 	lhz		r8,  0x0004(r3)
 	cmpwi	r8,  0x00
-	beq-	kcRTASDispatch_0x14c
+	beq		kcRTASDispatch_0x14c
 	slwi	r8, r8,  2
 	lwzx	r27, r8, r3
 	addi	r29, r1, 800
 	bl		PagingFunc3
-	beql+	Local_Panic
+	beql	Local_Panic
 	lwzx	r9, r8, r3
 	rlwimi	r9, r31,  0,  0, 19
 	stwx	r9, r8, r3
@@ -126,7 +126,7 @@ kcRTASDispatch_0x190
 	dcbf	r29, r28
 	sync
 	icbi	r29, r28
-	bge+	kcRTASDispatch_0x190
+	bge		kcRTASDispatch_0x190
 	sync
 	isync
 	lwz		r8,  0x0000(r6)
@@ -142,7 +142,7 @@ kcRTASDispatch_0x190
 	lwz		r8,  0x00f4(r6)
 	lwz		r10,  0x00fc(r6)
 	mtctr	r8
-	bnel+	major_0x03e18_0x8
+	bnel	major_0x03e18_0x8
 	lwz		r8,  0x010c(r6)
 	stw		r8,  0x0004(r1)
 	lwz		r2,  0x0114(r6)

@@ -25,7 +25,7 @@ MPCreateQueue
 	li		r8, Queue.Size
 	bl		PoolAlloc
 	mr.		r31, r8
-	beq+	ScrambleMPCall
+	beq		ScrambleMPCall
 
 	;	List of messages waiting for tasks
 	InitList	r8, 'MSGQ', scratch=r16
@@ -94,7 +94,7 @@ MPDeleteQueue
 	cmpwi	r9, Queue.kIDClass
 
 	mr		r31, r8
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 
 
 	;	Delete all auto-allocated messages
@@ -102,7 +102,7 @@ MPDeleteQueue
 	addi	r30, r31, Queue.Messages
 	lwz		r8, Queue.Messages + LLL.Next(r31)
 	cmpw	r8, r30
-	beq-	@exit_note_free_loop
+	beq		@exit_note_free_loop
 	RemoveFromList		r8, scratch1=r16, scratch2=r17
 	bl		PoolFree
 	b		@note_free_loop
@@ -113,7 +113,7 @@ MPDeleteQueue
 	lwz		r30, Queue.ReservePtr(r31)
 @notr_free_loop
 	mr.		r8, r30
-	beq-	@exit_notr_free_loop
+	beq		@exit_notr_free_loop
 	lwz		r30, Message.LLL + LLL.Next(r30)
 	bl		PoolFree
 	b		@notr_free_loop
@@ -134,7 +134,7 @@ MPDeleteQueue
 	lwz		r16, Queue.BlockedTasks + LLL.Next(r31)
 	cmpw	r16, r30
 	subi	r8, r16, Task.QueueMember
-	beq-	@exit_task_loop
+	beq		@exit_task_loop
 
 	;	Manipulate its r3 from afar
 	lwz		r17, Task.ContextBlockPtr(r8)
@@ -144,7 +144,7 @@ MPDeleteQueue
 	;	If blocked with timeout, dequeue task's internal timer
 	lbz		r17, Task.Timer + Timer.Byte3(r8)
 	cmpwi	r17, 1
-	bne-	@no_timeout
+	bne		@no_timeout
 	addi	r8, r8, Task.Timer
 	bl		DequeueTimer
 @no_timeout
@@ -195,7 +195,7 @@ MPDeleteQueue
 MPSetQueueReserve
 
 	cmpwi	r4, 0
-	blt+	ReturnMPCallOOM
+	blt		ReturnMPCallOOM
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
@@ -203,25 +203,25 @@ MPSetQueueReserve
  	bl		LookupID
 	cmpwi	r9, Queue.kIDClass
 	mr		r31, r8
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 
 	lwz		r29, Queue.ReserveCount(r31)
 	lwz		r30, Queue.ReservePtr(r31)
 
 	cmpw	r29, r4
-	beq+	ReleaseAndReturnZeroFromMPCall
-	blt-	@make_more
+	beq		ReleaseAndReturnZeroFromMPCall
+	blt		@make_more
 
 
 	;	NEW < OLD
 @free_loop
 	mr.		r8, r30
-	beq-	@free_loop_failed
+	beq		@free_loop_failed
 	subi	r29, r29, 1
 	lwz		r30, LLL.Next(r30)
 	bl		PoolFree
 	cmpw	r29, r4
-	bgt+	@free_loop
+	bgt		@free_loop
 
 ;free loop succeeded
 	stw		r4, Queue.ReserveCount(r31)
@@ -240,7 +240,7 @@ MPSetQueueReserve
 	li		r8, Message.Size
 	bl		PoolAlloc
 	cmpwi	r8, 0
-	beq+	ReleaseAndScrambleMPCall
+	beq		ReleaseAndScrambleMPCall
 
 	addi	r29, r29, 1
 
@@ -254,7 +254,7 @@ MPSetQueueReserve
 	cmpw	r29, r4
 	stw		r8, Queue.ReservePtr(r31)
 	mr		r30, r8
-	blt+	@alloc_loop
+	blt		@alloc_loop
 
 
 	b		ReleaseAndReturnZeroFromMPCall
@@ -284,18 +284,18 @@ MPNotifyQueue
 	cmpwi	r9, Queue.kIDClass
 
 	mr		r31, r8
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 
 	lwz		r16, Queue.ReserveCount(r31)
 	li		r8, Message.Size
 	cmpwi	r16, 0
-	bne-	@try_reserve
+	bne		@try_reserve
 
 ;no reservation available
 	bl		PoolAlloc
 
 	cmpwi	r8, 0
-	beq+	ReleaseAndScrambleMPCall
+	beq		ReleaseAndScrambleMPCall
 
 	lisori	r17, Message.kSignature
 	stw		r17, Message.LLL + LLL.Signature(r8)
@@ -305,7 +305,7 @@ MPNotifyQueue
 @try_reserve
 	lwz		r17, Queue.ReservePtr(r31)
 	mr.		r8, r17
-	beq+	ReleaseAndReturnMPCallOOM
+	beq		ReleaseAndReturnMPCallOOM
 
 	lwz		r17, Message.LLL + LLL.Next(r17)
 	stw		r17, Queue.ReservePtr(r31)
@@ -362,7 +362,7 @@ EnqueueMessage
 	lwz		r16, Queue.BlockedTasks + LLL.Next(r31)
 	cmpw	r16, r31
 	subi	r8, r16, Task.QueueMember
-	beq-	@no_task
+	beq		@no_task
 
 	;	Saves us special-casing 
 	lwz		r17, Task.ContextBlockPtr(r8)
@@ -373,7 +373,7 @@ EnqueueMessage
 	;	De-fang the task's blocking timeout
 	lbz		r17, Task.Timer + Timer.Byte3(r8)
 	cmpwi	r17, 1
-	bne-	@no_timeout
+	bne		@no_timeout
 	addi	r8, r8, Task.Timer
 	bl		DequeueTimer
 @no_timeout
@@ -431,14 +431,14 @@ MPWaitOnQueue
 	mr		r8, r3
  	bl		LookupID
 	cmpwi	r9, Queue.kIDClass
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 
 	mr		r31, r8
 
 	lwz		r16, Queue.Messages + LLL.Next(r31)
 	addi	r17, r31, Queue.Messages
 	cmpw	r16, r17
-	beq-	@no_messages_pending
+	beq		@no_messages_pending
 
 ;messages pending
 	lwz		r4, Message.Word1(r16)
@@ -455,7 +455,7 @@ MPWaitOnQueue
 	lbz		r17, Message.LLL + LLL.Signature + 3(r16)		; 'r' if mem-reserved message, else 'e'
 	mr		r8, r16
 	cmpwi	r17, Message.kReservedSignature & 0xFF
-	beq-	@immediate_msg_was_reserved
+	beq		@immediate_msg_was_reserved
 
 ;immediate message was not reserved ... return noErr
 	bl		PoolFree
@@ -477,12 +477,12 @@ MPWaitOnQueue
 ;special case: zero timeout ... return
 	cmpwi	r17, 0
 	lwz		r19, EWA.PA_CurTask(r30)
-	beq+	ReleaseAndTimeoutMPCall
+	beq		ReleaseAndTimeoutMPCall
 
 ;special case: blue may not block
 	lwz		r16, Task.Flags(r19)
 	rlwinm.	r16, r16, 0, Task.kFlagBlue, Task.kFlagBlue
-	beq-	@bot_blue
+	beq		@bot_blue
 	stw		r3, PSA.BlueSpinningOn(r1)
 	b		ReleaseAndReturnMPCallBlueBlocking
 @bot_blue
@@ -515,7 +515,7 @@ MPWaitOnQueue
 	cmpw	r17, r16
 
 	li		r16, 2
-	beq-	@wait_forever
+	beq		@wait_forever
 
 ;committed to arming task's built-in timer (finite timeout)
 	stb		r16, Timer.Kind(r30)
@@ -569,14 +569,14 @@ MPQueryQueue
  	bl		LookupID
 
 	cmpwi	r9, Queue.kIDClass
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 
 	mr		r31, r8
 	lwz		r16, Queue.Messages + LLL.Next(r31)
 	addi	r17, r31, Queue.Messages
 	cmpw	r16, r17
 
-	beq+	ReleaseAndTimeoutMPCall
+	beq		ReleaseAndTimeoutMPCall
 
 	b		ReleaseAndReturnZeroFromMPCall
 
@@ -614,12 +614,12 @@ MPQueryQueue
 MPCreateSemaphore
 
 	cmpw	r4, r3
-	bgt+	ReturnMPCallOOM
+	bgt		ReturnMPCallOOM
 
 	li		r8, Semaphore.Size
 	bl		PoolAlloc
 	mr.		r31, r8
-	beq+	ScrambleMPCall
+	beq		ScrambleMPCall
 
 	InitList	r31, Semaphore.kSignature, scratch=r16
 
@@ -680,13 +680,13 @@ MPWaitOnSemaphore
 	mr		r8, r3
  	bl		LookupID
 	cmpwi	r9, Semaphore.kIDClass
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
 
 	lwz		r16, Semaphore.Value(r31)
 	cmpwi	r16, 0
 	subi	r16, r16, 1
-	ble-	@must_wait
+	ble		@must_wait
 
 ;easiest case ... decrement and return
 	stw		r16, Semaphore.Value(r31)
@@ -696,14 +696,14 @@ MPWaitOnSemaphore
 ;next easiest case ... instant timeout
 	cmpwi	r4, 0
 	mfsprg	r30, 0
-	beq+	ReleaseAndTimeoutMPCall
+	beq		ReleaseAndTimeoutMPCall
 
 	lwz		r8, EWA.PA_CurTask(r30)
 
 ;special case: blue may not block
 	lwz		r16, Task.Flags(r8)
 	rlwinm.	r16, r16, 0, Task.kFlagBlue, Task.kFlagBlue
-	beq-	@bot_blue
+	beq		@bot_blue
 	stw		r3, PSA.BlueSpinningOn(r1)
 	b		ReleaseAndReturnMPCallBlueBlocking
 @bot_blue
@@ -730,7 +730,7 @@ MPWaitOnSemaphore
 	cmpw	r4, r16
 
 	li		r17, 2
-	beq-	@wait_forever
+	beq		@wait_forever
 
 ;committed to creating a timer (finite timeout)
 	stb		r17, Timer.Kind(r30)
@@ -785,13 +785,13 @@ MPQuerySemaphore
  	bl		LookupID
 
 	cmpwi	r9, Semaphore.kIDClass
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 
 	mr		r31, r8
 	lwz		r16, Semaphore.Value(r31)
 	cmpwi	r16, 0
 
-	ble+	ReleaseAndTimeoutMPCall
+	ble		ReleaseAndTimeoutMPCall
 
 	b		ReleaseAndReturnZeroFromMPCall
 
@@ -819,7 +819,7 @@ MPSignalSemaphore
 
 	cmpwi	r9, Semaphore.kIDClass
 	mr		r31, r8
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 
 	bl		SignalSemaphore
 
@@ -844,11 +844,11 @@ SignalSemaphore	;	OUTSIDE REFERER
 	bl		UnblockBlueIfCouldBePolling
 	lwz		r16,  0x0008(r31)
 	cmpw	r16, r31
-	beq-	SignalSemaphore_0x80
+	beq		SignalSemaphore_0x80
 	addi	r8, r16, -0x08
 	lbz		r17,  0x0037(r8)
 	cmpwi	r17,  0x01
-	bne-	SignalSemaphore_0x30
+	bne		SignalSemaphore_0x30
 	addi	r8, r8,  0x20
 	bl		DequeueTimer
 
@@ -875,7 +875,7 @@ SignalSemaphore_0x80
 	cmpw	r16, r17
 	addi	r16, r16,  0x01
 	li		r8, kMPInsufficientResourcesErr
-	bgelr-
+	bgelr
 	stw		r16,  0x0010(r31)
 	li		r8,  0x00
 	blr
@@ -900,7 +900,7 @@ MPDeleteSemaphore
  	bl		LookupID
 	cmpwi	r9, Semaphore.kIDClass
 	mr		r31, r8
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 
 	mr		r8, r3
 	bl		UnblockBlueIfCouldBePolling
@@ -910,13 +910,13 @@ MPCall_21_0x34
 	lwz		r16, LLL.Next(r31)
 	cmpw	r16, r30
 	addi	r8, r16, -0x08
-	beq-	MPCall_21_0x98
+	beq		MPCall_21_0x98
 	lwz		r17,  0x0088(r8)
 	li		r18, kMPDeletedErr
 	stw		r18,  0x011c(r17)
 	lbz		r17,  0x0037(r8)
 	cmpwi	r17,  0x01
-	bne-	MPCall_21_0x68
+	bne		MPCall_21_0x68
 	addi	r8, r8,  0x20
 	bl		DequeueTimer
 
@@ -979,7 +979,7 @@ MPCreateCriticalRegion
 	li		r8,  0x24
 	bl		PoolAlloc
 	mr.		r31, r8
-	beq+	ScrambleMPCall
+	beq		ScrambleMPCall
 	InitList	r31, CriticalRegion.kSignature, scratch=r16
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
@@ -1034,19 +1034,19 @@ MPEnterCriticalRegion
  	bl		LookupID
 	cmpwi	r9, CriticalRegion.kIDClass
 
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
 	mfsprg	r17, 0
 	lwz		r18,  0x0014(r31)
 	lwz		r30, -0x0008(r17)
 	cmpwi	r18,  0x00
 	lwz		r16,  0x0018(r31)
-	beq-	MPCall_27_0x64
+	beq		MPCall_27_0x64
 	lwz		r17,  0x001c(r31)
 	cmpw	r16, r30
 	cmpw	cr1, r17, r5
-	bne-	MPCall_27_0x78
-	bne-	cr1, MPCall_27_0x78
+	bne		MPCall_27_0x78
+	bne		cr1, MPCall_27_0x78
 	addi	r18, r18,  0x01
 	stw		r18,  0x0014(r31)
 
@@ -1069,20 +1069,20 @@ MPCall_27_0x78
  	bl		LookupID
 	cmpwi	r9, Task.kIDClass
 
-	bne+	ReleaseAndReturnMPCallTaskAborted
+	bne		ReleaseAndReturnMPCallTaskAborted
 	lwz		r8,  0x001c(r31)
 
 ;	r8 = id
  	bl		LookupID
 	cmpwi	r9, Process.kIDClass
 
-	bne+	ReleaseAndReturnMPCallTaskAborted
+	bne		ReleaseAndReturnMPCallTaskAborted
 	cmpwi	r4,  0x00
 ;special case: blue may not block
 	lwz		r16, Task.Flags(r30)
-	beq+	ReleaseAndTimeoutMPCall
+	beq		ReleaseAndTimeoutMPCall
 	rlwinm.	r16, r16, 0, Task.kFlagBlue, Task.kFlagBlue
-	beq-	@bot_blue
+	beq		@bot_blue
 	stw		r3, PSA.BlueSpinningOn(r1)
 	b		ReleaseAndReturnMPCallBlueBlocking
 @bot_blue
@@ -1099,7 +1099,7 @@ MPCall_27_0xb4
 	addi	r18, r18,  0x01
 	stw		r18,  0x0020(r31)
 	cmpw	r4, r16
-	beq-	MPCall_27_0x138
+	beq		MPCall_27_0x138
 	addi	r29, r30,  0x20
 	li		r8,  0x02
 	stw		r30,  0x0018(r29)
@@ -1149,21 +1149,21 @@ MPQueryCriticalRegion
  	bl		LookupID
 	cmpwi	r9, CriticalRegion.kIDClass
 
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
 	mfsprg	r17, 0
 	lwz		r18,  0x0014(r31)
 	cmpwi	r18,  0x00
 
 ;	r1 = kdp
-	beq+	ReleaseAndReturnZeroFromMPCall
+	beq		ReleaseAndReturnZeroFromMPCall
 	lwz		r30, -0x0008(r17)
 	lwz		r16,  0x0018(r31)
 	lwz		r17,  0x001c(r31)
 	cmpw	r16, r30
 	cmpw	cr1, r17, r4
-	bne+	ReleaseAndTimeoutMPCall
-	bne+	cr1, ReleaseAndTimeoutMPCall
+	bne		ReleaseAndTimeoutMPCall
+	bne		cr1, ReleaseAndTimeoutMPCall
 
 ;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall
@@ -1190,7 +1190,7 @@ MPExitCriticalRegion
  	bl		LookupID
 	cmpwi	r9, CriticalRegion.kIDClass
 
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
 	mfsprg	r17, 0
 	lwz		r16,  0x0018(r31)
@@ -1199,14 +1199,14 @@ MPExitCriticalRegion
 	lwz		r17,  0x001c(r31)
 	cmpw	r16, r30
 	cmpw	cr1, r17, r4
-	bne+	ReleaseAndReturnMPCallOOM
-	bne+	cr1, ReleaseAndReturnMPCallOOM
+	bne		ReleaseAndReturnMPCallOOM
+	bne		cr1, ReleaseAndReturnMPCallOOM
 	addi	r18, r18, -0x01
 	cmpwi	r18,  0x00
 	stw		r18,  0x0014(r31)
 
 ;	r1 = kdp
-	bne+	ReleaseAndReturnZeroFromMPCall
+	bne		ReleaseAndReturnZeroFromMPCall
 	stw		r18,  0x0018(r31)
 	stw		r18,  0x001c(r31)
 	mr		r8, r3
@@ -1215,11 +1215,11 @@ MPExitCriticalRegion
 	cmpw	r16, r31
 
 ;	r1 = kdp
-	beq+	ReleaseAndReturnZeroFromMPCall
+	beq		ReleaseAndReturnZeroFromMPCall
 	addi	r8, r16, -0x08
 	lbz		r17,  0x0037(r8)
 	cmpwi	r17,  0x01
-	bne-	MPCall_28_0x94
+	bne		MPCall_28_0x94
 	addi	r8, r8,  0x20
 	bl		DequeueTimer
 
@@ -1266,7 +1266,7 @@ MPDeleteCriticalRegion
 	cmpwi	r9, CriticalRegion.kIDClass
 
 	mr		r31, r8
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r8, r3
 	bl		UnblockBlueIfCouldBePolling
 
@@ -1275,13 +1275,13 @@ MPCall_26_0x34
 	lwz		r16,  0x0008(r31)
 	cmpw	r16, r30
 	addi	r8, r16, -0x08
-	beq-	MPCall_26_0x98
+	beq		MPCall_26_0x98
 	lwz		r17,  0x0088(r8)
 	li		r18, kMPDeletedErr
 	stw		r18,  0x011c(r17)
 	lbz		r17,  0x0037(r8)
 	cmpwi	r17,  0x01
-	bne-	MPCall_26_0x68
+	bne		MPCall_26_0x68
 	addi	r8, r8,  0x20
 	bl		DequeueTimer
 
@@ -1366,7 +1366,7 @@ MPCreateEvent
 	li		r8, EventGroup.Size
 	bl		PoolAllocClear
 	mr.		r31, r8
-	beq+	ScrambleMPCall
+	beq		ScrambleMPCall
 
 	InitList	r8, EventGroup.kSignature, scratch=r16
 
@@ -1418,7 +1418,7 @@ MPDeleteEvent
  	bl		LookupID
 	cmpwi	r9, EventGroup.kIDClass
 	mr		r31, r8
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 
 	mr		r8, r3
 	bl		UnblockBlueIfCouldBePolling
@@ -1428,13 +1428,13 @@ MPDeleteEvent_0x34
 	lwz		r16,  0x0008(r31)
 	cmpw	r16, r30
 	addi	r8, r16, -0x08
-	beq-	MPDeleteEvent_0x98
+	beq		MPDeleteEvent_0x98
 	lwz		r17,  0x0088(r8)
 	li		r18, kMPDeletedErr
 	stw		r18,  0x011c(r17)
 	lbz		r17,  0x0037(r8)
 	cmpwi	r17,  0x01
-	bne-	MPDeleteEvent_0x68
+	bne		MPDeleteEvent_0x68
 	addi	r8, r8,  0x20
 	bl		DequeueTimer
 
@@ -1478,7 +1478,7 @@ MPSetEvent
  	bl		LookupID
 	cmpwi	r9, EventGroup.kIDClass
 	mr		r31, r8
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 
 	mr		r8, r4
 	bl		SetEvent
@@ -1512,7 +1512,7 @@ SetEvent
 	lwz		r16, EventGroup.LLL + LLL.Next(r31)
 	cmpw	r16, r31
 	subi	r8, r16, Task.QueueMember
-	beq-	@no_task_waiting
+	beq		@no_task_waiting
 
 
 	;	CASE 1: task needs unblocking
@@ -1526,7 +1526,7 @@ SetEvent
 	;	Cancel timeout
 	lbz		r17, Task.Timer + Timer.Byte3(r8)
 	cmpwi	r17, 1
-	bne-	@timer_not_armed
+	bne		@timer_not_armed
 	addi	r8, r8, Task.Timer
 	bl		DequeueTimer
 @timer_not_armed
@@ -1555,7 +1555,7 @@ SetEvent
 
 	;	CASE 2: no task waiting.
 
-	beq-	@return
+	beq		@return
 
 
 	;	CASE 3: SOFTWARE INTERRUPT
@@ -1566,8 +1566,8 @@ SetEvent
 	lwz		r19, ContextBlock.SWIEventGroupID(r17)
 	cmpwi	cr1, r18, 0
 	cmpwi	r19, 0
-	bne-	cr1, @do_not_save_swi_event_id
-	bne-	@return
+	bne		cr1, @do_not_save_swi_event_id
+	bne		@return
 
 	lwz		r8, EventGroup.LLL + LLL.Freeform(r31) ; contains my ID
 	stw		r8, ContextBlock.SWIEventGroupID(r17)
@@ -1580,7 +1580,7 @@ SetEvent
 	add		r18, r18, r9
 	lwzx	r19, r16, r18
 	cmpwi	r19, 0
-	bne-	@return
+	bne		@return
 
 	;	Set!
 	lwz		r8, EventGroup.LLL + LLL.Freeform(r31) ; my ID
@@ -1592,16 +1592,16 @@ SetEvent
 @loop
 	lwzx	r8, r19, r18
 	cmpwi	r8, 0
-	bne-	@exit_loop
+	bne		@exit_loop
 	subf.	r19, r9, r19
-	bgt+	@loop
+	bgt		@loop
 	bl		panic
 @exit_loop
 
 	;	Can I interrupt the current interrupt?
 	cmplw	r16, r19
 	srwi	r16, r16, 2
-	blt-	@return
+	blt		@return
 	stw		r16, ContextBlock.SWIEventGroupID(r17)
 @common_case
 
@@ -1621,13 +1621,13 @@ SetEvent
 
 	cmpwi	r19, 0
 	addi	r16, r26, Task.QueueMember
-	bne-	@task_already_running
+	bne		@task_already_running
 
 	;	De-fang the blocking timeout
 	RemoveFromList		r16, scratch1=r17, scratch2=r18
 	lbz		r17, Task.Timer + Timer.Byte3(r26)
 	cmpwi	r17, 1
-	bne-	@timer_not_armed_2
+	bne		@timer_not_armed_2
 	addi	r8, r26, Task.Timer
 	bl		DequeueTimer
 @timer_not_armed_2
@@ -1674,12 +1674,12 @@ MPWaitForEvent
 	;	Check that the Event Group ID in r3 is valid.
 	bl		LookupID
 	cmpwi	r9, EventGroup.kIDClass
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
 
 	lwz		r16, 0x0010(r31)
 	cmpwi	r16, 0
-	beq-	MPWaitForEvent_field_10_was_zero
+	beq		MPWaitForEvent_field_10_was_zero
 
 	mr		r4, r16
 
@@ -1690,19 +1690,19 @@ MPWaitForEvent
 	lwz		r17, KDP.PA_ECB(r1)
 	rlwinm.	r18, r16,  0, 27, 27
 	rlwinm	r16, r16,  2, 26, 29
-	beq+	ReleaseAndReturnZeroFromMPCall
+	beq		ReleaseAndReturnZeroFromMPCall
 
 	lwz		r18,  0x00c8(r17)
 	lwz		r9,  0x0634(r1)
 	cmpwi	r18,  0x00
 	add		r18, r18, r9
-	bne-	MPWaitForEvent_0x84
+	bne		MPWaitForEvent_0x84
 	lwz		r18,  0x00d0(r17)
 	cmpw	r18, r3
 	li		r18,  0x00
 
 ;	r1 = kdp
-	bne+	ReleaseAndReturnZeroFromMPCall
+	bne		ReleaseAndReturnZeroFromMPCall
 	stw		r18,  0x00d0(r17)
 
 ;	r1 = kdp
@@ -1714,7 +1714,7 @@ MPWaitForEvent_0x84
 	li		r19,  0x00
 
 ;	r1 = kdp
-	bne+	ReleaseAndReturnZeroFromMPCall
+	bne		ReleaseAndReturnZeroFromMPCall
 	stwx	r19, r16, r18
 	li		r19,  0x1c
 	li		r9,  0x04
@@ -1722,9 +1722,9 @@ MPWaitForEvent_0x84
 MPWaitForEvent_0xa0
 	lwzx	r8, r19, r18
 	cmpwi	r8,  0x00
-	bne-	MPWaitForEvent_0xb4
+	bne		MPWaitForEvent_0xb4
 	subf.	r19, r9, r19
-	bgt+	MPWaitForEvent_0xa0
+	bgt		MPWaitForEvent_0xa0
 
 MPWaitForEvent_0xb4
 	srwi	r19, r19,  2
@@ -1737,12 +1737,12 @@ MPWaitForEvent_field_10_was_zero
 	mfsprg	r30, 0
 	cmpwi	r5, 0
 	lwz		r19, EWA.PA_CurTask(r30)
-	beq+	ReleaseAndTimeoutMPCall
+	beq		ReleaseAndTimeoutMPCall
 
 ;special case: blue may not block
 	lwz		r16, Task.Flags(r19)
 	rlwinm.	r16, r16, 0, Task.kFlagBlue, Task.kFlagBlue
-	beq-	@bot_blue
+	beq		@bot_blue
 	stw		r3, PSA.BlueSpinningOn(r1)
 	b		ReleaseAndReturnMPCallBlueBlocking
 @bot_blue
@@ -1766,7 +1766,7 @@ MPWaitForEvent_field_10_was_zero
 	addi	r30, r19, Task.Timer
 	cmpw	r5, r16
 	li		r16, 2
-	beq-	@wait_forever				;	never trigger max-wait timers
+	beq		@wait_forever				;	never trigger max-wait timers
 
 	stb		r16, Timer.Kind(r30)
 	stw		r19, Timer.ParentTaskPtr(r30)
@@ -1817,12 +1817,12 @@ MPQueryEvent
 ;	r8 = id
  	bl		LookupID
 	cmpwi	r9, EventGroup.kIDClass
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 
 	mr		r31, r8
 	lwz		r16,  0x0010(r31)
 	cmpwi	r16,  0x00
-	beq+	ReleaseAndTimeoutMPCall
+	beq		ReleaseAndTimeoutMPCall
 
 ;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall
@@ -1850,7 +1850,7 @@ MPSetSWIEvent
 	mr		r8, r3
  	bl		LookupID
 	cmpwi	r9, EventGroup.kIDClass
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 
 	mr		r31, r8
 	li		r17, 1
@@ -1860,8 +1860,8 @@ MPSetSWIEvent
 
 	lwz		r16, EventGroup.SWI(r31)
 
-	beq-	@use_1
-	bgt-	cr1, @use_1
+	beq		@use_1
+	bgt		cr1, @use_1
 
 	mr		r17, r4
 @use_1
@@ -1912,7 +1912,7 @@ NKCreateTimer	;	OUTSIDE REFERER
 ;	r8 = ptr
 
 	mr.		r31, r8
-	beq+	ScrambleMPCall
+	beq		ScrambleMPCall
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
@@ -1923,7 +1923,7 @@ NKCreateTimer	;	OUTSIDE REFERER
 ;	r9 = kind
 	bl		MakeID
 	cmpwi	r8,  0x00
-	bne-	NKCreateTimer_0x48
+	bne		NKCreateTimer_0x48
 	mr		r8, r31
 	bl		PoolFree
 	b		ReleaseAndScrambleMPCall
@@ -1972,12 +1972,12 @@ NKDeleteTimer	;	OUTSIDE REFERER
 	cmpwi	r9, Timer.kIDClass
 
 	mr		r31, r8
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r8, r3
 	bl		DeleteID
 	lwz		r16,  0x0008(r31)
 	cmpwi	r16,  0x00
-	beq-	NKDeleteTimer_0x48
+	beq		NKDeleteTimer_0x48
 	mr		r8, r31
 	bl		DequeueTimer
 
@@ -1985,7 +1985,7 @@ NKDeleteTimer_0x48
 	_AssertAndRelease	PSA.SchLock, scratch=r16
 	lwz		r8,  0x001c(r31)
 	cmpwi	r8,  0x00
-	bnel-	PoolFree
+	bnel	PoolFree
 	mr		r8, r31
 	bl		PoolFree
 	b		ReturnZeroFromMPCall
@@ -2013,20 +2013,20 @@ NKSetTimerNotify
  	bl		LookupID
 	cmpwi	r9, Timer.kIDClass
 	mr		r31, r8
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 
 	lbz		r16, Timer.Kind(r31)
 	cmpwi	r16, 3
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 
 	mr		r8, r4
 	bl		LookupID
 	cmpwi	r9, Semaphore.kIDClass
 	cmpwi	cr2, r9, Queue.kIDClass
-	beq-	@SEMAPHORE
+	beq		@SEMAPHORE
 	cmpwi	r9, EventGroup.kIDClass
-	beq-	cr2, @QUEUE
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	beq		cr2, @QUEUE
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 
 @EVENTGROUP
 	stw		r4, Timer.EventGroupID(r31)
@@ -2076,18 +2076,18 @@ MPArmTimer
  	bl		LookupID
 	cmpwi	r9, Timer.kIDClass
 	mr		r31, r8
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 
 	lbz		r16, Timer.Kind(r31)
 	cmpwi	r16, Timer.kKind3
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 
 
 	;	Disarm if armed
 	lwz		r16, Timer.QueueLLL + LLL.Freeform(r31)
 	cmpwi	r16, 0
 	mr		r8, r31
-	beq-	@no_disarm
+	beq		@no_disarm
 	bl		DequeueTimer
 @no_disarm
 
@@ -2098,21 +2098,21 @@ MPArmTimer
 	lwz		r8, Timer.MessageQueueID(r31)
 	cmpwi	r9, 0
 	cmpwi	cr1, r8, 0
-	bne-	@already_got_note
-	beq-	cr1, @no_queue
+	bne		@already_got_note
+	beq		cr1, @no_queue
 
  	bl		LookupID
 	cmpwi	r9, Queue.kIDClass
-	bne-	@no_queue
+	bne		@no_queue
 
 	lwz		r9, Queue.ReserveCount(r8)
 	li		r8, Message.Size
 	cmpwi	r9, 0
-	bne-	@already_got_notr
+	bne		@already_got_notr
 
 	bl		PoolAllocClear
 	mr.		r30, r8
-	beq+	ReleaseAndScrambleMPCall
+	beq		ReleaseAndScrambleMPCall
 
 	lisori	r8, 'note'
 	stw		r8, Message.LLL + LLL.Signature(r30)
@@ -2127,7 +2127,7 @@ MPArmTimer
 	lwz		r16, ContextBlock.r6(r6)
 	rlwinm.	r9, r16, 0, kMPTimeIsDurationMask
 	mr		r8, r4
-	beq-	@not_duration
+	beq		@not_duration
 	bl		TimebaseTicksPerPeriod
 	mr		r4, r8
 	mr		r5, r9
@@ -2136,7 +2136,7 @@ MPArmTimer
 	lwz		r16,  ContextBlock.r6(r6)
 	rlwinm.	r8, r16, 0, kMPTimeIsDeltaMask
 	mfxer	r17
-	beq-	@not_delta
+	beq		@not_delta
 	lwz		r19, Timer.Time + 4(r31)
 	lwz		r18, Timer.Time(r31)
 	addc	r5, r5, r19
@@ -2152,7 +2152,7 @@ MPArmTimer
 	lwz		r16,  ContextBlock.r6(r6)
 	rlwinm.	r16, r16, 0, kMPPreserveTimerIDMask
 	li		r17, 0
-	beq-	@no_preserve
+	beq		@no_preserve
 	li		r17, 1
 @no_preserve
 	stb		r17, Timer.KeepAfterFiring(r31)
@@ -2187,11 +2187,11 @@ MPCancelTimer
  	bl		LookupID
 	cmpwi	r9, Timer.kIDClass
 	mr		r31, r8
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 
 	lbz		r16, Timer.Byte3(r31)
 	cmpwi	r16, 1
-	bne-	@say_no_time_remained
+	bne		@say_no_time_remained
 
 	lwz		r4, Timer.Time(r31)
 	lwz		r5, Timer.Time + 4(r31)
@@ -2210,7 +2210,7 @@ MPCancelTimer
 	lwz		r16, Timer.QueueLLL + LLL.Freeform(r31)
 	cmpwi	r16, 0
 	mr		r8, r31
-	beq-	@not_queued
+	beq		@not_queued
 	bl		DequeueTimer
 @not_queued
 
@@ -2250,7 +2250,7 @@ MPCreateNotification
 	li		r8, Notification.Size
 	bl		PoolAllocClear
 	mr.		r31, r8
-	beq+	ScrambleMPCall
+	beq		ScrambleMPCall
 
 	lisori	r16, Notification.kSignature
 	stw		r16, Notification.Signature(r31)
@@ -2300,7 +2300,7 @@ MPDeleteNotification
 	cmpwi	r9, Notification.kIDClass
 
 	mr		r31, r8
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r8, r31
 	bl		PoolFree
 	mr		r8, r3
@@ -2328,7 +2328,7 @@ MPCauseNotification
  	bl		LookupID
 	cmpwi	r9, Notification.kIDClass
 	mr		r30, r8
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 
 	bl		CauseNotification
 
@@ -2356,11 +2356,11 @@ CauseNotification
 	lwz		r17,  0x0024(r30)
 	cmplwi	r16,  0x00
 	cmplwi	cr1, r17,  0x00
-	bne-	@0x28
-	bne-	cr1, @0x28
+	bne		@0x28
+	bne		cr1, @0x28
 	lwz		r18,  0x001c(r30)
 	cmplwi	r18,  0x00
-	beq-	@fail_insufficient_resources
+	beq		@fail_insufficient_resources
 @0x28
 
 
@@ -2368,21 +2368,21 @@ CauseNotification
 
 	lwz		r8, Notification.QueueID(r30)
 	cmplwi	r8, 0
-	beq-	@NO_QUEUE
+	beq		@NO_QUEUE
  	bl		LookupID
 	cmpwi	r9, Queue.kIDClass
 	mr		r31, r8
-	bne-	@fail_invalid_id
+	bne		@fail_invalid_id
 
 	lwz		r16, Queue.ReserveCount(r31)
 	cmpwi	r16, 0
 	lwz		r17, Queue.ReservePtr(r31)
-	beq-	@no_notr
+	beq		@no_notr
 
 ;use notr
 	mr.		r8, r17
 	lwz		r17, Message.LLL + LLL.Next(r17)
-	beq-	@fail_insufficient_resources
+	beq		@fail_insufficient_resources
 	stw		r17, Queue.ReservePtr(r31)
 	b		@queue_common
 
@@ -2390,7 +2390,7 @@ CauseNotification
 	li		r8, Message.Size
 	bl		PoolAlloc
 	cmpwi	r8, 0
-	beq-	@fail_unknown_err
+	beq		@fail_unknown_err
 
 @queue_common
 	lwz		r16, Notification.MsgWord1(r30)
@@ -2407,11 +2407,11 @@ CauseNotification
 
 	lwz		r8, Notification.SemaphoreID(r30)
 	cmplwi	r8, 0
-	beq-	@NO_SEMAPHORE
+	beq		@NO_SEMAPHORE
  	bl		LookupID
 	cmpwi	r9, Semaphore.kIDClass
 	mr		r31, r8
-	bne-	@fail_invalid_id
+	bne		@fail_invalid_id
 
 	bl		SignalSemaphore
 @NO_SEMAPHORE
@@ -2421,11 +2421,11 @@ CauseNotification
 
 	lwz		r8, Notification.EventGroupID(r30)
 	cmplwi	r8, 0
-	beq-	@NO_EVENT_GROUP
+	beq		@NO_EVENT_GROUP
  	bl		LookupID
 	cmpwi	r9, EventGroup.kIDClass
 	mr		r31, r8
-	bne-	@fail_invalid_id
+	bne		@fail_invalid_id
 
 	lwz		r8, Notification.EventFlags(r30)
 	bl		SetEvent
@@ -2475,7 +2475,7 @@ MPModifyNotification
 	cmpwi	r9, Notification.kIDClass
 
 	mr		r31, r8
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r8, r4
 
 ;	r8 = id
@@ -2483,10 +2483,10 @@ MPModifyNotification
 	cmpwi	r9, Semaphore.kIDClass
 
 	cmpwi	cr2, r9,  0x04
-	beq-	MPCall_66_0x74
+	beq		MPCall_66_0x74
 	cmpwi	r9,  0x09
-	beq-	cr2, MPCall_66_0x58
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	beq		cr2, MPCall_66_0x58
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	stw		r4,  0x001c(r31)
 	stw		r5,  0x0020(r31)
 
@@ -2533,11 +2533,11 @@ MPCall_128	;	OUTSIDE REFERER
 	cmpwi	r9, Notification.kIDClass
 
 	mr		r31, r8
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	cmpwi	r4,  0x04
 	cmpwi	cr1, r4,  0x09
-	beq-	MPCall_128_0x40
-	beq-	cr1, MPCall_128_0x58
+	beq		MPCall_128_0x40
+	beq		cr1, MPCall_128_0x58
 	b		ReleaseAndReturnParamErrFromMPCall
 
 MPCall_128_0x40
@@ -2585,7 +2585,7 @@ UnblockBlueIfCouldBePolling
 	lwz		r9, PSA.BlueSpinningOn(r1)
 	lwz		r19, PSA.PA_BlueTask(r1)
 	cmpw	r8, r9
-	bnelr-
+	bnelr
 
 	li		r9, -1
 	mflr	r24
@@ -2595,13 +2595,13 @@ UnblockBlueIfCouldBePolling
 	cmpwi	r17, 0
 
 	addi	r16, r19, Task.QueueMember
-	bne-	major_0x0dce8_0x70
+	bne		major_0x0dce8_0x70
 
 	RemoveFromList		r16, scratch1=r17, scratch2=r18
 
 	lbz		r17, Task.Timer + Timer.Byte3(r19)
 	cmpwi	r17, 1
-	bne-	major_0x0dce8_0x60
+	bne		major_0x0dce8_0x60
 	addi	r8, r19, Task.Timer
 	bl		DequeueTimer
 	lwz		r19, PSA.PA_BlueTask(r1)
@@ -2645,28 +2645,28 @@ MPCall_120
 
 	cmpwi	r9, Semaphore.kIDClass
 	cmpwi	cr1, r9, Queue.kIDClass
-	beq-	@SEMAPHORE
-	beq-	cr1, @QUEUE
+	beq		@SEMAPHORE
+	beq		cr1, @QUEUE
 
 	cmpwi	r9, EventGroup.kIDClass
 	cmpwi	cr1, r9, CriticalRegion.kIDClass
-	beq-	@EVENT_GROUP
-	beq-	cr1, @CRITICAL_REGION
+	beq		@EVENT_GROUP
+	beq		cr1, @CRITICAL_REGION
 
 	cmpwi	r9, Notification.kIDClass
 	cmpwi	cr1, r9, AddressSpace.kIDClass
-	beq-	@NOTIFICATION
-	beq-	cr1, @ADDRESS_SPACE
+	beq		@NOTIFICATION
+	beq		cr1, @ADDRESS_SPACE
 
 	b		ReleaseAndReturnParamErrFromMPCall
 
 @NOTIFICATION
 	lisori	r8, Notification.kFirstID
 	cmpw	r8, r4
-	bne+	ReleaseAndReturnParamErrFromMPCall
+	bne		ReleaseAndReturnParamErrFromMPCall
 
 	cmplwi	r5, 0
-	bne-	@notification_not_0
+	bne		@notification_not_0
 
 	;	r5 == 0
 	lisori	r16, Notification.kFirstID
@@ -2685,7 +2685,7 @@ MPCall_120
 
 @notification_not_0
 	cmplwi	r5, 16
-	bne-	@notification_not_16
+	bne		@notification_not_16
 
 	;	r5 == 16
 	lwz		r16, 0x0010(r31)
@@ -2704,7 +2704,7 @@ MPCall_120
 @notification_not_16
 
 	cmplwi	r5, 32
-	bne-	@notification_not_32
+	bne		@notification_not_32
 
 	;	r5 == 32
 	lwz		r16, 0x0020(r31)
@@ -2718,7 +2718,7 @@ MPCall_120
 
 @notification_not_32
 	cmpwi	r5, 40
-	bne+	ReleaseAndReturnParamErrFromMPCall
+	bne		ReleaseAndReturnParamErrFromMPCall
 
 	;	r5 == 40
 	li		r16, 0x00
@@ -2730,9 +2730,9 @@ MPCall_120
 @CRITICAL_REGION
 	lisori	r8, 0x00060001
 	cmpw	r8, r4
-	bne+	ReleaseAndReturnParamErrFromMPCall
+	bne		ReleaseAndReturnParamErrFromMPCall
 	cmplwi	r5, 0x00
-	bne-	@154
+	bne		@154
 	lis		r16, 0x06
 	ori		r16, r16, 0x01
 	stw		r16, ContextBlock.r6(r6)
@@ -2750,19 +2750,19 @@ MPCall_120
 
 @154
 	cmplwi	r5, 0x10
-	bne-	@1a0
+	bne		@1a0
 	addi	r17, r31, 0x00
 	lwz		r18, 0x0008(r31)
 	li		r16, 0x00
 	cmpw	r17, r18
-	beq-	@174
+	beq		@174
 	lwz		r16, -0x0008(r18)
 
 @174
 	stw		r16, ContextBlock.r6(r6)
 	lwz		r16, 0x0018(r31)
 	cmpwi	r16, 0x00
-	beq-	@188
+	beq		@188
 	lwz		r16, 0x0000(r16)
 
 @188
@@ -2777,7 +2777,7 @@ MPCall_120
 
 @1a0
 	cmpwi	r5, 0x1c
-	bne+	ReleaseAndReturnParamErrFromMPCall
+	bne		ReleaseAndReturnParamErrFromMPCall
 	li		r16, 0x00
 	stw		r16, ContextBlock.r10(r6)
 
@@ -2788,9 +2788,9 @@ MPCall_120
 	lis		r8, 0x09
 	ori		r8, r8, 0x01
 	cmpw	r8, r4
-	bne+	ReleaseAndReturnParamErrFromMPCall
+	bne		ReleaseAndReturnParamErrFromMPCall
 	cmplwi	r5, 0x00
-	bne-	@1fc
+	bne		@1fc
 	lis		r16, 0x09
 	ori		r16, r16, 0x01
 	stw		r16, ContextBlock.r6(r6)
@@ -2808,12 +2808,12 @@ MPCall_120
 
 @1fc
 	cmplwi	r5, 0x10
-	bne-	@234
+	bne		@234
 	addi	r17, r31, 0x00
 	lwz		r18, 0x0008(r31)
 	li		r16, 0x00
 	cmpw	r17, r18
-	beq-	@21c
+	beq		@21c
 	lwz		r16, -0x0008(r18)
 
 @21c
@@ -2828,7 +2828,7 @@ MPCall_120
 
 @234
 	cmpwi	r5, 0x18
-	bne+	ReleaseAndReturnParamErrFromMPCall
+	bne		ReleaseAndReturnParamErrFromMPCall
 	li		r16, 0x00
 	stw		r16, ContextBlock.r10(r6)
 
@@ -2839,9 +2839,9 @@ MPCall_120
 	lis		r8, 0x04
 	ori		r8, r8, 0x01
 	cmpw	r8, r4
-	bne+	ReleaseAndReturnParamErrFromMPCall
+	bne		ReleaseAndReturnParamErrFromMPCall
 	cmplwi	r5, 0x00
-	bne-	@290
+	bne		@290
 	lis		r16, 0x04
 	ori		r16, r16, 0x01
 	stw		r16, ContextBlock.r6(r6)
@@ -2859,12 +2859,12 @@ MPCall_120
 
 @290
 	cmplwi	r5, 0x10
-	bne-	@2ec
+	bne		@2ec
 	addi	r17, r31, 0x00
 	lwz		r18, 0x0008(r31)
 	li		r16, 0x00
 	cmpw	r17, r18
-	beq-	@2b0
+	beq		@2b0
 	lwz		r16, -0x0008(r18)
 
 @2b0
@@ -2877,7 +2877,7 @@ MPCall_120
 	addi	r17, r31, 0x10
 	li		r16, 0x00
 	cmpw	r17, r18
-	beq-	@2dc
+	beq		@2dc
 	lwz		r16, 0x0010(r18)
 
 @2dc
@@ -2890,13 +2890,13 @@ MPCall_120
 
 @2ec
 	cmplwi	r5, 0x20
-	bne-	@328
+	bne		@328
 	lwz		r18, 0x0018(r31)
 	addi	r17, r31, 0x10
 	li		r16, 0x00
 	cmpw	r17, r18
 	li		r17, 0x00
-	beq-	@314
+	beq		@314
 	lwz		r16, 0x0014(r18)
 	lwz		r17, 0x0018(r18)
 
@@ -2911,7 +2911,7 @@ MPCall_120
 
 @328
 	cmpwi	r5, 0x28
-	bne+	ReleaseAndReturnParamErrFromMPCall
+	bne		ReleaseAndReturnParamErrFromMPCall
 	li		r16, 0x00
 	stw		r16, ContextBlock.r10(r6)
 
@@ -2922,9 +2922,9 @@ MPCall_120
 	lis		r8, 0x05
 	ori		r8, r8, 0x01
 	cmpw	r8, r4
-	bne+	ReleaseAndReturnParamErrFromMPCall
+	bne		ReleaseAndReturnParamErrFromMPCall
 	cmplwi	r5, 0x00
-	bne-	@384
+	bne		@384
 	lis		r16, 0x05
 	ori		r16, r16, 0x01
 	stw		r16, ContextBlock.r6(r6)
@@ -2942,12 +2942,12 @@ MPCall_120
 
 @384
 	cmplwi	r5, 0x10
-	bne-	@3c4
+	bne		@3c4
 	addi	r17, r31, 0x00
 	lwz		r18, 0x0008(r31)
 	li		r16, 0x00
 	cmpw	r17, r18
-	beq-	@3a4
+	beq		@3a4
 	lwz		r16, -0x0008(r18)
 
 @3a4
@@ -2964,7 +2964,7 @@ MPCall_120
 
 @3c4
 	cmpwi	r5, 0x1c
-	bne+	ReleaseAndReturnParamErrFromMPCall
+	bne		ReleaseAndReturnParamErrFromMPCall
 	li		r16, 0x00
 	stw		r16, ContextBlock.r10(r6)
 
@@ -2974,9 +2974,9 @@ MPCall_120
 @ADDRESS_SPACE
 	lisori	r8, 0x00080001
 	cmpw	r8, r4
-	bne+	ReleaseAndReturnParamErrFromMPCall
+	bne		ReleaseAndReturnParamErrFromMPCall
 	cmplwi	r5, 0x00
-	bne-	@420
+	bne		@420
 	lisori	r16, 0x00080001
 	stw		r16, ContextBlock.r6(r6)
 	lwz		r16, 0x0074(r31)
@@ -2993,7 +2993,7 @@ MPCall_120
 
 @420
 	cmplwi	r5, 0x10
-	bne-	@454
+	bne		@454
 	lwz		r16, 0x0030(r31)
 	stw		r16, ContextBlock.r6(r6)
 	lwz		r16, 0x0034(r31)
@@ -3010,7 +3010,7 @@ MPCall_120
 
 @454
 	cmplwi	r5, 0x20
-	bne-	@488
+	bne		@488
 	lwz		r16, 0x0040(r31)
 	stw		r16, ContextBlock.r6(r6)
 	lwz		r16, 0x0044(r31)
@@ -3027,7 +3027,7 @@ MPCall_120
 
 @488
 	cmplwi	r5, 0x30
-	bne-	@4bc
+	bne		@4bc
 	lwz		r16, 0x0050(r31)
 	stw		r16, ContextBlock.r6(r6)
 	lwz		r16, 0x0054(r31)
@@ -3044,7 +3044,7 @@ MPCall_120
 
 @4bc
 	cmplwi	r5, 0x40
-	bne-	@4f0
+	bne		@4f0
 	lwz		r16, 0x0060(r31)
 	stw		r16, ContextBlock.r6(r6)
 	lwz		r16, 0x0064(r31)
@@ -3061,7 +3061,7 @@ MPCall_120
 
 @4f0
 	cmpwi	r5, 0x50
-	bne+	ReleaseAndReturnParamErrFromMPCall
+	bne		ReleaseAndReturnParamErrFromMPCall
 	li		r16, 0x00
 	stw		r16, ContextBlock.r10(r6)
 

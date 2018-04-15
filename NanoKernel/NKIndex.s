@@ -32,7 +32,7 @@ InitIDIndex
 
 	mr.		r22, r8
 	stw		r8, PSA.IndexPtr(r1)
-	beq+	Local_Panic
+	beq		Local_Panic
 
 	li		r9,  0
 	stw		r9,  KDP.NanoKernelInfo + NKNanoKernelInfo.IDCtr(r1)
@@ -50,7 +50,7 @@ InitIDIndex
 
 	cmpwi	r8,  0
 	stw		r8, Index.IDsPtr(r22)
-	beq+	Local_Panic
+	beq		Local_Panic
 
 	mtlr	r23
 
@@ -82,24 +82,24 @@ MakeID
 	addi	r20, r18,  0x08
 	cmpwi	r18,  0x00
 	add		r22, r22, r20
-	bne-	@_48
+	bne		@_48
 	li		r19,  0x00
 	b		@_c
 
 @_3c
 	add		r20, r20, r19
 	cmpw	r20, r21
-	beq-	@_70
+	beq		@_70
 
 @_48
 	lbz		r23,  0x0000(r22)
 	cmpwi	r23,  0x00
-	beq-	@_f0
+	beq		@_f0
 	addi	r19, r19,  0x01
 	cmpwi	cr1, r19,  0x1fa
 	addi	r22, r22,  0x08
 	lhz		r20,  0x0000(r18)
-	blt+	cr1, @_3c
+	blt		cr1, @_3c
 	addi	r19, r20,  0x200
 	b		@_c
 
@@ -111,7 +111,7 @@ MakeID
 	addi	r19, r19,  0x200
 	rlwinm.	r20, r19, 25, 23, 29
 	li		r8,  0x00
-	beqlr-
+	beqlr
 	mflr	r23
 	li		r8,  0xfd8
 
@@ -123,7 +123,7 @@ MakeID
 	mr.		r18, r8
 	mtlr	r23
 	li		r8,  0x00
-	beqlr-
+	beqlr
 	lwz		r17, -0x0a98(r1)
 	lhz		r19,  0x0002(r17)
 	addi	r19, r19,  0x200
@@ -185,14 +185,14 @@ DeleteID
 	add		r22, r22, r20
 	clrlwi	r20, r8,  0x10
 	li		r8,  0x00
-	bgelr-	cr1
-	beqlr-
+	bgelr	cr1
+	beqlr
 	lbz		r19,  0x0000(r22)
 	lhz		r23,  0x0002(r22)
 	cmpwi	r19,  0x00
 	cmpw	cr1, r23, r20
-	beqlr-
-	bnelr-	cr1
+	beqlr
+	bnelr	cr1
 	lwz		r9,  KDP.NanoKernelInfo + NKNanoKernelInfo.IDCtr(r1)
 	addi	r9, r9, -0x01
 	stw		r9,  KDP.NanoKernelInfo + NKNanoKernelInfo.IDCtr(r1)
@@ -224,14 +224,14 @@ LookupID
 	clrlwi	r20, r8,  0x10
 	li		r8,  0x00
 	li		r9,  0x00
-	bgelr-	cr1
-	beqlr-
+	bgelr	cr1
+	beqlr
 	lbz		r19,  0x0000(r22)
 	lhz		r23,  0x0002(r22)
 	cmpwi	r19,  0x00
 	cmpw	cr1, r23, r20
-	beqlr-
-	bnelr-	cr1
+	beqlr
+	bnelr	cr1
 	lwz		r8,  0x0004(r22)
 	mr		r9, r19
 	blr
@@ -255,40 +255,40 @@ GetNextIDOfClass
 	addi	r20, r18,  0x08
 	slwi	r22, r19,  3
 	li		r8,  0x00
-	bgelr-	cr1
-	beqlr-
+	bgelr	cr1
+	beqlr
 	add		r22, r22, r20
-	bne-	cr2, @_48
+	bne		cr2, @_48
 
 @_3c
 	lbz		r23,  0x0000(r22)
 	cmpwi	r23,  0x00
-	bne-	@_8c
+	bne		@_8c
 
 @_48
 	addi	r19, r19,  0x01
 	cmpwi	r19,  0x1fa
 	addi	r22, r22,  0x08
-	blt+	@_3c
+	blt		@_3c
 	lhz		r20,  0x0000(r18)
 	addi	r20, r20,  0x200
 	rlwinm.	r20, r20, 25, 23, 29
 	lwz		r18, -0x0a98(r1)
-	beqlr-
+	beqlr
 	addi	r20, r20,  0x08
 	li		r19,  0x00
 	lwzx	r18, r18, r20
 	cmpwi	r18,  0x00
 	addi	r22, r18,  0x08
-	bne+	@_3c
+	bne		@_3c
 	li		r8,  0x00
 	blr
 
 @_8c
 	cmpwi	r9,  0x00
 	cmpw	cr1, r9, r23
-	beq-	@_9c
-	bne+	cr1, @_48
+	beq		@_9c
+	bne		cr1, @_48
 
 @_9c
 	lhz		r20,  0x0000(r18)

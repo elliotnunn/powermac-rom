@@ -33,7 +33,7 @@ panic_common
 
 	mfspr	r0, pvr
 	rlwinm.	r0, r0,  0,  0, 14
-	bne-	@no_mq
+	bne		@no_mq
 	dialect	POWER
 	mfmq	r0
 	dialect	PowerPC
@@ -58,7 +58,7 @@ panic_common
 
 	mfpvr	r0
 	rlwinm.	r0, r0,  0,  0, 14
-	bne-	@not_601
+	bne		@not_601
 
 @rtcloop
 	dialect	POWER
@@ -67,7 +67,7 @@ panic_common
 	mfrtcu	r3
 	dialect	PowerPC
 	cmpw	r0, r3
-	bne+	@rtcloop
+	bne		@rtcloop
 
 	stw		r0, KDP.ThudSavedTBU(r1)
 	stw		r2, KDP.ThudSavedTB(r1)
@@ -79,7 +79,7 @@ panic_common
 	mftb	r2
 	mftbu	r3
 	cmpw	r0, r3
-	bne+	@tbloop
+	bne		@tbloop
 	stw		r0, KDP.ThudSavedTBU(r1)
 	stw		r2, KDP.ThudSavedTB(r1)
 @end_if_601
@@ -172,7 +172,7 @@ panic_common
 	lwz		r0,  0x08fc(r1)
 	stfd	f31,  0x08fc(r1)
 	stw		r0,  0x08fc(r1)
-	bne-	cr1, @0x260
+	bne		cr1, @0x260
 
 	if		&TYPE('NKDebugShim') != 'UNDEFINED'
 			b		@go_here_to_use_saved_debug_command
@@ -190,7 +190,7 @@ panic_common
 
 ;	gets kdp from print!!!
 	cmpwi	r8, -0x01
-	bne-	@0x260
+	bne		@0x260
 	b		@0x23c
 
 @0x260
@@ -212,13 +212,13 @@ panic_common
 @input_busywait
 	bl		getchar
 	cmpwi	r8, -1
-	beq+	@input_busywait
+	beq		@input_busywait
 
 	mr		r16, r8
 	cmpwi	r16, 8				; backspace
 	cmpwi	cr1, r17, 0
-	bne-	@not_backspace
-	ble+	cr1, @input_busywait
+	bne		@not_backspace
+	ble		cr1, @input_busywait
 
 
 	;	Backspace, wipe position, then backspace again!
@@ -236,7 +236,7 @@ panic_common
 	;	If 
 	cmpwi	cr2, r17, 95
 	addi	r18, r1, -0x960			;	prepare to copy the line!
-	blt-	cr2, @short_line
+	blt		cr2, @short_line
 	_log	'^b'
 	b		@input_busywait
 
@@ -249,7 +249,7 @@ panic_common
 
 	cmpwi	r16, 13
 	stbx	r16, r17, r18
-	bne+	@0x30c
+	bne		@0x30c
 	li		r16,  0x00
 	stbx	r16, r17, r18
 	_log	'^n'
@@ -268,7 +268,7 @@ panic_common
 ;	r16 = char
 
 	cmpwi	r16,  0x00
-	beq+	@prompt
+	beq		@prompt
 	bl		@load_commands
 	mflr	r16
 	bl		@load_tbl
@@ -280,7 +280,7 @@ panic_common
 ;	cr0 = found
 ;	r17 = ptr to lut entry
 
-	bne-	@bad_command
+	bne		@bad_command
 	bl		@load_tbl
 	mflr	r16
 	lwz		r17,  0x0000(r17)
@@ -339,9 +339,9 @@ panic_common
 ;	r16 = char
 
 	cmpwi	r16,  0x00
-	beq-	@missing_physical_addr
+	beq		@missing_physical_addr
 	bl		major_0x187b0
-	bne-	@bad_length_1
+	bne		@bad_length_1
 	mr		r30, r16
 	li		r31,  0x10
 
@@ -351,9 +351,9 @@ panic_common
 ;	r16 = char
 
 	cmpwi	r16,  0x00
-	beq-	@0x5e0
+	beq		@0x5e0
 	bl		major_0x187b0
-	bne-	@bad_length_1
+	bne		@bad_length_1
 	mr		r31, r16
 
 @0x5e0
@@ -381,9 +381,9 @@ panic_common
 ;	r16 = char
 
 	cmpwi	r16,  0x00
-	beq-	@missing_logical_addr
+	beq		@missing_logical_addr
 	bl		major_0x187b0
-	bne-	@bad_length_2
+	bne		@bad_length_2
 	mr		r30, r16
 	li		r31,  0x10
 
@@ -393,9 +393,9 @@ panic_common
 ;	r16 = char
 
 	cmpwi	r16,  0x00
-	beq-	@0x6b0
+	beq		@0x6b0
 	bl		major_0x187b0
-	bne-	@bad_length_2
+	bne		@bad_length_2
 	mr		r31, r16
 
 @0x6b0
@@ -422,9 +422,9 @@ panic_common
 
 	cmpwi	r16,  0x00
 	lwz		r31,  0x0904(r1)
-	beq-	@0x748
+	beq		@0x748
 	bl		major_0x187b0
-	bne-	@bad_resume_address
+	bne		@bad_resume_address
 	stw		r16,  0x0904(r1)
 
 @0x748
@@ -454,7 +454,7 @@ panic_common
 ;	r16 = char
 
 	cmpwi	r16,  0x00
-	beq-	@missing_opaque_id
+	beq		@missing_opaque_id
 	bl		@load_id_args
 	mflr	r16
 	li		r17,  0x00
@@ -465,7 +465,7 @@ panic_common
 ;	cr0 = found
 ;	r17 = ptr to lut entry
 
-	bne-	@0x884
+	bne		@0x884
 	li		r29,  0x00
 	li		r30,  0x00
 	srwi	r31, r17,  2
@@ -475,24 +475,24 @@ panic_common
 	mr		r9, r31
 	bl		GetNextIDOfClass
 	mr.		r30, r8
-	beq-	@0x868
+	beq		@0x868
 	mr		r8, r8
 	bl		Printw
 	addi	r29, r29,  0x01
 	andi.	r29, r29,  0x07
-	bne+	@0x82c
+	bne		@0x82c
 	_log	'^n'
 	b		@0x82c
 
 @0x868
 	cmpwi	r29,  0x00
-	beq+	@prompt
+	beq		@prompt
 	_log	'^n'
 	b		@prompt
 
 @0x884
 	bl		major_0x187b0
-	bne-	@bad_opaque_id
+	bne		@bad_opaque_id
 	mr		r30, r16
 	mr		r8, r16
 
@@ -511,7 +511,7 @@ panic_common
 	add		r8, r17, r18
 	bl		PrintS
 	cmpwi	r9,  0x00
-	beq-	@0x978
+	beq		@0x978
 	_log	' at '
 	mr		r8, r31
 	bl		Printw
@@ -684,12 +684,12 @@ panic_common
 	lwz		r17,  0x07b4(r1)
 	rlwinm	r17, r17, 16, 16, 27
 	cmpwi	r17,  0x6800
-	bne-	major_0x18040_0x100
+	bne		major_0x18040_0x100
 	lwz		r17,  0x071c(r1)
 	srwi	r17, r17, 16
 	andi.	r17, r17,  0xffa0
 	cmpwi	r17,  0x2a0
-	bne-	major_0x18040_0x64
+	bne		major_0x18040_0x64
 	_log	'Caused by emulator termination request^n'
 	b		major_0x18040_0x9c
 
@@ -702,8 +702,8 @@ major_0x18040_0x9c
 	subf	r17, r18, r17
 	cmpwi	r17,  0x100
 	cmpwi	cr1, r17, -0x100
-	bgt-	major_0x18040_0x100
-	blt-	cr1, major_0x18040_0x100
+	bgt		major_0x18040_0x100
+	blt		cr1, major_0x18040_0x100
 	_log	'Looks like interrupt stack overflow by os or application^n'
 
 major_0x18040_0x100
@@ -723,8 +723,8 @@ print_xpt_info	;	OUTSIDE REFERER
 	bl		Printw
 	subf.	r21, r18, r20
 	cmplw	cr1, r20, r19
-	blt-	print_xpt_info_0x84
-	bge-	cr1, print_xpt_info_0x84
+	blt		print_xpt_info_0x84
+	bge		cr1, print_xpt_info_0x84
 	_log	'( NK+'
 	mr		r8, r21
 	bl		Printw
@@ -739,8 +739,8 @@ print_xpt_info_0x84
 	mfspr	r8, srr0
 	subf.	r21, r18, r8
 	cmplw	cr1, r8, r19
-	blt-	print_xpt_info_0xf8
-	bge-	cr1, print_xpt_info_0xf8
+	blt		print_xpt_info_0xf8
+	bge		cr1, print_xpt_info_0xf8
 	_log	'( NK+'
 	mr		r8, r21
 	bl		Printw
@@ -821,7 +821,7 @@ print_segment_registers_0x28
 	mfsrin	r8, r18
 	addis	r18, r18,  0x1000
 	bl		Printw
-	bdnz+	print_segment_registers_0x28
+	bdnz	print_segment_registers_0x28
 	_log	'^n sr8-sr15 '
 	li		r17,  0x08
 	mtctr	r17
@@ -830,7 +830,7 @@ print_segment_registers_0x5c
 	mfsrin	r8, r18
 	addis	r18, r18,  0x1000
 	bl		Printw
-	bdnz+	print_segment_registers_0x5c
+	bdnz	print_segment_registers_0x5c
 	_log	'^n'
 	mtlr	r16
 	blr
@@ -847,7 +847,7 @@ print_gprs	;	OUTSIDE REFERER
 print_gprs_0x28
 	lwzu	r8,  0x0004(r17)
 	bl		Printw
-	bdnz+	print_gprs_0x28
+	bdnz	print_gprs_0x28
 	_log	'^n r8-r15   '
 	li		r18,  0x08
 	mtctr	r18
@@ -855,7 +855,7 @@ print_gprs_0x28
 print_gprs_0x58
 	lwzu	r8,  0x0004(r17)
 	bl		Printw
-	bdnz+	print_gprs_0x58
+	bdnz	print_gprs_0x58
 	_log	'^n r16-r23  '
 	li		r18,  0x08
 	mtctr	r18
@@ -863,7 +863,7 @@ print_gprs_0x58
 print_gprs_0x88
 	lwzu	r8,  0x0004(r17)
 	bl		Printw
-	bdnz+	print_gprs_0x88
+	bdnz	print_gprs_0x88
 	_log	'^n r24-r31  '
 	li		r18,  0x08
 	mtctr	r18
@@ -871,7 +871,7 @@ print_gprs_0x88
 print_gprs_0xb8
 	lwzu	r8,  0x0004(r17)
 	bl		Printw
-	bdnz+	print_gprs_0xb8
+	bdnz	print_gprs_0xb8
 	_log	'^n'
 	mtlr	r16
 	blr
@@ -902,24 +902,24 @@ print_memory_0x8
 print_memory_0x60
 	lbzu	r8,  0x0001(r16)
 	cmpwi	r8,  0xff
-	beq-	print_memory_0x74
+	beq		print_memory_0x74
 	cmpwi	r8,  0x20
-	bgt-	print_memory_0x78
+	bgt		print_memory_0x78
 
 print_memory_0x74
 	li		r8,  0x20
 
 print_memory_0x78
 	bl		Printc
-	bdnz+	print_memory_0x60
+	bdnz	print_memory_0x60
 	_log	'*^n'
 	addi	r16, r16,  0x01
 	addi	r17, r17, -0x01
 	bl		getchar
 	cmpwi	r8, -0x01
-	bne-	print_memory_0xb0
+	bne		print_memory_0xb0
 	cmpwi	r17,  0x00
-	bne+	print_memory_0x8
+	bne		print_memory_0x8
 
 print_memory_0xb0
 	_log	'^n'
@@ -941,8 +941,8 @@ print_memory_logical_0x8
 print_memory_logical_0x24
 	mr		r27, r16
 	bl		PagingFunc1
-	beq-	print_memory_logical_0x5c
-	blt-	print_memory_logical_0x48
+	beq		print_memory_logical_0x5c
+	blt		print_memory_logical_0x48
 	_log	'..'
 	b		print_memory_logical_0x6c
 
@@ -960,13 +960,13 @@ print_memory_logical_0x6c
 	addi	r16, r16,  0x01
 	addi	r19, r19, -0x01
 	andi.	r8, r19,  0x03
-	bne-	print_memory_logical_0x84
+	bne		print_memory_logical_0x84
 	li		r8,  0x20
 	bl		Printc
 
 print_memory_logical_0x84
 	cmpwi	r19,  0x00
-	bgt+	print_memory_logical_0x24
+	bgt		print_memory_logical_0x24
 	_log	'  *'
 	li		r8,  0x10
 	addi	r16, r16, -0x10
@@ -976,14 +976,14 @@ print_memory_logical_0xac
 	mr		r27, r16
 	bl		PagingFunc1
 	li		r8,  0x20
-	bne-	print_memory_logical_0xdc
+	bne		print_memory_logical_0xdc
 	bl		PagingFunc4
 	rlwimi	r31, r27,  0, 20, 31
 	lbz		r8,  0x0000(r31)
 	cmpwi	r8,  0xff
-	beq-	print_memory_logical_0xd8
+	beq		print_memory_logical_0xd8
 	cmpwi	r8,  0x20
-	bgt-	print_memory_logical_0xdc
+	bgt		print_memory_logical_0xdc
 
 print_memory_logical_0xd8
 	li		r8,  0x20
@@ -991,14 +991,14 @@ print_memory_logical_0xd8
 print_memory_logical_0xdc
 	bl		Printc
 	addi	r16, r16,  0x01
-	bdnz+	print_memory_logical_0xac
+	bdnz	print_memory_logical_0xac
 	_log	'*^n'
 	addi	r17, r17, -0x01
 	bl		getchar
 	cmpwi	r8, -0x01
-	bne-	print_memory_logical_0x114
+	bne		print_memory_logical_0x114
 	cmpwi	r17,  0x00
-	bne+	print_memory_logical_0x8
+	bne		print_memory_logical_0x8
 
 print_memory_logical_0x114
 	_log	'^n'
@@ -1023,15 +1023,15 @@ cmd_lookup_0xc
 	lbzu	r20,  0x0001(r15)
 	cmpwi	r21,  0xff
 	cmpwi	cr1, r21,  0x00
-	beq-	cmd_lookup_0x44
-	beq-	cr1, cmd_lookup_0x50
+	beq		cmd_lookup_0x44
+	beq		cr1, cmd_lookup_0x50
 	cmpw	r20, r21
-	beq+	cmd_lookup_0xc
+	beq		cmd_lookup_0xc
 
 cmd_lookup_0x2c
 	lbzu	r21,  0x0001(r16)
 	cmpwi	r21,  0x00
-	bne+	cmd_lookup_0x2c
+	bne		cmd_lookup_0x2c
 
 cmd_lookup_0x38
 	addi	r17, r17,  0x04
@@ -1045,9 +1045,9 @@ cmd_lookup_0x44
 
 cmd_lookup_0x50
 	cmpwi	r20,  0x20
-	beqlr-
+	beqlr
 	cmpwi	r20,  0x00
-	beqlr-
+	beqlr
 	b		cmd_lookup_0x38
 
 
@@ -1063,7 +1063,7 @@ next_cmd_word	;	OUTSIDE REFERER
 next_cmd_word_0x4
 	lbzu	r16,  0x0001(r15)
 	cmpwi	r16,  0x20
-	beq+	next_cmd_word_0x4
+	beq		next_cmd_word_0x4
 	blr
 
 
@@ -1076,8 +1076,8 @@ major_0x187b0_0x8
 	lbzu	r17,  0x0001(r15)
 	cmplwi	r17,  0x30
 	cmplwi	cr1, r17,  0x39
-	blt-	major_0x187b0_0x28
-	bgt-	cr1, major_0x187b0_0x28
+	blt		major_0x187b0_0x28
+	bgt		cr1, major_0x187b0_0x28
 	slwi	r16, r16,  4
 	rlwimi	r16, r17,  0, 28, 31
 	b		major_0x187b0_0x8
@@ -1085,8 +1085,8 @@ major_0x187b0_0x8
 major_0x187b0_0x28
 	cmplwi	r17,  0x61
 	cmplwi	cr1, r17,  0x66
-	blt-	major_0x187b0_0x48
-	bgt-	cr1, major_0x187b0_0x48
+	blt		major_0x187b0_0x48
+	bgt		cr1, major_0x187b0_0x48
 	addi	r17, r17, -0x57
 	slwi	r16, r16,  4
 	rlwimi	r16, r17,  0, 28, 31
@@ -1095,8 +1095,8 @@ major_0x187b0_0x28
 major_0x187b0_0x48
 	cmplwi	r17,  0x41
 	cmplwi	cr1, r17,  0x46
-	blt-	major_0x187b0_0x68
-	bgt-	cr1, major_0x187b0_0x68
+	blt		major_0x187b0_0x68
+	bgt		cr1, major_0x187b0_0x68
 	addi	r17, r17, -0x37
 	slwi	r16, r16,  4
 	rlwimi	r16, r17,  0, 28, 31
@@ -1104,7 +1104,7 @@ major_0x187b0_0x48
 
 major_0x187b0_0x68
 	cmpwi	r17,  0x00
-	beqlr-
+	beqlr
 	cmpwi	r17,  0x20
 	blr
 
@@ -1199,7 +1199,7 @@ prereturn	;	OUTSIDE REFERER
 	mfpvr	r0
 	rlwinm.	r0, r0,  0,  0, 14
 
-	bne-	@not_601
+	bne		@not_601
 	lwz		r0,  0x0784(r1)
 	mtspr	mq, r0
 @not_601

@@ -86,19 +86,19 @@ convert_pmdts_to_areas	;	OUTSIDE REFERER
 	;	Based on those flags, do one of two things
 	cmplwi	r8,      0
 	cmplwi	cr1, r8, $800 | $400
-	beq-	@pmdt_flags_are_zero
-	beq-	cr1, @pmdt_flags_are_c00
+	beq		@pmdt_flags_are_zero
+	beq		cr1, @pmdt_flags_are_c00
 
 	;	Else if not a full-segment PMDT, next PMDT
 	cmplwi	cr2, r15,  0x0000
 	cmplwi	cr3, r16,  0xffff
-	bne+	cr2, @next_pmdt
-	bne+	cr3, @next_pmdt
+	bne		cr2, @next_pmdt
+	bne		cr3, @next_pmdt
 
 	;	Else if there are segments remaining (16 total), next segment.
 	addis	r26, r26, 0x1000
 	cmplwi	r26, 0					; once it wraps to zero, we're done
-	bne+	@next_segment_entry
+	bne		@next_segment_entry
 
 	;	Else create special one-page Areas to catch naughty pointer derefs,
 	;	then return.
@@ -108,7 +108,7 @@ convert_pmdts_to_areas	;	OUTSIDE REFERER
 		li		r8, Area.Size
 		bl		PoolAllocClear
 		mr.		r31, r8
-		beq+	Local_Panic
+		beq		Local_Panic
 
 		lwz		r8, EWA.PA_CurAddressSpace(r1)
 		stw		r8, Area.AddressSpacePtr(r31)
@@ -132,7 +132,7 @@ convert_pmdts_to_areas	;	OUTSIDE REFERER
 		bl		createarea
 
 		cmpwi	r9, noErr
-		beq-	@success_68f168f1
+		beq		@success_68f168f1
 		mr		r8, r31
 		bl		PoolFree
 @success_68f168f1
@@ -143,7 +143,7 @@ convert_pmdts_to_areas	;	OUTSIDE REFERER
 		li		r8, Area.Size
 		bl		PoolAllocClear
 		mr.		r31, r8
-		beq+	Local_Panic
+		beq		Local_Panic
 
 		lwz		r8, EWA.PA_CurAddressSpace(r1)
 		stw		r8, Area.AddressSpacePtr(r31)
@@ -167,7 +167,7 @@ convert_pmdts_to_areas	;	OUTSIDE REFERER
 		bl		createarea
 
 		cmpwi	r9, noErr
-		beq-	@success_deadbeef
+		beq		@success_deadbeef
 		mr		r8, r31
 		bl		PoolFree
 @success_deadbeef
@@ -189,11 +189,11 @@ convert_pmdts_to_areas	;	OUTSIDE REFERER
 	;	Apparently other iterations leave this to find?
 		lwz		r8, EWA.SpacesDeferredAreaPtr(r1)
 		cmpwi	r8, 0
-		beq-	@thing_is_zero
+		beq		@thing_is_zero
 
 		bl		createarea
 		cmpwi	r9, noErr
-		bne+	Local_Panic
+		bne		Local_Panic
 
 		li		r8, 0
 		stw		r8, EWA.SpacesDeferredAreaPtr(r1)
@@ -204,7 +204,7 @@ convert_pmdts_to_areas	;	OUTSIDE REFERER
 	li		r8, Area.Size
 	bl		PoolAllocClear
 	mr.		r31, r8
-	beq+	Local_Panic
+	beq		Local_Panic
 
 	;	Reload PMDT details
 	lwz		r17, PMDT.PBaseAndFlags(r25)
@@ -239,7 +239,7 @@ convert_pmdts_to_areas	;	OUTSIDE REFERER
 	rlwinm	r9, r17,  0,  0, 19
 	stw		r9,  0x0070(r31)
 	andi.	r16, r17,  0x03
-	bne-	@_20c
+	bne		@_20c
 	ori		r17, r17,  0x02
 @_20c
 
@@ -260,7 +260,7 @@ convert_pmdts_to_areas	;	OUTSIDE REFERER
 	bl		createarea
 	cmpwi	r9, noErr
 	mr		r31, r8
-	beq+	@next_pmdt
+	beq		@next_pmdt
 
 	;	If CreateArea failed, assume that it was due to overlap with another Area.
 
@@ -278,10 +278,10 @@ convert_pmdts_to_areas	;	OUTSIDE REFERER
 		stw		r17, EWA.SpacesSavedAreaBase(r1)	; ???
 		stw		r16, Area.Length(r31)				; we will try again, with no overlap
 
-		beq-	@found_area_has_same_base
+		beq		@found_area_has_same_base
 
 		;	If FoundArea < FailedArea, panic (impossible for FindAreaAbove to return this)
-			bltl+	Local_Panic							; below would be impossible
+			bltl	Local_Panic							; below would be impossible
 
 		;	If AboveArea > FailedArea, create NewArea (=> r30)
 			mr		r8, r31
@@ -289,19 +289,19 @@ convert_pmdts_to_areas	;	OUTSIDE REFERER
 
 			cmpwi	r9, noErr							; strike three
 			mr		r30, r8
-			bnel+	Local_Panic
+			bnel	Local_Panic
 
 			;	If AboveArea.LogicalEnd >= FailedArea.LogicalEnd then continue to next PMDT.
 				lwz		r15, Area.LogicalEnd(r24)
 				lwz		r16, EWA.SpacesSavedAreaBase(r1)
 				subf.	r16, r15, r16
-				ble+	@next_pmdt
+				ble		@next_pmdt
 
 			;	Else replace FailedArea with an Area copied from NewArea
 					li		r8, Area.Size
 					bl		PoolAllocClear
 					mr.		r31, r8
-					beq+	Local_Panic
+					beq		Local_Panic
 
 					li		r8, Area.Size - 4
 @area_copy_loop
@@ -309,7 +309,7 @@ convert_pmdts_to_areas	;	OUTSIDE REFERER
 					stwx	r9, r8, r31
 					cmpwi	r8, 0
 					subi	r8, r8, 4
-					bgt+	@area_copy_loop
+					bgt		@area_copy_loop
 @found_area_has_same_base
 
 		;	Else (AboveArea == ThisArea), do nothing special (endif)
@@ -321,7 +321,7 @@ convert_pmdts_to_areas	;	OUTSIDE REFERER
 		lwz		r16, EWA.SpacesSavedAreaBase(r1)		; this is FailedArea.LogicalEnd
 		subf.	r16, r15, r16
 		addi	r15, r15, 1
-		blel+	Local_Panic
+		blel	Local_Panic
 
 		stw		r16, Area.Length(r31)
 		stw		r15, Area.LogicalBase(r31)
@@ -339,7 +339,7 @@ convert_pmdts_to_areas	;	OUTSIDE REFERER
 	li		r8, Area.Size
 	bl		PoolAllocClear
 	mr.		r31, r8
-	beq+	Local_Panic
+	beq		Local_Panic
 
 	lwz		r17,  0x0004(r25)
 	lhz		r15,  0x0000(r25)
@@ -372,26 +372,26 @@ convert_pmdts_to_areas	;	OUTSIDE REFERER
 	lwz		r9, -0x0430(r1)
 	cmpwi	r9, noErr
 
-	bgt-	@_374
+	bgt		@_374
 	ori		r8, r8,  0x80
 @_374
 
 	stw		r8, Area.Flags(r31)
 	cmpwi	r15,  0x00
 
-	bne-	@_388
+	bne		@_388
 	stw		r31, EWA.SpacesDeferredAreaPtr(r1)
 	b		@next_pmdt
 @_388
 
 	lwz		r18, EWA.SpacesDeferredAreaPtr(r1)
 	cmpwi	r18,  0x00
-	beq-	@_3c8
+	beq		@_3c8
 	lwz		r8,  0x0024(r18)
 	lwz		r9,  0x002c(r18)
 	add		r19, r8, r9
 	cmplw	r19, r15
-	bne-	@_3c8
+	bne		@_3c8
 	add		r9, r9, r16
 	addi	r19, r9, -0x01
 	stw		r9,  0x002c(r18)
@@ -408,7 +408,7 @@ convert_pmdts_to_areas	;	OUTSIDE REFERER
 	mr		r8, r31
 	bl		createarea
 	cmpwi	r9, noErr
-	bne+	Local_Panic
+	bne		Local_Panic
 	b		@next_pmdt
 
 
@@ -442,7 +442,7 @@ KCGetPageSizeClasses	;	OUTSIDE REFERER
 
 KCGetPageSize	;	OUTSIDE REFERER
 	cmpwi	r3,  0x01
-	bne+	ReturnParamErrFromMPCall
+	bne		ReturnParamErrFromMPCall
 	lwz		r3,  0x0f30(r1)
 	b		CommonMPCallReturnPath
 
@@ -460,12 +460,12 @@ MPCall_70	;	OUTSIDE REFERER
 	lwz		r9, Area.AddressSpacePtr(r17)
 	lwz		r16,  0x0008(r9)
 	rlwinm.	r16, r16,  0, 30, 30
-	bne+	ReleaseAndReturnMPCallOOM
+	bne		ReleaseAndReturnMPCallOOM
 	bl		NKCreateAddressSpaceSub
 	_AssertAndRelease	PSA.SchLock, scratch=r16
 	mr.		r3, r8
 	li		r4,  0x00
-	bne+	CommonMPCallReturnPath
+	bne		CommonMPCallReturnPath
 	lwz		r4,  0x0000(r9)
 	b		CommonMPCallReturnPath
 
@@ -483,7 +483,7 @@ NKCreateAddressSpaceSub
 	mflr	r30
 
 	;	Use the motherboard coherence group if none is provided in r8
-	bne-	@cgrp_provided
+	bne		@cgrp_provided
 	mfsprg	r15, 0
 	lwz		r28, EWA.CPUBase + CPU.LLL + LLL.Freeform(r15)
 
@@ -494,7 +494,7 @@ NKCreateAddressSpaceSub
 
 	cmpwi	r9, CoherenceGroup.kIDClass
 	mr		r28, r8
-	bne-	@fail_notcgrp
+	bne		@fail_notcgrp
 	lwz		r28, CoherenceGroup.LLL + LLL.Next(r28)
 
 @got_cgrp
@@ -521,7 +521,7 @@ NKCreateAddressSpaceSub
 	li		r8, AddressSpace.Size
 	bl		PoolAllocClear
 	mr.		r31, r8
-	beq-	@fail_OOM
+	beq		@fail_OOM
 
 
 	;	Give the addr spc a copy of the SpecialPtr of its parent cgrp
@@ -533,7 +533,7 @@ NKCreateAddressSpaceSub
 	bl		MakeID
 
 	cmpwi	r8, 0x00
-	beq-	@fail_MakeID
+	beq		@fail_MakeID
 
 	stw		r8, AddressSpace.ID(r31)
 
@@ -542,7 +542,7 @@ NKCreateAddressSpaceSub
 	lwz		r16, CoherenceGroup.Incrementer(r28)
 	addi	r16, r16, 1
 	clrlwi.	r16, r16, 12
-	beq-	@fail_toomanycalls
+	beq		@fail_toomanycalls
 	stw		r16, CoherenceGroup.Incrementer(r28)
 
 
@@ -559,7 +559,7 @@ NKCreateAddressSpaceSub
 	rlwimi	r16, r17, 18, 8, 11		; = index (15, 14, 13...) << 20
 	stwx	r16, r17, r18
 	addi	r17, r17, -4
-	bne+	@fill_loop
+	bne		@fill_loop
 
 
 	;	Sign the addr spc struct
@@ -580,7 +580,7 @@ NKCreateAddressSpaceSub
 		li		r8, Area.Size
 		bl		PoolAllocClear
 		mr.		r29, r8
-		beq-	@fail_OOM_again
+		beq		@fail_OOM_again
 
 		;	Sign the Area
 		lisori	r8, Area.kSignature
@@ -658,19 +658,19 @@ MPCall_71	;	OUTSIDE REFERER
  	bl		LookupID
 	cmpwi	r9, AddressSpace.kIDClass
 
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
 	lwz		r16, Area.ProcessID(r31)
 	cmpwi	r16,  0x00
-	bne+	ReleaseAndReturnMPCallOOM
+	bne		ReleaseAndReturnMPCallOOM
 	addi	r16, r31,  0x10
 	lwz		r17,  0x0018(r31)
 	cmpw	r16, r17
-	bne+	ReleaseAndReturnMPCallOOM
+	bne		ReleaseAndReturnMPCallOOM
 	addi	r16, r31,  0x20
 	lwz		r17, Area.LogicalEnd(r31)
 	cmpw	r16, r17
-	bne+	ReleaseAndReturnMPCallOOM
+	bne		ReleaseAndReturnMPCallOOM
 	lwz		r8,  0x0074(r31)
 
 ;	r8 = id
@@ -732,17 +732,17 @@ KCSetTaskAddressSpace	;	OUTSIDE REFERER
 	bl		LookupID
 	mr		r31, r8
 	cmpwi	r9, Task.kIDClass
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 
 	lwz		r16, Task.Flags(r31)
 	mtcr	r16
 
 	li		r3, kMPTaskAbortedErr
-	beq+	cr7, ReleaseAndReturnMPCall
-	bne+	cr5, ReleaseAndReturnMPCallOOM
+	beq		cr7, ReleaseAndReturnMPCall
+	bne		cr5, ReleaseAndReturnMPCallOOM
 	lbz		r16,  0x0018(r31)
 	cmpwi	r16,  0x00
-	bne+	ReleaseAndReturnMPCallOOM
+	bne		ReleaseAndReturnMPCallOOM
 	mr		r8, r4
 
 ;	r8 = id
@@ -754,9 +754,9 @@ KCSetTaskAddressSpace	;	OUTSIDE REFERER
 	lwz		r16,  0x0060(r31)
 	cmpwi	r9,  0x08
 	lwz		r17,  0x0074(r30)
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	cmpw	r16, r17
-	bne+	ReleaseAndReturnMPCallOOM
+	bne		ReleaseAndReturnMPCallOOM
 	lwz		r17,  0x0070(r31)
 	lwz		r16,  0x000c(r17)
 	addi	r16, r16, -0x01
@@ -798,20 +798,20 @@ MPCreateArea
 	mr.		r8, r3
 	mfsprg	r28, 0
 	lwz		r30, EWA.PA_CurAddressSpace(r28)
-	beq-	@use_current_space
+	beq		@use_current_space
 
 	;	... else use the one specified.
  	bl		LookupID
 	cmpwi	r9, AddressSpace.kIDClass
 	mr		r30, r8
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 @use_current_space
 
 	;	Allocate the new Area
 	li		r8, Area.Size
 	bl		PoolAllocClear
 	mr.		r31, r8
-	beq+	ReleaseAndScrambleMPCall
+	beq		ReleaseAndScrambleMPCall
 
 	;	Populate
 	stw		r30, Area.AddressSpacePtr(r31)
@@ -836,7 +836,7 @@ MPCreateArea
 	_AssertAndRelease	PSA.SchLock, scratch=r16
 
 	mr.		r3, r9
-	bne-	@error
+	bne		@error
 
 	;	CreateArea returned successfully
 	lwz		r8, Area.LogicalBase(r31)
@@ -882,20 +882,20 @@ createarea	;	OUTSIDE REFERER
 	rlwinm.	r16, r16,  0, 28, 28
 
 	lisori	r16, 0xfffc13e0		; if bit 28 = 0
-	beq-	@use_other
+	beq		@use_other
 	lisori	r16, 0xfff99be0		; if bit 28 = 1
 @use_other
 
 	and.	r16, r16, r17
-	bne-	ReturnFromCreateArea
+	bne		ReturnFromCreateArea
 
 	andi.	r16, r17,  0x1f
 	cmpwi	cr1, r16,  0x0c
-	beq-	createarea_0x50
-	blt-	cr1, ReturnFromCreateArea
+	beq		createarea_0x50
+	blt		cr1, ReturnFromCreateArea
 
 createarea_0x50
-	bne-	createarea_0x5c
+	bne		createarea_0x5c
 	ori		r17, r17,  0x0c
 	stw		r17,  0x0020(r31)
 
@@ -905,7 +905,7 @@ createarea_0x5c
 	slw		r18, r18, r16
 	stw		r18,  0x0078(r31)
 	rlwinm.	r16, r17, 27, 27, 31
-	bne-	ReturnFromCreateArea
+	bne		ReturnFromCreateArea
 	addi	r16, r16,  0x0c
 	li		r18, -0x01
 	slw		r18, r18, r16
@@ -917,12 +917,12 @@ createarea_0x5c
 	add		r16, r16, r19
 	and.	r16, r16, r18
 	stw		r16, Area.Length(r31)
-	beq-	ReturnFromCreateArea
+	beq		ReturnFromCreateArea
 	lwz		r18,  0x001c(r31)
 	lis		r16, -0x01
 	ori		r16, r16,  0xff10
 	and.	r16, r16, r18
-	bne-	ReturnFromCreateArea
+	bne		ReturnFromCreateArea
 	lwz		r16,  0x0070(r31)
 	li		r17,  0x200
 	rlwimi	r17, r16,  0,  0, 19
@@ -934,7 +934,7 @@ createarea_0x5c
 	li		r9, Area.kIDClass
 	bl		MakeID
 	cmpwi	r8, 0
-	beq-	major_0x10320
+	beq		major_0x10320
 
 	stw		r8, Area.ID(r31)
 	mfsprg	r16, 0
@@ -947,7 +947,7 @@ createarea_0x5c
 	stw		r17, Area.AddressSpaceID(r31)
 	lwz		r16,  0x0008(r30)
 	rlwinm.	r16, r16,  0, 30, 30
-	bne-	major_0x10320_0x64
+	bne		major_0x10320_0x64
 	lis		r16,  0x4152
 	ori		r16, r16,  0x4541
 	stw		r16, Area.Signature(r31)
@@ -959,8 +959,8 @@ createarea_0x5c
 	rlwinm	r16, r17,  0, 17, 18
 	cmplwi	cr7, r16,  0x6000
 	rlwinm.	r16, r17,  0, 17, 17
-	beq-	cr7, createarea_0x150
-	bne-	createarea_0x150
+	beq		cr7, createarea_0x150
+	bne		createarea_0x150
 	crset	cr7_gt
 	crclr	cr7_lt
 
@@ -968,8 +968,8 @@ createarea_0x150
 	rlwinm.	r16, r17,  0, 17, 18
 	lwz		r18, Area.LogicalBase(r31)
 	lwz		r19, Area.Length(r31)
-	blt-	cr7, createarea_0x16c
-	bne-	createarea_0x170
+	blt		cr7, createarea_0x16c
+	bne		createarea_0x170
 	li		r18,  0x00
 	b		createarea_0x170
 
@@ -1000,8 +1000,8 @@ createarea_0x170
 	bl		Printw
 
 
-	bgt-	cr7, createarea_0x1f4
-	blt-	cr7, createarea_0x218
+	bgt		cr7, createarea_0x1f4
+	blt		cr7, createarea_0x218
 	_log	'placed'
 	b		createarea_0x234
 
@@ -1017,7 +1017,7 @@ createarea_0x234
 	lwz		r16, Area.LogicalEnd(r31)
 	lwz		r9, Area.LogicalBase(r31)
 	cmplw	r9, r16
-	bge-	major_0x10320_0x64
+	bge		major_0x10320_0x64
 	bl		FindAreaAbove
 	mr		r30, r8
 	lwz		r14, Area.LogicalBase(r31)
@@ -1030,23 +1030,23 @@ createarea_0x234
 	cmpwi	r17, -0x01
 	add		r8, r15, r16
 	add		r9, r15, r19
-	beq-	createarea_0x2b8
+	beq		createarea_0x2b8
 	cmplw	r8, r17
 	cmplw	cr1, r9, r17
-	bge-	createarea_0x28c
-	blt-	cr1, createarea_0x2b8
+	bge		createarea_0x28c
+	blt		cr1, createarea_0x2b8
 
 createarea_0x28c
-	beq-	cr7, major_0x10320_0x64
+	beq		cr7, major_0x10320_0x64
 	_log	' ... bc search^n'
-	bgt-	cr7, createarea_0x34c
+	bgt		cr7, createarea_0x34c
 	b		createarea_0x31c
 
 createarea_0x2b8
 	addi	r21, r21,  0x20
 	lwz		r20,  0x0060(r30)
 	cmpw	r20, r21
-	beq-	createarea_0x39c
+	beq		createarea_0x39c
 	addi	r20, r20, -0x54
 	lwz		r17,  0x0024(r20)
 	lwz		r18,  0x0028(r20)
@@ -1055,13 +1055,13 @@ createarea_0x2b8
 	add		r9, r18, r19
 	cmplw	r8, r14
 	cmplw	cr1, r9, r14
-	bge-	createarea_0x2f0
-	blt-	cr1, createarea_0x374
+	bge		createarea_0x2f0
+	blt		cr1, createarea_0x374
 
 createarea_0x2f0
-	beq-	cr7, major_0x10320_0x64
+	beq		cr7, major_0x10320_0x64
 	_log	' ... ab search^n'
-	bgt-	cr7, createarea_0x34c
+	bgt		cr7, createarea_0x34c
 	b		createarea_0x31c
 
 createarea_0x31c
@@ -1069,7 +1069,7 @@ createarea_0x31c
 	subf	r9, r16, r17
 	cmplw	r8, r9
 	lwz		r21, Area.Length(r31)
-	ble-	createarea_0x334
+	ble		createarea_0x334
 	mr		r8, r9
 
 createarea_0x334
@@ -1077,7 +1077,7 @@ createarea_0x334
 	cmplw	r8, r14
 	addi	r18, r8,  0x01
 	lwz		r19, Area.Length(r31)
-	bge-	major_0x10320_0x64
+	bge		major_0x10320_0x64
 	b		createarea_0x170
 
 createarea_0x34c
@@ -1086,7 +1086,7 @@ createarea_0x34c
 	lwz		r20,  0x0078(r31)
 	cmplw	r8, r9
 	neg		r21, r20
-	bge-	createarea_0x368
+	bge		createarea_0x368
 	mr		r8, r9
 
 createarea_0x368
@@ -1117,9 +1117,9 @@ createarea_0x3b8
 	lwz		r16,  0x0020(r31)
 	lwz		r17, Area.Flags(r31)
 	rlwinm.	r8, r16,  0, 16, 16
-	bne-	createarea_0x64c
+	bne		createarea_0x64c
 	rlwinm.	r8, r17,  0, 25, 25
-	bne-	createarea_0x41c
+	bne		createarea_0x41c
 	lwz		r8, Area.Length(r31)
 	rlwinm	r8, r8, 22, 10, 29
 	mr		r29, r8
@@ -1131,7 +1131,7 @@ createarea_0x3b8
 
 	cmpwi	r8,  0x00
 	stw		r8,  0x0040(r31)
-	beq-	createarea_0x460
+	beq		createarea_0x460
 	lwz		r9, Area.Length(r31)
 	srwi	r9, r9, 12
 	bl		major_0x10284
@@ -1143,7 +1143,7 @@ createarea_0x41c
 	lwz		r17, Area.Flags(r31)
 	andi.	r8, r17,  0x88
 	lwz		r8, Area.Length(r31)
-	bne-	createarea_0x45c
+	bne		createarea_0x45c
 	rlwinm	r8, r8, 21, 11, 30
 	mr		r29, r8
 
@@ -1154,7 +1154,7 @@ createarea_0x41c
 
 	cmpwi	r8,  0x00
 	stw		r8,  0x003c(r31)
-	beq-	createarea_0x460
+	beq		createarea_0x460
 	lwz		r9, Area.Length(r31)
 	srwi	r9, r9, 12
 	bl		major_0x102a8
@@ -1167,18 +1167,18 @@ createarea_0x45c
 
 createarea_0x460
 	cmpwi	r29,  0xfd8
-	ble-	major_0x10320_0x20
+	ble		major_0x10320_0x20
 
 	_Lock			PSA.PoolLock, scratch1=r16, scratch2=r17
 
 	lwz		r17, Area.Flags(r31)
 	li		r27,  0x00
 	rlwinm.	r8, r17,  0, 25, 25
-	bne-	createarea_0x4b4
+	bne		createarea_0x4b4
 	lwz		r27, Area.Length(r31)
 	srwi	r27, r27, 12
 	cmpwi	r27,  0x400
-	ble-	createarea_0x4ac
+	ble		createarea_0x4ac
 	ori		r17, r17,  0x20
 	stw		r17, Area.Flags(r31)
 	addi	r27, r27,  0x400
@@ -1191,11 +1191,11 @@ createarea_0x4b4
 	lwz		r8, Area.Flags(r31)
 	li		r29,  0x00
 	rlwinm.	r9, r8,  0, 28, 28
-	bne-	createarea_0x4e8
+	bne		createarea_0x4e8
 	lwz		r29, Area.Length(r31)
 	srwi	r29, r29, 12
 	cmpwi	r29,  0x800
-	ble-	createarea_0x4e0
+	ble		createarea_0x4e0
 	ori		r8, r8,  0x02
 	stw		r8, Area.Flags(r31)
 	addi	r29, r29,  0x800
@@ -1207,9 +1207,9 @@ createarea_0x4e0
 createarea_0x4e8
 	lwz		r18, -0x0430(r1)
 	add.	r8, r27, r29
-	ble-	major_0x102c8
+	ble		major_0x102c8
 	cmpw	r8, r18
-	bgt-	major_0x102c8
+	bgt		major_0x102c8
 	lwz		r16, -0x0430(r1)
 	lwz		r17, PSA.UnheldFreePageCount(r1)
 	subf	r16, r8, r16
@@ -1217,7 +1217,7 @@ createarea_0x4e8
 	stw		r16, -0x0430(r1)
 	stw		r17, PSA.UnheldFreePageCount(r1)
 	mr.		r18, r27
-	beq-	createarea_0x5a0
+	beq		createarea_0x5a0
 	lwz		r16, -0x0448(r1)
 	RemoveFromList		r16, scratch1=r17, scratch2=r19
 	addi	r18, r18, -0x01
@@ -1226,7 +1226,7 @@ createarea_0x4e8
 	lwz		r17, -0x0448(r1)
 	mr		r8, r16
 	subi	r16, r16, 4
-	bgt-	createarea_0x564
+	bgt		createarea_0x564
 	li		r9,  0x400
 	bl		major_0x10284
 	b		createarea_0x5a0
@@ -1240,11 +1240,11 @@ createarea_0x564
 	bl		major_0x10284
 	lwz		r17, -0x0448(r1)
 	cmpwi	r18,  0x00
-	bgt+	createarea_0x564
+	bgt		createarea_0x564
 
 createarea_0x5a0
 	mr.		r18, r29
-	beq-	createarea_0x62c
+	beq		createarea_0x62c
 	lwz		r16, -0x0448(r1)
 	RemoveFromList		r16, scratch1=r17, scratch2=r19
 	addi	r18, r18, -0x01
@@ -1253,7 +1253,7 @@ createarea_0x5a0
 	lwz		r17, -0x0448(r1)
 	mr		r8, r16
 	subi	r16, r16, 4
-	bgt-	createarea_0x5f0
+	bgt		createarea_0x5f0
 	li		r9,  0x800
 	bl		major_0x102a8
 	b		createarea_0x62c
@@ -1267,7 +1267,7 @@ createarea_0x5f0
 	bl		major_0x102a8
 	lwz		r17, -0x0448(r1)
 	cmpwi	r18,  0x00
-	bgt+	createarea_0x5f0
+	bgt		createarea_0x5f0
 
 createarea_0x62c
 	_AssertAndRelease	PSA.PoolLock, scratch=r16
@@ -1275,7 +1275,7 @@ createarea_0x62c
 createarea_0x64c
 	lwz		r16, Area.Flags(r31)
 	rlwinm.	r8, r16,  0, 28, 28
-	beq-	createarea_0x67c
+	beq		createarea_0x67c
 	lwz		r16,  0x0044(r31)
 	addi	r17, r31,  0x44
 	stw		r16,  0x0000(r17)
@@ -1299,7 +1299,7 @@ major_0x10284_0x10
 	cmpwi	r9, noErr
 	stwu	r20,  0x0004(r8)
 	addi	r9, r9, -0x01
-	bgt+	major_0x10284_0x10
+	bgt		major_0x10284_0x10
 	blr
 
 
@@ -1313,7 +1313,7 @@ major_0x102a8_0xc
 	cmpwi	r9, noErr
 	sthu	r20,  0x0002(r8)
 	addi	r9, r9, -0x01
-	bgt+	major_0x102a8_0xc
+	bgt		major_0x102a8_0xc
 	blr
 
 
@@ -1328,7 +1328,7 @@ major_0x102c8	;	OUTSIDE REFERER
 	cmpwi	r9, Notification.kIDClass
 
 	mr		r26, r8
-	bne-	major_0x10320_0x20
+	bne		major_0x10320_0x20
 	li		r8,  0x02
 	stw		r8,  0x0010(r26)
 	stw		r30,  0x0014(r26)
@@ -1356,14 +1356,14 @@ major_0x10320_0x20	;	OUTSIDE REFERER
 	lwz		r16, Area.Flags(r31)
 	lwz		r8,  0x0040(r31)
 	rlwinm.	r16, r16,  0, 25, 25
-	bne-	major_0x10320_0x58
+	bne		major_0x10320_0x58
 	cmpwi	r8,  0x00
-	bnel-	PoolFree
+	bnel	PoolFree
 
 major_0x10320_0x58
 	lwz		r8,  0x003c(r31)
 	cmpwi	r8,  0x00
-	bnel-	PoolFree
+	bnel	PoolFree
 
 major_0x10320_0x64	;	OUTSIDE REFERER
 	_log	' ... skipped^n'
@@ -1404,8 +1404,8 @@ FindAreaAbove	;	OUTSIDE REFERER
 	lwz		r17, Area.LogicalEnd(r8)
 	cmplw	r16, r9
 	cmplw	cr1, r17, r9
-	bgelr-
-	bgelr-	cr1
+	bgelr
+	bgelr	cr1
 
 	;	Iterate over linked list
 	lwz		r8, Area.LLL + LLL.Next(r8)
@@ -1441,19 +1441,19 @@ MPCreateAliasArea
 	mr		r8, r3
  	bl		LookupID
 	cmpwi	r9, Area.kIDClass
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 
 	;	Confirm that the template Area is not itself an alias
 	mr		r30, r8
 	lwz		r16, Area.Flags(r30)
 	rlwinm.	r8, r16, 0, Area.kAliasFlag, Area.kAliasFlag
-	bne+	ReleaseAndReturnParamErrFromMPCall
+	bne		ReleaseAndReturnParamErrFromMPCall
 
 	;	Allocate the new Area
 	li		r8, Area.Size
 	bl		PoolAllocClear
 	mr.		r31, r8
-	beq+	ReleaseAndScrambleMPCall
+	beq		ReleaseAndScrambleMPCall
 
 	;	Populate
 	mfsprg	r28, 0
@@ -1490,7 +1490,7 @@ MPCreateAliasArea
 	_AssertAndRelease	PSA.SchLock, scratch=r16
 
 	mr.		r3, r9
-	bne-	@error
+	bne		@error
 
 	;	CreateArea returned successfully
 	lwz		r8, Area.LogicalBase(r31)
@@ -1530,7 +1530,7 @@ MPDeleteArea
 	mr		r8, r3
  	bl		LookupID
 	cmpwi	r9, Area.kIDClass
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
 
 	;	If pages are still mapped in, fail with OOM
@@ -1539,16 +1539,16 @@ MPDeleteArea
 	lwz		r29, Area.Flags(r31)
 	cmpwi	cr1, r17, 0
 	rlwinm.	r8, r29, 0, Area.kPrivilegedFlag, Area.kPrivilegedFlag
-	bne+	cr1, ReleaseAndReturnMPCallOOM
-	bne+	ReleaseAndReturnMPCallPrivilegedErr
+	bne		cr1, ReleaseAndReturnMPCallOOM
+	bne		ReleaseAndReturnMPCallPrivilegedErr
 
 	;	If is alias area and is not at back of queue (???), fail with OOM
 	rlwinm.	r8, r29, 0, Area.kAliasFlag, Area.kAliasFlag
 	lwz		r16, Area.AliasLLL + LLL.Next(r31)
-	bne-	@dont_check_for_nonempty_alias
+	bne		@dont_check_for_nonempty_alias
 	addi	r17, r31, Area.AliasLLL
 	cmpw	r16, r17
-	bne+	ReleaseAndReturnMPCallOOM
+	bne		ReleaseAndReturnMPCallOOM
 @dont_check_for_nonempty_alias
 
 	;	HTAB lock wraps around all Address Space structures?
@@ -1562,7 +1562,7 @@ MPDeleteArea
 	;	Remove from template area's list of aliases, if necessary
 	rlwinm.	r8, r29, 0, Area.kAliasFlag, Area.kAliasFlag
 	addi	r16, r31, Area.AliasLLL
-	beq-	@not_alias_so_dont_remove_from_alias_list
+	beq		@not_alias_so_dont_remove_from_alias_list
 	RemoveFromList	r16, scratch1=r17, scratch2=r18
 @not_alias_so_dont_remove_from_alias_list
 
@@ -1575,10 +1575,10 @@ MPDeleteArea
 	lwz		r8, Area.PageMapArrayPtr(r31)
 	rlwinm.	r16, r29, 0, Area.kDontOwnPageMapArray, Area.kDontOwnPageMapArray
 	cmpwi	cr1, r8, 0
-	bne-	@no_pagemap
+	bne		@no_pagemap
 	rlwinm.	r16, r29, 0, Area.kPageMapArrayInPool, Area.kPageMapArrayInPool
-	beq-	cr1, @no_pagemap
-	bne-	@pagemap_in_pool
+	beq		cr1, @no_pagemap
+	bne		@pagemap_in_pool
 
 
 	;	If PageMap occupies whole pages then return those pages
@@ -1588,7 +1588,7 @@ MPDeleteArea
 	_Lock			PSA.PoolLock, scratch1=r18, scratch2=r9
 
 	rlwinm.	r16, r29, 0, Area.kPageMapArrayIs2D, Area.kPageMapArrayIs2D
-	beq-	@pagemap_is_1d
+	beq		@pagemap_is_1d
 
 
 	;	CASE: 2D array, all in whole pages
@@ -1608,7 +1608,7 @@ MPDeleteArea
 	bl		free_list_add_page
 	cmpwi	r19, 0
 	subi	r19, r19, 4
-	bgt+	@2d_pagemap_delete_loop
+	bgt		@2d_pagemap_delete_loop
 
 	mr		r8, r20
 
@@ -1639,15 +1639,15 @@ MPDeleteArea
 	lwz		r8, Area.FaultCtrArrayPtr(r31)
 	rlwinm.	r16, r29, 0, Area.kFaultCtrArrayInPool, Area.kFaultCtrArrayInPool
 	cmpwi	cr1, r8, 0
-	beq-	cr1, @no_faultctr
-	bne-	@faultctr_in_pool
+	beq		cr1, @no_faultctr
+	bne		@faultctr_in_pool
 
 
 	;	Whole-page cases require us to get the Pool lock manually (for free list)
 	_Lock			PSA.PoolLock, scratch1=r18, scratch2=r9
 
 	rlwinm.	r16, r29, 0, Area.kFaultCtrArrayIs2D, Area.kFaultCtrArrayIs2D
-	beq-	@faultctr_is_1d
+	beq		@faultctr_is_1d
 
 
 	;	CASE: 2D array, all in whole pages
@@ -1667,7 +1667,7 @@ MPDeleteArea
 	bl		free_list_add_page
 	cmpwi	r19, 0
 	subi	r19, r19, 4
-	bgt+	@2d_faultctr_delete_loop
+	bgt		@2d_faultctr_delete_loop
 
 	mr		r8, r20
 
@@ -1717,24 +1717,24 @@ MPCall_75	;	OUTSIDE REFERER
 	cmpwi	r9, Area.kIDClass
 
 	mr		r31, r8
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	lwz		r16,  0x0020(r31)
 	rlwinm.	r8, r16,  0, 16, 16
-	bne+	ReleaseAndReturnMPCallOOM
+	bne		ReleaseAndReturnMPCallOOM
 	lwz		r18,  0x007c(r31)
 	lwz		r17, Area.Length(r31)
 	and.	r5, r5, r18
 	and		r17, r17, r18
-	ble+	ReleaseAndReturnParamErrFromMPCall
+	ble		ReleaseAndReturnParamErrFromMPCall
 	subf.	r27, r17, r5
 
 ;	r1 = kdp
-	beq+	ReleaseAndReturnZeroFromMPCall
-	bgt-	MPCall_75_0x1c8
+	beq		ReleaseAndReturnZeroFromMPCall
+	bgt		MPCall_75_0x1c8
 	rlwinm.	r8, r4,  0, 24, 24
 	lwz		r28, Area.LogicalBase(r31)
 	lwz		r29, Area.LogicalEnd(r31)
-	bne-	MPCall_75_0x74
+	bne		MPCall_75_0x74
 	add		r28, r27, r29
 	addi	r28, r28,  0x01
 	b		MPCall_75_0x7c
@@ -1755,11 +1755,11 @@ MPCall_75_0x7c
 MPCall_75_0xb0
 	mr		r8, r28
 	bl		MPCall_95_0x1e4
-	beq+	Local_Panic
+	beq		Local_Panic
 	bl		MPCall_95_0x2b0
-	bns-	cr7, MPCall_75_0xe0
-	bltl-	cr5, MPCall_95_0x2e0
-	bltl-	cr5, MPCall_95_0x348
+	bns		cr7, MPCall_75_0xe0
+	bltl	cr5, MPCall_95_0x2e0
+	bltl	cr5, MPCall_95_0x348
 	lwz		r17,  0x0000(r30)
 	rlwinm	r17, r17,  0,  0, 30
 	rlwinm	r8, r17,  0,  0, 19
@@ -1772,36 +1772,36 @@ MPCall_75_0xb0
 MPCall_75_0xe0
 	add		r28, r28, r27
 	cmplw	r28, r29
-	ble+	MPCall_75_0xb0
+	ble		MPCall_75_0xb0
 	rlwinm.	r8, r4,  0, 24, 24
 	lwz		r28, Area.LogicalBase(r31)
-	beq-	MPCall_75_0x138
+	beq		MPCall_75_0x138
 	lwz		r27,  0x0068(r31)
 	add		r29, r29, r27
 
 MPCall_75_0x100
 	mr		r8, r28
 	bl		MPCall_95_0x1e4
-	beq+	Local_Panic
+	beq		Local_Panic
 	mr		r26, r30
 	mr		r8, r29
 	bl		MPCall_95_0x1e4
-	beq+	Local_Panic
+	beq		Local_Panic
 	lwz		r17,  0x0000(r30)
 	stw		r17,  0x0000(r26)
 	lwz		r16, Area.LogicalEnd(r31)
 	add		r28, r28, r27
 	add		r29, r29, r27
 	cmplw	r29, r16
-	ble+	MPCall_75_0x100
+	ble		MPCall_75_0x100
 
 MPCall_75_0x138
 	_AssertAndRelease	PSA.HTABLock, scratch=r8
 	lwz		r16, Area.Flags(r31)
 	rlwinm.	r8, r16,  0, 25, 25
-	bne-	MPCall_75_0x16c
+	bne		MPCall_75_0x16c
 	rlwinm.	r8, r16,  0, 27, 27
-	bne-	MPCall_75_0x16c
+	bne		MPCall_75_0x16c
 
 MPCall_75_0x16c
 	_AssertAndRelease	PSA.PoolLock, scratch=r8
@@ -1810,7 +1810,7 @@ MPCall_75_0x16c
 MPCall_75_0x190
 	rlwinm.	r8, r4,  0, 24, 24
 	lwz		r16, Area.LogicalBase(r31)
-	bne-	MPCall_75_0x1b0
+	bne		MPCall_75_0x1b0
 	add		r17, r16, r5
 	addi	r17, r17, -0x01
 	stw		r5, Area.Length(r31)
@@ -1833,7 +1833,7 @@ MPCall_75_0x1c8
 	rlwinm.	r8, r4,  0, 24, 24
 	lwz		r28, Area.LogicalBase(r31)
 	lwz		r29, Area.LogicalEnd(r31)
-	bne+	ReleaseAndMPCallWasBad
+	bne		ReleaseAndMPCallWasBad
 	add		r28, r27, r29
 	addi	r28, r28,  0x01
 	b		MPCall_75_0x1ec
@@ -1857,55 +1857,55 @@ MPCall_130	;	OUTSIDE REFERER
  	bl		LookupID
 	cmpwi	r9, Area.kIDClass
 
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
 	lis		r16, -0x01
 	ori		r16, r16,  0xfff8
 	lwz		r17,  0x0020(r31)
 	and.	r16, r16, r4
-	bne+	ReleaseAndReturnParamErrFromMPCall
+	bne		ReleaseAndReturnParamErrFromMPCall
 	rlwinm.	r8, r17,  0, 16, 16
-	bne+	ReleaseAndReturnParamErrFromMPCall
+	bne		ReleaseAndReturnParamErrFromMPCall
 	mr		r29, r5
 	lwz		r18,  0x0134(r6)
 	lwz		r19,  0x0068(r31)
 	lwz		r16, Area.LogicalBase(r31)
 	cmplw	r18, r19
 	add		r28, r18, r29
-	bge+	ReleaseAndReturnParamErrFromMPCall
+	bge		ReleaseAndReturnParamErrFromMPCall
 	lwz		r17,  0x007c(r31)
 	addi	r28, r28, -0x01
 	lwz		r18,  0x0020(r31)
 	lwz		r19, Area.LogicalEnd(r31)
 	cmplw	cr1, r29, r16
 	cmplw	cr2, r28, r19
-	blt+	cr1, ReleaseAndReturnParamErrFromMPCall
-	bgt+	cr2, ReleaseAndReturnParamErrFromMPCall
+	blt		cr1, ReleaseAndReturnParamErrFromMPCall
+	bgt		cr2, ReleaseAndReturnParamErrFromMPCall
 	xor		r8, r28, r29
 	rlwinm.	r8, r8,  0,  0, 19
-	bne+	ReleaseAndReturnParamErrFromMPCall
+	bne		ReleaseAndReturnParamErrFromMPCall
 
 	_Lock			PSA.HTABLock, scratch1=r14, scratch2=r15
 
 	mr		r8, r29
 	bl		MPCall_95_0x1e4
 	_AssertAndRelease	PSA.HTABLock, scratch=r14
-	beq+	Local_Panic
+	beq		Local_Panic
 	rlwinm	r8, r16,  0, 29, 30
 	lwz		r16,  0x0000(r30)
 	cmpwi	cr7, r8,  0x04
-	beq+	cr7, ReleaseAndReturnParamErrFromMPCall
+	beq		cr7, ReleaseAndReturnParamErrFromMPCall
 	lwz		r16,  0x0098(r31)
 
 MPCall_130_0xe8
 	addi	r17, r31,  0x90
 	cmpw	r16, r17
 	addi	r17, r16,  0x14
-	beq-	MPCall_130_0x11c
+	beq		MPCall_130_0x11c
 	lwz		r8,  0x0010(r16)
 	cmplwi	r8,  0x1f8
 	add		r9, r8, r17
-	blt-	MPCall_130_0x110
+	blt		MPCall_130_0x110
 	lwz		r16,  0x0008(r16)
 	b		MPCall_130_0xe8
 
@@ -1923,7 +1923,7 @@ MPCall_130_0x11c
 ;	r8 = ptr
 
 	mr.		r16, r8
-	beq+	ReleaseAndScrambleMPCall
+	beq		ReleaseAndScrambleMPCall
 	addi	r18, r31,  0x90
 	lis		r17,  0x4645
 	ori		r17, r17,  0x4e43
@@ -1942,11 +1942,11 @@ MPCall_130_0x15c
 
 	mr		r8, r29
 	bl		MPCall_95_0x1e4
-	beq+	Local_Panic
+	beq		Local_Panic
 	bl		MPCall_95_0x2b0
-	bns-	cr7, MPCall_130_0x19c
-	bltl-	cr5, MPCall_95_0x2e0
-	bltl-	cr5, MPCall_95_0x348
+	bns		cr7, MPCall_130_0x19c
+	bltl	cr5, MPCall_95_0x2e0
+	bltl	cr5, MPCall_95_0x348
 
 MPCall_130_0x19c
 	lwz		r17,  0x0000(r30)
@@ -1975,16 +1975,16 @@ MPSetAreaAccess	;	OUTSIDE REFERER
  	bl		LookupID
 	cmpwi	r9, Area.kIDClass
 
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
 	lis		r16, -0x01
 	ori		r16, r16,  0xff10
 	and.	r16, r16, r4
-	bne+	ReleaseAndReturnParamErrFromMPCall
+	bne		ReleaseAndReturnParamErrFromMPCall
 	lis		r16, -0x01
 	ori		r16, r16,  0xff10
 	and.	r16, r16, r5
-	bne+	ReleaseAndReturnParamErrFromMPCall
+	bne		ReleaseAndReturnParamErrFromMPCall
 	lwz		r29,  0x0134(r6)
 	lwz		r18,  0x013c(r6)
 	lwz		r16, Area.LogicalBase(r31)
@@ -1996,9 +1996,9 @@ MPSetAreaAccess	;	OUTSIDE REFERER
 	rlwinm.	r8, r18,  0, 16, 16
 	cmplw	cr1, r29, r16
 	cmplw	cr2, r28, r19
-	blt+	cr1, ReleaseAndReturnParamErrFromMPCall
-	bgt+	cr2, ReleaseAndReturnParamErrFromMPCall
-	bne-	MPSetAreaAccess_0x154
+	blt		cr1, ReleaseAndReturnParamErrFromMPCall
+	bgt		cr2, ReleaseAndReturnParamErrFromMPCall
+	bne		MPSetAreaAccess_0x154
 
 	_Lock			PSA.HTABLock, scratch1=r14, scratch2=r15
 
@@ -2006,11 +2006,11 @@ MPSetAreaAccess	;	OUTSIDE REFERER
 MPSetAreaAccess_0x9c
 	mr		r8, r29
 	bl		MPCall_95_0x1e4
-	beq+	Local_Panic
+	beq		Local_Panic
 	bl		MPCall_95_0x2b0
-	bns-	cr7, MPSetAreaAccess_0xb8
-	bltl-	cr5, MPCall_95_0x2e0
-	bltl-	cr5, MPCall_95_0x348
+	bns		cr7, MPSetAreaAccess_0xb8
+	bltl	cr5, MPCall_95_0x2e0
+	bltl	cr5, MPCall_95_0x348
 
 MPSetAreaAccess_0xb8
 	lwz		r17,  0x0000(r30)
@@ -2021,9 +2021,9 @@ MPSetAreaAccess_0xb8
 	and		r18, r18, r9
 	lwz		r17,  0x0000(r30)
 	rlwinm.	r8, r18,  0, 26, 26
-	bns-	cr7, MPSetAreaAccess_0x118
-	bgt-	cr6, MPSetAreaAccess_0x118
-	beq-	MPSetAreaAccess_0x118
+	bns		cr7, MPSetAreaAccess_0x118
+	bgt		cr6, MPSetAreaAccess_0x118
+	beq		MPSetAreaAccess_0x118
 	rlwinm	r9, r17,  0,  0, 19
 	lwz		r8,  0x0068(r31)
 
@@ -2031,7 +2031,7 @@ MPSetAreaAccess_0xec
 	addi	r8, r8, -0x20
 	dcbf	r8, r9
 	cmpwi	r8,  0x00
-	bgt+	MPSetAreaAccess_0xec
+	bgt		MPSetAreaAccess_0xec
 	sync
 	lwz		r8,  0x0068(r31)
 
@@ -2039,7 +2039,7 @@ MPSetAreaAccess_0x104
 	addi	r8, r8, -0x20
 	icbi	r8, r9
 	cmpwi	r8,  0x00
-	bgt+	MPSetAreaAccess_0x104
+	bgt		MPSetAreaAccess_0x104
 	isync
 
 MPSetAreaAccess_0x118
@@ -2048,14 +2048,14 @@ MPSetAreaAccess_0x118
 	stw		r17,  0x0000(r30)
 	add		r29, r29, r19
 	subf.	r8, r29, r28
-	bge+	MPSetAreaAccess_0x9c
+	bge		MPSetAreaAccess_0x9c
 	_AssertAndRelease	PSA.HTABLock, scratch=r14
 
 ;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall
 
 MPSetAreaAccess_0x154
-	bne+	cr1, ReleaseAndReturnParamErrFromMPCall
+	bne		cr1, ReleaseAndReturnParamErrFromMPCall
 	lwz		r18,  0x001c(r31)
 	and		r8, r4, r5
 	orc		r9, r4, r5
@@ -2077,14 +2077,14 @@ MPSetAreaAccess_0x1a4
 	mr		r8, r29
 	lwz		r9, Area.AddressSpacePtr(r31)
 	bl		MPCall_95_0x45c
-	beq-	MPSetAreaAccess_0x1bc
+	beq		MPSetAreaAccess_0x1bc
 	bl		MPCall_95_0x2e0
 	bl		MPCall_95_0x348
 
 MPSetAreaAccess_0x1bc
 	add		r29, r29, r27
 	subf.	r8, r29, r28
-	bge+	MPSetAreaAccess_0x1a4
+	bge		MPSetAreaAccess_0x1a4
 	_AssertAndRelease	PSA.HTABLock, scratch=r14
 
 ;	r1 = kdp
@@ -2111,13 +2111,13 @@ major_0x10cb8
 	mtcr	r18
 
 
-	bge-	cr6, @80_not_set				;	if(control & 0x80) {
+	bge		cr6, @80_not_set				;	if(control & 0x80) {
 	ori		r17, r17, 0x80					;		PTE2 |= 0x80; //set referenced bit
 	ori		r16, r16, 0x08					;		PTE1 |= 0x08; //set guard bit
 @80_not_set									;	}
 
 
-	ble-	cr6, @40_not_set				;	if(control & 0x40) {
+	ble		cr6, @40_not_set				;	if(control & 0x40) {
 	ori		r16, r16, 0x40					;		PTE1 |= 0x40; //set change bit
 	b		@40_endif						;	} else {
 @40_not_set
@@ -2125,27 +2125,27 @@ major_0x10cb8
 @40_endif									;	}
 
 
-	bne-	cr6, @20_not_set				;	if(control & 0x20) {
+	bne		cr6, @20_not_set				;	if(control & 0x20) {
 	ori		r17, r17,  0x40					;		PTE2 |= 0x40; //set change bit
 	ori		r16, r16,  0x20					;		PTE1 |= 0x20; //set W bit
 @20_not_set									;	}
 
 
-	ble-	cr7, @04_not_set				;	if(control & 0x04) {
+	ble		cr7, @04_not_set				;	if(control & 0x04) {
 @04_not_set									;	}
 
 
-	bge-	cr7, @08_not_set				;	if(control & 0x08) {
+	bge		cr7, @08_not_set				;	if(control & 0x08) {
 	ori		r17, r17, 0x06					;		PTE2 |= 0x06; //set leftmost protection bit and reserved bit
 	ori		r16, r16, 0x01					;		PTE1 |= 0x01; //set rightmost protection bit
 	b		@block_endif					;	}
 @08_not_set
-	bne-	cr7, @02_not_set				;	else if(control & 0x02) {
+	bne		cr7, @02_not_set				;	else if(control & 0x02) {
 	ori		r17, r17, 0x00					;		PTE2 |= 0x00; //useless instruction?
 	ori		r16, r16, 0x02					;		PTE1 |= 0x02; //set second protection bit
 	b		@block_endif					;	}
 @02_not_set
-	bns-	cr7, @01_not_set				;	else if(control & 0x01) {
+	bns		cr7, @01_not_set				;	else if(control & 0x01) {
 	ori		r17, r17, 0x04					;		PTE2 |= 0x04; //set reserved bit.
 	ori		r16, r16, 0x03					;		PTE1 |= 0x03: //set both protection bits
 	b		@block_endif					;	}
@@ -2167,30 +2167,30 @@ major_0x10d38	;	OUTSIDE REFERER
 	li		r18,  0x00
 	cmpwi	r16,  0x02
 	cmpwi	cr1, r16,  0x06
-	beq-	major_0x10d38_0x28
+	beq		major_0x10d38_0x28
 	li		r18,  0x04
 	andi.	r16, r17,  0x04
 	ori		r18, r18,  0x01
-	bne-	major_0x10d38_0x28
+	bne		major_0x10d38_0x28
 	ori		r18, r18,  0x02
 
 major_0x10d38_0x28
-	bne-	cr1, major_0x10d38_0x30
+	bne		cr1, major_0x10d38_0x30
 	ori		r18, r18,  0x08
 
 major_0x10d38_0x30
 	andi.	r16, r17,  0x20
-	bne-	major_0x10d38_0x3c
+	bne		major_0x10d38_0x3c
 	ori		r18, r18,  0x40
 
 major_0x10d38_0x3c
 	andi.	r16, r17,  0x40
-	beq-	major_0x10d38_0x48
+	beq		major_0x10d38_0x48
 	ori		r18, r18,  0x20
 
 major_0x10d38_0x48
 	andi.	r16, r17,  0x80
-	beq-	major_0x10d38_0x54
+	beq		major_0x10d38_0x54
 	ori		r18, r18,  0x80
 
 major_0x10d38_0x54
@@ -2200,29 +2200,29 @@ major_0x10d38_0x58	;	OUTSIDE REFERER
 	andi.	r16, r17,  0x03
 	li		r18,  0x04
 	cmpwi	cr1, r16,  0x01
-	beq-	major_0x10d38_0x78
+	beq		major_0x10d38_0x78
 	andi.	r16, r17,  0x01
 	ori		r18, r18,  0x01
-	bne-	major_0x10d38_0x78
+	bne		major_0x10d38_0x78
 	ori		r18, r18,  0x02
 
 major_0x10d38_0x78
-	bne-	cr1, major_0x10d38_0x80
+	bne		cr1, major_0x10d38_0x80
 	ori		r18, r18,  0x08
 
 major_0x10d38_0x80
 	andi.	r16, r17,  0x40
-	beq-	major_0x10d38_0x8c
+	beq		major_0x10d38_0x8c
 	ori		r18, r18,  0x40
 
 major_0x10d38_0x8c
 	andi.	r16, r17,  0x20
-	beq-	major_0x10d38_0x98
+	beq		major_0x10d38_0x98
 	ori		r18, r18,  0x20
 
 major_0x10d38_0x98
 	andi.	r16, r17,  0x08
-	beq-	major_0x10d38_0xa4
+	beq		major_0x10d38_0xa4
 	ori		r18, r18,  0x80
 
 major_0x10d38_0xa4
@@ -2242,29 +2242,29 @@ MPCall_123	;	OUTSIDE REFERER
  	bl		LookupID
 	cmpwi	r9, Area.kIDClass
 
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
 	lwz		r16, Area.LogicalBase(r31)
 	lwz		r17, Area.LogicalEnd(r31)
 	lwz		r18,  0x0020(r31)
 	cmplw	r4, r16
 	cmplw	cr1, r4, r17
-	blt+	ReleaseAndReturnParamErrFromMPCall
-	bgt+	cr1, ReleaseAndReturnParamErrFromMPCall
+	blt		ReleaseAndReturnParamErrFromMPCall
+	bgt		cr1, ReleaseAndReturnParamErrFromMPCall
 	rlwinm.	r8, r18,  0, 16, 16
 	lwz		r5,  0x001c(r31)
 
 ;	r1 = kdp
-	bne+	ReleaseAndReturnZeroFromMPCall
+	bne		ReleaseAndReturnZeroFromMPCall
 
 	_Lock			PSA.HTABLock, scratch1=r14, scratch2=r15
 
 	mr		r8, r4
 	bl		MPCall_95_0x1e4
-	beq+	Local_Panic
+	beq		Local_Panic
 	bl		MPCall_95_0x2b0
-	bltl-	cr5, MPCall_95_0x2e0
-	bltl-	cr5, MPCall_95_0x348
+	bltl	cr5, MPCall_95_0x2e0
+	bltl	cr5, MPCall_95_0x348
 	lwz		r17,  0x0000(r30)
 	_AssertAndRelease	PSA.HTABLock, scratch=r14
 	bl		major_0x10d38
@@ -2292,17 +2292,17 @@ MPSetAreaBackingProvider
 	mr		r8, r3
  	bl		LookupID
 	cmpwi	r9, Area.kIDClass
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
 
 	;	r4 optionally contains...
 	mr.		r8, r4
-	beq-	@no_notification
+	beq		@no_notification
 
 	;	a Notification ID
  	bl		LookupID
 	cmpwi	r9, Notification.kIDClass
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 @no_notification
 
 	stw		r4, Area.BackingProviderID(r31)
@@ -2324,12 +2324,12 @@ MPCall_78	;	OUTSIDE REFERER
  	bl		LookupID
 	cmpwi	r9, Area.kIDClass
 
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
 	cmpwi	r4,  0x01
-	bne+	ReleaseAndReturnParamErrFromMPCall
+	bne		ReleaseAndReturnParamErrFromMPCall
 	cmplwi	r5,  0x00
-	bne-	MPCall_78_0x68
+	bne		MPCall_78_0x68
 	li		r16,  0x01
 	stw		r16,  0x0134(r6)
 	lwz		r16, Area.ProcessID(r31)
@@ -2346,7 +2346,7 @@ MPCall_78	;	OUTSIDE REFERER
 
 MPCall_78_0x68
 	cmplwi	r5,  0x10
-	bne-	MPCall_78_0x9c
+	bne		MPCall_78_0x9c
 	lwz		r16,  0x0018(r31)
 	stw		r16,  0x0134(r6)
 	lwz		r16,  0x001c(r31)
@@ -2363,7 +2363,7 @@ MPCall_78_0x68
 
 MPCall_78_0x9c
 	cmplwi	r5,  0x20
-	bne-	MPCall_78_0xd0
+	bne		MPCall_78_0xd0
 	lwz		r16, Area.Length(r31)
 	stw		r16,  0x0134(r6)
 	lwz		r16, Area.LogicalSeparation(r31)
@@ -2380,7 +2380,7 @@ MPCall_78_0x9c
 
 MPCall_78_0xd0
 	cmplwi	r5,  0x30
-	bne-	MPCall_78_0xfc
+	bne		MPCall_78_0xfc
 	lwz		r16,  0x0068(r31)
 	stw		r16,  0x0134(r6)
 	lwz		r16,  0x0080(r31)
@@ -2395,7 +2395,7 @@ MPCall_78_0xd0
 
 MPCall_78_0xfc
 	cmpwi	r5,  0x3c
-	bne+	ReleaseAndReturnParamErrFromMPCall
+	bne		ReleaseAndReturnParamErrFromMPCall
 	li		r16,  0x00
 	stw		r16,  0x0154(r6)
 
@@ -2410,13 +2410,13 @@ MPCall_79	;	OUTSIDE REFERER
 	mr.		r8, r3
 	mfsprg	r28, 0
 	lwz		r31, EWA.PA_CurAddressSpace(r28)
-	beq-	MPCall_79_0x20
+	beq		MPCall_79_0x20
 
 ;	r8 = id
  	bl		LookupID
 	cmpwi	r9, AddressSpace.kIDClass
 
-	bne+	ReturnMPCallInvalidIDErr
+	bne		ReturnMPCallInvalidIDErr
 	mr		r31, r8
 
 MPCall_79_0x20
@@ -2427,7 +2427,7 @@ MPCall_79_0x24
 	li		r9,  0x0b
 	bl		GetNextIDOfClass
 	cmpwi	r8,  0x00
-	beq+	ReturnMPCallInvalidIDErr
+	beq		ReturnMPCallInvalidIDErr
 	mr		r4, r8
 
 ;	r8 = id
@@ -2437,7 +2437,7 @@ MPCall_79_0x24
 
 	lwz		r16,  0x0010(r8)
 	cmpw	r16, r3
-	bne+	MPCall_79_0x24
+	bne		MPCall_79_0x24
 	b		ReturnZeroFromMPCall
 
 
@@ -2450,7 +2450,7 @@ MPCall_80	;	OUTSIDE REFERER
 
 	mr.		r8, r3
 	mfsprg	r9, 0
-	bne-	MPCall_80_0x2c
+	bne		MPCall_80_0x2c
 	lwz		r8, EWA.PA_CurAddressSpace(r9)
 	b		MPCall_80_0x38
 
@@ -2459,7 +2459,7 @@ MPCall_80_0x2c
  	bl		LookupID
 	cmpwi	r9, AddressSpace.kIDClass
 
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 
 MPCall_80_0x38
 	mr		r9, r4
@@ -2467,7 +2467,7 @@ MPCall_80_0x38
 	lwz		r16,  0x0024(r8)
 	li		r5,  0x00
 	cmplw	r16, r4
-	bgt+	ReleaseAndReturnParamErrFromMPCall
+	bgt		ReleaseAndReturnParamErrFromMPCall
 	lwz		r5,  0x0000(r8)
 
 ;	r1 = kdp
@@ -2483,7 +2483,7 @@ MPCall_125	;	OUTSIDE REFERER
 
 	mr.		r8, r3
 	mfsprg	r9, 0
-	bne-	MPCall_125_0x2c
+	bne		MPCall_125_0x2c
 	lwz		r8, EWA.PA_CurAddressSpace(r9)
 	b		MPCall_125_0x38
 
@@ -2492,7 +2492,7 @@ MPCall_125_0x2c
  	bl		LookupID
 	cmpwi	r9, AddressSpace.kIDClass
 
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 
 MPCall_125_0x38
 	mr		r9, r4
@@ -2500,14 +2500,14 @@ MPCall_125_0x38
 	lwz		r16,  0x0024(r8)
 	li		r5,  0x00
 	cmplw	r16, r4
-	bgt-	MPCall_125_0x58
+	bgt		MPCall_125_0x58
 	lwz		r8,  0x005c(r8)
 	addi	r8, r8, -0x54
 
 MPCall_125_0x58
 	lwz		r9,  0x002c(r8)
 	cmpwi	r9, noErr
-	beq+	ReleaseAndReturnParamErrFromMPCall
+	beq		ReleaseAndReturnParamErrFromMPCall
 	lwz		r5,  0x0000(r8)
 
 ;	r1 = kdp
@@ -2528,22 +2528,22 @@ MPCall_81	;	OUTSIDE REFERER
 	cmpwi	r9, Area.kIDClass
 
 	mr		r31, r8
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	lwz		r16, Area.LogicalBase(r31)
 	lwz		r17, Area.LogicalEnd(r31)
 	lwz		r18,  0x0020(r31)
 	cmplw	r4, r16
 	cmplw	cr1, r4, r17
-	blt+	ReleaseAndReturnParamErrFromMPCall
-	bgt+	cr1, ReleaseAndReturnParamErrFromMPCall
+	blt		ReleaseAndReturnParamErrFromMPCall
+	bgt		cr1, ReleaseAndReturnParamErrFromMPCall
 	rlwinm.	r8, r18,  0, 16, 16
 	lwz		r19,  0x0070(r31)
-	beq-	MPCall_81_0x70
+	beq		MPCall_81_0x70
 	lwz		r17, Area.BytesMapped(r31)
 	rlwinm	r19, r19,  0,  0, 19
 	cmpwi	r17,  0x00
 	subf	r18, r16, r4
-	beq+	ReleaseAndReturnParamErrFromMPCall
+	beq		ReleaseAndReturnParamErrFromMPCall
 	add		r5, r18, r19
 
 ;	r1 = kdp
@@ -2557,7 +2557,7 @@ MPCall_81_0x70
 	mr		r8, r4
 	bl		MPCall_95_0x1e4
 	bl		MPCall_95_0x2b0
-	bns-	cr7, MPCall_81_0xc8
+	bns		cr7, MPCall_81_0xc8
 	mr		r5, r17
 	rlwimi	r5, r4,  0, 20, 31
 
@@ -2584,7 +2584,7 @@ MPCall_98	;	OUTSIDE REFERER
 	cmpwi	r9, Area.kIDClass
 
 	mr		r31, r8
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	lwz		r16, Area.LogicalBase(r31)
 	lwz		r17, Area.LogicalEnd(r31)
 	mr		r29, r5
@@ -2593,13 +2593,13 @@ MPCall_98	;	OUTSIDE REFERER
 	addi	r5, r5, -0x01
 	cmplw	r4, r16
 	cmplw	cr1, r5, r17
-	blt+	ReleaseAndReturnParamErrFromMPCall
-	bgt+	cr1, ReleaseAndReturnParamErrFromMPCall
+	blt		ReleaseAndReturnParamErrFromMPCall
+	bgt		cr1, ReleaseAndReturnParamErrFromMPCall
 	lwz		r20, Area.BytesMapped(r31)
 	rlwinm.	r8, r18,  0, 16, 16
 	cmpwi	cr1, r20,  0x00
-	beq-	MPCall_98_0x84
-	beq+	cr1, ReleaseAndReturnParamErrFromMPCall
+	beq		MPCall_98_0x84
+	beq		cr1, ReleaseAndReturnParamErrFromMPCall
 	lwz		r19,  0x0070(r31)
 	subf	r18, r16, r4
 	rlwinm	r19, r19,  0,  0, 19
@@ -2617,11 +2617,11 @@ MPCall_98_0x84
 	mr		r8, r4
 	mr		r28, r4
 	bl		MPCall_95_0x1e4
-	beq+	Local_Panic
+	beq		Local_Panic
 	bl		MPCall_95_0x2b0
 	crclr	cr3_eq
 	li		r3,  0x00
-	bso-	cr7, MPCall_98_0xc4
+	bso		cr7, MPCall_98_0xc4
 	crset	cr3_eq
 	li		r3, kMPInsufficientResourcesErr
 
@@ -2635,17 +2635,17 @@ MPCall_98_0xd0
 	add		r28, r28, r16
 	add		r29, r29, r16
 	cmplw	cr2, r28, r5
-	bgt-	cr2, MPCall_98_0x140
+	bgt		cr2, MPCall_98_0x140
 	mr		r8, r28
 	bl		MPCall_95_0x1e4
-	beq+	Local_Panic
+	beq		Local_Panic
 	bl		MPCall_95_0x2b0
 	rlwinm	r17, r17,  0,  0, 19
 	crxor	31, 31, 14
-	bns-	cr7, MPCall_98_0x10c
-	beq+	cr3, MPCall_98_0xd0
+	bns		cr7, MPCall_98_0x10c
+	beq		cr3, MPCall_98_0xd0
 	cmplw	r29, r17
-	beq+	MPCall_98_0xd0
+	beq		MPCall_98_0xd0
 
 MPCall_98_0x10c
 	lwz		r16,  0x007c(r31)
@@ -2659,15 +2659,15 @@ MPCall_98_0x118
 
 MPCall_98_0x140
 	addi	r5, r5,  0x01
-	beq-	cr3, MPCall_98_0x170
+	beq		cr3, MPCall_98_0x170
 	mr		r8, r28
 	bl		MPCall_95_0x1e4
-	beq+	Local_Panic
+	beq		Local_Panic
 	bl		MPCall_95_0x2b0
 	rlwinm	r17, r17,  0,  0, 19
-	bns-	cr7, MPCall_98_0x170
+	bns		cr7, MPCall_98_0x170
 	cmplw	r29, r17
-	bne-	MPCall_98_0x170
+	bne		MPCall_98_0x170
 	subf	r16, r4, r5
 	b		MPCall_98_0x118
 
@@ -2675,7 +2675,7 @@ MPCall_98_0x170
 	lwz		r16,  0x007c(r31)
 	and		r28, r28, r16
 	cmplw	r5, r28
-	bge-	MPCall_98_0x184
+	bge		MPCall_98_0x184
 	mr		r28, r5
 
 MPCall_98_0x184
@@ -2689,7 +2689,7 @@ MPCall_98_0x184
 MPCall_82	;	OUTSIDE REFERER
 	lwz		r8, -0x0420(r1)
 	cmpwi	r8,  0x00
-	bne+	ReturnMPCallOOM
+	bne		ReturnMPCallOOM
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
@@ -2699,7 +2699,7 @@ MPCall_82	;	OUTSIDE REFERER
  	bl		LookupID
 	cmpwi	r9, Notification.kIDClass
 
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	stw		r3, -0x0420(r1)
 
 ;	r1 = kdp
@@ -2716,7 +2716,7 @@ MPCall_83	;	OUTSIDE REFERER
 	bl		MPCall_83_0x90
 	_AssertAndRelease	PSA.PoolLock, scratch=r16
 	mr.		r4, r8
-	bne+	ReturnZeroFromMPCall
+	bne		ReturnZeroFromMPCall
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
@@ -2729,7 +2729,7 @@ MPCall_83_0x5c	;	OUTSIDE REFERER
 	cmpwi	r9, Notification.kIDClass
 
 	mr		r31, r8
-	bne+	ReleaseAndReturnMPCallOOM
+	bne		ReleaseAndReturnMPCallOOM
 	lwz		r8,  0x001c(r31)
 
 ;	r8 = id
@@ -2737,7 +2737,7 @@ MPCall_83_0x5c	;	OUTSIDE REFERER
 	cmpwi	r9, EventGroup.kIDClass
 
 	mr		r31, r8
-	bne+	ReleaseAndReturnMPCallOOM
+	bne		ReleaseAndReturnMPCallOOM
 	lwz		r8,  0x0020(r31)
 	bl		SetEvent
 	b		ReleaseAndReturnMPCallOOM
@@ -2746,7 +2746,7 @@ MPCall_83_0x90	;	OUTSIDE REFERER
 	addi	r18, r1, -0x450
 	lwz		r8, -0x0448(r1)
 	cmpw	r8, r18
-	beq-	MPCall_83_0xec
+	beq		MPCall_83_0xec
 	RemoveFromList		r8, scratch1=r16, scratch2=r17
 	lwz		r16, -0x0430(r1)
 	addi	r16, r16, -0x01
@@ -2755,7 +2755,7 @@ MPCall_83_0x90	;	OUTSIDE REFERER
 	mfspr	r16, dec
 	eqv.	r17, r18, r17
 	stw		r16,  0x0000(r8)
-	bne+	Local_Panic
+	bne		Local_Panic
 	stw		r16,  0x0004(r8)
 	stw		r16,  0x0008(r8)
 	stw		r16,  0x000c(r8)
@@ -2778,8 +2778,8 @@ MPCall_84	;	OUTSIDE REFERER
 	addi	r18, r1, -0x450
 	eqv.	r16, r16, r17
 	cmpw	cr1, r17, r18
-	bne-	MPCall_84_0x3c
-	bne-	cr1, MPCall_84_0x3c
+	bne		MPCall_84_0x3c
+	bne		cr1, MPCall_84_0x3c
 	li		r3, -0x32
 	b		MPCall_84_0x48
 
@@ -2805,7 +2805,7 @@ free_list_add_page	;	OUTSIDE REFERER
 	;	Must be an actual page-aligned address
 	clrlwi.	r9, r8, 20
 	addi	r9, r1, PSA.FreeList
-	bne+	Local_Panic
+	bne		Local_Panic
 
 
 	;	This is probably an alternative to heavyweight locks around the free list
@@ -2863,26 +2863,26 @@ KCMapPage	;	OUTSIDE REFERER
  	bl		LookupID
 	cmpwi	r9, Area.kIDClass
 
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
 	lwz		r16, Area.Flags(r31)
 	rlwinm.	r8, r16,  0, 28, 28
-	bne+	ReleaseAndReturnParamErrFromMPCall
+	bne		ReleaseAndReturnParamErrFromMPCall
 	lwz		r16, Area.LogicalBase(r31)
 	lwz		r17, Area.LogicalEnd(r31)
 	lwz		r19,  0x0020(r31)
 	cmplw	r4, r16
 	cmplw	cr1, r4, r17
-	blt+	ReleaseAndReturnParamErrFromMPCall
-	bgt+	cr1, ReleaseAndReturnParamErrFromMPCall
+	blt		ReleaseAndReturnParamErrFromMPCall
+	bgt		cr1, ReleaseAndReturnParamErrFromMPCall
 	rlwinm.	r8, r19,  0, 16, 16
 	cmplw	cr1, r4, r16
 	lwz		r20, Area.BytesMapped(r31)
-	beq-	KCMapPage_0x8c
-	bne+	cr1, ReleaseAndReturnParamErrFromMPCall
+	beq		KCMapPage_0x8c
+	bne		cr1, ReleaseAndReturnParamErrFromMPCall
 	cmpwi	r20,  0x00
 	lwz		r8,  0x0070(r31)
-	bne+	ReleaseAndReturnMPCallOOM
+	bne		ReleaseAndReturnMPCallOOM
 	rlwimi	r8, r5,  0,  0, 19
 	lwz		r18,  0x007c(r31)
 	lwz		r20, Area.Length(r31)
@@ -2898,37 +2898,37 @@ KCMapPage_0x8c
 
 	mr		r8, r4
 	bl		MPCall_95_0x1e4
-	beq+	Local_Panic
+	beq		Local_Panic
 	lwz		r29,  0x0000(r30)
 	_AssertAndRelease	PSA.HTABLock, scratch=r14
 	clrlwi.	r8, r29,  0x1f
-	bne+	ReleaseAndReturnMPCallOOM
+	bne		ReleaseAndReturnMPCallOOM
 	lwz		r17,  0x0134(r6)
 	rlwinm.	r8, r17,  0, 30, 30
-	bne-	KCMapPage_0x12c
+	bne		KCMapPage_0x12c
 
 	_Lock			PSA.PoolLock, scratch1=r16, scratch2=r17
 
 	bl		MPCall_83_0x90
 	_AssertAndRelease	PSA.PoolLock, scratch=r16
 	mr.		r5, r8
-	beq+	MPCall_83_0x5c
+	beq		MPCall_83_0x5c
 
 KCMapPage_0x12c
 	lwz		r17,  0x0134(r6)
 	rlwinm.	r8, r17,  0, 29, 29
-	beq-	KCMapPage_0x17c
+	beq		KCMapPage_0x17c
 	rlwinm.	r8, r29,  0, 25, 25
 	lwz		r18,  0x0068(r31)
 
 KCMapPage_0x140
 	addi	r18, r18, -0x20
-	bne-	KCMapPage_0x174
+	bne		KCMapPage_0x174
 	dcbst	r18, r5
 
 KCMapPage_0x14c
 	cmpwi	cr1, r18,  0x00
-	bgt+	cr1, KCMapPage_0x140
+	bgt		cr1, KCMapPage_0x140
 	sync
 	lwz		r18,  0x0068(r31)
 
@@ -2936,7 +2936,7 @@ KCMapPage_0x15c
 	addi	r18, r18, -0x20
 	icbi	r18, r5
 	cmpwi	cr1, r18,  0x00
-	bgt+	cr1, KCMapPage_0x15c
+	bgt		cr1, KCMapPage_0x15c
 	isync
 	b		KCMapPage_0x17c
 
@@ -2957,7 +2957,7 @@ KCMapPage_0x17c
 	clrlwi.	r8, r17,  0x1f
 
 ;	r1 = kdp
-	beq+	ReleaseAndReturnZeroFromMPCall
+	beq		ReleaseAndReturnZeroFromMPCall
 	lwz		r5,  0x0068(r31)
 	b		KCHoldPages_0x2c
 
@@ -2978,12 +2978,12 @@ KCUnmapPages	;	OUTSIDE REFERER
  	bl		LookupID
 	cmpwi	r9, Area.kIDClass
 
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
 	lwz		r8,  0x0134(r6)
 	lwz		r16, Area.Flags(r31)
 	rlwinm.	r16, r16,  0, 28, 28
-	bne+	ReleaseAndReturnParamErrFromMPCall
+	bne		ReleaseAndReturnParamErrFromMPCall
 	clrlwi.	r8, r8,  0x1f
 	add		r5, r5, r4
 	lwz		r16, Area.LogicalBase(r31)
@@ -2993,17 +2993,17 @@ KCUnmapPages	;	OUTSIDE REFERER
 	addi	r5, r5, -0x01
 	cmplw	r4, r16
 	cmplw	cr1, r5, r17
-	blt+	ReleaseAndReturnParamErrFromMPCall
-	bgt+	cr1, ReleaseAndReturnParamErrFromMPCall
+	blt		ReleaseAndReturnParamErrFromMPCall
+	bgt		cr1, ReleaseAndReturnParamErrFromMPCall
 	lwz		r29,  0x0068(r31)
 	lwz		r20, Area.BytesMapped(r31)
 	rlwinm.	r8, r19,  0, 16, 16
 	cmplw	cr1, r4, r16
-	beq-	KCUnmapPages_0xd8
-	bne+	cr1, ReleaseAndReturnParamErrFromMPCall
+	beq		KCUnmapPages_0xd8
+	bne		cr1, ReleaseAndReturnParamErrFromMPCall
 	cmpwi	r20,  0x00
 	li		r20,  0x00
-	ble+	ReleaseAndReturnMPCallOOM
+	ble		ReleaseAndReturnMPCallOOM
 	stw		r20, Area.BytesMapped(r31)
 
 	_Lock			PSA.HTABLock, scratch1=r14, scratch2=r15
@@ -3014,19 +3014,19 @@ KCUnmapPages_0xac
 	mr		r8, r4
 	lwz		r9, Area.AddressSpacePtr(r31)
 	bl		MPCall_95_0x45c
-	beq-	KCUnmapPages_0xc4
+	beq		KCUnmapPages_0xc4
 	bl		MPCall_95_0x2e0
 	bl		MPCall_95_0x348
 
 KCUnmapPages_0xc4
 	add		r4, r4, r29
 	subf.	r8, r4, r5
-	bge+	KCUnmapPages_0xac
+	bge		KCUnmapPages_0xac
 	crclr	cr3_eq
 	b		KCUnmapPages_0x158
 
 KCUnmapPages_0xd8
-	bne-	cr3, KCUnmapPages_0xf4
+	bne		cr3, KCUnmapPages_0xf4
 
 	_Lock			PSA.PoolLock, scratch1=r14, scratch2=r15
 
@@ -3040,16 +3040,16 @@ KCUnmapPages_0xf4
 KCUnmapPages_0x110
 	mr		r8, r4
 	bl		MPCall_95_0x1e4
-	beq+	Local_Panic
+	beq		Local_Panic
 	bl		MPCall_95_0x2b0
-	bns-	cr7, KCUnmapPages_0x148
-	bltl-	cr5, MPCall_95_0x2e0
-	bltl-	cr5, MPCall_95_0x348
+	bns		cr7, KCUnmapPages_0x148
+	bltl	cr5, MPCall_95_0x2e0
+	bltl	cr5, MPCall_95_0x348
 	lwz		r18,  0x0000(r30)
 	subf	r28, r29, r28
 	rlwinm	r18, r18,  0,  0, 30
 	stw		r18,  0x0000(r30)
-	bne-	cr3, KCUnmapPages_0x148
+	bne		cr3, KCUnmapPages_0x148
 	rlwinm	r8, r18,  0,  0, 19
 
 ;	r1 = kdp
@@ -3059,14 +3059,14 @@ KCUnmapPages_0x110
 KCUnmapPages_0x148
 	add		r4, r4, r29
 	subf.	r8, r4, r5
-	bge+	KCUnmapPages_0x110
+	bge		KCUnmapPages_0x110
 	stw		r28, Area.BytesMapped(r31)
 
 KCUnmapPages_0x158
 	_AssertAndRelease	PSA.HTABLock, scratch=r14
 
 ;	r1 = kdp
-	bne+	cr3, ReleaseAndReturnZeroFromMPCall
+	bne		cr3, ReleaseAndReturnZeroFromMPCall
 	_AssertAndRelease	PSA.PoolLock, scratch=r14
 
 ;	r1 = kdp
@@ -3089,7 +3089,7 @@ KCMakePhysicallyContiguous	;	OUTSIDE REFERER
  	bl		LookupID
 	cmpwi	r9, Area.kIDClass
 
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
 	mr		r27, r5
 	add		r5, r5, r4
@@ -3098,12 +3098,12 @@ KCMakePhysicallyContiguous	;	OUTSIDE REFERER
 	addi	r5, r5, -0x01
 	cmplw	r4, r16
 	cmplw	cr1, r5, r17
-	blt+	ReleaseAndReturnParamErrFromMPCall
-	bgt+	cr1, ReleaseAndReturnParamErrFromMPCall
+	blt		ReleaseAndReturnParamErrFromMPCall
+	bgt		cr1, ReleaseAndReturnParamErrFromMPCall
 	lwz		r19,  0x0020(r31)
 	lwz		r29,  0x0068(r31)
 	rlwinm.	r8, r19,  0, 16, 16
-	bne+	ReleaseAndReturnParamErrFromMPCall
+	bne		ReleaseAndReturnParamErrFromMPCall
 
 	_Lock			PSA.HTABLock, scratch1=r14, scratch2=r15
 
@@ -3113,21 +3113,21 @@ KCMakePhysicallyContiguous	;	OUTSIDE REFERER
 NKMakePhysicallyContiguous_0x80
 	mr		r8, r27
 	bl		MPCall_95_0x1e4
-	beq+	Local_Panic
+	beq		Local_Panic
 	bl		MPCall_95_0x2b0
-	bns-	cr7, NKMakePhysicallyContiguous_0x150
+	bns		cr7, NKMakePhysicallyContiguous_0x150
 	rlwinm	r8, r17,  0,  0, 19
 	cmpwi	r28, -0x01
 	cmpw	cr1, r28, r8
 	mr		r28, r8
-	beq-	NKMakePhysicallyContiguous_0xac
-	bne-	cr1, NKMakePhysicallyContiguous_0xe0
+	beq		NKMakePhysicallyContiguous_0xac
+	bne		cr1, NKMakePhysicallyContiguous_0xe0
 
 NKMakePhysicallyContiguous_0xac
 	add		r27, r27, r29
 	add		r28, r28, r29
 	subf.	r8, r27, r5
-	bge+	NKMakePhysicallyContiguous_0x80
+	bge		NKMakePhysicallyContiguous_0x80
 	_AssertAndRelease	PSA.HTABLock, scratch=r14
 
 ;	r1 = kdp
@@ -3141,7 +3141,7 @@ NKMakePhysicallyContiguous_0xe0
 	addi	r18, r1, -0x450
 	lwz		r8, -0x0448(r1)
 	cmpw	r8, r18
-	beq-	NKMakePhysicallyContiguous_0x174
+	beq		NKMakePhysicallyContiguous_0x174
 	b		NKMakePhysicallyContiguous_0x174
 	dc.l	0x7c0004ac				;	probably dead code, not a jump table
 	dc.l	0x8201f530
@@ -3178,7 +3178,7 @@ KCLockPages	;	OUTSIDE REFERER
  	bl		LookupID
 	cmpwi	r9, Area.kIDClass
 
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
 	mr		r27, r5
 	add		r5, r5, r4
@@ -3187,52 +3187,52 @@ KCLockPages	;	OUTSIDE REFERER
 	addi	r5, r5, -0x01
 	cmplw	r4, r16
 	cmplw	cr1, r5, r17
-	blt+	ReleaseAndReturnParamErrFromMPCall
-	bgt+	cr1, ReleaseAndReturnParamErrFromMPCall
+	blt		ReleaseAndReturnParamErrFromMPCall
+	bgt		cr1, ReleaseAndReturnParamErrFromMPCall
 	lwz		r19,  0x0020(r31)
 	lwz		r29,  0x0068(r31)
 	rlwinm.	r8, r19,  0, 16, 16
-	bne+	ReleaseAndReturnParamErrFromMPCall
+	bne		ReleaseAndReturnParamErrFromMPCall
 	mr		r27, r4
 	li		r28,  0x00
 
 KCLockPages_0x68
 	mr		r8, r27
 	bl		MPCall_95_0x254
-	beq+	ReleaseAndReturnParamErrFromMPCall
+	beq		ReleaseAndReturnParamErrFromMPCall
 	lhz		r18,  0x0000(r30)
 	rlwinm	r17, r18, 24, 25, 31
 	rlwinm.	r8, r18,  0, 16, 16
 	cmpwi	cr1, r17,  0x7f
 	addi	r28, r28,  0x01
-	beq-	KCLockPages_0x94
+	beq		KCLockPages_0x94
 	addi	r28, r28, -0x01
-	bge+	cr1, major_0x0b0cc
+	bge		cr1, major_0x0b0cc
 
 KCLockPages_0x94
 	add		r27, r27, r29
 	subf.	r8, r27, r5
-	bge+	KCLockPages_0x68
+	bge		KCLockPages_0x68
 
 	_Lock			PSA.PoolLock, scratch1=r16, scratch2=r17
 
 	lwz		r16, PSA.UnheldFreePageCount(r1)
 	subf.	r16, r28, r16
-	ble-	KCLockPages_0xc8
+	ble		KCLockPages_0xc8
 	stw		r16, PSA.UnheldFreePageCount(r1)
 
 KCLockPages_0xc8
 	_AssertAndRelease	PSA.PoolLock, scratch=r16
-	ble+	ReleaseAndReturnMPCallOOM
+	ble		ReleaseAndReturnMPCallOOM
 	mr		r27, r4
 
 KCLockPages_0xf0
 	mr		r8, r27
 	bl		MPCall_95_0x254
-	beq+	Local_Panic
+	beq		Local_Panic
 	lhz		r18,  0x0000(r30)
 	rlwinm.	r17, r18,  0, 16, 16
-	bne-	KCLockPages_0x10c
+	bne		KCLockPages_0x10c
 	li		r18, -0x8000
 
 KCLockPages_0x10c
@@ -3242,7 +3242,7 @@ KCLockPages_0x10c
 	sth		r18,  0x0000(r30)
 	add		r27, r27, r29
 	subf.	r8, r27, r5
-	bge+	KCLockPages_0xf0
+	bge		KCLockPages_0xf0
 
 ;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall
@@ -3264,7 +3264,7 @@ KCUnlockPages	;	OUTSIDE REFERER
  	bl		LookupID
 	cmpwi	r9, Area.kIDClass
 
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
 	add		r5, r5, r4
 	lwz		r16, Area.LogicalBase(r31)
@@ -3272,40 +3272,40 @@ KCUnlockPages	;	OUTSIDE REFERER
 	addi	r5, r5, -0x01
 	cmplw	r4, r16
 	cmplw	cr1, r5, r17
-	blt+	ReleaseAndReturnParamErrFromMPCall
-	bgt+	cr1, ReleaseAndReturnParamErrFromMPCall
+	blt		ReleaseAndReturnParamErrFromMPCall
+	bgt		cr1, ReleaseAndReturnParamErrFromMPCall
 	lwz		r19,  0x0020(r31)
 	lwz		r29,  0x0068(r31)
 	rlwinm.	r8, r19,  0, 16, 16
-	bne+	ReleaseAndReturnParamErrFromMPCall
+	bne		ReleaseAndReturnParamErrFromMPCall
 	mr		r27, r4
 
 KCUnlockPages_0x60
 	mr		r8, r27
 	bl		MPCall_95_0x254
-	beq+	ReleaseAndReturnParamErrFromMPCall
+	beq		ReleaseAndReturnParamErrFromMPCall
 	lhz		r18,  0x0000(r30)
 	rlwinm	r17, r18, 24, 25, 31
 	rlwinm.	r8, r18,  0, 16, 16
 	cmpwi	cr1, r17,  0x00
-	beq+	major_0x0b0cc
+	beq		major_0x0b0cc
 	addi	r28, r28,  0x01
-	beq+	cr1, major_0x0b0cc
+	beq		cr1, major_0x0b0cc
 	add		r27, r27, r29
 	subf.	r8, r27, r5
-	bge+	KCUnlockPages_0x60
+	bge		KCUnlockPages_0x60
 	li		r28,  0x00
 
 KCUnlockPages_0x98
 	mr		r8, r4
 	bl		MPCall_95_0x254
-	beq+	ReleaseAndReturnParamErrFromMPCall
+	beq		ReleaseAndReturnParamErrFromMPCall
 	lhz		r18,  0x0000(r30)
 	rlwinm	r17, r18, 24, 25, 31
 	addi	r17, r17, -0x01
 	rlwimi	r18, r17,  8, 17, 23
 	clrlwi.	r8, r18,  0x11
-	bne-	KCUnlockPages_0xc4
+	bne		KCUnlockPages_0xc4
 	rlwinm	r18, r18,  0, 17, 15
 	addi	r28, r28,  0x01
 
@@ -3313,7 +3313,7 @@ KCUnlockPages_0xc4
 	sth		r18,  0x0000(r30)
 	add		r4, r4, r29
 	subf.	r8, r4, r5
-	bge+	KCUnlockPages_0x98
+	bge		KCUnlockPages_0x98
 
 	_Lock			PSA.PoolLock, scratch1=r16, scratch2=r17
 
@@ -3342,7 +3342,7 @@ KCHoldPages	;	OUTSIDE REFERER
  	bl		LookupID
 	cmpwi	r9, Area.kIDClass
 
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
 
 KCHoldPages_0x2c	;	OUTSIDE REFERER
@@ -3352,52 +3352,52 @@ KCHoldPages_0x2c	;	OUTSIDE REFERER
 	addi	r5, r5, -0x01
 	cmplw	r4, r16
 	cmplw	cr1, r5, r17
-	blt+	ReleaseAndReturnParamErrFromMPCall
-	bgt+	cr1, ReleaseAndReturnParamErrFromMPCall
+	blt		ReleaseAndReturnParamErrFromMPCall
+	bgt		cr1, ReleaseAndReturnParamErrFromMPCall
 	lwz		r19,  0x0020(r31)
 	lwz		r29,  0x0068(r31)
 	rlwinm.	r8, r19,  0, 16, 16
-	bne+	ReleaseAndReturnParamErrFromMPCall
+	bne		ReleaseAndReturnParamErrFromMPCall
 	mr		r27, r4
 	li		r28,  0x00
 
 KCHoldPages_0x64
 	mr		r8, r27
 	bl		MPCall_95_0x254
-	beq+	ReleaseAndReturnParamErrFromMPCall
+	beq		ReleaseAndReturnParamErrFromMPCall
 	lhz		r18,  0x0000(r30)
 	clrlwi	r17, r18,  0x18
 	rlwinm.	r8, r18,  0, 16, 16
 	cmpwi	cr1, r17,  0xff
 	addi	r28, r28,  0x01
-	beq-	KCHoldPages_0x90
+	beq		KCHoldPages_0x90
 	addi	r28, r28, -0x01
-	bge+	cr1, major_0x0b0cc
+	bge		cr1, major_0x0b0cc
 
 KCHoldPages_0x90
 	add		r27, r27, r29
 	subf.	r8, r27, r5
-	bge+	KCHoldPages_0x64
+	bge		KCHoldPages_0x64
 
 	_Lock			PSA.PoolLock, scratch1=r16, scratch2=r17
 
 	lwz		r16, PSA.UnheldFreePageCount(r1)
 	subf.	r16, r28, r16
-	ble-	KCHoldPages_0xc4
+	ble		KCHoldPages_0xc4
 	stw		r16, PSA.UnheldFreePageCount(r1)
 
 KCHoldPages_0xc4
 	_AssertAndRelease	PSA.PoolLock, scratch=r16
-	ble+	ReleaseAndReturnMPCallOOM
+	ble		ReleaseAndReturnMPCallOOM
 	mr		r27, r4
 
 KCHoldPages_0xec
 	mr		r8, r27
 	bl		MPCall_95_0x254
-	beq+	Local_Panic
+	beq		Local_Panic
 	lhz		r18,  0x0000(r30)
 	rlwinm.	r17, r18,  0, 16, 16
-	bne-	KCHoldPages_0x108
+	bne		KCHoldPages_0x108
 	li		r18, -0x8000
 
 KCHoldPages_0x108
@@ -3407,7 +3407,7 @@ KCHoldPages_0x108
 	sth		r18,  0x0000(r30)
 	add		r27, r27, r29
 	subf.	r8, r27, r5
-	bge+	KCHoldPages_0xec
+	bge		KCHoldPages_0xec
 
 ;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall
@@ -3429,7 +3429,7 @@ KCUnholdPages	;	OUTSIDE REFERER
  	bl		LookupID
 	cmpwi	r9, Area.kIDClass
 
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
 	add		r5, r5, r4
 	lwz		r16, Area.LogicalBase(r31)
@@ -3437,40 +3437,40 @@ KCUnholdPages	;	OUTSIDE REFERER
 	addi	r5, r5, -0x01
 	cmplw	r4, r16
 	cmplw	cr1, r5, r17
-	blt+	ReleaseAndReturnParamErrFromMPCall
-	bgt+	cr1, ReleaseAndReturnParamErrFromMPCall
+	blt		ReleaseAndReturnParamErrFromMPCall
+	bgt		cr1, ReleaseAndReturnParamErrFromMPCall
 	lwz		r19,  0x0020(r31)
 	lwz		r29,  0x0068(r31)
 	rlwinm.	r8, r19,  0, 16, 16
-	bne+	ReleaseAndReturnParamErrFromMPCall
+	bne		ReleaseAndReturnParamErrFromMPCall
 	mr		r27, r4
 
 KCUnholdPages_0x60
 	mr		r8, r27
 	bl		MPCall_95_0x254
-	beq+	ReleaseAndReturnParamErrFromMPCall
+	beq		ReleaseAndReturnParamErrFromMPCall
 	lhz		r18,  0x0000(r30)
 	clrlwi	r17, r18,  0x18
 	rlwinm.	r8, r18,  0, 16, 16
 	cmpwi	cr1, r17,  0x00
-	beq+	major_0x0b0cc
+	beq		major_0x0b0cc
 	addi	r28, r28,  0x01
-	beq+	cr1, major_0x0b0cc
+	beq		cr1, major_0x0b0cc
 	add		r27, r27, r29
 	subf.	r8, r27, r5
-	bge+	KCUnholdPages_0x60
+	bge		KCUnholdPages_0x60
 	li		r28,  0x00
 
 KCUnholdPages_0x98
 	mr		r8, r4
 	bl		MPCall_95_0x254
-	beq+	ReleaseAndReturnParamErrFromMPCall
+	beq		ReleaseAndReturnParamErrFromMPCall
 	lhz		r18,  0x0000(r30)
 	clrlwi	r17, r18,  0x18
 	addi	r17, r17, -0x01
 	rlwimi	r18, r17,  0, 24, 31
 	clrlwi.	r8, r18,  0x11
-	bne-	KCUnholdPages_0xc4
+	bne		KCUnholdPages_0xc4
 	rlwinm	r18, r18,  0, 17, 15
 	addi	r28, r28,  0x01
 
@@ -3478,7 +3478,7 @@ KCUnholdPages_0xc4
 	sth		r18,  0x0000(r30)
 	add		r4, r4, r29
 	subf.	r8, r4, r5
-	bge+	KCUnholdPages_0x98
+	bge		KCUnholdPages_0x98
 
 	_Lock			PSA.PoolLock, scratch1=r16, scratch2=r17
 
@@ -3504,29 +3504,29 @@ MPCall_91	;	OUTSIDE REFERER
  	bl		LookupID
 	cmpwi	r9, Area.kIDClass
 
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
 	lwz		r16, Area.LogicalBase(r31)
 	lwz		r17, Area.LogicalEnd(r31)
 	cmplw	r4, r16
 	cmplw	cr1, r4, r17
-	blt+	ReleaseAndReturnParamErrFromMPCall
-	bgt+	cr1, ReleaseAndReturnParamErrFromMPCall
+	blt		ReleaseAndReturnParamErrFromMPCall
+	bgt		cr1, ReleaseAndReturnParamErrFromMPCall
 
 	_Lock			PSA.HTABLock, scratch1=r14, scratch2=r15
 
 	mr		r8, r4
 	bl		MPCall_95_0x1e4
-	beq-	MPCall_91_0xcc
+	beq		MPCall_91_0xcc
 	bl		MPCall_95_0x2b0
-	bltl-	cr5, MPCall_95_0x2e0
-	bltl-	cr5, MPCall_95_0x348
+	bltl	cr5, MPCall_95_0x2e0
+	bltl	cr5, MPCall_95_0x348
 	lwz		r29,  0x0000(r30)
 	_AssertAndRelease	PSA.HTABLock, scratch=r14
 	mr		r8, r4
 	bl		MPCall_95_0x254
 	li		r19,  0x00
-	beq-	MPCall_91_0xac
+	beq		MPCall_91_0xac
 	lhz		r19,  0x0000(r30)
 
 MPCall_91_0xac
@@ -3535,11 +3535,11 @@ MPCall_91_0xac
 	rlwimi	r5, r19,  0, 16, 16
 
 ;	r1 = kdp
-	beq+	ReleaseAndReturnZeroFromMPCall
+	beq		ReleaseAndReturnZeroFromMPCall
 	rlwinm.	r8, r19,  0, 17, 23
 
 ;	r1 = kdp
-	beq+	ReleaseAndReturnZeroFromMPCall
+	beq		ReleaseAndReturnZeroFromMPCall
 	ori		r5, r5,  0x4000
 
 ;	r1 = kdp
@@ -3563,33 +3563,33 @@ MPCall_92	;	OUTSIDE REFERER
  	bl		LookupID
 	cmpwi	r9, Area.kIDClass
 
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
 	lwz		r16, Area.Flags(r31)
 	rlwinm.	r8, r16,  0, 28, 28
-	bne+	ReleaseAndReturnParamErrFromMPCall
+	bne		ReleaseAndReturnParamErrFromMPCall
 	lwz		r29,  0x0134(r6)
 	li		r8,  0x318
 	andc.	r9, r5, r8
-	bne+	ReleaseAndReturnParamErrFromMPCall
+	bne		ReleaseAndReturnParamErrFromMPCall
 	andc.	r9, r29, r8
-	bne+	ReleaseAndReturnParamErrFromMPCall
+	bne		ReleaseAndReturnParamErrFromMPCall
 	lwz		r16, Area.LogicalBase(r31)
 	lwz		r17, Area.LogicalEnd(r31)
 	cmplw	r4, r16
 	cmplw	cr1, r4, r17
-	blt+	ReleaseAndReturnParamErrFromMPCall
-	bgt+	cr1, ReleaseAndReturnParamErrFromMPCall
+	blt		ReleaseAndReturnParamErrFromMPCall
+	bgt		cr1, ReleaseAndReturnParamErrFromMPCall
 
 	_Lock			PSA.HTABLock, scratch1=r14, scratch2=r15
 
 	mr		r8, r4
 	bl		MPCall_95_0x1e4
-	beq-	MPCall_92_0xd8
+	beq		MPCall_92_0xd8
 	bl		MPCall_95_0x2b0
-	bns-	cr7, MPCall_92_0x9c
-	bltl-	cr5, MPCall_95_0x2e0
-	bltl-	cr5, MPCall_95_0x348
+	bns		cr7, MPCall_92_0x9c
+	bltl	cr5, MPCall_95_0x2e0
+	bltl	cr5, MPCall_95_0x348
 
 MPCall_92_0x9c
 	lwz		r16,  0x0000(r30)
@@ -3621,23 +3621,23 @@ MPCall_93	;	OUTSIDE REFERER
  	bl		LookupID
 	cmpwi	r9, Area.kIDClass
 
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
 	lwz		r16, Area.LogicalBase(r31)
 	lwz		r17, Area.LogicalEnd(r31)
 	cmplw	r4, r16
 	cmplw	cr1, r4, r17
-	blt+	ReleaseAndReturnParamErrFromMPCall
-	bgt+	cr1, ReleaseAndReturnParamErrFromMPCall
+	blt		ReleaseAndReturnParamErrFromMPCall
+	bgt		cr1, ReleaseAndReturnParamErrFromMPCall
 	mr		r8, r4
 	bl		MPCall_95_0x254
-	beq+	ReleaseAndReturnParamErrFromMPCall
+	beq		ReleaseAndReturnParamErrFromMPCall
 	lhz		r18,  0x0000(r30)
 	rlwinm.	r8, r18,  0, 16, 16
 	li		r5,  0x00
 
 ;	r1 = kdp
-	bne+	ReleaseAndReturnZeroFromMPCall
+	bne		ReleaseAndReturnZeroFromMPCall
 	clrlwi	r5, r18,  0x11
 
 ;	r1 = kdp
@@ -3657,22 +3657,22 @@ MPCall_94	;	OUTSIDE REFERER
  	bl		LookupID
 	cmpwi	r9, Area.kIDClass
 
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
 	lwz		r16, Area.LogicalBase(r31)
 	lwz		r17, Area.LogicalEnd(r31)
 	cmplw	r4, r16
 	cmplw	cr1, r4, r17
-	blt+	ReleaseAndReturnParamErrFromMPCall
-	bgt+	cr1, ReleaseAndReturnParamErrFromMPCall
+	blt		ReleaseAndReturnParamErrFromMPCall
+	bgt		cr1, ReleaseAndReturnParamErrFromMPCall
 	mr		r8, r4
 	bl		MPCall_95_0x254
-	beq+	ReleaseAndReturnParamErrFromMPCall
+	beq		ReleaseAndReturnParamErrFromMPCall
 	cmplwi	r5,  0x7fff
-	bgt+	ReleaseAndReturnParamErrFromMPCall
+	bgt		ReleaseAndReturnParamErrFromMPCall
 	lhz		r18,  0x0000(r30)
 	rlwinm.	r8, r18,  0, 16, 16
-	bne+	ReleaseAndReturnMPCallOOM
+	bne		ReleaseAndReturnMPCallOOM
 	rlwimi	r18, r5,  0, 17, 31
 	sth		r18,  0x0000(r30)
 
@@ -3680,11 +3680,11 @@ MPCall_94	;	OUTSIDE REFERER
 
 	mr		r8, r4
 	bl		MPCall_95_0x1e4
-	beq+	Local_Panic
+	beq		Local_Panic
 	bl		MPCall_95_0x2b0
-	bns-	cr7, MPCall_94_0xa0
-	bltl-	cr5, MPCall_95_0x2e0
-	bltl-	cr5, MPCall_95_0x348
+	bns		cr7, MPCall_94_0xa0
+	bltl	cr5, MPCall_95_0x2e0
+	bltl	cr5, MPCall_95_0x348
 
 MPCall_94_0xa0
 	_AssertAndRelease	PSA.HTABLock, scratch=r16
@@ -3706,22 +3706,22 @@ MPCall_129	;	OUTSIDE REFERER
  	bl		LookupID
 	cmpwi	r9, Area.kIDClass
 
-	bne+	ReleaseAndReturnMPCallInvalidIDErr
+	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
 	lwz		r16, Area.LogicalBase(r31)
 	lwz		r17, Area.LogicalEnd(r31)
 	cmplw	r4, r16
 	cmplw	cr1, r4, r17
-	blt+	ReleaseAndReturnParamErrFromMPCall
-	bgt+	cr1, ReleaseAndReturnParamErrFromMPCall
+	blt		ReleaseAndReturnParamErrFromMPCall
+	bgt		cr1, ReleaseAndReturnParamErrFromMPCall
 	mr		r8, r4
 	bl		MPCall_95_0x254
-	beq+	ReleaseAndReturnParamErrFromMPCall
+	beq		ReleaseAndReturnParamErrFromMPCall
 	lhz		r18,  0x0000(r30)
 	li		r5,  0x00
 	rlwinm.	r8, r18,  0, 16, 16
 	li		r16,  0x00
-	beq-	MPCall_129_0x6c
+	beq		MPCall_129_0x6c
 	rlwinm	r16, r18, 24, 25, 31
 	clrlwi	r5, r18,  0x18
 
@@ -3737,7 +3737,7 @@ MPCall_129_0x6c
 
 MPCall_95	;	OUTSIDE REFERER
 	or.		r8, r3, r4
-	bne-	MPCall_95_0x44
+	bne		MPCall_95_0x44
 	li		r16,  0x00
 	stw		r16,  0x06b4(r1)
 	_log	'Areas capability probe detected^n'
@@ -3752,7 +3752,7 @@ MPCall_95_0x44
 	li		r5,  0x00
 	lwz		r8, PSA.UnheldFreePageCount(r1)
 	cmpwi	r8,  0x00
-	ble+	ReleaseAndReturnMPCallOOM
+	ble		ReleaseAndReturnMPCallOOM
 	lwz		r27, -0x0438(r1)
 	srwi	r27, r27, 15
 	mfspr	r8, dec
@@ -3764,7 +3764,7 @@ MPCall_95_0x44
 	mr		r31, r8
 	lwz		r29, Area.LogicalBase(r31)
 	cmplw	r29, r30
-	bgt-	MPCall_95_0xa8
+	bgt		MPCall_95_0xa8
 	mr		r29, r30
 
 MPCall_95_0xa8
@@ -3773,59 +3773,59 @@ MPCall_95_0xa8
 MPCall_95_0xac
 	mfspr	r9, dec
 	subf.	r9, r27, r9
-	blt-	MPCall_95_0x1c8
+	blt		MPCall_95_0x1c8
 
 MPCall_95_0xb8
 	lwz		r8,  0x0020(r31)
 	lwz		r9,  0x0018(r31)
 	rlwinm.	r8, r8,  0, 16, 16
 	cmpwi	cr1, r3,  0x00
-	bne-	MPCall_95_0x19c
-	beq-	cr1, MPCall_95_0xe0
+	bne		MPCall_95_0x19c
+	beq		cr1, MPCall_95_0xe0
 	cmpwi	cr3, r9,  0x00
-	beq-	cr3, MPCall_95_0xe0
+	beq		cr3, MPCall_95_0xe0
 	cmpw	cr1, r9, r3
-	bne-	cr1, MPCall_95_0x19c
+	bne		cr1, MPCall_95_0x19c
 
 MPCall_95_0xe0
 	lwz		r9, Area.Flags(r31)
 	rlwinm.	r8, r9,  0, 28, 28
-	bne-	MPCall_95_0x19c
+	bne		MPCall_95_0x19c
 	rlwinm.	r8, r9,  0, 23, 23
-	bne-	MPCall_95_0x19c
+	bne		MPCall_95_0x19c
 
 	_Lock			PSA.HTABLock, scratch1=r16, scratch2=r17
 
 	mr		r8, r29
 	bl		MPCall_95_0x1e4
-	beq+	Local_Panic
+	beq		Local_Panic
 	_AssertAndRelease	PSA.HTABLock, scratch=r16
 	lwz		r16,  0x0000(r30)
 	clrlwi.	r8, r16,  0x1f
-	beq-	MPCall_95_0x180
+	beq		MPCall_95_0x180
 	mr		r8, r29
 	bl		MPCall_95_0x254
-	beq-	MPCall_95_0x1c8
+	beq		MPCall_95_0x1c8
 	lhz		r17,  0x0000(r30)
 	rlwinm.	r8, r17,  0, 16, 16
 	clrlwi	r17, r17,  0x11
-	bne-	MPCall_95_0x180
+	bne		MPCall_95_0x180
 	cmpw	r17, r28
 	crclr	cr2_eq
-	ble-	MPCall_95_0x180
+	ble		MPCall_95_0x180
 	mr		r28, r17
 	lwz		r4, Area.ID(r31)
 	cmplwi	r17,  0x7fff
 	mr		r5, r29
-	bge-	MPCall_95_0x1c8
+	bge		MPCall_95_0x1c8
 
 MPCall_95_0x180
 	lwz		r8,  0x0068(r31)
 	lwz		r9, Area.LogicalEnd(r31)
 	add		r29, r29, r8
 	subf.	r9, r9, r29
-	bge-	MPCall_95_0x19c
-	bne+	cr2, MPCall_95_0xac
+	bge		MPCall_95_0x19c
+	bne		cr2, MPCall_95_0xac
 	b		MPCall_95_0xb8
 
 MPCall_95_0x19c
@@ -3834,19 +3834,19 @@ MPCall_95_0x19c
 	cmpw	r8, r9
 	addi	r31, r9, -0x54
 	lwz		r29, Area.LogicalBase(r31)
-	bne-	MPCall_95_0x1c0
+	bne		MPCall_95_0x1c0
 	lwz		r9,  0x0008(r8)
 	addi	r31, r9, -0x54
 	lwz		r29, Area.LogicalBase(r31)
 
 MPCall_95_0x1c0
-	bne+	cr2, MPCall_95_0xac
+	bne		cr2, MPCall_95_0xac
 	b		MPCall_95_0xb8
 
 MPCall_95_0x1c8
 	cmpwi	r4,  0x00
 	stw		r29, -0x03f4(r1)
-	beq+	ReleaseAndReturnMPCallOOM
+	beq		ReleaseAndReturnMPCallOOM
 	lwz		r8,  0x0068(r31)
 	add		r8, r8, r5
 	stw		r8, -0x03f4(r1)
@@ -3861,10 +3861,10 @@ MPCall_95_0x1e4	;	OUTSIDE REFERER
 	subf	r17, r16, r8
 	cmpwi	r30,  0x00
 	rlwinm	r17, r17, 22, 10, 29
-	beqlr-
+	beqlr
 	rlwinm.	r16, r18,  0, 26, 26
 	rlwinm	r16, r17, 22, 20, 29
-	beq-	MPCall_95_0x214
+	beq		MPCall_95_0x214
 	rlwinm	r17, r17,  0, 20, 29
 	lwzx	r30, r30, r16
 
@@ -3893,7 +3893,7 @@ MPCall_95_0x254	;	OUTSIDE REFERER
 	lwz		r30,  0x003c(r31)
 	rlwinm.	r17, r18,  0, 28, 28
 	subf	r17, r16, r8
-	beq-	MPCall_95_0x288
+	beq		MPCall_95_0x288
 	lwz		r30,  0x0044(r31)
 	lwz		r18,  0x0080(r31)
 	addi	r30, r30, -0x44
@@ -3905,10 +3905,10 @@ MPCall_95_0x254	;	OUTSIDE REFERER
 MPCall_95_0x288
 	cmpwi	r30,  0x00
 	rlwinm	r17, r17, 21, 11, 30
-	beqlr-
+	beqlr
 	rlwinm.	r16, r18,  0, 30, 30
 	rlwinm	r16, r17, 22, 20, 29
-	beq-	MPCall_95_0x2a8
+	beq		MPCall_95_0x2a8
 	rlwinm	r17, r17,  0, 20, 30
 	lwzx	r30, r30, r16
 
@@ -3922,12 +3922,12 @@ MPCall_95_0x2b0	;	OUTSIDE REFERER
 	mtcrf	 0x07, r19
 	rlwinm	r17, r19,  0,  0, 19
 	rlwinm	r16, r19, 23,  9, 28
-	bnslr-	cr7
-	bgelr-	cr5
+	bnslr	cr7
+	bgelr	cr5
 	lwzux	r16, r18, r16
 	lwz		r17,  0x0004(r18)
 	mtcrf	 0x80, r16
-	bge+	Local_Panic
+	bge		Local_Panic
 	blr
 
 MPCall_95_0x2e0	;	OUTSIDE REFERER
@@ -3937,7 +3937,7 @@ MPCall_95_0x2e0	;	OUTSIDE REFERER
 	stw		r16,  0x0000(r18)
 	sync
 	tlbie	r8
-	beq-	MPCall_95_0x304
+	beq		MPCall_95_0x304
 	sync
 	tlbsync
 
@@ -3948,7 +3948,7 @@ MPCall_95_0x304
 	lwz		r14,  0x0000(r30)
 	lwz		r17,  0x0004(r18)
 	oris	r16, r16,  0x8000
-	beqlr-
+	beqlr
 	rlwimi	r14, r17, 29, 27, 27
 	rlwimi	r14, r17, 27, 28, 28
 	mtcrf	 0x07, r14
@@ -3977,14 +3977,14 @@ MPCall_95_0x348	;	OUTSIDE REFERER
 	cmpwi	r30,  0x00
 	li		r16,  0x00
 	li		r17,  0x00
-	beq+	MPCall_95_0x334
+	beq		MPCall_95_0x334
 	stw		r14,  0x0000(r30)
 	b		MPCall_95_0x334
 
 V2P	;	OUTSIDE REFERER
 	mr.		r19, r9
 	mfsprg	r17, 0
-	bne-	MPCall_95_0x39c
+	bne		MPCall_95_0x39c
 	lwz		r19, EWA.PA_CurAddressSpace(r17)
 
 MPCall_95_0x39c
@@ -3994,42 +3994,42 @@ MPCall_95_0x39c
 	rlwimi	r19, r16, 15,  0, 14
 	xor		r17, r8, r16
 	andc.	r17, r17, r19
-	beq-	MPCall_95_0x444
+	beq		MPCall_95_0x444
 	lwzu	r16,  0x0008(r18)
 	rlwimi	r19, r16, 15,  0, 14
 	xor		r17, r8, r16
 	andc.	r17, r17, r19
-	beq-	MPCall_95_0x444
+	beq		MPCall_95_0x444
 	lwzu	r16,  0x0008(r18)
 	rlwimi	r19, r16, 15,  0, 14
 	xor		r17, r8, r16
 	andc.	r17, r17, r19
-	beq-	MPCall_95_0x444
+	beq		MPCall_95_0x444
 	lwzu	r16,  0x0008(r18)
 	rlwimi	r19, r16, 15,  0, 14
 	xor		r17, r8, r16
 	andc.	r17, r17, r19
-	beq-	MPCall_95_0x444
+	beq		MPCall_95_0x444
 	lwzu	r16,  0x0008(r18)
 	rlwimi	r19, r16, 15,  0, 14
 	xor		r17, r8, r16
 	andc.	r17, r17, r19
-	beq-	MPCall_95_0x444
+	beq		MPCall_95_0x444
 	lwzu	r16,  0x0008(r18)
 	rlwimi	r19, r16, 15,  0, 14
 	xor		r17, r8, r16
 	andc.	r17, r17, r19
-	beq-	MPCall_95_0x444
+	beq		MPCall_95_0x444
 	lwzu	r16,  0x0008(r18)
 	rlwimi	r19, r16, 15,  0, 14
 	xor		r17, r8, r16
 	andc.	r17, r17, r19
-	beq-	MPCall_95_0x444
+	beq		MPCall_95_0x444
 	lwzu	r16,  0x0008(r18)
 	rlwimi	r19, r16, 15,  0, 14
 	xor		r17, r8, r16
 	andc.	r17, r17, r19
-	bne-	MPCall_95_0x45c
+	bne		MPCall_95_0x45c
 
 MPCall_95_0x444
 	andi.	r17, r16,  0x01
@@ -4037,12 +4037,12 @@ MPCall_95_0x444
 	lwzu	r17,  0x0004(r18)
 	and		r19, r8, r19
 	or		r17, r17, r19
-	bnelr-
+	bnelr
 
 MPCall_95_0x45c	;	OUTSIDE REFERER
 	cmpwi	r9, noErr
 	addi	r16, r9,  0x30
-	beq-	MPCall_95_0x474
+	beq		MPCall_95_0x474
 	rlwinm	r17, r8,  6, 26, 29
 	lwzx	r17, r16, r17
 	b		MPCall_95_0x478
@@ -4069,7 +4069,7 @@ MPCall_95_0x4a0
 	lwz		r17,  0x0010(r18)
 	cmpw	cr7, r16, r9
 	lwzu	r9,  0x0018(r18)
-	bne-	cr6, MPCall_95_0x4c4
+	bne		cr6, MPCall_95_0x4c4
 
 MPCall_95_0x4bc
 	lwzu	r17, -0x0014(r18)
@@ -4078,28 +4078,28 @@ MPCall_95_0x4bc
 MPCall_95_0x4c4
 	cmpw	cr6, r16, r17
 	lwzu	r17,  0x0008(r18)
-	beq+	cr7, MPCall_95_0x4bc
+	beq		cr7, MPCall_95_0x4bc
 	cmpw	cr7, r16, r9
 	lwzu	r9,  0x0008(r18)
-	beq+	cr6, MPCall_95_0x4bc
+	beq		cr6, MPCall_95_0x4bc
 	cmpw	cr6, r16, r17
 	lwzu	r17,  0x0008(r18)
-	beq+	cr7, MPCall_95_0x4bc
+	beq		cr7, MPCall_95_0x4bc
 	cmpw	cr7, r16, r9
 	lwzu	r9,  0x0008(r18)
-	beq+	cr6, MPCall_95_0x4bc
+	beq		cr6, MPCall_95_0x4bc
 	cmpw	cr6, r16, r17
 	lwzu	r17, -0x000c(r18)
-	beqlr-	cr7
+	beqlr	cr7
 	cmpw	cr7, r16, r9
 	lwzu	r17,  0x0008(r18)
-	beqlr-	cr6
+	beqlr	cr6
 	lwzu	r17,  0x0008(r18)
-	beqlr-	cr7
+	beqlr	cr7
 	lwz		r17,  0x06a0(r1)
 	xori	r16, r16,  0x40
 	andi.	r9, r16,  0x40
 	addi	r18, r18, -0x3c
 	xor		r18, r18, r17
-	bne+	MPCall_95_0x4a0
+	bne		MPCall_95_0x4a0
 	blr

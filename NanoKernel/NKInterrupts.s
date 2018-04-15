@@ -38,7 +38,7 @@ major_0x02980	;	OUTSIDE REFERER
 	lwz		r9, EWA.Enables(r1)
 	rlwinm	r23, r17, 31, 27, 31
 	rlwnm.	r9, r9, r8,  0x00,  0x00
-	bsol-	cr3, major_0x02980_0x100
+	bsol	cr3, major_0x02980_0x100
 	lwz		r6, -0x0014(r1)
 	ori		r7, r16,  0x10
 	neg		r23, r23
@@ -70,10 +70,10 @@ major_0x02980	;	OUTSIDE REFERER
 	lwz		r8,  0x0034(r1)
 	stw		r8,  0x016c(r6)
 	cmpwi	cr1, r9,  0x14
-	blt-	cr4, major_0x04a20_0x18
-	bne-	cr2, TaskApproachTwo
-	blt-	major_0x02980_0xa8
-	bne-	cr1, major_0x02980_0x178
+	blt		cr4, major_0x04a20_0x18
+	bne		cr2, TaskApproachTwo
+	blt		major_0x02980_0xa8
+	bne		cr1, major_0x02980_0x178
 	b		TaskApproachTwo
 
 major_0x02980_0xa8
@@ -91,13 +91,13 @@ major_0x02980_0xa8
 	lwz		r1, -0x0004(r1)
 	lwz		r4,  0x0054(r6)
 	lwz		r3,  0x0654(r1)
-	blt-	cr2, major_0x02980_0xec
+	blt		cr2, major_0x02980_0xec
 	lwz		r3,  0x05b4(r1)
 	_bclr	r11, r11, 16
 
 major_0x02980_0xec
 	lwz		r12,  0x0648(r1)
-	bsol-	cr6, PreferRegistersFromEWASavingContextBlock
+	bsol	cr6, PreferRegistersFromEWASavingContextBlock
 	rlwinm	r7, r7,  0, 29, 16
 	rlwimi	r11, r7,  0, 20, 23
 	b		IntReturn
@@ -143,8 +143,8 @@ major_0x02980_0x134	;	OUTSIDE REFERER
 	bc		BO_IF, EWA.kFlag16, major_0x04a20_0x18
 	bc		BO_IF_NOT, EWA.kFlagBlue, TaskApproachOne
 	cmpwi	cr1, r9, ecInstPageFault
-	blt+	major_0x02980_0xa8						; when Enables[cause] is set!
-	beq-	cr1, TaskApproachOne
+	blt		major_0x02980_0xa8						; when Enables[cause] is set!
+	beq		cr1, TaskApproachOne
 
 major_0x02980_0x178	;	OUTSIDE REFERER
 	lwz		r1, EWA.PA_KDP(r1)
@@ -209,7 +209,7 @@ major_0x02980_0x1e8
 	stw		r29,  0x01ec(r6)
 	stw		r30,  0x01f4(r6)
 	stw		r31,  0x01fc(r6)
-	bnel-	major_0x03e18_0xb4
+	bnel	major_0x03e18_0xb4
 
 	bc		BO_IF_NOT, 12, major_0x02980_0x260
 	bl		Save_v0_v31
@@ -232,7 +232,7 @@ major_0x02980_0x260
 	lwz		r8,  0x00f4(r6)
 	lwz		r10,  0x00fc(r6)
 	mtctr	r8
-	bnel-	major_0x03e18_0x8
+	bnel	major_0x03e18_0x8
 	lwarx	r8, 0, r1
 	sync
 	stwcx.	r8, 0, r1
@@ -241,7 +241,7 @@ major_0x02980_0x260
 	cmpwi	r29,  0x00
 	stw		r8,  0x0004(r1)
 	lwz		r28,  0x0210(r29)
-	beq-	major_0x02980_0x2d0
+	beq		major_0x02980_0x2d0
 	mtspr	vrsave, r28
 
 major_0x02980_0x2d0
@@ -280,7 +280,7 @@ IntReturn	;	OUTSIDE REFERER
 
 	andi.	r8, r7, (1 << (31 - 26)) | (1 << (31 - 27))
 	mfsprg	r1, 0
-	bnel-	major_0x02ccc								; my counters say almost never called!
+	bnel	major_0x02ccc								; my counters say almost never called!
 	li		r8, 0
 	stw		r7, EWA.Flags(r1)
 	stw		r8, EWA.WeMightClear(r1)
@@ -317,7 +317,7 @@ major_0x02ccc_0x30
 	; according to my counter, this point is never reached
 
 	rlwinm.	r8, r7,  0,  8,  8
-	beq-	SuspendBlueTask
+	beq		SuspendBlueTask
 	stw		r7, EWA.Flags(r1)
 	lwz		r8,  0x0104(r6)
 	stw		r8,  0x0000(r1)
@@ -368,7 +368,7 @@ major_0x02ccc_0x30
 	mtmsr	r15
 	isync
 	rlwimi	r25, r26,  2, 22, 29		; apparently the lower byte of the entry is an FDP (code?) offset, /4!
-	bnelr-
+	bnelr
 	b		FDP_011c
 
 
@@ -381,11 +381,11 @@ SuspendBlueTask
  	bl		LookupID
 	cmpwi	r9, Queue.kIDClass
 	mr		r30, r8
-	bnel-	@no_exception_handler
+	bnel	@no_exception_handler
 
 	lwz		r28, Queue.ReservePtr(r30)
 	cmpwi	r28, 0
-	beql-	@no_memory_reserved_for_exception_messages
+	beql	@no_memory_reserved_for_exception_messages
 
 ;notify exception handler
 	_Lock			PSA.SchLock, scratch1=r8, scratch2=r9
@@ -468,8 +468,8 @@ TaskApproachOne	;	OUTSIDE REFERER
 	srwi	r8, r7, 24
 	rlwinm.	r16, r16, 0, Task.kFlag9, Task.kFlag9
 	cmpwi	cr1, r8, ecInstPageFault
-	bne-	TaskNotSuitableForWhatWeWantToDo
-	bne-	cr1, TaskNotSuitableForWhatWeWantToDo
+	bne		TaskNotSuitableForWhatWeWantToDo
+	bne		cr1, TaskNotSuitableForWhatWeWantToDo
 	;	what is special about the upper 8 Flags? Are they Task-related?
 
 	lwz		r8, Task.Zero3(r31)
@@ -510,8 +510,8 @@ TaskApproachTwo	;	OUTSIDE REFERER
 	srwi	r8, r7, 24
 	rlwinm.	r16, r16, 0, Task.kFlag9, Task.kFlag9
 	cmpwi	cr1, r8, 0x14
-	bne-	TaskNotSuitableForWhatWeWantToDo
-	bne-	cr1, TaskNotSuitableForWhatWeWantToDo
+	bne		TaskNotSuitableForWhatWeWantToDo
+	bne		cr1, TaskNotSuitableForWhatWeWantToDo
 
 	lwz		r8, Task.Zero4(r31)
 	addi	r8, r8, 1
@@ -531,7 +531,7 @@ CommonPathBetweenTaskIntFuncs
 	lisori	r17, Area.kSignature
 	lwz		r16, Area.Signature(r29)
 	cmplw	r16, r17
-	bnel+	Local_Panic
+	bnel	Local_Panic
 
 	lwz		r17, Area.Counter(r29)
 	addi	r17, r17, 1
@@ -544,9 +544,9 @@ CommonPathBetweenTaskIntFuncs
 	cmpwi	cr0, r9, ecInstPageFault
 	cmpwi	cr1, r16, 0
 	mr		r26, r8
-	bne-	cr0, CanSendMessage
-	beq-	cr1, CantSendMessage
-	beq-	cr2, CanSendMessage
+	bne		cr0, CanSendMessage
+	beq		cr1, CantSendMessage
+	beq		cr2, CanSendMessage
 
 CantSendMessage
 	lwz		r16, Task.Flags(r31)
@@ -573,15 +573,15 @@ CantSendMessage
 	bl		CauseNotification
 
 	cmpwi	r8, 0
-	beq+	IntLocalBlockMPCall				; jump if no error?
+	beq		IntLocalBlockMPCall				; jump if no error?
 
 CanSendMessage
 	mfcr	r28
 	li		r8, Message.Size
-	beq-	cr2, major_0x02ccc_0x4a8
+	beq		cr2, major_0x02ccc_0x4a8
 	bl		PoolAlloc
 	mr.		r26, r8
-	beq-	major_0x02ccc_PoolAllocFailed
+	beq		major_0x02ccc_PoolAllocFailed
 
 	addi	r17, r31, Task.QueueMember
 	addi	r18, r31, Task.Semaphore
@@ -612,7 +612,7 @@ major_0x02ccc_0x4a8
 	bl		SchRdyTaskNow
 	_AssertAndRelease	PSA.SchLock, scratch=r31
 	mtcr	r28
-	bns-	cr6, major_0x02ccc_0x504
+	bns		cr6, major_0x02ccc_0x504
 	lwz		r8,  0x0064(r6)
 	lwz		r9,  0x0068(r6)
 	stw		r8,  0x0024(r6)
@@ -663,8 +663,8 @@ IntDecrementer	;	OUTSIDE REFERER
 	lwz		r8, KDP.OldKDP(r1)
 	rlwinm.	r9, r11,  0, 16, 16
 	cmpwi	cr1, r8,  0x00
-	beq-	MaskedInterruptTaken
-	beq-	cr1, IntDecrementer_0x54
+	beq		MaskedInterruptTaken
+	beq		cr1, IntDecrementer_0x54
 
 	stw		r16, ContextBlock.r16(r6)
 	stw		r17, ContextBlock.r17(r6)
@@ -672,7 +672,7 @@ IntDecrementer	;	OUTSIDE REFERER
 	stw		r25, ContextBlock.r25(r6)
 
 	bl		SchFiddlePriorityShifty
-	ble-	IntDecrementer_0x48
+	ble		IntDecrementer_0x48
 
 	lwz		r8, PSA.CriticalReadyQ + ReadyQueue.Timecake + 4(r1)
 	mtspr	dec, r8
@@ -727,7 +727,7 @@ IntDSI	;	OUTSIDE REFERER
 	andis.	r28, r26,  0x400
 	mtsprg	3, r23
 	mfmsr	r14
-	bne-	major_0x03324_0x9c
+	bne		major_0x03324_0x9c
 	ori		r15, r14,  0x10
 	mtmsr	r15
 	isync
@@ -742,7 +742,7 @@ major_0x03324	;	OUTSIDE REFERER
 	lwz		r25,  0x0650(r1)
 	li		r21,  0x00
 	mfsprg	r1, 0
-	beq-	major_0x03324_0x18
+	beq		major_0x03324_0x18
 	lwzx	r18, r1, r18
 
 major_0x03324_0x18
@@ -750,7 +750,7 @@ major_0x03324_0x18
 	lwz		r16, EWA.Flags(r1)
 	rlwinm	r17, r27,  0,  6, 15
 	rlwimi	r16, r16, 27, 26, 26
-	bge-	major_0x03324_0x58
+	bge		major_0x03324_0x58
 	rlwimi	r25, r27,  7, 26, 29
 	rlwimi	r25, r27, 12, 25, 25
 	lwz		r26,  0x0b80(r25)
@@ -777,7 +777,7 @@ major_0x03324_0x58
 	crclr	cr5_so
 	rlwimi	r17, r26,  6, 26,  5
 	add		r18, r18, r23
-	blelr-	cr3
+	blelr	cr3
 	neg		r23, r23
 	add		r18, r18, r23
 	blr
@@ -801,12 +801,12 @@ major_0x03324_0x9c	;	OUTSIDE REFERER
 	mr		r16, r28
 	crset	cr3_so
 	mfsprg	r1, 0
-	beq-	major_0x03324_0x12c
+	beq		major_0x03324_0x12c
 	mr		r18, r8
 	rlwinm	r28, r27, 13, 25, 29
 	andis.	r9, r31,  0x200
 	rlwimi	r18, r17,  0,  0, 19
-	beq-	major_0x03324_0x118
+	beq		major_0x03324_0x118
 	lwzx	r31, r1, r28
 	stwcx.	r31, 0, r18
 	sync
@@ -861,7 +861,7 @@ IntAlignment	;	OUTSIDE REFERER
 
 	addi	r23, r1, KDP.RedVecBase
 
-	bne-	major_0x03548_0x20
+	bne		major_0x03548_0x20
 
 	;	DSISR for misaligned X-form instruction:
 
@@ -878,7 +878,7 @@ FDP_TableBase		equ		0xa00
 
 	;	Get the FDP and F.O. if we were in MSR_LE mode
 	lwz		r25,  KDP.PA_FDP(r1)
-	bne-	major_0x03548_0x20
+	bne		major_0x03548_0x20
 
 
 	rlwinm.	r21, r27, 17, 30, 31	; evaluate hi two bits of XO (or 0 for d-form?)
@@ -892,7 +892,7 @@ FDP_TableBase		equ		0xa00
 
 	rlwimi	r16, r16, 27, 26, 26	; AllCpuFeatures: copy bit 21 to bit 26
 
-	bne-	@regidx
+	bne		@regidx
 
 	;	D-form (immediate-indexed) instruction
 	lwz		r26,  FDP_TableBase + 4*(0x40 + 0x20)(r25)	; use upper quarter of table
@@ -916,7 +916,7 @@ FDP_TableBase		equ		0xa00
 	mtcr	r26
 	rlwimi	r17, r26,  6, 26,  5
 	crclr	23						; unset bit 23 = cr5_so
-	bgelr-	cr3						; jump now if bit 12 is off
+	bgelr	cr3						; jump now if bit 12 is off
 
 	;	if bit 12 was on, turn on paging and fetch the offending insn
 	;	and also activate the Red vector table
@@ -960,11 +960,11 @@ IntDSIOtherOther	;	OUTSIDE REFERER
 	mfspr	r27, dar
 	andis.	r28, r31,  0xc030
 	lwz		r1, -0x0004(r1)
-	bne-	IntDSIOtherOther_0x1c8
+	bne		IntDSIOtherOther_0x1c8
 	mfspr	r30, srr1
 	andi.	r28, r30,  0x4000
 	mfsprg	r30, 0
-	beq-	IntDSIOtherOther_0x100
+	beq		IntDSIOtherOther_0x100
 	stw		r8, -0x00e0(r30)
 	stw		r9, -0x00dc(r30)
 	mfcr	r8
@@ -980,25 +980,25 @@ IntDSIOtherOther	;	OUTSIDE REFERER
 	lwz		r17,  0x0028(r8)
 	cmplw	r27, r16
 	cmplw	cr7, r27, r17
-	blt-	IntDSIOtherOther_0xe0
-	bgt-	cr7, IntDSIOtherOther_0xe0
+	blt		IntDSIOtherOther_0xe0
+	bgt		cr7, IntDSIOtherOther_0xe0
 	mr		r31, r8
 	mr		r8, r27
 	bl		MPCall_95_0x1e4
-	beq-	IntDSIOtherOther_0xe0
+	beq		IntDSIOtherOther_0xe0
 	lwz		r8,  0x0000(r30)
 	lwz		r16,  0x0098(r31)
 	rlwinm	r28, r8,  0, 29, 30
 	cmpwi	cr7, r28,  0x04
 	cmpwi	r28,  0x02
-	beq-	cr7, IntDSIOtherOther_0xe0
-	beq-	IntDSIOtherOther_0xe0
+	beq		cr7, IntDSIOtherOther_0xe0
+	beq		IntDSIOtherOther_0xe0
 
 IntDSIOtherOther_0x98
 	addi	r17, r31,  0x90
 	cmpw	r16, r17
 	addi	r17, r16,  0x14
-	beq-	IntDSIOtherOther_0x158
+	beq		IntDSIOtherOther_0x158
 	lwz		r9,  0x0010(r16)
 	add		r9, r9, r17
 
@@ -1006,11 +1006,11 @@ IntDSIOtherOther_0xb0
 	lwz		r18,  0x0000(r17)
 	cmplw	cr7, r17, r9
 	lwz		r19,  0x0004(r17)
-	bgt-	cr7, IntDSIOtherOther_0xd8
+	bgt		cr7, IntDSIOtherOther_0xd8
 	cmplw	r27, r18
 	cmplw	cr7, r27, r19
-	blt-	IntDSIOtherOther_0xd0
-	ble-	cr7, IntDSIOtherOther_0xe0
+	blt		IntDSIOtherOther_0xd0
+	ble		cr7, IntDSIOtherOther_0xe0
 
 IntDSIOtherOther_0xd0
 	addi	r17, r17,  0x08
@@ -1033,14 +1033,14 @@ IntDSIOtherOther_0xe0
 IntDSIOtherOther_0x100
 	andis.	r28, r31,  0x800
 	addi	r29, r1, 800
-	bnel-	PagingFunc3
+	bnel	PagingFunc3
 	li		r28,  0x43
 	and		r28, r31, r28
 	cmpwi	cr7, r28,  0x43
-	beql+	Local_Panic
+	beql	Local_Panic
 	mfsprg	r28, 2
 	mtlr	r28
-	bne-	cr7, IntDSIOtherOther_0x144
+	bne		cr7, IntDSIOtherOther_0x144
 	mfspr	r28, srr0
 	addi	r28, r28,  0x04
 	lwz		r26,  0x0e90(r1)
@@ -1052,7 +1052,7 @@ IntDSIOtherOther_0x100
 IntDSIOtherOther_0x144
 	andi.	r28, r31,  0x03
 	li		r8, ecDataSupAccessViolation
-	beq+	major_0x02980
+	beq		major_0x02980
 	li		r8, ecDataWriteViolation
 	b		major_0x02980
 
@@ -1084,7 +1084,7 @@ IntDSIOtherOther_0x19c
 
 IntDSIOtherOther_0x1c8
 	andis.	r28, r31,  0x8010
-	bne-	IntMachineCheckMemRetry_0x14c
+	bne		IntMachineCheckMemRetry_0x14c
 
 	_Lock			PSA.HTABLock, scratch1=r28, scratch2=r31
 
@@ -1092,9 +1092,9 @@ IntDSIOtherOther_0x1c8
 	_AssertAndRelease	PSA.HTABLock, scratch=r28
 	mfsprg	r28, 2
 	mtlr	r28
-	beq+	IntDSIOtherOther_0x19c
+	beq		IntDSIOtherOther_0x19c
 	li		r8, ecDataInvalidAccess
-	bge+	major_0x02980
+	bge		major_0x02980
 	li		r8, ecDataPageFault
 	b		major_0x02980
 
@@ -1131,9 +1131,9 @@ IntMachineCheckMemRetry	;	OUTSIDE REFERER
 	lwz		r27,  0x0694(r1)
 	subf	r28, r19, r27
 	cmpwi	r28, -0x10
-	blt-	IntMachineCheckMemRetry_0x14c
+	blt		IntMachineCheckMemRetry_0x14c
 	cmpwi	r28,  0x10
-	bgt-	IntMachineCheckMemRetry_0x14c
+	bgt		IntMachineCheckMemRetry_0x14c
 
 	_Lock			PSA.HTABLock, scratch1=r28, scratch2=r29
 
@@ -1147,7 +1147,7 @@ IntMachineCheckMemRetry	;	OUTSIDE REFERER
 	rlwinm.	r28, r28,  0,  0, 14
 	sync
 	tlbie	r27
-	beq-	IntMachineCheckMemRetry_0x124
+	beq		IntMachineCheckMemRetry_0x124
 	sync
 	tlbsync
 
@@ -1159,7 +1159,7 @@ IntMachineCheckMemRetry_0x124
 IntMachineCheckMemRetry_0x14c	;	OUTSIDE REFERER
 	cmplw	r10, r19
 	li		r8, ecDataHardwareFault
-	bne+	major_0x02980
+	bne		major_0x02980
 	mfsprg	r1, 0
 	mtsprg	3, r24
 	lmw		r14,  0x0038(r1)
@@ -1186,7 +1186,7 @@ IntISI	;	OUTSIDE REFERER
 ;	r13 = cr
 
 	andis.	r8, r11,  0x4020
-	beq-	major_0x039dc_0x14
+	beq		major_0x039dc_0x14
 	mfsprg	r8, 0
 	stmw	r14,  0x0038(r8)
 
@@ -1196,7 +1196,7 @@ IntISI	;	OUTSIDE REFERER
 	bl		PagingFunc1
 	_AssertAndRelease	PSA.HTABLock, scratch=r28
 	mfsprg	r8, 0
-	bne-	major_0x039dc
+	bne		major_0x039dc
 	mfsprg	r24, 3
 	mfmsr	r14
 	ori		r15, r14,  0x10
@@ -1219,14 +1219,14 @@ IntISI	;	OUTSIDE REFERER
 major_0x039dc	;	OUTSIDE REFERER
 	lmw		r14,  0x0038(r8)
 	li		r8, ecInstPageFault
-	blt+	major_0x02980_0x134
+	blt		major_0x02980_0x134
 	li		r8, ecInstInvalidAddress
 	b		major_0x02980_0x134
 
 major_0x039dc_0x14	;	OUTSIDE REFERER
 	andis.	r8, r11,  0x800
 	li		r8, ecInstSupAccessViolation
-	bne+	major_0x02980_0x134
+	bne		major_0x02980_0x134
 	li		r8, ecInstHardwareFault
 	b		major_0x02980_0x134
 
@@ -1265,7 +1265,7 @@ IntMachineCheck	;	OUTSIDE REFERER
 	_log	'^n'
 
 	rlwinm.	r8, r11,  0,  2,  2
-	beq-	@not_L1_data_cache_error
+	beq		@not_L1_data_cache_error
 
 ;L1 data cache error
 	bl		FlushL1CacheUsingMSSCR0
@@ -1297,7 +1297,7 @@ IntDSIOther	;	OUTSIDE REFERER
 	mfspr	r8, dsisr
 	rlwimi	r11, r8,  0,  0,  9
 	andis.	r8, r11,  0x4020
-	beq+	major_0x039dc_0x14
+	beq		major_0x039dc_0x14
 	mfsprg	r8, 0
 	stmw	r14,  0x0038(r8)
 	lwz		r1, -0x0004(r8)
@@ -1308,7 +1308,7 @@ IntDSIOther	;	OUTSIDE REFERER
 	bl		PagingFunc1
 	_AssertAndRelease	PSA.HTABLock, scratch=r28
 	mfsprg	r8, 0
-	bne+	major_0x039dc
+	bne		major_0x039dc
 	lmw		r14,  0x0038(r8)
 	mfsprg	r1, 2
 	mtlr	r1
@@ -1334,9 +1334,9 @@ kcReturnFromException	;	OUTSIDE REFERER
 	ori		r11, r11,  0x8000
 	mtcrf	 0x3f, r7
 	cmplwi	cr1, r3,  0x01
-	blt-	cr4, major_0x04a20_0x18
-	blt-	cr1, major_0x03be0_0x58
-	beq-	cr1, major_0x03be0_0x90
+	blt		cr4, major_0x04a20_0x18
+	blt		cr1, major_0x03be0_0x58
+	beq		cr1, major_0x03be0_0x90
 	addi	r8, r3, -0x20
 	lwz		r9,  0x0eac(r1)
 	cmplwi	r8,  0xe0
@@ -1344,7 +1344,7 @@ kcReturnFromException	;	OUTSIDE REFERER
 	stw		r9,  0x0eac(r1)
 	mfsprg	r1, 0
 	rlwimi	r7, r3, 24,  0,  7
-	blt-	major_0x03be0_0xe8
+	blt		major_0x03be0_0xe8
 	li		r8, ecTrapInstr
 	b		major_0x02980_0x134
 
@@ -1360,7 +1360,7 @@ major_0x03be0_0x58
 	lwz		r12,  0x008c(r6)
 	lwz		r3,  0x0094(r6)
 	lwz		r4,  0x009c(r6)
-	bnel-	major_0x03e18
+	bnel	major_0x03e18
 	addi	r9, r6,  0x40
 	b		IntReturn
 
@@ -1379,8 +1379,8 @@ major_0x03be0_0x90
 	lwz		r12,  0x008c(r6)
 	lwz		r3,  0x0094(r6)
 	lwz		r4,  0x009c(r6)
-	bne-	cr2, major_0x03be0_0xe8
-	bns-	cr6, major_0x03be0_0xe8
+	bne		cr2, major_0x03be0_0xe8
+	bns		cr6, major_0x03be0_0xe8
 	stmw	r14,  0x0038(r1)
 	lwz		r17,  0x0064(r6)
 	lwz		r20,  0x0068(r6)
@@ -1389,7 +1389,7 @@ major_0x03be0_0x90
 	lwz		r18,  0x007c(r6)
 
 major_0x03be0_0xe8
-	beq+	cr2, major_0x02980_0x178
+	beq		cr2, major_0x02980_0x178
 	crclr	cr6_so
 	mfspr	r10, srr0
 	li		r8, ecTrapInstr
@@ -1542,14 +1542,14 @@ IntFPUnavail	;	OUTSIDE REFERER
 
 major_0x03e18	;	OUTSIDE REFERER
 	rlwinm.	r8, r11,  0, 18, 18
-	bnelr-
+	bnelr
 
 major_0x03e18_0x8	;	OUTSIDE REFERER
 	lwz		r8,  0x00e4(r6)
 	rlwinm.	r8, r8,  1,  0,  0
 	mfmsr	r8
 	ori		r8, r8,  0x2000
-	beqlr-
+	beqlr
 	mtmsr	r8
 	isync
 	ori		r11, r11,  0x2000
@@ -1677,7 +1677,7 @@ major_0x04180	;	OUTSIDE REFERER
 	lwz		r10,  0x00d8(r6)
 	mfspr	r11, srr1
 	cmpwi	r10,  0x00
-	beql-	major_0x04180_0x9c
+	beql	major_0x04180_0x9c
 	oris	r11, r11,  0x200
 	stw		r9, -0x027c(r1)
 	mtspr	srr1, r11
@@ -1740,14 +1740,14 @@ IntPerfMonitor	;	OUTSIDE REFERER
 	mflr	r8
 	mfcr	r13
 	cmpwi	r8,  0xf20
-	beq+	major_0x04180
+	beq		major_0x04180
 	mtcr	r13
 	lwz		r13, -0x0284(r1)
 	lwz		r8, -0x0280(r1)
 	bl		save_all_registers
 	mr		r28, r8
 	rlwinm.	r9, r11,  0, 16, 16
-	beq+	MaskedInterruptTaken
+	beq		MaskedInterruptTaken
 
 	_Lock			PSA.SchLock, scratch1=r8, scratch2=r9
 
@@ -1758,7 +1758,7 @@ IntPerfMonitor	;	OUTSIDE REFERER
 	cmpwi	r9, Notification.kIDClass
 
 	mr		r30, r8
-	bne-	IntPerfMonitor_0x88
+	bne		IntPerfMonitor_0x88
 	lwz		r16, -0x0340(r28)
 	lwz		r17, -0x0008(r28)
 	stw		r16,  0x0010(r30)
@@ -1785,7 +1785,7 @@ IntThermalEvent	;	OUTSIDE REFERER
 	bl		save_all_registers
 	mr		r28, r8
 	rlwinm.	r9, r11,  0, 16, 16
-	beq+	MaskedInterruptTaken
+	beq		MaskedInterruptTaken
 	_log	'Thermal event^n'
 
 	_Lock			PSA.SchLock, scratch1=r8, scratch2=r9
@@ -1794,7 +1794,7 @@ IntThermalEvent	;	OUTSIDE REFERER
  	bl		LookupID
 	cmpwi	r9, Notification.kIDClass
 	mr		r30, r8
-	bne-	@no_thermal_handler
+	bne		@no_thermal_handler
 
 	lwz		r16, EWA.CPUBase + CPU.ID(r28)
 	stw		r16, Notification.MsgWord1(r30)
@@ -1819,9 +1819,9 @@ kcRunAlternateContext	;	OUTSIDE REFERER
 	lwz		r9, KDP.MinusOne1(r1)
 	rlwinm	r8, r3,  0,  0, 25
 	cmpw	cr1, r8, r9
-	bne+	IntReturn
+	bne		IntReturn
 	lwz		r9,  0x0344(r1)
-	bne-	cr1, major_0x043a0_0x48
+	bne		cr1, major_0x043a0_0x48
 
 major_0x043a0_0x24
 	addi	r8, r1,  0x420
@@ -1837,41 +1837,41 @@ major_0x043a0_0x24
 major_0x043a0_0x48
 	lwz		r9,  0x0348(r1)
 	cmpw	cr1, r8, r9
-	beq-	cr1, major_0x043a0_0x130
+	beq		cr1, major_0x043a0_0x130
 	lwz		r9,  0x0350(r1)
 	cmpw	cr1, r8, r9
-	beq-	cr1, major_0x043a0_0x110
+	beq		cr1, major_0x043a0_0x110
 	lwz		r9,  0x0358(r1)
 	cmpw	cr1, r8, r9
-	beq-	cr1, major_0x043a0_0xf0
+	beq		cr1, major_0x043a0_0xf0
 	mfsprg	r1, 0
 	stmw	r14,  0x0038(r1)
 	lwz		r1, -0x0004(r1)
 	cmpw	cr1, r8, r6
-	beq-	cr1, major_0x043a0_0x154
+	beq		cr1, major_0x043a0_0x154
 	mr		r27, r8
 	addi	r29, r1, 800
 	bl		PagingFunc3
 	clrlwi	r23, r8,  0x14
-	beq-	major_0x043a0_0x154
+	beq		major_0x043a0_0x154
 	cmplwi	r23,  0xd00
 	mr		r9, r8
 	mr		r8, r31
-	ble-	major_0x043a0_0xc4
+	ble		major_0x043a0_0xc4
 	addi	r27, r27,  0x1000
 	addi	r29, r1, 800
 	bl		PagingFunc3
-	beq-	major_0x043a0_0x154
+	beq		major_0x043a0_0x154
 	addi	r31, r31, -0x1000
 	xor		r23, r8, r31
 	rlwinm.	r23, r23,  0, 25, 22
-	bne-	major_0x043a0_0x154
+	bne		major_0x043a0_0x154
 
 major_0x043a0_0xc4
 	clrlwi	r23, r31,  0x1e
 	cmpwi	r23,  0x03
 	rlwimi	r8, r9,  0, 20, 31
-	beq-	major_0x043a0_0x154
+	beq		major_0x043a0_0x154
 	lwz		r23,  0x0ea4(r1)
 	addi	r23, r23,  0x01
 	stw		r23,  0x0ea4(r1)
@@ -1927,7 +1927,7 @@ major_0x043a0_0x154
 wordfill	;	OUTSIDE REFERER
 	subic.	r22, r22, 4
 	stwx	r23, r8, r22
-	bne+	wordfill
+	bne		wordfill
 	blr
 
 
@@ -1952,7 +1952,7 @@ kcResetSystem	;	OUTSIDE REFERER
 	;	This xoris/cmplwi technique is very cool
 	xoris	r8, r3, 'Ga'
 
-	beq-	@is_601
+	beq		@is_601
 	mftb	r9
 	b		@endif_601
 @is_601
@@ -1965,12 +1965,12 @@ kcResetSystem	;	OUTSIDE REFERER
 	andis.	r9, r9,  0xffff
 
 	cmplwi	r8, 'ry'
-	bne-	NonGaryReset
+	bne		NonGaryReset
 
 	;	r4 (i.e. A1) == 5 May 1956?
 	xoris	r8, r4, 0x0505
 	cmplwi	r8,     0x1956
-	bne-	NonGaryReset
+	bne		NonGaryReset
 
 	andc	r11, r11, r5
 	lwz		r8, ContextBlock.r7(r6)
@@ -2001,7 +2001,7 @@ NonGaryReset
 	lwz		r8, KDP.OldKDP(r1)
 
 	cmpwi	r8, 0
-	beq+	ResetBuiltinKernel
+	beq		ResetBuiltinKernel
 
 	_log	'Unplugging the replacement nanokernel^n'
 
@@ -2122,7 +2122,7 @@ IntExternalOrange	;	OUTSIDE REFERER
 ;	r13 = cr
 
 	mtcrf	 0x3f, r7
-	bnel+	cr2, Local_Panic
+	bnel	cr2, Local_Panic
 	li		r8, ecNoException
 	b		major_0x02980_0x134
 
@@ -2147,12 +2147,12 @@ IntProgram
 
 	cmplwi	cr0, r8, NanoKernelCallTable.ReturnFromException
 	cmplwi	cr1, r8, NanoKernelCallTable.MPDispatch
-	beq-	cr0, @emutrap_0_return_from_exception
-	beq-	cr1, @emutrap_8_mpdispatch
+	beq		cr0, @emutrap_0_return_from_exception
+	beq		cr1, @emutrap_8_mpdispatch
 	cmplwi	cr0, r8, NanoKernelCallTable.VMDispatch
 	cmplwi	cr1, r8, NanoKernelCallTable.Size
-	beq-	cr0, @emutrap_3_vmdispatch
-	blt-	cr1, @emutrap_other
+	beq		cr0, @emutrap_3_vmdispatch
+	blt		cr1, @emutrap_other
 
 
 	;	Not from the emulator image? Return will be to next instruction,
@@ -2192,13 +2192,13 @@ IntProgram
 	xoris	r8, r8, 0xfff
 	cmplwi	cr0, r8, NanoKernelCallTable.Size / 4
 	cmplwi	cr1, r8, NanoKernelCallTable.ReturnFromException / 4
-	bge-	cr0, @trap_too_high
+	bge		cr0, @trap_too_high
 	cmplwi	cr7, r8, NanoKernelCallTable.MPDispatch / 4
 	cmplwi	cr0, r8, NanoKernelCallTable.VMDispatch / 4
 	slwi	r8, r8, 2
-	beq-	cr1, @nonemu_return_from_exception
-	beq-	cr7, @nonemu_mpdispatch
-	beq-	cr0, @nonemu_vmdispatch
+	beq		cr1, @nonemu_return_from_exception
+	beq		cr7, @nonemu_mpdispatch
+	beq		cr0, @nonemu_vmdispatch
 
 	;	Fall through to some hard truths
 	bc		BO_IF, 16, @_IntProgram_0x150
@@ -2227,7 +2227,7 @@ IntProgram
 	lwz		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.NanoKernelCallCounts(r8)
 	addi	r9, r9, 1
 	stw		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.NanoKernelCallCounts(r8)
-	bne+	@nonemu_go
+	bne		@nonemu_go
 
 	;	Non-emu MPDispatch trap with r0 == -1: muck around a bit?
 	addi	r10, r10, 4
@@ -2307,7 +2307,7 @@ IntExternalYellow	;	OUTSIDE REFERER
 	;	Sanity check
 
 	rlwinm.	r9, r11, 0, MSR_EEbit, MSR_EEbit
-	beq+	MaskedInterruptTaken
+	beq		MaskedInterruptTaken
 
 
 	;	How many CPUs?
@@ -2319,7 +2319,7 @@ IntExternalYellow	;	OUTSIDE REFERER
 
 	;	Uniprocessor machine: go straight to PIH
 
-	blt+	kcPrioritizeInterrupts
+	blt		kcPrioritizeInterrupts
 
 
 	;	Check with the CPU plugin whether this is an interprocessor interrupt
@@ -2338,9 +2338,9 @@ IntExternalYellow	;	OUTSIDE REFERER
 	cmpwi	cr2, r8, -29279				;	interprocessor interrupt!
 										;	else: real external interrupt
 
-	beq+	cr0, kcPrioritizeInterrupts
-	beq+	cr1, IntReturn
-	bne+	cr2, kcPrioritizeInterrupts
+	beq		cr0, kcPrioritizeInterrupts
+	beq		cr1, IntReturn
+	bne		cr2, kcPrioritizeInterrupts
 	
 	mfsprg	r9, 0						;	"alert" => run scheduler evaluation
 	li		r8, 1
@@ -2381,7 +2381,7 @@ SIGP
 	bc		BO_IF, 16, major_0x04a20_0x18			; not sure about this
 	cmpwi	cr2, r8, 0
 	lwz		r18, EWA.SIGPSelector(r23)
-	beq-	cr2, @args_in_registers
+	beq		cr2, @args_in_registers
 	slwi	r20, r18, 2
 @args_in_registers
 
@@ -2392,11 +2392,11 @@ SIGP
 	lwz		r17, CoherenceGroup.PA_CpuPluginDesc(r22)
 	lwz		r16, CoherenceGroup.CpuPluginSelectorCount(r22)
 	mr.		r17, r17
-	beqlr-
+	beqlr
 	slwi	r16, r16,  2
 	li		r8, -0x7267
 	cmplw	r20, r16
-	bgelr-
+	bgelr
 
 	;	Save some registers in advance of this unusual "upcall".
 	stw		r10, EWA.SIGPSavedR10(r23)
@@ -2416,7 +2416,7 @@ SIGP
 	lwz		r9, EWA.PA_CurAddressSpace(r23)
 	lwz		r8, CoherenceGroup.CpuPluginSpacePtr(r22)
 	cmpw	r9, r8
-	beq-	@noNeedToSwitchSpace
+	beq		@noNeedToSwitchSpace
 	bl		SchSwitchSpace
 @noNeedToSwitchSpace
 
@@ -2466,7 +2466,7 @@ SIGP
 	addi	r6, r23, -0x318
 	stw		r6, EWA.PA_ContextBlock(r23)
 
-	beq-	cr2, @args_in_registers_2
+	beq		cr2, @args_in_registers_2
 
 ;args not in registers
 	lwz		r4, EWA.SIGPCallR4(r23)
@@ -2505,14 +2505,14 @@ major_0x04a20_0x18	;	OUTSIDE REFERER
 	lwz		r7, -0x02b0(r23)
 	andis.	r8, r11,  0x02
 	stw		r7, -0x0010(r23)
-	bne-	major_0x04a20_0x30
+	bne		major_0x04a20_0x30
 	li		r3, -0x7265
 
 major_0x04a20_0x30
 	lwz		r8, EWA.SIGPSpacOnResume(r23)
 	lwz		r9, -0x001c(r23)
 	cmpw	r9, r8
-	beq-	major_0x04a20_0x44
+	beq		major_0x04a20_0x44
 	bl		SchSwitchSpace
 
 major_0x04a20_0x44
@@ -2551,7 +2551,7 @@ IntSyscall	;	OUTSIDE REFERER
 	;	Only r1 and LR have been saved, so these compares clobber cr0
 
 	cmpwi	r0, -3
-	bne-	@not_minus_3
+	bne		@not_minus_3
 
 	;	sc -3:
 
@@ -2559,7 +2559,7 @@ IntSyscall	;	OUTSIDE REFERER
 		mfspr	r1, srr1
 		rlwinm.	r0, r1, 26, 26, 27	; nonsense code?
 		_bclr	r1, r1, 17
-		blt-	@dont_unset_pr		; r0 should never have bit 0 set
+		blt		@dont_unset_pr		; r0 should never have bit 0 set
 		mtspr	srr1, r1
 	@dont_unset_pr
 
@@ -2573,7 +2573,7 @@ IntSyscall	;	OUTSIDE REFERER
 @not_minus_3
 	cmpwi	r0, -1
 	mfsprg	r1, 0
-	bne-	@not_minus_1
+	bne		@not_minus_1
 
 	;	sc -1: mess around with flags
 
@@ -2586,7 +2586,7 @@ IntSyscall	;	OUTSIDE REFERER
 
 @not_minus_1
 	cmpwi	r0, -2
-	bne-	@not_any_special
+	bne		@not_any_special
 
 	;	sc -2: more flag nonsense?
 

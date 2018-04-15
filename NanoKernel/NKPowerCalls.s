@@ -55,17 +55,17 @@ kcPowerDispatch
 @use_provided_mcr
 
 	and.	r8, r4, r9
-	bgt-	cr7, PowerEarlyReturnError				; invalid selector
-	bne-	PowerEarlyReturnSuccess
+	bgt		cr7, PowerEarlyReturnError				; invalid selector
+	bne		PowerEarlyReturnSuccess
 
 	cmplwi	cr7, r3, 11
-	beq-	cr7, PwrInfiniteLoop
+	beq		cr7, PwrInfiniteLoop
 
 	cmplwi	cr7, r3, 8
-	beq-	cr7, PwrSuspendSystem
+	beq		cr7, PwrSuspendSystem
 
 	cmplwi	cr7, r3, 9
-	beq-	cr7, PwrSetICTC
+	beq		cr7, PwrSetICTC
 
 	;	Fall through to 0-7: PwrIdle
 
@@ -130,7 +130,7 @@ PwrIdle
 	addi	r3, r3, 26
 	rlwnm	r3, r8, r3, 30, 31
 	cmpwi	r3, 0
-	beq-	PowerEarlyRestoreReturnError
+	beq		PowerEarlyRestoreReturnError
 
 
 	;	Depending on pre-programmed flags, set:
@@ -139,12 +139,12 @@ PwrIdle
 
 	lbz		r9, KDP.CpuSpecificByte2(r1)
 	cmpwi	r9, 0
-	beq-	@set_neither
+	beq		@set_neither
 
 	mfspr	r27, hid0			; will restore r27 => HID0 when system wakes below
 	mr		r8, r27
 	cmpwi	r9, 1
-	beq-	@set_only_nhr
+	beq		@set_only_nhr
 
 	oris	r9, r3, 0x0100		; set bit 7
 	srw		r9, r9, r9			; shift right by 0-3
@@ -159,7 +159,7 @@ PwrIdle
 	;	Flush L1 and L2 caches if argument & 4
 
 	cmplwi	r26, 4
-	beql-	FlushCaches
+	beql	FlushCaches
 
 
 	;	Set MSR bits to enter the selected pwrmgt state
@@ -167,7 +167,7 @@ PwrIdle
 	mfmsr	r8
 	ori		r8, r8, 0x8002 		; Always set MSR[EE] and MSR[RI] so we can wake!
 	cmplwi	r3, 0				; If using HID0[pwrmgt state], set MSR[POW] so it takes effect
-	beq-	@no_pow
+	beq		@no_pow
 	oris	r8, r8, 4
 @no_pow
 	sync						; Apply MSR!
@@ -185,7 +185,7 @@ IntReturnToFullOn
 
 	lbz		r8, KDP.CpuSpecificByte2(r1)
 	cmpwi	r8, 0
-	beq-	@hid_was_not_changed
+	beq		@hid_was_not_changed
 	mtspr	hid0, r27
 @hid_was_not_changed
 
@@ -252,7 +252,7 @@ PwrSuspendSystem
 	lwz		r9, CoherenceGroup.ScheduledCpuCount(r8)
 	cmpwi	r9, 1
 	li		r3, -0x7267
-	bgt+	IntReturn
+	bgt		IntReturn
 
 
 	;	Some breathing room
@@ -277,7 +277,7 @@ PwrSuspendSystem
 
 	lwz		r26, KDP.ProcessorInfo + NKProcessorInfo.ProcessorFlags(r1)
 	andi.	r26, r26, 1 << NKProcessorInfo.hasL2CR
-	beq-	@no_need_to_deactivate_l2
+	beq		@no_need_to_deactivate_l2
 	mfspr	r9, l2cr
 	clrlwi	r9, r9, 1			; unset L2CR[L2E]
 	mtspr	l2cr, r9
@@ -299,7 +299,7 @@ PwrSuspendSystem
 	;	Save floats
 
 	andi.	r8, r11, 0x2000				;	MSR[FP]
-	beq-	@no_save_float
+	beq		@no_save_float
 	mfmsr	r8
 	ori		r8, r8, 0x2000				;	ensure that MSR bit is set?
 	mtmsr	r8
@@ -335,7 +335,7 @@ PwrSuspendSystem
 	mftbu	r8
 	lwz		r9, NKProcessorState.saveTBU(r16)
 	cmpw	r8, r9
-	bne+	@tb_retry
+	bne		@tb_retry
 
 
 	;	Save MSR
@@ -421,7 +421,7 @@ PwrSuspendSystem
 	addis	r8, r8, -0x10
 	mr.		r9, r9
 	mtsrin	r8, r9
-	bne+	@srin_loop
+	bne		@srin_loop
 	isync
 
 
@@ -446,10 +446,10 @@ PwrSuspendSystem
 
 	lwz		r26, KDP.ProcessorInfo + NKProcessorInfo.ProcessorFlags(r1)
 	andi.	r26, r26, 1 << NKProcessorInfo.hasL2CR
-	beq-	@no_need_to_reactivate_l2
+	beq		@no_need_to_reactivate_l2
 	lwz		r8, KDP.ProcessorInfo + NKProcessorInfo.ProcessorL2DSize(r1)
 	mr.		r8, r8
-	beq-	@no_need_to_reactivate_l2
+	beq		@no_need_to_reactivate_l2
 
 	mfspr	r9, hid0
 	rlwinm	r9, r9,  0, 12, 10
@@ -470,7 +470,7 @@ PwrSuspendSystem
 @l2_reactivate_loop
 	mfspr	r8, l2cr
 	rlwinm.	r8, r8, 31,  0,  0
-	bne+	@l2_reactivate_loop
+	bne		@l2_reactivate_loop
 
 
 	mfspr	r8, l2cr
@@ -518,7 +518,7 @@ PwrSuspendSystem
 	;	Load floats
 
 	andi.	r8, r11, 0x2000				;	MSR[FP]
-	beq-	@no_restore_float
+	beq		@no_restore_float
 	mfmsr	r8
 	ori		r8, r8, 0x2000				;	ensure that MSR bit is set?
 	mtmsr	r8
@@ -677,7 +677,7 @@ ActuallySuspend
 	mtmsr	r8							; sleep now
 	isync
 	cmpwi	r1, 0
-	beq+	@evil_aligned_sleep_loop	; re-sleep until the world is sane?
+	beq		@evil_aligned_sleep_loop	; re-sleep until the world is sane?
 	lwz		r0, 0(r9)
 	andi.	r1, r1, 0
 	b		@evil_aligned_sleep_loop	; actually, there is no escape

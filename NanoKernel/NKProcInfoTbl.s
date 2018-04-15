@@ -49,4 +49,4 @@ OverrideProcessorInfo
 	subic.	r9, r9, 4
 	lwzx	r12, r11, r9
 	stwx	r12, r10, r9
-	bgt+	@loop
+	bgt		@loop
