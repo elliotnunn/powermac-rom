@@ -54,6 +54,26 @@ SSW						ds.l	1	; 0bc
 						org		0x100
 ContextBlock			ds.b	768	; 100:300 ; Emulator Context Block, ECB; NKv2 ties this to blue task
 
+EmuControlRegisters		org		0x740
+Reg0					ds.l	1	; 740
+Reg1					ds.l	1	; 744
+Reg2					ds.l	1	; 748
+Reg3					ds.l	1	; 74c
+
+Reg8					ds.l	1	; 750
+Reg9					ds.l	1	; 754
+Reg10					ds.l	1	; 758
+Reg11					ds.l	1	; 75c
+
+Reg4					ds.l	1	; 760
+Reg5					ds.l	1	; 764
+Reg6					ds.l	1	; 768
+Reg7					ds.l	1	; 76c
+
+Reg12					ds.l	1	; 770
+Reg13					ds.l	1	; 774
+Reg14					ds.l	1	; 778
+
 						org		0xf00
 BootstrapVersion		ds.b	16	; f00:f10 ; Bootstrap loader version info, from ConfigInfo
 
