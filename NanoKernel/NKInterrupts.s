@@ -2852,15 +2852,19 @@ IntSyscall	;	OUTSIDE REFERER
 	cmpwi	r0, -3
 	bne		@not_minus_3
 
-	;	sc -3:
+	;	sc -3: used by FDP to go back to supervisor mode after instruction emulation.
+	;	For security reasons, FDP goes into user mode when it emulates loads and stores.
+	;	This is how it goes back into supervisor mode afterwards. During instruction emulation
+	;	it has data paging on, but keeps instruction paging off. User Mode code never has instruction
+	;	paging disabled, so this is not a privilege escalation.
 
 		;	unset MSR_PR bit
 		mfspr	r1, srr1
-		rlwinm.	r0, r1, 26, 26, 27	; nonsense code?
+		rlwinm.	r0, r1, 26, 26, 27	;move MSR_IR bit to sign bit (and a few others that don't matter)
 		_bclr	r1, r1, 17
-		blt		@dont_unset_pr		; r0 should never have bit 0 set
+		blt		@not_in_FDP		; only do if MSR_IR = 0 (MSR_IR is sign bit, so it is < 0 if it is true)
 		mtspr	srr1, r1
-	@dont_unset_pr
+	@not_in_FDP
 
 		;	restore LR from SPRG2, r1 from SPRG1
 		mfsprg	r1, 2
