@@ -15,7 +15,7 @@ ScreenConsoleFG			equ		0x44444444
 
 
 
-	align	6			; odd!
+	align	8			; odd!
 ;	> r1    = kdp
 
 InitScreenConsole	;	OUTSIDE REFERER
