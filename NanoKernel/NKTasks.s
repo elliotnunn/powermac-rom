@@ -421,7 +421,7 @@ MPCall_9_0xf0
 	stw		r4,  0x0018(r17)
 
 MPCall_9_0xfc
-	addi	r16, r1, -0xa44
+	addi	r16, r1, PSA.DelayQueue
 	addi	r17, r31,  0x08
 	stw		r16,  0x0000(r17)
 	InsertAsPrev	r17, r16, scratch=r18
@@ -683,7 +683,7 @@ KCThrowException_0x70
 	stw		r16,  0x0064(r31)
 	mr		r8, r31
 	bl		SchTaskUnrdy
-	addi	r16, r1, -0xa34
+	addi	r16, r1, PSA.DbugQueue
 	addi	r17, r31,  0x08
 	stw		r16,  0x0000(r17)
 	InsertAsPrev	r17, r16, scratch=r18
@@ -757,7 +757,7 @@ MPCall_58_0x88
 	stw		r18,  0x00a4(r30)
 	li		r19,  0x600
 	lwz		r17,  0x0008(r31)
-	addi	r18, r1, -0xa34
+	addi	r18, r1, PSA.DbugQueue
 	andc	r29, r29, r19
 	cmpw	cr1, r17, r18
 	stw		r29,  0x0064(r31)
@@ -792,7 +792,7 @@ MPCall_58_0x114
 	mr		r28, r8
 	bc		BO_IF, Task.kFlag14, MPCall_58_0x13c
 	bc		BO_IF, Task.kFlag20, MPCall_58_0x13c
-	lwz		r8, -0x08e8(r1)
+	lwz		r8, PSA._8e8(r1)
 
 ;	r8 = id
  	bl		LookupID
@@ -883,7 +883,7 @@ MPCall_59	;	OUTSIDE REFERER
 	mr		r31, r8
 
 MPCall_59_0x30
-	stw		r3, -0x08e8(r1)
+	stw		r3, PSA._8e8(r1)
 
 ;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall

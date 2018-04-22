@@ -207,7 +207,7 @@ panic_common
 
 	_log	'½ '	;	thats an omega, btw
 	li		r17,  0x00			;	r17 = charcount
-	stw		r17, -0x08fc(r1)
+	stw		r17, PSA._8fc(r1)
 
 @input_busywait
 	bl		getchar
@@ -235,7 +235,7 @@ panic_common
 
 	;	If 
 	cmpwi	cr2, r17, 95
-	addi	r18, r1, -0x960			;	prepare to copy the line!
+	addi	r18, r1, PSA.ThudBuffer			;	prepare to copy the line!
 	blt		cr2, @short_line
 	_log	'^b'
 	b		@input_busywait
@@ -260,7 +260,7 @@ panic_common
 
 ;	Now a line is expected to be committed:
 
-	addi	r15, r1, -0x960
+	addi	r15, r1, PSA.ThudBuffer
 
 ;	r15 = start
 	bl		next_cmd_word

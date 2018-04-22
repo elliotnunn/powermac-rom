@@ -1041,7 +1041,7 @@ MPCall_38_0x14
 	lwz		r16,  0x0060(r8)
 	rlwinm.	r17, r17,  0, 15, 15
 	beq		MPCall_38_0x48
-	lwz		r16, -0x041c(r1)
+	lwz		r16, PSA.blueProcessPtr(r1)
 	lwz		r16,  0x0000(r16)
 
 MPCall_38_0x48
@@ -1800,9 +1800,9 @@ NKSetClockStep	;	OUTSIDE REFERER
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
 	lwz		r16,  0x0008(r18)
-	stw		r16, -0x0438(r1)
+	stw		r16, PSA.DecClockRateHzCopy(r1)
 	bgt		cr1, NKSetClockStep_0xec
-	lwz		r31, -0x0434(r1)
+	lwz		r31, PSA.OtherTimerQueuePtr(r1)
 	lbz		r18,  0x0017(r31)
 	cmpwi	r18,  0x00
 
@@ -1815,7 +1815,7 @@ NKSetClockStep	;	OUTSIDE REFERER
 	b		ReleaseAndReturnZeroFromMPCall
 
 NKSetClockStep_0xec
-	lwz		r31, -0x0434(r1)
+	lwz		r31, PSA.OtherTimerQueuePtr(r1)
 	lbz		r18,  0x0017(r31)
 	cmpwi	r18,  0x01
 
@@ -1836,15 +1836,15 @@ NKSetClockStep_0xec
 
 ;	There's a one-billion constant in here, for fractional
 ;	expression.
-;	-0x36c(r1) = tb_drift_numerator
-;	-0x368(r1) = tb_drift_denominator
+;	PSA._36c(r1) = tb_drift_numerator
+;	PSA._368(r1) = tb_drift_denominator
 
 ;	> r3    = to
 
 	DeclareMPCall	132, NKSetClockDriftCorrection
 
 NKSetClockDriftCorrection	;	OUTSIDE REFERER
-	lwz		r31, -0x0364(r1)
+	lwz		r31, PSA._364(r1)
 	mfsprg	r9, 0
 	cmpwi	r31,  0x00
 	beq		ReturnMPCallOOM
@@ -1875,8 +1875,8 @@ NKSetClockDriftCorrection_0x64
 	addi	r17, r17,  0x01
 
 NKSetClockDriftCorrection_0x6c
-	stw		r17, -0x036c(r1)
-	stw		r18, -0x0368(r1)
+	stw		r17, PSA._36c(r1)
+	stw		r18, PSA._368(r1)
 	_log	'TB drift adjusted to '
 	mr		r8, r3
 	bl		Printd
@@ -1890,7 +1890,7 @@ NKSetClockDriftCorrection_0x6c
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
-	lwz		r31, -0x0364(r1)
+	lwz		r31, PSA._364(r1)
 	lbz		r18,  0x0017(r31)
 	cmpwi	r18,  0x01
 
@@ -1910,9 +1910,9 @@ NKSetClockDriftCorrection_0x12c
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
 	li		r17,  0x00
-	stw		r17, -0x036c(r1)
-	stw		r17, -0x0368(r1)
-	lwz		r31, -0x0364(r1)
+	stw		r17, PSA._36c(r1)
+	stw		r17, PSA._368(r1)
+	lwz		r31, PSA._364(r1)
 	lbz		r18,  0x0017(r31)
 	cmpwi	r18,  0x00
 
@@ -1946,7 +1946,7 @@ MPCall_115	;	OUTSIDE REFERER
 
 	_Lock			PSA.DbugLock, scratch1=r16, scratch2=r17
 
-	lwz		r30, -0x0404(r1)
+	lwz		r30, PSA._404(r1)
 
 MPCall_115_0x54
 	addi	r30, r30,  0x01
@@ -1979,7 +1979,7 @@ MPCall_115_0x94
 	beq		ReleaseAndReturnMPCallOOM
 
 MPCall_115_0xd0
-	lwz		r28, -0x0404(r1)
+	lwz		r28, PSA._404(r1)
 	lwz		r29,  0x000c(r31)
 	li		r5,  0x00
 	not		r27, r4
@@ -2076,7 +2076,7 @@ MPCall_133_0x3c
 	li		r16,  0x00
 
 MPCall_133_0x5c
-	sth		r16, -0x0360(r1)
+	sth		r16, PSA._360(r1)
 
 MPCall_133_0x60
 	beq		cr1, MPCall_133_0x70
@@ -2084,7 +2084,7 @@ MPCall_133_0x60
 	li		r17,  0x00
 
 MPCall_133_0x6c
-	sth		r17, -0x035e(r1)
+	sth		r17, PSA._35e(r1)
 
 MPCall_133_0x70
 	srawi	r16, r5, 16
@@ -2096,7 +2096,7 @@ MPCall_133_0x70
 	li		r16,  0x00
 
 MPCall_133_0x8c
-	sth		r16, -0x035c(r1)
+	sth		r16, PSA._35c(r1)
 
 MPCall_133_0x90
 	beq		cr1, MPCall_133_0xa0
@@ -2104,7 +2104,7 @@ MPCall_133_0x90
 	li		r17,  0x00
 
 MPCall_133_0x9c
-	sth		r17, -0x035a(r1)
+	sth		r17, PSA._35a(r1)
 
 MPCall_133_0xa0
 ;	r1 = kdp

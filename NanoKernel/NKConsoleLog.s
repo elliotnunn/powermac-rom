@@ -11,7 +11,7 @@ prints	;	OUTSIDE REFERER
 	stw		r24, -0x0110(r1)
 	stw		r25, -0x010c(r1)
 	lwz		r1, -0x0004(r1)
-	lwz		r28, -0x0900(r1)
+	lwz		r28, PSA.NoIdeaR23(r1)
 	lwz		r29,  0x0edc(r1)
 
 	_Lock			PSA.DbugLock, scratch1=r30, scratch2=r31
@@ -114,7 +114,7 @@ print_common	;	OUTSIDE REFERER
 	beq		cr7, print_common_0x8c
 	mtmsr	r31
 	isync
-	lwz		r29, -0x0438(r1)
+	lwz		r29, PSA.DecClockRateHzCopy(r1)
 	srwi	r29, r29,  8
 	mfspr	r30, dec
 	subf	r29, r29, r30
@@ -188,7 +188,7 @@ printd	;	OUTSIDE REFERER
 	stw		r24, -0x0110(r1)
 	stw		r25, -0x010c(r1)
 	lwz		r1, -0x0004(r1)
-	lwz		r28, -0x0900(r1)
+	lwz		r28, PSA.NoIdeaR23(r1)
 	lwz		r29,  0x0edc(r1)
 
 	_Lock			PSA.DbugLock, scratch1=r30, scratch2=r31
@@ -345,7 +345,7 @@ print_unknown	;	OUTSIDE REFERER
 
 print_digity_common	;	OUTSIDE REFERER
 	lwz		r1, -0x0004(r1)
-	lwz		r28, -0x0900(r1)
+	lwz		r28, PSA.NoIdeaR23(r1)
 	lwz		r29,  0x0edc(r1)
 
 	_Lock			PSA.DbugLock, scratch1=r30, scratch2=r31
@@ -420,7 +420,7 @@ getchar	;	OUTSIDE REFERER
 	stw		r25, -0x010c(r1)
 	
 	lwz		r1, EWA.PA_KDP(r1)
-	lwz		r28, -0x0900(r1)
+	lwz		r28, PSA.NoIdeaR23(r1)
 	cmpwi	cr7, r28,  0x00
 	li		r8, -0x01
 	beq		cr7, print_return
@@ -452,7 +452,7 @@ printc	;	OUTSIDE REFERER
 	stw		r24, -0x0110(r1)
 	stw		r25, -0x010c(r1)
 	lwz		r1, -0x0004(r1)
-	lwz		r28, -0x0900(r1)
+	lwz		r28, PSA.NoIdeaR23(r1)
 	lwz		r29,  0x0edc(r1)
 
 	_Lock			PSA.DbugLock, scratch1=r30, scratch2=r31

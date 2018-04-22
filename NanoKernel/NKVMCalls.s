@@ -1407,13 +1407,13 @@ VMAllocateMemory	;	OUTSIDE REFERER
 	bne		VMReturnMinus1
 	mr		r4, r9
 	slwi	r6, r6, 12
-	lwz		r9, -0x0408(r1)
+	lwz		r9, PSA._408(r1)
 	crclr	cr3_eq
 	cmpwi	cr6, r6,  0x00
 	cmplw	cr7, r9, r5
 	bne		cr6, VMAllocateMemory_0x6c
 	blt		cr7, VMAllocateMemory_0x6c
-	lwz		r9, -0x040c(r1)
+	lwz		r9, PSA._40c(r1)
 	subf	r4, r5, r9
 	slwi	r4, r4,  2
 	lwz		r15,  KDP.FlatPageListPtr(r1)
@@ -1486,12 +1486,12 @@ VMAllocateMemory_0xf4
 	ori		r15, r15,  0xc00
 	stw		r15,  0x0004(r14)
 	bne		cr3, VMAllocateMemory_0x164
-	lwz		r8, -0x0408(r1)
+	lwz		r8, PSA._408(r1)
 	subf	r8, r5, r8
-	stw		r8, -0x0408(r1)
-	lwz		r8, -0x040c(r1)
+	stw		r8, PSA._408(r1)
+	lwz		r8, PSA._40c(r1)
 	subf	r8, r5, r8
-	stw		r8, -0x040c(r1)
+	stw		r8, PSA._40c(r1)
 	b		VMAllocateMemory_0x1a4
 
 VMAllocateMemory_0x164
@@ -1539,7 +1539,7 @@ VMAllocateMemory_0x1a4
 	addi	r16, r16,  0x01
 	mr		r15, r4
 	slwi	r16, r16, 12
-	lwz		r8, -0x041c(r1)
+	lwz		r8, PSA.blueProcessPtr(r1)
 	lwz		r8,  0x0014(r8)
 	stw		r8,  0x006c(r31)
 	stw		r15,  0x0024(r31)

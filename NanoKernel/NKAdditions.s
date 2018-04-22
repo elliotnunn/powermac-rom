@@ -32,7 +32,7 @@ NKDebug
 	lwz		r1, EWA.PA_KDP(r1)
 
 	li		r30, 0
-	addi	r29, r1, -0x960
+	addi	r29, r1, PSA.ThudBuffer
 @cmdloop
 	lbzx	r31, r8, r30
 	stbx	r31, r29, r30
@@ -40,17 +40,17 @@ NKDebug
 	cmpwi	r31, 0
 	bne		@cmdloop
 
-	lwz		r31, -0x404(r1)
+	lwz		r31, PSA._404(r1)
 
-	stw		r8, -0x404(r1)
+	stw		r8, PSA._404(r1)
 	
 	bl		panic
 
-	lwz		r8, -0x404(r1)
+	lwz		r8, PSA._404(r1)
 	li		r0, 0
 	stw		r0, 0(r8)
 
-	stw		r31, -0x404(r1)
+	stw		r31, PSA._404(r1)
 
 	b		ReturnZeroFromMPCall
 

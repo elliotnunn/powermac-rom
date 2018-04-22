@@ -115,7 +115,7 @@ InitReplacement
 	li		r10,  0x00
 	rlwimi	r10, r12,  0, 12, 15
 	rlwimi	r10, r12,  0, 28, 30
-	stw		r10, -0x0968(r1)
+	stw		r10, PSA.FlagsTemplate(r1)
 
 
 ;	Cook up a MSR:

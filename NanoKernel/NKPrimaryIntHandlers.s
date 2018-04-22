@@ -117,7 +117,7 @@ CommonPIHPath_0xc	;	OUTSIDE REFERER
 @no_handler_notification
 	li		r27,  0x00
 	lwz		r23,  0x067c(r1)
-	stw		r27, -0x0428(r1)
+	stw		r27, PSA.ExternalHandlerID(r1)
 	_AssertAndRelease	PSA.SchLock, scratch=r8
 	bl		Restore_r14_r19
 
@@ -374,7 +374,7 @@ PBX_PIH
 	bl		SchSaveStartingAtR20
 ;	r8 = sprg0 (not used by me)
 
-	addi	r9, r1, -0x750
+	addi	r9, r1, PSA.BlueVecBase
 	andis.	r8, r11,  0x02
 	mfsprg	r30, 3
 	bne		PBX_PIH_0x38
@@ -386,7 +386,7 @@ PBX_PIH_0x38
 	mtsprg	3, r9
 	lis		r22,  0x50f3
 	mfmsr	r23
-	lwz		r25, -0x03fc(r1)
+	lwz		r25, PSA.OtherSystemAddrSpcPtr(r1)
 	rlwinm	r24, r22,  6, 26, 29
 	addi	r25, r25,  0x30
 	mfsrin	r21, r22
@@ -438,7 +438,7 @@ GazellePIH
 	bl		SchSaveStartingAtR20
 ;	r8 = sprg0 (not used by me)
 
-	addi	r9, r1, -0x750
+	addi	r9, r1, PSA.BlueVecBase
 	andis.	r8, r11,  0x02
 	mfsprg	r30, 3
 	bne		GazellePIH_0x38
@@ -451,7 +451,7 @@ GazellePIH_0x38
 	lis		r22, -0xd00
 	mfmsr	r20
 	ori		r23, r20,  0x10
-	lwz		r25, -0x03fc(r1)
+	lwz		r25, PSA.OtherSystemAddrSpcPtr(r1)
 	rlwinm	r24, r22,  6, 26, 29
 	addi	r25, r25,  0x30
 	mfsrin	r21, r22
@@ -526,7 +526,7 @@ TNT_PIH
 	bl		SchSaveStartingAtR20
 ;	r8 = sprg0 (not used by me)
 
-	addi	r9, r1, -0x750
+	addi	r9, r1, PSA.BlueVecBase
 	andis.	r8, r11,  0x02
 	mfsprg	r30, 3
 	bne		TNT_PIH_0x38
@@ -539,7 +539,7 @@ TNT_PIH_0x38
 	lis		r22, -0xd00
 	mfmsr	r20
 	ori		r23, r20,  0x10
-	lwz		r25, -0x03fc(r1)
+	lwz		r25, PSA.OtherSystemAddrSpcPtr(r1)
 	rlwinm	r24, r22,  6, 26, 29
 	addi	r25, r25,  0x30
 	mfsrin	r21, r22
@@ -602,7 +602,7 @@ GossamerPIH
 	bl		SchSaveStartingAtR20
 ;	r8 = sprg0 (not used by me)
 
-	addi	r9, r1, -0x750
+	addi	r9, r1, PSA.BlueVecBase
 	andis.	r8, r11,  0x02
 	mfsprg	r30, 3
 	bne		GossamerPIH_0x38
@@ -615,7 +615,7 @@ GossamerPIH_0x38
 	mfmsr	r20
 	ori		r23, r20,  0x10
 	lis		r22, -0xd00
-	lwz		r25, -0x03fc(r1)
+	lwz		r25, PSA.OtherSystemAddrSpcPtr(r1)
 	rlwinm	r24, r22,  6, 26, 29
 	addi	r25, r25,  0x30
 	mfsrin	r21, r22
@@ -695,7 +695,7 @@ NewWorldPowerBookPIH
 	bl		SchSaveStartingAtR20
 ;	r8 = sprg0 (not used by me)
 
-	addi	r9, r1, -0x750
+	addi	r9, r1, PSA.BlueVecBase
 	andis.	r8, r11,  0x02
 	mfsprg	r30, 3
 	bne		NewWorldPowerBookPIH_0x38
@@ -709,7 +709,7 @@ NewWorldPowerBookPIH_0x38
 	mfmsr	r20
 	ori		r23, r20,  0x10
 	lwz		r22,  0x0ec0(r26)
-	lwz		r25, -0x03fc(r1)
+	lwz		r25, PSA.OtherSystemAddrSpcPtr(r1)
 	rlwinm	r24, r22,  6, 26, 29
 	addi	r25, r25,  0x30
 	mfsrin	r21, r22
@@ -772,7 +772,7 @@ CordycepsPIH
 	bl		SchSaveStartingAtR20
 ;	r8 = sprg0 (not used by me)
 
-	addi	r9, r1, -0x750
+	addi	r9, r1, PSA.BlueVecBase
 	andis.	r8, r11,  0x02
 	mfsprg	r30, 3
 	bne		CordycepsPIH_0x38
@@ -836,7 +836,7 @@ NewWorldPIH
 	bl		SchSaveStartingAtR20
 ;	r8 = sprg0 (not used by me)
 
-	addi	r9, r1, -0x750
+	addi	r9, r1, PSA.BlueVecBase
 	andis.	r8, r11,  0x02
 	mfsprg	r30, 3
 	bne		NewWorldPIH_0x38
@@ -851,7 +851,7 @@ NewWorldPIH_0x38
 	lhz		r27,  0x0910(r1)
 	lwz		r22,  0x0f18(r20)
 	li		r28,  0x00
-	lwz		r25, -0x03fc(r1)
+	lwz		r25, PSA.OtherSystemAddrSpcPtr(r1)
 	rlwinm	r24, r22,  6, 26, 29
 	addi	r25, r25,  0x30
 	mfsrin	r21, r22
@@ -1024,7 +1024,7 @@ UnknownPIH
 	bl		SchSaveStartingAtR20
 ;	r8 = sprg0 (not used by me)
 
-	addi	r9, r1, -0x750
+	addi	r9, r1, PSA.BlueVecBase
 	andis.	r8, r11,  0x02
 	mfsprg	r30, 3
 	bne		UnknownPIH_0x38
@@ -1039,7 +1039,7 @@ UnknownPIH_0x38
 	lhz		r27,  0x0910(r1)
 	lwz		r22,  0x0f18(r20)
 	li		r28,  0x00
-	lwz		r25, -0x03fc(r1)
+	lwz		r25, PSA.OtherSystemAddrSpcPtr(r1)
 	rlwinm	r24, r22,  6, 26, 29
 	addi	r25, r25,  0x30
 	mfsrin	r21, r22

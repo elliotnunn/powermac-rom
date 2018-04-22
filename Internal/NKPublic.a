@@ -98,7 +98,7 @@ Size					equ		*
 ;	the negative offsets.
 ;_______________________________________________________________________
 
-PSA						record	-0xb90,INCR
+PSA						record	{EndOfPSA},INCR
 
 Base
 
@@ -119,11 +119,11 @@ DelayQueue				ds.l	4	; -a44:-a34
 DbugQueue				ds.l	4	; -a34:-a24
 PageQueue				ds.l	4	; -a24:-a14
 NotQueue				ds.l	4	; -a14:-a04
-						ds.l	1	; -a04
+_a04					ds.l	1	; -a04
 QueueRelatedZero1		ds.l	1	; -a00 ; set to zero when queues are inited
 QueueRelatedZero2		ds.l	1	; -9fc ; same again
-						ds.l	1	; -9f8
-						ds.l	1	; -9f4
+_9f8					ds.l	1	; -9f8
+_9f4					ds.l	1	; -9f4
 ReadyQueues
 CriticalReadyQ			ds.l	8	; -9f0:-9d0 ; unblocked tasks with priority 0
 LatencyProtectReadyQ	ds.l	8	; -9d0:-9b0 ; unblocked tasks with priority 1
@@ -135,12 +135,13 @@ FlagsTemplate			ds.l	1	; -968 ; typically just EWA.kFlagVec
 UserModeMSR				ds.l	1	; -964
 ThudBuffer				ds.b	96	; -960:-900 ; that's the kernel debugger
 NoIdeaR23				ds.l	1	; -900 ; r23 copies here... replated to RTAS?
-						ds.l	1	; -8fc
-						ds.l	1	; -8f8
-						ds.l	1	; -8f4
+_8fc					ds.l	1	; -8fc
+_8f8					ds.l	1	; -8f8
+_8f4					ds.w	1	; -8f4
+_8f2					ds.w	1	; -8f2
 PA_BlueTask				ds.l	1	; -8f0 ; set at the same time as the one below
-						ds.l	1	; -8ec
-						ds.l	1	; -8e8
+_8ec					ds.l	1	; -8ec
+_8e8					ds.l	1	; -8e8
 OtherSystemContextPtr	ds.l	1	; -8e4 ; sometimes set to PA_ECB
 VectorRegInitWord		ds.l	1	; -8e0 ; task vector regs get inited with this word x 4
 SevenFFFDead2			ds.l	1	; -8dc
@@ -155,69 +156,75 @@ ProcessorState			ds.b	128	; -4d0:-450 ; interesting what this gets used by
 FreeList				ds.l	4	; -450:-440
 MCR						ds.l	1	; -440 ; reported by heartbeat code
 Pending68kInt			ds.w	1	; -43c ; used when Sch interrupts blue task (-1 means "none")
-						ds.w	1	; -43a
+_43a					ds.w	1	; -43a
 DecClockRateHzCopy		ds.l	1	; -438 ; copied by Init.s
 OtherTimerQueuePtr		ds.l	1	; -434 ; unsigned timer queue in the pool, set by InitTMRQs
 FreePageCount			ds.l	1	; -430 ; zeroed by InitFreeList
 UnheldFreePageCount		ds.l	1	; -42c
 ExternalHandlerID		ds.l	1	; -428 ; notification for PIH to bump
 SystemAddressSpaceID	ds.l	1	; -424
-						ds.l	1	; -420
+_420					ds.l	1	; -420
 blueProcessPtr			ds.l	1	; -41c ; physical ptr to first type-1 struct created
 ThermalHandlerID		ds.l	1	; -418 ; is a Note struct
 PMFHandlerID			ds.l	1	; -414 ; also a Note struct
 BlueSpinningOn			ds.l	1	; -410 ; ID or 0 or -1
-						ds.l	1	; -40c
-						ds.l	1	; -408
-						ds.l	1	; -404
-						ds.l	1	; -400
+_40c					ds.l	1	; -40c
+_408					ds.l	1	; -408
+_404					ds.l	1	; -404
+_400					ds.l	1	; -400
 OtherSystemAddrSpcPtr	ds.l	1	; -3fc
 OtherSystemAddrSpcPtr2	ds.l	1	; -3f8 ; copied from the one above by InitFreeList
 ZeroedByInitFreeList3	ds.l	1	; -3f4
-						ds.l	1	; -3f0
-						ds.l	1	; -3ec
-						ds.l	1	; -3e8
-						ds.l	1	; -3e4
-						ds.l	1	; -3e0
-						ds.l	1	; -3dc
-						ds.l	1	; -3d8
-						ds.l	1	; -3d4
-						ds.l	1	; -3d0
-						ds.l	1	; -3cc
-						ds.l	1	; -3c8
-						ds.l	1	; -3c4
-						ds.l	1	; -3c0
-						ds.l	1	; -3bc
-						ds.l	1	; -3b8
-						ds.l	1	; -3b4
-						ds.l	1	; -3b0
-						ds.l	1	; -3ac
-						ds.l	1	; -3a8
-						ds.l	1	; -3a4
-						ds.l	1	; -3a0
-						ds.l	1	; -39c
-						ds.l	1	; -398
-						ds.l	1	; -394
-						ds.l	1	; -390
-						ds.l	1	; -38c
-						ds.l	1	; -388
-						ds.l	1	; -384
-						ds.l	1	; -380
-						ds.l	1	; -37c
-						ds.l	1	; -378
-						ds.l	1	; -374
-						ds.l	1	; -370
-						ds.l	1	; -36c
-						ds.l	1	; -368
-						ds.l	1	; -364
-						ds.l	1	; -360
-						ds.l	1	; -35c
-						ds.l	1	; -358
-						ds.l	1	; -354
-						ds.l	1	; -350
-						ds.l	1	; -34c
-						ds.l	1	; -348
-						ds.l	1	; -344
+_3f0					ds.l	1	; -3f0
+_3ec					ds.l	1	; -3ec
+_3e8					ds.l	1	; -3e8
+_3e4					ds.l	1	; -3e4
+_3e0					ds.l	1	; -3e0
+_3dc					ds.l	1	; -3dc
+_3d8					ds.l	1	; -3d8
+_3d4					ds.l	1	; -3d4
+_3d0					ds.l	1	; -3d0
+_3cc					ds.l	1	; -3cc
+_3c8					ds.l	1	; -3c8
+_3c4					ds.l	1	; -3c4
+_3c0					ds.l	1	; -3c0
+_3bc					ds.l	1	; -3bc
+_3b8					ds.l	1	; -3b8
+_3b4					ds.l	1	; -3b4
+_3b0					ds.l	1	; -3b0
+_3ac					ds.l	1	; -3ac
+_3a8					ds.l	1	; -3a8
+_3a4					ds.l	1	; -3a4
+_3a0					ds.l	1	; -3a0
+_39c					ds.l	1	; -39c
+_398					ds.l	1	; -398
+_394					ds.l	1	; -394
+_390					ds.l	1	; -390
+_38c					ds.l	1	; -38c
+_388					ds.l	1	; -388
+_384					ds.l	1	; -384
+_380					ds.l	1	; -380
+_37c					ds.l	1	; -37c
+_378					ds.l	1	; -378
+_374					ds.l	1	; -374
+_370					ds.l	1	; -370
+_36c					ds.l	1	; -36c
+_368					ds.l	1	; -368
+_364					ds.l	1	; -364
+_360					ds.w	1	; -360
+_35e					ds.w	1	; -35e
+_35c					ds.w	1	; -35c
+_35a					ds.w	1	; -35a
+_358					ds.w	1	; -358
+_356					ds.w	1	; -356
+_354					ds.l	1	; -354
+_350					ds.l	1	; -350
+_34c					ds.l	1	; -34c
+_348					ds.l	1	; -348
+_344					ds.l	1	; -344
+
+EWAFiller				ds.b	0x340
+EndOfPSA
 
 						endr
 

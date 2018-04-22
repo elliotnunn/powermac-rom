@@ -4,7 +4,7 @@ Local_Panic		set		*
 
 
 InitTMRQs	;	OUTSIDE REFERER
-	addi	r9, r1, -0xa84
+	addi	r9, r1, PSA.TimerQueue
 	lis		r8,  0x544d
 	ori		r8, r8,  0x5251
 	stw		r8,  0x0004(r9)
@@ -34,7 +34,7 @@ InitTMRQs	;	OUTSIDE REFERER
 
 	mr.		r31, r8
 	beq		Local_Panic
-	stw		r31, -0x0434(r1)
+	stw		r31, PSA.OtherTimerQueuePtr(r1)
 	li		r9,  0x07
 	stb		r9,  0x0014(r31)
 	li		r9,  0x01
@@ -55,7 +55,7 @@ InitTMRQs_0x7c
 
 	mr.		r31, r8
 	beq		Local_Panic
-	stw		r31, -0x0364(r1)
+	stw		r31, PSA._364(r1)
 	li		r9,  0x08
 	stb		r9,  0x0014(r31)
 	li		r9,  0x01
@@ -182,7 +182,7 @@ TimerDispatch_0x30	;	OUTSIDE REFERER
 	b		TimerFire4_0x10
 
 timer_earlier_than_sometime
-	lwz		r30, -0x0a7c(r1)
+	lwz		r30, PSA.TimerQueue + LLL.Next(r1)
 	lwz		r16,  0x0038(r30)
 	lwz		r17,  0x003c(r30)
 
@@ -621,7 +621,7 @@ TimerFire7	;	OUTSIDE REFERER
 
 ;	Dead code -- probably removed from TimerTable
 
-	lwz		r18, -0x0438(r1)
+	lwz		r18, PSA.DecClockRateHzCopy(r1)
 	lwz		r19,  0x0f88(r1)
 	subf.	r19, r18, r19
 	ble		TimerFire8_0x1c
@@ -640,7 +640,7 @@ major_0x134d8_0x18
 	addze	r16, r16
 	mttbu	r16
 	mttb	r17
-	lwz		r18, -0x0438(r1)
+	lwz		r18, PSA.DecClockRateHzCopy(r1)
 	srwi	r18, r18, 11
 
 
@@ -665,7 +665,7 @@ TimerFire8_0x1c	;	OUTSIDE REFERER
 
 ;	Dead code -- probably removed from TimerTable
 
-	lwz		r19, -0x036c(r1)
+	lwz		r19, PSA._36c(r1)
 	mfxer	r20
 	cmpwi	cr1, r19,  0x00
 	srawi	r8, r19, 31
@@ -696,7 +696,7 @@ major_0x13544_0x44
 	blt		major_0x13544_0x44
 
 major_0x13544_0x64
-	lwz		r18, -0x0368(r1)
+	lwz		r18, PSA._368(r1)
 	addc	r17, r17, r18
 	addze	r16, r16
 	stw		r16,  0x0038(r30)

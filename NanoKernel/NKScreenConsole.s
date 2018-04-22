@@ -36,20 +36,20 @@ InitScreenConsole_0x18
 InitScreenConsole_0x2c
 	addi	r31, r30,  0x1000
 	stw		r30, -0x0004(r31)
-	stw		r30, -0x0404(r1)
-	stw		r30, -0x0400(r1)
+	stw		r30, PSA._404(r1)
+	stw		r30, PSA._400(r1)
 	li		r29,  ScreenConsoleY
-	sth		r29, -0x0360(r1)
+	sth		r29, PSA._360(r1)
 	li		r29,  ScreenConsoleX
-	sth		r29, -0x035e(r1)
+	sth		r29, PSA._35e(r1)
 	li		r29,  ScreenConsoleHeight
-	sth		r29, -0x035c(r1)
+	sth		r29, PSA._35c(r1)
 	li		r29,  ScreenConsoleWidth
-	sth		r29, -0x035a(r1)
+	sth		r29, PSA._35a(r1)
 	li		r29,  0x5e
-	sth		r29, -0x0358(r1)
+	sth		r29, PSA._358(r1)
 	li		r29,  0x30
-	sth		r29, -0x0356(r1)
+	sth		r29, PSA._356(r1)
 	lmw		r29, -0x0110(r1)
 	blr
 
@@ -58,14 +58,14 @@ InitScreenConsole_0x2c
 ;	> r1    = kdp
 
 ScreenConsole_putchar	;	OUTSIDE REFERER
-	lwz		r30, -0x0404(r1)
+	lwz		r30, PSA._404(r1)
 	stb		r29,  0x0000(r30)
 	addi	r30, r30,  0x01
 	andi.	r29, r30,  0xfff
-	stw		r30, -0x0404(r1)
+	stw		r30, PSA._404(r1)
 	bnelr
 	lwz		r30, -0x1000(r30)
-	stw		r30, -0x0404(r1)
+	stw		r30, PSA._404(r1)
 	blr
 
 
@@ -73,19 +73,19 @@ ScreenConsole_putchar	;	OUTSIDE REFERER
 ;	> r1    = kdp
 
 ScreenConsole_redraw	;	OUTSIDE REFERER
-	stmw	r2, -0x03e8(r1)
+	stmw	r2, PSA._3e8(r1)
 	mflr	r14
 	mfcr	r15
-	stw		r14, -0x03f0(r1)
-	stw		r15, -0x03ec(r1)
-	addi	r26, r1, -0x690
+	stw		r14, PSA._3f0(r1)
+	stw		r15, PSA._3ec(r1)
+	addi	r26, r1, PSA.GreenVecBase
 	mfsprg	r2, 3
 	mtsprg	3, r26
 	lwz		r26,  0x0edc(r1)
 	andi.	r26, r26,  0x08
 	beq		major_0x18bec
-	lwz		r14, -0x0404(r1)
-	lwz		r15, -0x0400(r1)
+	lwz		r14, PSA._404(r1)
+	lwz		r15, PSA._400(r1)
 	cmpw	r14, r15
 	beq		major_0x18bec
 	bl		major_0x18c18
@@ -101,8 +101,8 @@ ScreenConsole_redraw_0x40
 	bl		funny_thing
 	bl		major_0x18e24
 	bl		funny_thing
-	lwz		r14, -0x0404(r1)
-	lwz		r15, -0x0400(r1)
+	lwz		r14, PSA._404(r1)
+	lwz		r15, PSA._400(r1)
 	li		r16,  0x00
 
 ScreenConsole_redraw_0x74
@@ -124,7 +124,7 @@ ScreenConsole_redraw_0x90
 	beq		ScreenConsole_redraw_0x74
 	beq		cr1, ScreenConsole_redraw_0xe4
 	bl		major_0x18e54
-	lhz		r17, -0x0358(r1)
+	lhz		r17, PSA._358(r1)
 	cmpw	r9, r17
 	blt		ScreenConsole_redraw_0x74
 
@@ -135,18 +135,18 @@ ScreenConsole_redraw_0xc0
 
 ScreenConsole_redraw_0xcc
 	bl		funny_thing
-	lhz		r17, -0x0356(r1)
+	lhz		r17, PSA._356(r1)
 	cmpw	r10, r17
 	blt		ScreenConsole_redraw_0x74
-	stw		r16, -0x0400(r1)
+	stw		r16, PSA._400(r1)
 	b		ScreenConsole_redraw_0x40
 
 ScreenConsole_redraw_0xe4
-	lhz		r17, -0x0356(r1)
+	lhz		r17, PSA._356(r1)
 	addi	r17, r17, -0x01
 	cmpw	r10, r17
 	blt		ScreenConsole_redraw_0x74
-	lwz		r17, -0x0438(r1)
+	lwz		r17, PSA.DecClockRateHzCopy(r1)
 	slwi	r25, r17,  2
 	add		r25, r25, r17
 	mfspr	r17, dec
@@ -183,11 +183,11 @@ ScreenConsole_redraw_0x150
 
 major_0x18bec	;	OUTSIDE REFERER
 	mtsprg	3, r2
-	lwz		r14, -0x03f0(r1)
-	lwz		r15, -0x03ec(r1)
+	lwz		r14, PSA._3f0(r1)
+	lwz		r15, PSA._3ec(r1)
 	mtlr	r14
 	mtcr	r15
-	lmw		r2, -0x03e8(r1)
+	lmw		r2, PSA._3e8(r1)
 	blr
 
 
@@ -202,7 +202,7 @@ major_0x18c08	;	OUTSIDE REFERER
 
 major_0x18c18	;	OUTSIDE REFERER
 	mflr	r13
-	lwz		r27, -0x08f8(r1)
+	lwz		r27, PSA._8f8(r1)
 	cmpwi	r27,  0x00
 	bne		major_0x18c18_0x40
 	lwz		r27,  0x0630(r1)
@@ -212,11 +212,11 @@ major_0x18c18	;	OUTSIDE REFERER
 	lwz		r31,  0x037c(r27)
 	cmpwi	r31,  0x00
 	beq		major_0x18c18_0x40
-	stw		r31, -0x08f8(r1)
+	stw		r31, PSA._8f8(r1)
 	lhz		r31,  0x0384(r27)
-	sth		r31, -0x08f4(r1)
+	sth		r31, PSA._8f4(r1)
 	lhz		r31,  0x0386(r27)
-	sth		r31, -0x08f2(r1)
+	sth		r31, PSA._8f2(r1)
 
 major_0x18c18_0x40
 	li		r27,  0x8a4
@@ -256,14 +256,14 @@ major_0x18c18_0x40
 	srwi	r6, r6,  3
 	cmplwi	r6,  0x08
 	bgt		major_0x18c18_0xe0
-	stw		r3, -0x08f8(r1)
-	sth		r5, -0x08f4(r1)
-	sth		r6, -0x08f2(r1)
+	stw		r3, PSA._8f8(r1)
+	sth		r5, PSA._8f4(r1)
+	sth		r6, PSA._8f2(r1)
 
 major_0x18c18_0xe0
-	lwz		r3, -0x08f8(r1)
-	lhz		r5, -0x08f4(r1)
-	lhz		r6, -0x08f2(r1)
+	lwz		r3, PSA._8f8(r1)
+	lhz		r5, PSA._8f4(r1)
+	lhz		r6, PSA._8f2(r1)
 	cmpwi	r3,  0x00
 	bne		major_0x18d5c
 	b		major_0x18bec
@@ -341,18 +341,18 @@ major_0x18d5c_0x70
 major_0x18d5c_0x88
 	isync
 	mfmsr	r22
-	lhz		r29, -0x0360(r1)
-	lhz		r30, -0x035c(r1)
+	lhz		r29, PSA._360(r1)
+	lhz		r30, PSA._35c(r1)
 	subf	r29, r29, r30
 	li		r30,  0x0a
 	divw	r29, r29, r30
-	sth		r29, -0x0356(r1)
-	lhz		r29, -0x035e(r1)
-	lhz		r30, -0x035a(r1)
+	sth		r29, PSA._356(r1)
+	lhz		r29, PSA._35e(r1)
+	lhz		r30, PSA._35a(r1)
 	subf	r29, r29, r30
 	li		r30,  0x06
 	divw	r29, r29, r30
-	sth		r29, -0x0358(r1)
+	sth		r29, PSA._358(r1)
 	mtlr	r13
 	blr
 
@@ -362,7 +362,7 @@ major_0x18e24	;	OUTSIDE REFERER
 	mflr	r12
 
 major_0x18e24_0x4
-	lhz		r25, -0x0358(r1)
+	lhz		r25, PSA._358(r1)
 	cmpw	cr1, r9, r25
 	lbz		r25,  0x0000(r21)
 	cmplwi	r25,  0x00
@@ -390,8 +390,8 @@ major_0x18e54	;	OUTSIDE REFERER
 	mullw	r7, r7, r6
 	add		r7, r7, r27
 	add		r7, r7, r3
-	lhz		r27, -0x0360(r1)
-	lhz		r28, -0x035e(r1)
+	lhz		r27, PSA._360(r1)
+	lhz		r28, PSA._35e(r1)
 	mullw	r27, r5, r27
 	mullw	r28, r6, r28
 	add		r7, r7, r27
@@ -499,7 +499,7 @@ funny_thing_0xc
 	mflr	r12
 
 funny_thing_0x10
-	lhz		r25, -0x0358(r1)
+	lhz		r25, PSA._358(r1)
 	cmpw	r9, r25
 	bge		funny_thing_0x28
 	li		r25,  0x20

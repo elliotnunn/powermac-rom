@@ -216,8 +216,8 @@ MPGetKernelState_0x208
 	b		MPGetKernelState_0x208
 
 MPGetKernelState_0x238
-	addi	r19, r1, -0x450
-	lwz		r31, -0x0448(r1)
+	addi	r19, r1, PSA.FreeList
+	lwz		r31, PSA.FreeList + LLL.Next(r1)
 
 MPGetKernelState_0x240
 	cmpw	r31, r19
@@ -264,7 +264,7 @@ MPGetKernelState_0x270
 	bl		LoadStateRestoreFunc
 	mflr	r9
 	stw		r9,  0x0000(r17)
-	lwz		r8, -0x0900(r1)
+	lwz		r8, PSA.NoIdeaR23(r1)
 	stw		r8,  0x0008(r17)
 	li		r8,  0x00
 	stw		r8,  0x0004(r17)

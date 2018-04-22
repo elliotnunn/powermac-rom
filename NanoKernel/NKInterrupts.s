@@ -1849,7 +1849,7 @@ IntPerfMonitor	;	OUTSIDE REFERER
 
 	_Lock			PSA.SchLock, scratch1=r8, scratch2=r9
 
-	lwz		r8, -0x0414(r1)
+	lwz		r8, PSA.PMFHandlerID(r1)
 
 ;	r8 = id
  	bl		LookupID

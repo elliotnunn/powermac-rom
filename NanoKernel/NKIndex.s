@@ -68,12 +68,12 @@ InitIDIndex
 ;	RET		ID r8
 
 MakeID
-	lwz		r18, -0x0a98(r1)
+	lwz		r18, PSA.IndexPtr(r1)
 	lhz		r19,  0x0000(r18)
 	mr		r21, r19
 
 @_c
-	lwz		r18, -0x0a98(r1)
+	lwz		r18, PSA.IndexPtr(r1)
 	rlwinm	r20, r19, 25, 23, 29
 	addi	r20, r20,  0x08
 	clrlwi.	r19, r19,  0x17
@@ -104,7 +104,7 @@ MakeID
 	b		@_c
 
 @_70
-	lwz		r18, -0x0a98(r1)
+	lwz		r18, PSA.IndexPtr(r1)
 	mr		r21, r8
 	lhz		r19,  0x0002(r18)
 	mr		r22, r9
@@ -124,7 +124,7 @@ MakeID
 	mtlr	r23
 	li		r8,  0x00
 	beqlr
-	lwz		r17, -0x0a98(r1)
+	lwz		r17, PSA.IndexPtr(r1)
 	lhz		r19,  0x0002(r17)
 	addi	r19, r19,  0x200
 	rlwinm	r20, r19, 25, 23, 29
@@ -150,7 +150,7 @@ MakeID
 	stw		r9,  KDP.NanoKernelInfo + NKNanoKernelInfo.IDCtr(r1)
 	lhz		r20,  0x0000(r18)
 	lhz		r8,  0x0002(r22)
-	lwz		r21, -0x0a98(r1)
+	lwz		r21, PSA.IndexPtr(r1)
 	add		r19, r19, r20
 	addi	r8, r8,  0x01
 	lhz		r20,  0x0002(r18)
@@ -174,7 +174,7 @@ MakeID
 
 DeleteID
 	rlwinm	r20, r8,  9, 23, 29
-	lwz		r18, -0x0a98(r1)
+	lwz		r18, PSA.IndexPtr(r1)
 	addi	r20, r20,  0x08
 	rlwinm.	r19, r8, 16, 23, 31
 	lwzx	r18, r18, r20
@@ -212,7 +212,7 @@ DeleteID
 
 LookupID
 	rlwinm	r20, r8,  9, 23, 29
-	lwz		r18, -0x0a98(r1)
+	lwz		r18, PSA.IndexPtr(r1)
 	addi	r20, r20,  0x08
 	rlwinm.	r19, r8, 16, 23, 31
 	lwzx	r18, r18, r20
@@ -245,7 +245,7 @@ LookupID
 
 GetNextIDOfClass
 	rlwinm	r20, r8,  9, 23, 29
-	lwz		r18, -0x0a98(r1)
+	lwz		r18, PSA.IndexPtr(r1)
 	addi	r20, r20,  0x08
 	rlwinm.	r19, r8, 16, 23, 31
 	lwzx	r18, r18, r20
@@ -273,7 +273,7 @@ GetNextIDOfClass
 	lhz		r20,  0x0000(r18)
 	addi	r20, r20,  0x200
 	rlwinm.	r20, r20, 25, 23, 29
-	lwz		r18, -0x0a98(r1)
+	lwz		r18, PSA.IndexPtr(r1)
 	beqlr
 	addi	r20, r20,  0x08
 	li		r19,  0x00

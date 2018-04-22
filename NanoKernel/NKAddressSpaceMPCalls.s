@@ -369,7 +369,7 @@ convert_pmdts_to_areas	;	OUTSIDE REFERER
 	stw		r8,  0x0040(r31)
 	lwz		r8, Area.Flags(r31)
 	ori		r8, r8,  0x40
-	lwz		r9, -0x0430(r1)
+	lwz		r9, PSA.FreePageCount(r1)
 	cmpwi	r9, noErr
 
 	bgt		@_374
@@ -1205,25 +1205,25 @@ createarea_0x4e0
 	srwi	r29, r29, 11
 
 createarea_0x4e8
-	lwz		r18, -0x0430(r1)
+	lwz		r18, PSA.FreePageCount(r1)
 	add.	r8, r27, r29
 	ble		major_0x102c8
 	cmpw	r8, r18
 	bgt		major_0x102c8
-	lwz		r16, -0x0430(r1)
+	lwz		r16, PSA.FreePageCount(r1)
 	lwz		r17, PSA.UnheldFreePageCount(r1)
 	subf	r16, r8, r16
 	subf	r17, r8, r17
-	stw		r16, -0x0430(r1)
+	stw		r16, PSA.FreePageCount(r1)
 	stw		r17, PSA.UnheldFreePageCount(r1)
 	mr.		r18, r27
 	beq		createarea_0x5a0
-	lwz		r16, -0x0448(r1)
+	lwz		r16, PSA.FreeList + LLL.Next(r1)
 	RemoveFromList		r16, scratch1=r17, scratch2=r19
 	addi	r18, r18, -0x01
 	stw		r16,  0x0040(r31)
 	cmpwi	r18,  0x00
-	lwz		r17, -0x0448(r1)
+	lwz		r17, PSA.FreeList + LLL.Next(r1)
 	mr		r8, r16
 	subi	r16, r16, 4
 	bgt		createarea_0x564
@@ -1238,19 +1238,19 @@ createarea_0x564
 	mr		r8, r17
 	li		r9,  0x400
 	bl		major_0x10284
-	lwz		r17, -0x0448(r1)
+	lwz		r17, PSA.FreeList + LLL.Next(r1)
 	cmpwi	r18,  0x00
 	bgt		createarea_0x564
 
 createarea_0x5a0
 	mr.		r18, r29
 	beq		createarea_0x62c
-	lwz		r16, -0x0448(r1)
+	lwz		r16, PSA.FreeList + LLL.Next(r1)
 	RemoveFromList		r16, scratch1=r17, scratch2=r19
 	addi	r18, r18, -0x01
 	stw		r16,  0x003c(r31)
 	cmpwi	r18,  0x00
-	lwz		r17, -0x0448(r1)
+	lwz		r17, PSA.FreeList + LLL.Next(r1)
 	mr		r8, r16
 	subi	r16, r16, 4
 	bgt		createarea_0x5f0
@@ -1265,7 +1265,7 @@ createarea_0x5f0
 	mr		r8, r17
 	li		r9,  0x800
 	bl		major_0x102a8
-	lwz		r17, -0x0448(r1)
+	lwz		r17, PSA.FreeList + LLL.Next(r1)
 	cmpwi	r18,  0x00
 	bgt		createarea_0x5f0
 
@@ -1321,7 +1321,7 @@ major_0x102a8_0xc
 major_0x102c8	;	OUTSIDE REFERER
 	_AssertAndRelease	PSA.PoolLock, scratch=r16
 	addi	r30, r8,  0x08
-	lwz		r8, -0x0420(r1)
+	lwz		r8, PSA._420(r1)
 
 ;	r8 = id
  	bl		LookupID
@@ -2687,7 +2687,7 @@ MPCall_98_0x184
 	DeclareMPCall	82, MPCall_82
 
 MPCall_82	;	OUTSIDE REFERER
-	lwz		r8, -0x0420(r1)
+	lwz		r8, PSA._420(r1)
 	cmpwi	r8,  0x00
 	bne		ReturnMPCallOOM
 
@@ -2700,7 +2700,7 @@ MPCall_82	;	OUTSIDE REFERER
 	cmpwi	r9, Notification.kIDClass
 
 	bne		ReleaseAndReturnMPCallInvalidIDErr
-	stw		r3, -0x0420(r1)
+	stw		r3, PSA._420(r1)
 
 ;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall
@@ -2722,7 +2722,7 @@ MPCall_83	;	OUTSIDE REFERER
 
 
 MPCall_83_0x5c	;	OUTSIDE REFERER
-	lwz		r8, -0x0420(r1)
+	lwz		r8, PSA._420(r1)
 
 ;	r8 = id
  	bl		LookupID
@@ -2743,14 +2743,14 @@ MPCall_83_0x5c	;	OUTSIDE REFERER
 	b		ReleaseAndReturnMPCallOOM
 
 MPCall_83_0x90	;	OUTSIDE REFERER
-	addi	r18, r1, -0x450
-	lwz		r8, -0x0448(r1)
+	addi	r18, r1, PSA.FreeList
+	lwz		r8, PSA.FreeList + LLL.Next(r1)
 	cmpw	r8, r18
 	beq		MPCall_83_0xec
 	RemoveFromList		r8, scratch1=r16, scratch2=r17
-	lwz		r16, -0x0430(r1)
+	lwz		r16, PSA.FreePageCount(r1)
 	addi	r16, r16, -0x01
-	stw		r16, -0x0430(r1)
+	stw		r16, PSA.FreePageCount(r1)
 	lwz		r17,  0x0004(r8)
 	mfspr	r16, dec
 	eqv.	r17, r18, r17
@@ -2775,7 +2775,7 @@ MPCall_84	;	OUTSIDE REFERER
 
 	lwz		r16,  0x0004(r3)
 	lwz		r17,  0x0000(r3)
-	addi	r18, r1, -0x450
+	addi	r18, r1, PSA.FreeList
 	eqv.	r16, r16, r17
 	cmpw	cr1, r17, r18
 	bne		MPCall_84_0x3c
@@ -3138,8 +3138,8 @@ NKMakePhysicallyContiguous_0xe0
 
 	_Lock			PSA.PoolLock, scratch1=r16, scratch2=r17
 
-	addi	r18, r1, -0x450
-	lwz		r8, -0x0448(r1)
+	addi	r18, r1, PSA.FreeList
+	lwz		r8, PSA.FreeList + LLL.Next(r1)
 	cmpw	r8, r18
 	beq		NKMakePhysicallyContiguous_0x174
 	b		NKMakePhysicallyContiguous_0x174
@@ -3753,12 +3753,12 @@ MPCall_95_0x44
 	lwz		r8, PSA.UnheldFreePageCount(r1)
 	cmpwi	r8,  0x00
 	ble		ReleaseAndReturnMPCallOOM
-	lwz		r27, -0x0438(r1)
+	lwz		r27, PSA.DecClockRateHzCopy(r1)
 	srwi	r27, r27, 15
 	mfspr	r8, dec
 	subf	r27, r27, r8
-	lwz		r8, -0x03f8(r1)
-	lwz		r9, -0x03f4(r1)
+	lwz		r8, PSA.OtherSystemAddrSpcPtr2(r1)
+	lwz		r9, PSA.ZeroedByInitFreeList3(r1)
 	mr		r30, r9
 	bl		FindAreaAbove
 	mr		r31, r8
@@ -3845,11 +3845,11 @@ MPCall_95_0x1c0
 
 MPCall_95_0x1c8
 	cmpwi	r4,  0x00
-	stw		r29, -0x03f4(r1)
+	stw		r29, PSA.ZeroedByInitFreeList3(r1)
 	beq		ReleaseAndReturnMPCallOOM
 	lwz		r8,  0x0068(r31)
 	add		r8, r8, r5
-	stw		r8, -0x03f4(r1)
+	stw		r8, PSA.ZeroedByInitFreeList3(r1)
 
 ;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall

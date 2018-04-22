@@ -2018,14 +2018,14 @@ AcquireLock	;	OUTSIDE REFERER
 	mr		r25, r29
 	lwz		r30, -0x0004(r22)
 	mfdec	r29
-	lwz		r28, -0x0438(r30)
+	lwz		r28, PSA.DecClockRateHzCopy(r30)
 	slwi	r28, r28,  3
 	subf	r29, r28, r29
 	b		@0xc0
 
 @0xa8
 	lwz		r30, -0x0004(r22)
-	lwz		r28, -0x0b30(r30)
+	lwz		r28, PSA.ThudLock(r30)
 	cmpwi	r28,  0x00
 	beq-	@0xc0
 	mfdec	r29

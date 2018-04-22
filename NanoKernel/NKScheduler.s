@@ -296,7 +296,7 @@ Restore_v0_v31	;	OUTSIDE REFERER
 	mtcr	r11
 	mtvscr	v0
 	lwz		r8, -0x0004(r1)
-	li		r9, -0x8e0
+	li		r9, PSA.VectorRegInitWord
 	lvx		v31, r8, r9
 	vor		v0, v31, v31
 	bge		major_0x13988_0x108
@@ -1178,14 +1178,14 @@ major_0x142dc_0x38
 
 
 major_0x142dc_0x58	;	OUTSIDE REFERER
-	lwz		r27, -0x0970(r1)
+	lwz		r27, PSA.PriorityFlags(r1)
 
 major_0x142dc_0x5c
 	mr		r30, r31
 	cmpwi	r27,  0x00
 	cntlzw	r26, r27
 	beq		major_0x142dc_0x140
-	addi	r25, r1, -0x9f0
+	addi	r25, r1, PSA.CriticalReadyQ
 	mulli	r26, r26,  0x20
 	add		r26, r26, r25
 	lwz		r29,  0x0008(r26)
@@ -1229,7 +1229,7 @@ major_0x142dc_0xd8	;	OUTSIDE REFERER
 	subf	r28, r27, r28
 	stw		r28,  0x0014(r26)
 	lwz		r28,  0x0010(r26)
-	lwz		r27, -0x0970(r1)
+	lwz		r27, PSA.PriorityFlags(r1)
 	addi	r28, r28, -0x01
 	cmpwi	r28,  0x00
 	stw		r28,  0x0010(r26)
@@ -1237,7 +1237,7 @@ major_0x142dc_0xd8	;	OUTSIDE REFERER
 	bne		major_0x142dc_0x140
 	lwz		r28,  0x0000(r26)
 	andc	r27, r27, r28
-	stw		r27, -0x0970(r1)
+	stw		r27, PSA.PriorityFlags(r1)
 
 major_0x142dc_0x140
 	lwz		r25,  0x0064(r30)
@@ -1249,7 +1249,7 @@ major_0x142dc_0x140
 	ori		r27, r27,  0x200
 	stb		r26,  0x0018(r30)
 	stw		r27,  0x0064(r30)
-	addi	r25, r1, -0xa34
+	addi	r25, r1, PSA.DbugQueue
 	addi	r26, r30,  0x08
 	stw		r25,  0x0000(r26)
 	InsertAsPrev	r26, r25, scratch=r27
@@ -2222,7 +2222,7 @@ SchIdleTaskStopper
 	li		r9,  0x00
 	stw		r9,  0x001c(r31)
 	bl		SchTaskUnrdy
-	addi	r16, r1, -0xa44
+	addi	r16, r1, PSA.DelayQueue
 	addi	r17, r8,  0x08
 	stw		r16,  0x0000(r17)
 	InsertAsPrev	r17, r16, scratch=r18
