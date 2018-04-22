@@ -4667,22 +4667,6 @@ SpaceL2PUsingBATs ; LogicalPage *r8, MPAddressSpace *r9 // PhysicalPage *r17
 
 	lwzu	r16, 8(r18)
 	_v2pguts
-	beq		@bat_yes
-
-	lwzu	r16, 8(r18)
-	_v2pguts
-	beq		@bat_yes
-
-	lwzu	r16, 8(r18)
-	_v2pguts
-	beq		@bat_yes
-
-	lwzu	r16, 8(r18)
-	_v2pguts
-	beq		@bat_yes
-
-	lwzu	r16, 8(r18)
-	_v2pguts
 	bne		@bat_no
 
 @bat_yes

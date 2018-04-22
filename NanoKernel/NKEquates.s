@@ -3,7 +3,7 @@
 ;_______________________________________________________________________
 
 
-kNanoKernelVersion		equ		$0228		
+kNanoKernelVersion		equ		$0227		
 
 
 ;	PowerPC Machine Status Register (MSR) bits

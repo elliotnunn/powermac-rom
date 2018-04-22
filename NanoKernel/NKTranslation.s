@@ -2065,19 +2065,19 @@ FDP_1024
 FDP_104c
 		oris	r11, r11, 0x0200
 		lbz		r21, 0x0000(r23)
-		b		FDP_00E4
+		b		FDP_00E8
 
 
 FDP_1058
 		oris	r11, r11, 0x0200
 		lhz		r21, 0x0000(r23)
-		b		FDP_00E4
+		b		FDP_00E8
 
 
 FDP_1064
 		oris	r11, r11, 0x0200
 		lwz		r21, 0x0000(r23)
-		b		FDP_00E4
+		b		FDP_00E8
 
 
 

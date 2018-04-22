@@ -704,7 +704,7 @@ major_0x18040_0x9c
 	cmpwi	cr1, r17, -0x100
 	bgt		major_0x18040_0x100
 	blt		cr1, major_0x18040_0x100
-	_log	'Looks like interrupt stack overflow by os or application^n'
+	_log	'Looks like interrupt stack underflow by os or application^n'
 
 major_0x18040_0x100
 	mtlr	r16
@@ -1231,5 +1231,49 @@ prereturn	;	OUTSIDE REFERER
 
 
 	blr
+
+
+
+;	> r1    = kdp
+
+InitScreenConsole	;	OUTSIDE REFERER
+	stmw	r29, -0x0110(r1)
+	lis		r30, -0x01
+	ori		r30, r30,  0x7000
+	add		r30, r30, r1
+	addi	r31, r30,  0x2000
+	addi	r30, r30,  0x04
+
+InitScreenConsole_0x18
+	cmplw	r30, r31
+	addi	r29, r31,  0x04
+	bge		InitScreenConsole_0x2c
+	stwu	r29, -0x1000(r31)
+	b		InitScreenConsole_0x18
+
+InitScreenConsole_0x2c
+	addi	r31, r30,  0x1000
+	stw		r30, -0x0004(r31)
+	stw		r30, PSA._404(r1)
+	stw		r30, PSA._400(r1)
+	lmw		r29, -0x0110(r1)
+	blr
+
+
+
+;	> r1    = kdp
+
+ScreenConsole_putchar	;	OUTSIDE REFERER
+	lwz		r30, PSA._404(r1)
+	stb		r29,  0x0000(r30)
+	addi	r30, r30,  0x01
+	andi.	r29, r30,  0xfff
+	stw		r30, PSA._404(r1)
+	bnelr
+	lwz		r30, -0x1000(r30)
+	stw		r30, PSA._404(r1)
+	blr
+
+
 
 	align	5

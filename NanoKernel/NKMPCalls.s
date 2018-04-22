@@ -16,7 +16,7 @@
 		if		&TYPE('NKDebugShim') != 'UNDEFINED'
 MaxMPCallCount		equ		300
 		else
-MaxMPCallCount		equ		134
+MaxMPCallCount		equ		133
 		endif
 
 
@@ -1418,8 +1418,7 @@ KCStopScheduling	;	OUTSIDE REFERER
 	li		r17,  0x00
 	stb		r17,  0x0019(r31)
 	mr		r8, r31
-	bl		SchRdyTaskLater
-	bl		CalculateTimeslice
+	bl		SchRdyTaskNow
 	mr		r8, r31
 	bl		FlagSchEval
 	lwz		r8,  0x064c(r1)
@@ -1429,6 +1428,7 @@ KCStopScheduling	;	OUTSIDE REFERER
 
 KCStopScheduling_0x94
 	_AssertAndRelease	PSA.SchLock + Lock.Count, scratch=r16
+	subi	r10, r10, 4
 	b		MPCall_6_0x78
 
 
@@ -2046,74 +2046,6 @@ KCRegisterExternalHandler
 	stw				r3, PSA.ExternalHandlerID(r1)
 
 	b				ReleaseAndReturnZeroFromMPCall
-
-
-
-	DeclareMPCall	133, MPCall_133
-
-MPCall_133	;	OUTSIDE REFERER
-
-	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
-
-	cmpw	r3, r0
-	lwz		r16,  0x0edc(r1)
-	li		r17,  0x0b
-	blt		MPCall_133_0x34
-	and		r3, r3, r17
-	or		r16, r16, r3
-	b		MPCall_133_0x3c
-
-MPCall_133_0x34
-	orc		r3, r3, r17
-	and		r16, r16, r3
-
-MPCall_133_0x3c
-	stw		r16,  0x0edc(r1)
-	srawi	r16, r4, 16
-	extsh	r17, r4
-	cmpwi	r16, -0x01
-	cmpwi	cr1, r17, -0x01
-	beq		MPCall_133_0x60
-	bgt		MPCall_133_0x5c
-	li		r16,  0x00
-
-MPCall_133_0x5c
-	sth		r16, PSA._360(r1)
-
-MPCall_133_0x60
-	beq		cr1, MPCall_133_0x70
-	bgt		cr1, MPCall_133_0x6c
-	li		r17,  0x00
-
-MPCall_133_0x6c
-	sth		r17, PSA._35e(r1)
-
-MPCall_133_0x70
-	srawi	r16, r5, 16
-	extsh	r17, r5
-	cmpwi	r16, -0x01
-	cmpwi	cr1, r17, -0x01
-	beq		MPCall_133_0x90
-	bgt		MPCall_133_0x8c
-	li		r16,  0x00
-
-MPCall_133_0x8c
-	sth		r16, PSA._35c(r1)
-
-MPCall_133_0x90
-	beq		cr1, MPCall_133_0xa0
-	bgt		cr1, MPCall_133_0x9c
-	li		r17,  0x00
-
-MPCall_133_0x9c
-	sth		r17, PSA._35a(r1)
-
-MPCall_133_0xa0
-;	r1 = kdp
-	bl		ScreenConsole_redraw
-
-;	r1 = kdp
-	b		ReleaseAndReturnZeroFromMPCall
 
 
 

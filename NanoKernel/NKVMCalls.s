@@ -216,6 +216,11 @@ VMFinalInit	;	OUTSIDE REFERER
 	ble		@loop
 
 @skip
+foo set KDP.NanoKernelInfo + NKNanoKernelInfo.ConfigFlags
+	lwz		r8, foo(r1)
+	_bclr	r8, r8, 28
+	stw		r8, foo(r1)
+
 	mfsprg	r8, 0
 	lmw		r29, EWA.r29(r8)
 	b		VMReturn1

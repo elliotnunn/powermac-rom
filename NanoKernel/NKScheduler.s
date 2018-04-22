@@ -966,7 +966,7 @@ SchSwitchSpace
 		cmplw	r16, r17
 		lwz		r17, AddressSpace.BAT3L(r8)
 		beq		cr1, @definitely_set_BAT3
-		beq		@skip_setting_BAT3
+		beqlr
 @definitely_set_BAT3
 
 		mtspr	dbat3u, r0
@@ -977,80 +977,6 @@ SchSwitchSpace
 		mtspr	ibat3l, r17
 		mtspr	ibat3u, r16
 @skip_setting_BAT3
-
-
-	;	This is weird. If the hasExtraBATs flag (my name) is set in ProcessorInfo,
-	;	populate a second (undocumented?) set of BATs from the same struct.
-
-		lwz			r17, KDP.ProcessorInfo + NKProcessorInfo.ProcessorFlags(r1)
-		lwz			r16, AddressSpace.ExtraBAT0U(r8)
-		rlwinm.		r17, r17, 0, 31-NKProcessorInfo.hasExtraBATs, 31-NKProcessorInfo.hasExtraBATs
-		lwz			r17, AddressSpace.ExtraBAT0U(r9)
-		beq			@return
-		cmplw		r16, r17
-		lwz			r17, AddressSpace.ExtraBAT0L(r8)
-		beq			cr1, @definitely_set_ExtraBAT0
-		beq			@skip_setting_ExtraBAT0
-
-@definitely_set_ExtraBAT0
-		mtspr		0x238, r0
-		mtspr		0x239, r17
-		mtspr		0x238, r16
-		mtspr		0x230, r0
-		mtspr		0x231, r17
-		mtspr		0x230, r16
-@skip_setting_ExtraBAT0
-
-
-		lwz			r16, AddressSpace.ExtraBAT1U(r8)
-		lwz			r17, AddressSpace.ExtraBAT1U(r9)
-		cmplw		r16, r17
-		lwz			r17, AddressSpace.ExtraBAT1L(r8)
-		beq			cr1, @definitely_set_ExtraBAT1
-		beq			@skip_setting_ExtraBAT1
-
-@definitely_set_ExtraBAT1
-		mtspr		0x23a, r0
-		mtspr		0x23b, r17
-		mtspr		0x23a, r16
-		mtspr		0x232, r0
-		mtspr		0x233, r17
-		mtspr		0x232, r16
-@skip_setting_ExtraBAT1
-
-
-		lwz			r16, AddressSpace.ExtraBAT2U(r8)
-		lwz			r17, AddressSpace.ExtraBAT2U(r9)
-		cmplw		r16, r17
-		lwz			r17, AddressSpace.ExtraBAT2L(r8)
-		beq			cr1, @definitely_set_ExtraBAT2
-		beq			@skip_setting_ExtraBAT2
-
-@definitely_set_ExtraBAT2
-		mtspr		0x23c, r0
-		mtspr		0x23d, r17
-		mtspr		0x23c, r16
-		mtspr		0x234, r0
-		mtspr		0x235, r17
-		mtspr		0x234, r16
-@skip_setting_ExtraBAT2
-
-
-		lwz			r16, AddressSpace.ExtraBAT3U(r8)
-		lwz			r17, AddressSpace.ExtraBAT3U(r9)
-		cmplw		r16, r17
-		lwz			r17, AddressSpace.ExtraBAT3L(r8)
-		beq			cr1, @definitely_set_ExtraBAT3
-		beq			@skip_setting_ExtraBAT3
-
-@definitely_set_ExtraBAT3
-		mtspr		0x23e, r0
-		mtspr		0x23f, r17
-		mtspr		0x23e, r16
-		mtspr		0x236, r0
-		mtspr		0x237, r17
-		mtspr		0x236, r16
-@skip_setting_ExtraBAT3
 
 
 @return

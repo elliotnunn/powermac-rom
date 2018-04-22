@@ -466,15 +466,6 @@ BAT2U					ds.l	1	; 90
 BAT2L					ds.l	1	; 94
 BAT3U					ds.l	1	; 98
 BAT3L					ds.l	1	; 9c
-ExtraBATs							; the flag that enables these is never set?
-ExtraBAT0U				ds.l	1	; a0
-ExtraBAT0L				ds.l	1	; a4
-ExtraBAT1U				ds.l	1	; a8
-ExtraBAT1L				ds.l	1	; ac
-ExtraBAT2U				ds.l	1	; b0
-ExtraBAT2L				ds.l	1	; b4
-ExtraBAT3U				ds.l	1	; b8
-ExtraBAT3L				ds.l	1	; bc
 
 Size					equ		*
 						endr
