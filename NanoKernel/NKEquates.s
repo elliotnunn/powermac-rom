@@ -3,7 +3,8 @@
 ;_______________________________________________________________________
 
 
-kNanoKernelVersion		equ		$0228		
+;	Apple's final version (02.28) + bug fixes
+kNanoKernelVersion		equ		$0229		
 
 
 ;	PowerPC Machine Status Register (MSR) bits
