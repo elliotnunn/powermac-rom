@@ -270,27 +270,28 @@ major_0x18c18_0xe0
 
 
 
-;	                     major_0x18d10
+	;	Dead code @ 18d10:
 
-	dc.l	0x3c608180
-	dc.l	0x60630200
-	dc.l	0x38a00340
-	dc.l	0x38c00001
-	dc.l	0x4800003c
-	dc.l	0x3c60a600
-	dc.l	0x60638000
-	dc.l	0x38a00400
-	dc.l	0x38c00001
-	dc.l	0x48000028
-	dc.l	0x3c609600
-	dc.l	0x60638000
-	dc.l	0x38a00400
-	dc.l	0x38c00001
-	dc.l	0x48000014
-	dc.l	0x3c609600
-	dc.l	0x60638000
-	dc.l	0x38a00400
-	dc.l	0x38c00001
+	lisori	r3, 0x81800200
+	li		r5, 0x340
+	li		r6, 1
+	b		@end
+
+	lisori	r3, 0xa6008000
+	li		r5, 0x400
+	li		r6, 1
+	b		@end
+
+	lisori	r3, 0x96008000
+	li		r5, 0x400
+	li		r6, 1
+	b		@end
+
+	lisori	r3, 0x96008000
+	li		r5, 0x400
+	li		r6, 1
+
+@end
 
 
 

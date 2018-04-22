@@ -148,8 +148,10 @@ PagingFunc1	;	OUTSIDE REFERER
 	beq		cr7, @_368
 	beq		cr6, @_3b8
 	b		@_44
-	dc.l	0x41800168
-	dc.l	0x418101bc
+
+	;	Dead code:
+	blt		@_360
+	bgt		@_3b8
 
 @_200
 	slwi	r28, r30, 12
@@ -254,8 +256,11 @@ PagingFunc1	;	OUTSIDE REFERER
 	sync
 	isync
 	blr
-	dc.l	0x57fca803
-	dc.l	0x40800068
+
+	;	Dead code:
+@_360
+	rlwinm.	r28, r31, 21, 0, 1
+	bge		@_3cc
 
 @_368
 	slwi	r28, r30,  2
@@ -285,11 +290,14 @@ PagingFunc1	;	OUTSIDE REFERER
 	rlwinm	r31, r31,  0, 22, 19
 	li		r26,  0x5a5a
 	b		@_208
-	dc.l	0x4181fc78
-	dc.l	0x4bfffc11
-	dc.l	0x3ba105c8
-	dc.l	0x48000281
-	dc.l	0x4bfffc68
+
+	;	Dead code:
+@_3cc
+	bgt		@_44
+	bl		Local_Panic
+	addi	r29, r1, KDP.SegMap32SupInitPtr
+	bl		PagingFunc2
+	b		@_44
 
 @_3e0
 	cmplw	cr6, r28, r26
@@ -308,8 +316,11 @@ PagingFunc1	;	OUTSIDE REFERER
 	li		r9,  0x08
 	addi	r29, r26,  0x08
 	b		@_428
-	dc.l	0x409a0008
-	dc.l	0x7fbaeb78
+
+	;	Dead code:
+@_418
+	bne		cr6, @_420
+	mr		r26, r29
 
 @_420
 	cmpw	cr6, r29, r26

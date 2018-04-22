@@ -1344,11 +1344,13 @@ major_0x10320	;	OUTSIDE REFERER
 	mr		r8, r31
 	li		r9, -29294
 	b		ReturnFromCreateArea
-	dc.l	0x811f0000
-	dc.l	0x48004fd1
-	dc.l	0x7fe8fb78
-	dc.l	0x39208d8d
-	dc.l	0x4800009c
+
+	;	Dead code:
+	lwz		r8, Area.ID(r31)
+	bl		DeleteID
+	mr		r8, r31
+	li		r9, kMPInvalidIDErr
+	b		ReturnFromCreateArea
 
 major_0x10320_0x20	;	OUTSIDE REFERER
 	addi	r19, r31,  0x54
@@ -1837,8 +1839,10 @@ MPCall_75_0x1c8
 	add		r28, r27, r29
 	addi	r28, r28,  0x01
 	b		MPCall_75_0x1ec
-	dc.l	0x7fbbe050
-	dc.l	0x3bbdffff
+
+	;	Dead code:
+	subf	r29, r27, r28
+	subi	r29, r29, 1
 
 MPCall_75_0x1ec
 	b		ReleaseAndMPCallWasBad
@@ -3143,15 +3147,10 @@ NKMakePhysicallyContiguous_0xe0
 	cmpw	r8, r18
 	beq		NKMakePhysicallyContiguous_0x174
 	b		NKMakePhysicallyContiguous_0x174
-	dc.l	0x7c0004ac				;	probably dead code, not a jump table
-	dc.l	0x8201f530
-	dc.l	0x2c900000
-	dc.l	0x3a000000
-	dc.l	0x40a6000c
-	dc.l	0x7e0802a6
-	dc.l	0x48005905
-	dc.l	0x9201f530
-	dc.l	0x4bff9554
+
+	;	Dead code:
+	_AssertAndRelease	PSA.PoolLock, scratch=r16
+	b		ReleaseAndReturnZeroFromMPCall
 
 NKMakePhysicallyContiguous_0x150
 	_AssertAndRelease	PSA.HTABLock, scratch=r16
@@ -3859,6 +3858,8 @@ MPCall_95_0x1e4	;	OUTSIDE REFERER
 	lwz		r18, Area.Flags(r31)
 	lwz		r30,  0x0040(r31)
 	subf	r17, r16, r8
+
+MPCall_95_0x1f4
 	cmpwi	r30,  0x00
 	rlwinm	r17, r17, 22, 10, 29
 	beqlr
@@ -3872,20 +3873,21 @@ MPCall_95_0x214
 	add.	r30, r30, r17
 	blr
 
-	dc.l	0x821f0024	;	again, probably just dead code
-	dc.l	0x825f0008
-	dc.l	0x83df0040
-	dc.l	0x56510739
-	dc.l	0x7e304050
-	dc.l	0x4182ffc4
-	dc.l	0x83df0044
-	dc.l	0x825f0080
-	dc.l	0x3bdeffbc
-	dc.l	0x7e304050
-	dc.l	0x7e319214
-	dc.l	0x825e0008
-	dc.l	0x83de0040
-	dc.l	0x4bffffa4
+	;	Dead code:
+	lwz		r16, Area.LogicalBase(r31)
+	lwz		r18, Area.Flags(r31)
+	lwz		r30,  0x0040(r31)
+	rlwinm.	r17, r18, 0, 28, 28
+	subf	r17, r16, r8
+	beq		MPCall_95_0x1f4
+	lwz		r30, Area.AliasLLL(r31)
+	lwz		r18, 0x80(r31)
+	subi	r30, r30, Area.AliasLLL
+	subf	r17, r16, r8
+	add		r17, r17, r18
+	lwz		r18, Area.Flags(r30)
+	lwz		r30, Area.PageMapArrayPtr(r30)
+	b		MPCall_95_0x1f4
 
 MPCall_95_0x254	;	OUTSIDE REFERER
 	lwz		r16, Area.LogicalBase(r31)
