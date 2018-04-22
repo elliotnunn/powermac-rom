@@ -2757,7 +2757,8 @@ MPCall_83_0x90	;	OUTSIDE REFERER
 	stw		r16, PSA.FreePageCount(r1)
 	lwz		r17,  0x0004(r8)
 	mfspr	r16, dec
-	eqv.	r17, r18, r17
+	xor	r17, r18, r17
+	cmpwi	r17, -1
 	stw		r16,  0x0000(r8)
 	bne		Local_Panic
 	stw		r16,  0x0004(r8)
