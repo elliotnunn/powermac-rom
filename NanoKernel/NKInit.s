@@ -8,12 +8,15 @@
 ;_______________________________________________________________________
 
 
+;	This is the entry point for the NanoKernel. Execution always starts here,
+;	regardless of how the NK was put in control. The immediate purpose of this
+;	code is to figure out if it was called by the Trampoline bootloader for
+;	NewWorld Macs or the 'boot' 3 resource on OldWorld Macs. The code path
+;	diverges dramatically for the 2 cases, so it is important to figure out which
+;	is which.
 
-
-;	This is the entry point from the Trampoline (our Open Firmware-savvy
-;	bootloader for NewWorld Macs, which is part of the Mac OS ROM file).
-;
-;	When we receive control:
+;	If data paging is off, we recieved control from the Trampoline and we are the
+;	built in NanoKernel. The register assignments are as follows:
 ;		r3 = ConfigInfo
 ;		r4 = ProcessorInfo
 ;		r5 = SystemInfo
@@ -21,9 +24,21 @@
 ;		r7 = RTAS_flag ('RTAS' or 0)
 ;		r8 = RTAS_proc
 ;		r9 = HWInfo
-;		(and also, we can be sure that we are executing from the
-;		NewWorld ROM image that the Trampoline loaded into RAM)
+;		r23= SCC (Serial Communications Controller) base address 
 ;
+
+;	If data paging is on, we recieved control from the 'boot' 3 resource and we
+;	are replacing another NanoKernel. The register assignments are as follows:
+
+;		LR = return address?
+;		sprg0 = old KDP/EWA/r1 ptr
+;		r3 = PA_NanoKernelCode (the physical address of this code)
+;		r4 = physical base of our global area
+;		r5 = SCC base address (will be saved to NoIdeaR23)
+;		r6 = PA_EDP or zero?
+;		r7 = ROMHeader.ROMRelease (e.g. 0x10B5 is 1.0ß5)
+
+
 ;	First we need to avoid executing the data that follows:
 
 	b		EndOfNanoKernelHeader
@@ -45,7 +60,7 @@ EndOfNanoKernelHeader
 
 
 
-;	Do some sanity checking after receiving control from the Trampoline.
+;	Figure out how we got control
 
 	;	cr5_eq is cleared for the builtin init process
 
@@ -59,15 +74,15 @@ EndOfNanoKernelHeader
 	beql	InitBuiltin
 
 
-	;	But if data paging is on, do some very strange things...
+	;	But if data paging is on, we are the replacement NanoKernel.
+	;	We need to turn off paging and jump to the replacement init code.
 
 		;	Does LR contain a return address, or my address, or...?
 		mflr	r9
 		subi	r9, r9, 28
 
-		;	Prepare to jump to one of the filthy branch instructions
-		;	that Trampoline stuffs into ConfigInfo
-		addi	r12, r3, 64
+		;	Find the physical address of the replacement init code
+		addi	r12, r3, InitReplacement - NKTop; offset
 
 		;	Unset MSR_POW, MSR_ILE, MSR_EE, MSR_IR and MSR_DR
 		mfmsr	r11
@@ -77,22 +92,9 @@ EndOfNanoKernelHeader
 		;	Jump and set MSR with an RFI.
 		mtspr	srr0, r12
 		mtspr	srr1, r11
+		;	We will now be at InitReplacement with paging off
 		rfi
 
-
-
-;	This (offset 0x40) is the entry point from 'boot' 3 on OldWorld.
-;
-;	The offset *might* be encoded in the header above!
-;
-;	When we receive control:
-;		sprg0 = old KDP/EWA/r1 ptr
-;		r3 = PA_NanoKernelCode
-;		r4 = physical base of our global area
-;		r5 = NoIdeaR23
-;		r6 = PA_EDP or zero?
-;		r7 = ROMHeader.ROMRelease (e.g. 0x10B5 is 1.0ß5)
-;
 ;	For clarity, the NanoKernel-replacement code is included from
 ;	another file. It copies the old kernel structures to a new area
 ;	and adopts them as our own, with some modifications.
