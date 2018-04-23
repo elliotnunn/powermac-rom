@@ -2753,10 +2753,10 @@ MPCall_83_0x90	;	OUTSIDE REFERER
 	stw		r16, -0x0430(r1)
 	lwz		r17,  0x0004(r8)
 	mfspr	r16, dec
-	eqv.	r17, r18, r17
+	xor	r17, r18, r17
 	stw		r16,  0x0000(r8)
+	cmpwi	r17, -1
 	bne		Local_Panic
-	stw		r16,  0x0004(r8)
 	stw		r16,  0x0008(r8)
 	stw		r16,  0x000c(r8)
 	blr
