@@ -1272,7 +1272,7 @@ major_0x142dc_0x184
 	rlwimi	r11, r27, 24, 29, 29
 	beq+	major_0x142dc_0x1bc
 	lwz		r10,  0x00fc(r6)
-	rlwinm	r27, r27,  0,  9,  7
+	_bclr	r27, r27, Task.kFlag8
 	stw		r27,  0x0064(r31)
 
 major_0x142dc_0x1bc
@@ -1332,7 +1332,7 @@ _SchPreempt
 	stw		r6, Task.ContextBlockPtr(r31)
 	mfsprg	r8, 3
 	stw		r16, Task.Flags(r31)
-	stw		r8, Task.YellowVecTblPtr(r31)
+	stw		r8, Task.VecBase(r31)
 
 
 	;	Spam its context block
@@ -1432,7 +1432,7 @@ _SchPreempt
 	lwz		r11,  0x00a4(r6)
 	lwz		r8,  0x00f0(r30)
 	rlwimi	r11, r27, 24, 29, 29
-	rlwinm	r27, r27,  0,  9,  7
+	_bclr	r27, r27, Task.kFlag8
 	mtsprg	3, r8
 	stw		r27, Task.Flags(r30)
 
@@ -1478,9 +1478,9 @@ _SchPreempt
 
 	lwz		r6, KDP.PA_ECB(r1)
 
-	addi	r26, r1, KDP.YellowVecBase
+	addi	r26, r1, KDP.VecBaseSystem
 	mtsprg	3, r26
-	stw		r26, Task.YellowVecTblPtr(r30)
+	stw		r26, Task.VecBase(r30)
 
 	stw		r6, EWA.PA_ContextBlock(r19)
 	stw		r6, Task.ContextBlockPtr(r30)
@@ -2042,7 +2042,7 @@ NewCpuEntryPoint
 	stw		r7, EWA.Flags(r14)
 	stw		r28, EWA.Enables(r14)
 
-	lwz		r8, Task.YellowVecTblPtr(r31)
+	lwz		r8, Task.VecBase(r31)
 	mtsprg	3, r8
 
 	lwz		r10, ContextBlock.CodePtr(r6)

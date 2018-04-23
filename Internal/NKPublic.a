@@ -159,11 +159,11 @@ Pending68kInt			ds.w	1	; -43c ; used when Sch interrupts blue task (-1 means "no
 _43a					ds.w	1	; -43a
 DecClockRateHzCopy		ds.l	1	; -438 ; copied by Init.s
 OtherTimerQueuePtr		ds.l	1	; -434 ; unsigned timer queue in the pool, set by InitTMRQs
-FreePageCount			ds.l	1	; -430 ; zeroed by InitFreeList
+FreePageCount			ds.l	1	; -430 ; zeroed by InitFreePageList
 UnheldFreePageCount		ds.l	1	; -42c
 ExternalHandlerID		ds.l	1	; -428 ; notification for PIH to bump
 SystemAddressSpaceID	ds.l	1	; -424
-_420					ds.l	1	; -420
+AgerID					ds.l	1	; -420
 blueProcessPtr			ds.l	1	; -41c ; physical ptr to first type-1 struct created
 ThermalHandlerID		ds.l	1	; -418 ; is a Note struct
 PMFHandlerID			ds.l	1	; -414 ; also a Note struct
@@ -173,7 +173,7 @@ _408					ds.l	1	; -408
 _404					ds.l	1	; -404
 _400					ds.l	1	; -400
 OtherSystemAddrSpcPtr	ds.l	1	; -3fc
-OtherSystemAddrSpcPtr2	ds.l	1	; -3f8 ; copied from the one above by InitFreeList
+OtherSystemAddrSpcPtr2	ds.l	1	; -3f8 ; copied from the one above by InitFreePageList
 ZeroedByInitFreeList3	ds.l	1	; -3f4
 _3f0					ds.l	1	; -3f0
 _3ec					ds.l	1	; -3ec
@@ -580,9 +580,9 @@ NCBCacheLA3				ds.l	1	; 358
 NCBCachePA3				ds.l	1	; 35c
 NCBPointerCacheEnd
 
-YellowVecBase			ds.l	48	; 360:420 ; used to ignore illegal AltiVec insns by Init.s
-OrangeVecBase			ds.l	48	; 420:4e0
-RedVecBase				ds.l	48	; 4e0:5a0
+VecBaseSystem			ds.l	48	; 360:420 ; when 68k emulator is running, *or* any MTask
+VecBaseAlternate		ds.l	48	; 420:4e0 ; native PowerPC in blue task
+VecBaseTranslation		ds.l	48	; 4e0:5a0 ; "FDP" instruction emulation
 OldKDP					ds.l	1	; 5a0 ; gotten from the old SPRG0
 OtherFreeThing			ds.l	1	; 5a4
 TopOfFreePages			ds.l	1	; 5a8 ; gotten from the old SPRG0
@@ -634,10 +634,10 @@ PageAttributeInit		ds.l	1	; 688 ; defaults for page table entries (see ConfigInf
 						ds.l	1	; 69c
 PTEGMask				ds.l	1	; 6a0
 HTABORG					ds.l	1	; 6a4
-PrimaryAddrRangePages	ds.l	1	; 6a8 ; set at init and changed by VMInit
+VMLogicalPages			ds.l	1	; 6a8 ; set at init and changed by VMInit
 TotalPhysicalPages		ds.l	1	; 6ac ; does not take into acct maximum MacOS memory
-FlatPageListPtr			ds.l	1	; 6b0
-VMMaxVirtualPages		ds.l	1	; 6b4 ; size of main contiguous segment?
+FlatPageListPtr			ds.l	1	; 6b0 ; VM puts this in system heap
+VMMaxVirtualPages		ds.l	1	; 6b4 ; always 5fffe000, even with VM on
 CpuSpecificBytes
 CpuSpecificByte1		ds.b	1	; 6b8 ; seems to contain flags (set from PVR & tbl by Init.s)
 CpuSpecificByte2		ds.b	1	; 6b9 ; probably not flags (set in same way)

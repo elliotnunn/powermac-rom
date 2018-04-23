@@ -299,7 +299,7 @@ MPCall_0	;	OUTSIDE REFERER
 
 	;	Fail if this page is outside of the PAR
 	rlwinm.	r4, r3, 20, 12, 31
-	lwz		r9, KDP.PrimaryAddrRangePages(r1)
+	lwz		r9, KDP.VMLogicalPages(r1)
 	beq		ReturnMPCallOOM
 	cmplw	r4, r9
 	bge		ReturnMPCallOOM
@@ -1408,9 +1408,11 @@ KCStopScheduling	;	OUTSIDE REFERER
 	lbz		r17,  0x0019(r31)
 	cmpwi	r17,  0x00
 	beq		KCStopScheduling_0x94
-	lwz		r17,  0x0064(r31)
-	oris	r17, r17,  0x80
-	stw		r17,  0x0064(r31)
+
+	lwz		r17, Task.Flags(r31)
+	_bset	r17, r17, Task.kFlag8
+	stw		r17, Task.Flags(r31)
+
 	mr		r8, r31
 	bl		SchTaskUnrdy
 	li		r17,  0x00
@@ -1494,7 +1496,7 @@ NKxprintf	;	OUTSIDE REFERER
 	mr		r8, r3
 	beq		NKxprintf_0x1c
 	li		r9,  0x00
-	bl		V2P
+	bl		SpaceL2PUsingBATs ; LogicalPage *r8, MPAddressSpace *r9 // PhysicalPage *r17
 	beq		NKxprintf_0x24
 	rlwimi	r8, r17,  0,  0, 19
 
@@ -1969,13 +1971,13 @@ MPCall_115_0x94
 	crmove	30, 2
 	beq		MPCall_115_0xd0
 	li		r9,  0x00
-	bl		MPCall_95_0x45c
+	bl		SpaceL2PIgnoringBATs ; LogicalPage *r8, MPAddressSpace *r9 // PhysicalPage *r17
 	beq		ReleaseAndReturnMPCallOOM
 	add		r8, r4, r5
 	li		r9,  0x00
 	addi	r8, r8, -0x01
 	mr		r30, r8
-	bl		MPCall_95_0x45c
+	bl		SpaceL2PIgnoringBATs ; LogicalPage *r8, MPAddressSpace *r9 // PhysicalPage *r17
 	beq		ReleaseAndReturnMPCallOOM
 
 MPCall_115_0xd0
@@ -1997,7 +1999,7 @@ MPCall_115_0xe0
 	beq		MPCall_115_0x11c
 	mr		r27, r16
 	li		r9,  0x00
-	bl		MPCall_95_0x45c
+	bl		SpaceL2PIgnoringBATs ; LogicalPage *r8, MPAddressSpace *r9 // PhysicalPage *r17
 	beq		ReleaseAndReturnMPCallOOM
 	mr		r26, r17
 

@@ -11,10 +11,12 @@ Local_Panic		set		*
 ;	ARG		ProcessID r3
 ;	RET		OSStatus r3, TaskID r10
 
+;	kMPCreateTaskSuspendedMask is ignored?
+
 	DeclareMPCall	7, MPCall_7
 
 MPCall_7	;	OUTSIDE REFERER
-	rlwinm.	r8, r5,  0, 31, 28
+	rlwinm.	r8, r5,  0, ~0x00000006			; kMPCreateTaskValidOptionsMask minus kMPCreateTaskSuspendedMask
 	bne		ReturnMPCallOOM
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
@@ -65,14 +67,14 @@ MPCall_7	;	OUTSIDE REFERER
 
 	lwz		r16, Task.Flags(r28)
 
-	rlwinm.	r8, r5, 0, 30, 30
+	rlwinm.	r8, r5, 0, kMPCreateTaskTakesAllExceptionsMask
 	beq		@noflag
-	oris	r16, r16, 0x40 ; Task.kFlag9
+	_bset	r16, r16, Task.kFlagTakesAllExceptions
 @noflag
 
-	rlwinm.	r8, r5, 0, 29, 29
+	rlwinm.	r8, r5, 0, kMPCreateTaskNotDebuggableMask
 	beq		@noflag2
-	oris	r16, r16, 0x02 ; Task.kFlag14
+	_bset	r16, r16, Task.kFlagNotDebuggable
 @noflag2
 
 	stw		r16, Task.Flags(r28)
@@ -226,8 +228,8 @@ CreateTask
 	lwz		r16, PSA.UserModeMSR(r1)
 	stw		r16, Task.ContextBlock + ContextBlock.MSR(r28)
 
-	addi	r16, r1, KDP.YellowVecBase
-	stw		r16, Task.YellowVecTblPtr(r28)
+	addi	r16, r1, KDP.VecBaseSystem
+	stw		r16, Task.VecBase(r28)
 
 	li		r16, 0
 	lwz		r17, Task.NotificationPtr(r28)
@@ -790,7 +792,7 @@ ThrowTaskToDebugger	;	OUTSIDE REFERER
 MPCall_58_0x114
 	mtcr	r29
 	mr		r28, r8
-	bc		BO_IF, Task.kFlag14, MPCall_58_0x13c
+	bc		BO_IF, Task.kFlagNotDebuggable, MPCall_58_0x13c
 	bc		BO_IF, Task.kFlag20, MPCall_58_0x13c
 	lwz		r8, PSA._8e8(r1)
 

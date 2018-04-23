@@ -285,7 +285,7 @@ FDP_023c
 
 FDP_024c
 		li		r8, 18
-		b		major_0x02980
+		b		DataLikeException
 
 
 FDP_0254	;	stswi
@@ -2122,10 +2122,10 @@ ProbePerfMonitor	;	OUTSIDE REFERER
 
 	;	Temporarily disable program interrupts (leave old handler in r20)
 		lwz			r21, KDP.PA_NanoKernelCode(r1)
-		lwz			r20, KDP.YellowVecBase + VecTable.ProgramIntVector(r1)
+		lwz			r20, KDP.VecBaseSystem + VecTable.ProgramIntVector(r1)
 		llabel		r18, IgnoreSoftwareInt
 		add			r21, r18, r21
-		stw			r21, KDP.YellowVecBase + VecTable.ProgramIntVector(r1)
+		stw			r21, KDP.VecBaseSystem + VecTable.ProgramIntVector(r1)
 
 
 
@@ -2189,7 +2189,7 @@ ProbePerfMonitor	;	OUTSIDE REFERER
 
 
 	;	Restore program interrupts
-		stw			r20,  KDP.YellowVecBase + VecTable.ProgramIntVector(r1)
+		stw			r20,  KDP.VecBaseSystem + VecTable.ProgramIntVector(r1)
 
 
 	;	Test r23 and save
@@ -2351,7 +2351,7 @@ FDP_1354
 		stw		r9,  0x0ea0(r6)
 		lwz		r6, -0x0014(r1)
 		lwz		r7, -0x0010(r1)
-		b		major_0x02980_0x134
+		b		CodeLikeException
 
 
 
@@ -3142,7 +3142,7 @@ FDP_1c40	;	OUTSIDE REFERER
 ;	r6 = saved at *(ewa + 0x18)
 ;	sprg1 = saved at *(ewa + 4)
 ;	rN (0,7,8,9,10,11,12,13, not r1) = saved at *(*(ewa - 0x14) + 0x104 + 8*N)
-		bl		int_prepare
+		bl		LoadInterruptRegisters
 ;	r0 = 0
 ;	r1 = *(ewa - 4)
 ;	r6 = kdp

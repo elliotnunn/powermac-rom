@@ -1,52 +1,65 @@
-ecNoException				equ		0
-ecSystemCall				equ		1
-ecTrapInstr					equ		2
-ecFloatException			equ		3
-ecInvalidInstr				equ		4
-ecPrivilegedInstr			equ		5
-ecMachineCheck				equ		7
-ecInstTrace					equ		8
-ecInstInvalidAddress		equ		10
-ecInstHardwareFault			equ		11
-ecInstPageFault				equ		12
-ecInstSupAccessViolation	equ		14
-ecDataInvalidAddress		equ		18
-ecDataHardwareFault			equ		19
-ecDataPageFault				equ		20
-ecDataWriteViolation		equ		21
-ecDataSupAccessViolation	equ		22
-ecDataSupWriteViolation		equ		23
-ecUnknown24					equ		24
+; System = FFFFFFFF, Alt = 7DF2F700 (ecInstPageFault and ecDataPageFault disabled), same +/- VM
+ecNoException				equ		0		; CodeLikeException
+ecSystemCall				equ		1		; ?
+ecTrapInstr					equ		2		; CodeLikeException
+ecFloatException			equ		3		; CodeLikeException
+ecInvalidInstr				equ		4		; CodeLikeException
+ecPrivilegedInstr			equ		5		; ?
+ecMachineCheck				equ		7		; CodeLikeException
+ecInstTrace					equ		8		; CodeLikeException
+ecInstInvalidAddress		equ		10		; CodeLikeException
+ecInstHardwareFault			equ		11		; CodeLikeException
+ecInstPageFault				equ		12		; CodeLikeException
+ecInstSupAccessViolation	equ		14		; CodeLikeException
+
+;	Usually from IntDSITranslation (also IntAlignment and IntMachineCheck)
+ecDataInvalidAddress		equ		18		; DataLikeException
+ecDataHardwareFault			equ		19		; DataLikeException
+ecDataPageFault				equ		20		; DataLikeException
+ecDataWriteViolation		equ		21		; DataLikeException
+ecDataSupAccessViolation	equ		22		; DataLikeException
+ecDataSupWriteViolation		equ		23		; ?
+ecUnknown24					equ		24		; DataLikeException
 
 
 
-Local_Panic		set		*
-				b		panic
+IntPanicIsland
+	b		panic
 
-
-
-IntLocalBlockMPCall	;	OUTSIDE REFERER
+IntLocalBlockMPCall
 	b		BlockMPCall
 
 
 
+;	ARG		EC r8, nuFlags r16, ? r17, ? r19, ? r23, vecTable *r24
+
 	align	5
 
-major_0x02980	;	OUTSIDE REFERER
+DataLikeException
+
 	mfsprg	r1, 0
 	mtsprg	3, r24
+
 	lwz		r9, EWA.Enables(r1)
-	rlwinm	r23, r17, 31, 27, 31
-	rlwnm.	r9, r9, r8,  0x00,  0x00
-	bcl		BO_IF, 15, major_0x02980_0x100
-	lwz		r6, -0x0014(r1)
-	ori		r7, r16,  0x10
+	rlwinm	r23, r17, (32-1), 27, 31
+	rlwnm.	r9, r9, r8, 0, 0					; cr0.lt = (exception enabled?)
+
+	bcl		BO_IF, EWA.kFlag15, major_0x02980_0x100
+
+	lwz		r6, EWA.PA_ContextBlock(r1)
+
+	_bset	r7, r16, 27
+
 	neg		r23, r23
 	mtcrf	0x3f, r7
 	add		r19, r19, r23
-	rlwimi	r7, r8, 24,  0,  7
-	lwz		r1, -0x0004(r1)
 
+	;	Exception code in high byte of flags
+	rlwimi	r7, r8, 24, 0xFF000000
+
+
+	;	Increment counter, easy enough
+	lwz		r1, EWA.PA_KDP(r1)
 	slwi	r8, r8, 2
 	add		r8, r8, r1
 	lwz		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.ExceptionCauseCounts(r8)
@@ -54,6 +67,8 @@ major_0x02980	;	OUTSIDE REFERER
 	stw		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.ExceptionCauseCounts(r8)
 
 	srwi	r9, r7, 24
+
+	;	Move regs from EWA to ContextBlock
 	mfsprg	r1, 0
 	lwz		r8,  0x0000(r1)
 	stw		r8,  0x0104(r6)
@@ -71,41 +86,54 @@ major_0x02980	;	OUTSIDE REFERER
 	stw		r8,  0x0164(r6)
 	lwz		r8,  0x0034(r1)
 	stw		r8,  0x016c(r6)
-	cmpwi	cr1, r9,  0x14
-	bc		BO_IF, EWA.kFlagSIGP, _IntReturnFromSIGP
-	bc		BO_IF_NOT, EWA.kFlagBlue, _RecoverableDataFault
-	blt		ExceptionIsInEnables
-	bne		cr1, _IntReturnToSystemContext
-	b		_RecoverableDataFault
+
+
+	;	Order of preference:
+	;		SIGP-return exceptions obviously separate
+	;		MTasks (non-blue) -> UnhandledDataFault (ends up going to system page queue)
+	;		Exception enabled for blue task (i.e. in system context) -> field exception to task
+	;		Not actually a data fault -> system context (68k interrupt)
+	;		Data fault that blue does not wish to handle
+
+	cmpwi	cr1, r9, ecDataPageFault
+
+	bc		BO_IF, EWA.kFlagSIGP,				IntReturnFromSIGP
+	bc		BO_IF_NOT, EWA.kFlagBlue,			UnhandledDataFault
+	blt											LetBlueHandleOwnException
+	bne		cr1,								IntReturnToSystemContext
+	b											UnhandledDataFault
 
 
 
-ExceptionIsInEnables
+LetBlueHandleOwnException
 
+	;	How does the ContextBlock contain exception handling information?
 	mfsprg	r1, 0
 	stw		r10,  0x0084(r6)
 	stw		r12,  0x008c(r6)
 	stw		r3,  0x0094(r6)
 	stw		r4,  0x009c(r6)
 	lwz		r8, EWA.Enables(r1)
-	stw		r7,  0x0040(r6)
-	stw		r8,  0x0044(r6)
-	li		r8,  0x00
-	lwz		r10,  0x004c(r6)
-	stw		r8, EWA.Enables(r1)
+	stw		r7, ContextBlock.SavedFlags(r6)
+	stw		r8, ContextBlock.SavedEnables(r6)
+	li		r8, 0
+	lwz		r10, ContextBlock.ExceptionHandler(r6)
+	stw		r8, EWA.Enables(r1)							; disallow double-exceptions
 	lwz		r1, EWA.PA_KDP(r1)
 	lwz		r4,  0x0054(r6)
 
+	;	Which context will we pass to the task exception handler?
 	lwz		r3, KDP.LA_ECB(r1)
-	bc		BO_IF, 8, @is_system_context
+	bc		BO_IF, 8, @pass_system_context
 	lwz		r3,  KDP.LA_NCB(r1)
 	_bclr	r11, r11, MSR_EEbit
-@is_system_context
+@pass_system_context
 
 	;	exception handler will return via trap in emulator code
 	lwz		r12, KDP.LA_EmulatorKernelTrapTable + NanoKernelCallTable.ReturnFromException(r1)
 
 	bcl		BO_IF, EWA.kFlagLowSaves, PreferRegistersFromEWASavingContextBlock
+
 	rlwinm	r7, r7,  0, 29, 16							; unset 17-28
 	rlwimi	r11, r7, 0, 20, 23							; threfore unset MSR[FE0/SE/BE/FE1]
 
@@ -125,24 +153,29 @@ PreferRegistersFromEWASavingContextBlock	;	OUTSIDE REFERER
 	stw		r17,  0x0064(r6)
 	stw		r20,  0x0068(r6)
 	stw		r21,  0x006c(r6)
-	stw		r19,  0x0074(r6)
+	stw		r19, ContextBlock.SRR0(r6)
 	stw		r18,  0x007c(r6)
 	lmw		r14, EWA.r14(r8)
 	blr
 
 
 
+;	This is the only path to UnhandledCodeFault
 
+CodeLikeException
 
-
-major_0x02980_0x134	;	OUTSIDE REFERER
 	mfsprg	r1, 0
 	mtcrf	0x3f, r7
+
 	lwz		r9, EWA.Enables(r1)
 	lwz		r1, EWA.PA_KDP(r1)
-	rlwnm.	r9, r9, r8, 0, 0
-	rlwimi	r7, r8, 24,  0,  7
 
+	rlwnm.	r9, r9, r8, 0, 0					; cr0.lt = (exception enabled?)
+
+	;	Exception code in high byte of flags
+	rlwimi	r7, r8, 24, 0xFF000000
+
+	;	Increment counter, easy enough
 	slwi	r8, r8, 2
 	add		r8, r8, r1
 	lwz		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.ExceptionCauseCounts(r8)
@@ -151,22 +184,32 @@ major_0x02980_0x134	;	OUTSIDE REFERER
 
 	srwi	r9, r7, 24
 
-	bc		BO_IF, EWA.kFlagSIGP, _IntReturnFromSIGP
-	bc		BO_IF_NOT, EWA.kFlagBlue, _RecoverableCodeFault
+	;	Order of preference:
+	;		SIGP-return exceptions obviously separate
+	;		MTasks (non-blue) -> UnhandledCodeFault (ends up going to backing store)
+	;		Exception enabled for blue task (i.e. in system context) -> field exception to task
+	;		Not actually a code fault -> system context (68k interrupt)
+	;		Data fault that blue does not wish to handle
+
+	bc		BO_IF, EWA.kFlagSIGP,				IntReturnFromSIGP
+	bc		BO_IF_NOT, EWA.kFlagBlue,			UnhandledCodeFault
 
 	cmpwi	cr1, r9, ecInstPageFault
-	blt		ExceptionIsInEnables						; when Enables[cause] is set!
-	beq		cr1, _RecoverableCodeFault
+
+	blt											LetBlueHandleOwnException
+	beq		cr1,								UnhandledCodeFault
+;	b											IntReturnToSystemContext
 
 
-;	fall through if blue, exception not "enabled"
 
-_IntReturnToSystemContext
+;	THESE TWO RETURN PATHS ARE ONLY CALLED IF BLUE IS RUNNING!
+
+IntReturnToSystemContext
 
 	lwz		r1, EWA.PA_KDP(r1)
 	lwz		r9, KDP.PA_ECB(r1)
 
-	addi	r8, r1, KDP.YellowVecBase
+	addi	r8, r1, KDP.VecBaseSystem
 	mtsprg	3, r8
 
 	;	Exception came from emulator! Can't handle that with a 68k interrupt, can we?
@@ -178,7 +221,7 @@ _IntReturnToSystemContext
 
 ;	ARG		old_context r6, new_context r9
 
-_IntReturnToOppositeContext
+IntReturnToOtherBlueContext
 
 	mfsprg	r1, 0
 
@@ -353,7 +396,7 @@ major_0x02ccc	;	OUTSIDE REFERER
 
 	stw		r7, EWA.Flags(r1)
 	li		r8, ecInstTrace
-	b		major_0x02980_0x134
+	b		CodeLikeException
 @return
 
 	blr
@@ -403,7 +446,7 @@ major_0x02ccc_0x30
 	rlwimi	r25, r17,  4, 23, 27
 	mtcrf	 0x10, r26					; so the second nybble of the entry is copied to cr3
 	lha		r22,  0x0c00(r25)
-	addi	r23, r8,  0x4e0
+	addi	r23, r8, KDP.VecBaseTranslation
 	add		r22, r22, r25
 	mfsprg	r24, 3
 	mtlr	r22
@@ -485,7 +528,7 @@ SuspendBlueTask
 	bl		Printw
 	_log	'^n'
 	mtlr	r16
-	b		Local_Panic
+	b		IntPanicIsland
 
 
 
@@ -497,21 +540,24 @@ SuspendBlueTask
 ##        ##     ## ##    ##  ##          ##       ##     ## ##     ## ##          ##    ##    ## 
 ##        ##     ##  ######   ########    ##       ##     ##  #######  ########    ##     ######  
 
-_RecoverableCodeFault
+;	Blue can easily get to both of these!
 
-	bcl		BO_IF, EWA.kFlagLowSaves, Local_Panic
+UnhandledCodeFault
+
+	bcl		BO_IF, EWA.kFlagLowSaves, IntPanicIsland
 	bl		SchSaveStartingAtR14
 
 	mr		r30, r10
 	lwz		r29, EWA.r6(r8)
 	lwz		r31, EWA.PA_CurTask(r8)
 	stw		r29, ContextBlock.r6(r6)
-	stw		r30, 0x0074(r6)						; ContextBlock.srr0?
+	stw		r30, ContextBlock.SRR0(r6)						; ContextBlock.srr0?
 	stw		r7, 0x0040(r6)						; ContextBlock.savedFlags?
 	lwz		r1, EWA.PA_KDP(r1)
 
 	; get task in r31, globals in r1
 
+	;	Will be released via BlockMPCall
 	_Lock			PSA.SchLock, scratch1=r28, scratch2=r29
 
 	mr		r8, r31
@@ -519,11 +565,14 @@ _RecoverableCodeFault
 
 	lwz		r16, Task.Flags(r31)
 	srwi	r8, r7, 24
-	rlwinm.	r16, r16, 0, Task.kFlag9, Task.kFlag9
+
+
+	;	To debugger if not actually a code fault, or Task takes all exceptions
+	rlwinm.	r16, r16, 0, Task.kFlagTakesAllExceptions, Task.kFlagTakesAllExceptions
 	cmpwi	cr1, r8, ecInstPageFault
-	bne		_fault_throw_to_debugger
-	bne		cr1, _fault_throw_to_debugger
-	;	what is special about the upper 8 Flags? Are they Task-related?
+	bne		_PageFaultToDebugger
+	bne		cr1, _PageFaultToDebugger
+
 
 	lwz		r8, Task.CodeFaultCtr(r31)
 	addi	r8, r8, 1
@@ -533,9 +582,9 @@ _RecoverableCodeFault
 
 
 
-_RecoverableDataFault
+UnhandledDataFault
 
-	bcl		BO_IF_NOT, EWA.kFlagLowSaves, Local_Panic
+	bcl		BO_IF_NOT, EWA.kFlagLowSaves, IntPanicIsland
 
 	bl		PreferRegistersFromEWASavingContextBlock
 
@@ -546,7 +595,7 @@ _RecoverableDataFault
 
 	bl		SchSaveStartingAtR14
 
-	lwz		r30,  0x0074(r6)
+	lwz		r30, ContextBlock.SRR0(r6)
 	lwz		r29,  0x0018(r8)
 	lwz		r31, -0x0008(r8)
 	stw		r29,  0x0134(r6)
@@ -554,17 +603,24 @@ _RecoverableDataFault
 	lwz		r1, -0x0004(r1)
 
 
+	;	Will be released via BlockMPCall
 	_Lock			PSA.SchLock, scratch1=r28, scratch2=r29
+
 
 	mr		r8, r31
 	bl		SchTaskUnrdy
 
+
 	lwz		r16, Task.Flags(r31)
 	srwi	r8, r7, 24
-	rlwinm.	r16, r16, 0, Task.kFlag9, Task.kFlag9
-	cmpwi	cr1, r8, 0x14
-	bne		_fault_throw_to_debugger
-	bne		cr1, _fault_throw_to_debugger
+
+
+	;	To debugger if not actually a data fault, or Task takes all exceptions
+	rlwinm.	r16, r16, 0, Task.kFlagTakesAllExceptions, Task.kFlagTakesAllExceptions
+	cmpwi	cr1, r8, ecDataPageFault
+	bne		_PageFaultToDebugger
+	bne		cr1, _PageFaultToDebugger
+
 
 	lwz		r8, Task.DataFaultCtr(r31)
 	addi	r8, r8, 1
@@ -579,79 +635,102 @@ _CommonFaultPath
 	_bclr	r7, r7, EWA.kFlag26
 	_bclr	r7, r7, EWA.kFlag31
 
-	;	Panic if EWA.SpecialAreaPtr is invalid
+	;	Panic if EWA.SpecialAreaPtr is invalid (presumably means CurrentlyFaultingArea?)
 	lwz		r29, EWA.SpecialAreaPtr(r14)
 	lisori	r17, Area.kSignature
 	lwz		r16, Area.Signature(r29)
 	cmplw	r16, r17
-	bnel	Local_Panic
+	bnel	IntPanicIsland
 
 	lwz		r17, Area.Counter(r29)
 	addi	r17, r17, 1
 	stw		r17, Area.Counter(r29)
 
-	lwz		r8, Area.BackingProviderID(r29) ; this is a notification? ugh...
+	;	Get BackingProvider ptr in r26 (`mr` a few instructions down)
+	lwz		r8, Area.BackingProviderID(r29)
 	bl		LookupID
+
+
+	;	Three escape hatches:
+
+	;   PAGE FAULT      TASK          VMMaxVirtualPages      CODE PATH
+	;   --------------------------------------------------------------
+	;   code            blue          0                      1
+	;   code            blue          nonzero                  3
+	;   code            non-blue      0                      1
+	;   code            non-blue      nonzero                1
+	;   data            blue          0                        3
+	;   data            blue          nonzero                  3
+	;   data            non-blue      0                       2
+	;   data            non-blue      nonzero                 2
 
 	lwz		r16, KDP.VMMaxVirtualPages(r1)
 	cmpwi	cr0, r9, ecInstPageFault
 	cmpwi	cr1, r16, 0
 	mr		r26, r8
-	bne		cr0, @can_use_page_queue
-	beq		cr1, @cannot_use_page_queue						; never seems to be taken (VMMaxVirtualPages never zero)
-	bc		BO_IF, EWA.kFlagBlue, @can_use_page_queue
+	bne		cr0, @ESCAPE_HATCH_2_OR_3
+	beq		cr1, @force_escape_hatch_1
+	bc		BO_IF, EWA.kFlagBlue, @ESCAPE_HATCH_2_OR_3
+@force_escape_hatch_1
 
 
 
-@cannot_use_page_queue ; no, I'm wrong about this -- this code gets executed normally!
+;	ESCAPE HATCH 1: CODE FAULT OUTSIDE BLUE TASK -> AREA BACKING PROVIDER
+
+;	(also handles blue code faults IFF the never-before-seen VM regime is active)
 
 	lwz		r16, Task.Flags(r31)
+
+	;	Enqueue Task on its internal Semaphore (only to be released when Provider says)
 	addi	r17, r31, Task.QueueMember
 	addi	r18, r31, Task.PageFaultSema
-
 	stw		r18, LLL.Freeform(r17)
 	InsertAsPrev	r17, r18, scratch=r19
 
 	li		r17, 1
-	_bset	r16, r16, Task.kFlag18
+	_bset	r16, r16, Task.kFlagPageFaulted
 	stw		r17, Task.PageFaultSema + Semaphore.Value(r31)
 	stw		r16, Task.Flags(r31)
 
-	rlwinm	r30, r30,  0,  0, 19
+	;   SRR0 points to faulting instruction. Extract the faulting page.
+	rlwinm	r30, r30, 0, 0xFFFFF000
 
-	lwz		r27,  0x0000(r29)
-	lwz		r28,  0x0000(r31)
-	stw		r30,  0x0010(r26)
-	stw		r27,  0x0014(r26)
-	stw		r28,  0x0018(r26)
+	;	Message = page address || Area ID || Task ID
+	lwz		r27, Area.ID(r29)
+	lwz		r28, Task.ID(r31)
+	stw		r30, Message.Word1(r26)
+	stw		r27, Message.Word2(r26)
+	stw		r28, Message.Word3(r26)
 
+	;	Bang
 	mr		r30, r26
 	bl		CauseNotification
 
+	;	Success? If not, fall through to using the global blue-serviced page queue
 	cmpwi	r8, 0
-	beq		IntLocalBlockMPCall				; jump if no error?
+	beq		IntLocalBlockMPCall
 
 
 
-	;	Block the task on its internal semaphore (the page fault semaphore)
+@ESCAPE_HATCH_2_OR_3
 
-@can_use_page_queue
+	mfcr	r28							; only for hatch 3
+	li		r8, Message.Size			; only for hatch 2
 
-	mfcr	r28
-	li		r8, Message.Size
-	bc		BO_IF, EWA.kFlagBlue, @was_blues_fault
+	bc		BO_IF, EWA.kFlagBlue, @ESCAPE_HATCH_3
 
 
-	;	FAULT IN NON-BLUE TASK: send message to the page queue
+
+;	ESCAPE HATCH 2: DATA FAULT OUTSIDE BLUE TASK -> INTO SYSTEM PAGQ FOR BLUE TO SERVICE
+
+	;	Instead of banging a notification, we send a (new) message to the global Page Queue
 
 	bl		PoolAlloc
 	mr.		r26, r8
-	beq		@oom
+	beq		@oom_for_pagq_message
 
 
-	;	Block the faulting NON-BLUE TASK on its own PageFaultSema,
-	;	put raise the semaphore, thus preparing it to unblock once
-	;	the latency-protected-priority blue task has served the fault
+	;	Block the task in the usual way, but do *not* set Task.kFlagPageFaulted
 
 	addi	r17, r31, Task.QueueMember
 	addi	r18, r31, Task.PageFaultSema
@@ -689,22 +768,30 @@ _CommonFaultPath
 
 
 
-	;	FAULT IN BLUE TASK: switch it over to the system context
+;	ESCAPE HATCH 3: PAGE FAULT IN BLUE TASK -> 68K INTERRUPT
 
-@was_blues_fault
+;	All faults that occur in the blue task, except inst faults when the ?? VM regime is enabled
 
+@ESCAPE_HATCH_3
+
+	;	Let the blue task keep running!
 	mr		r8, r31
 	bl		SchRdyTaskNow
-	_AssertAndRelease	PSA.SchLock, scratch=r31
-	mtcr	r28
 
+	;	The other pathways release the Sch lock in BlockMPCall
+	_AssertAndRelease	PSA.SchLock, scratch=r31
+
+	;	Restore CR (got clobbered by SchRdyTaskNow?)
+
+	;	Do the LowSaves help the Emulator do an interrupt?
+	mtcr    r28
 	bc		BO_IF_NOT, EWA.kFlagLowSaves, @nolo
 	lwz		r8,  0x0064(r6)
 	lwz		r9,  0x0068(r6)
 	stw		r8,  0x0024(r6)
 	stw		r9,  0x0028(r6)
 	lwz		r8,  0x006c(r6)
-	lwz		r9,  0x0074(r6)
+	lwz		r9, ContextBlock.SRR0(r6)
 	stw		r8,  0x002c(r6)
 	stw		r9,  0x0034(r6)
 	lwz		r8,  0x007c(r6)
@@ -712,15 +799,16 @@ _CommonFaultPath
 	crclr	EWA.kFlagLowSaves
 @nolo
 
-;	r6 = ewa
 	bl		SchRestoreStartingAtR14
-	b		_IntReturnToSystemContext
+
+	;	Central to the Mac OS architecture: a 68k interrupt!
+	b		IntReturnToSystemContext
 
 
-;	We failed to service a page fault in a non-blue task, so just let it run
-;	Is this terrible? A don't-care?
 
-@oom
+;	This seems like an awfully calm way to handle a page fault.
+
+@oom_for_pagq_message
 
 	li		r16, Task.kNominalPriority
 	stb		r16, Task.Priority(r31)
@@ -731,27 +819,27 @@ _CommonFaultPath
 
 
 
-_fault_throw_to_debugger
+;	For tasks that were created with kMPCreateTaskTakesAllExceptionsMask
+
+_PageFaultToDebugger
+
 	b		ThrowTaskToDebugger
 
 
 
+#### ##    ## ########    ##     ##    ###    ##    ## ########  ##       ######## ########   ######  
+ ##  ###   ##    ##       ##     ##   ## ##   ###   ## ##     ## ##       ##       ##     ## ##    ## 
+ ##  ####  ##    ##       ##     ##  ##   ##  ####  ## ##     ## ##       ##       ##     ## ##       
+ ##  ## ## ##    ##       ######### ##     ## ## ## ## ##     ## ##       ######   ########   ######  
+ ##  ##  ####    ##       ##     ## ######### ##  #### ##     ## ##       ##       ##   ##         ## 
+ ##  ##   ###    ##       ##     ## ##     ## ##   ### ##     ## ##       ##       ##    ##  ##    ## 
+#### ##    ##    ##       ##     ## ##     ## ##    ## ########  ######## ######## ##     ##  ######  
+
 	align	kIntAlign
 
 IntDecrementer	;	OUTSIDE REFERER
-;	r6 = saved at *(ewa + 0x18)
-;	sprg1 = saved at *(ewa + 4)
-;	rN (0,7,8,9,10,11,12,13, not r1) = saved at *(*(ewa - 0x14) + 0x104 + 8*N)
-	bl		int_prepare
-;	r0 = 0
-;	r1 = *(ewa - 4)
-;	r6 = kdp
-;	r7 = *(ewa - 0x10) # flags?
-;	r8 = ewa
-;	r10 = srr0
-;	r11 = srr1
-;	r12 = sprg2
-;	r13 = cr
+
+	bl		LoadInterruptRegisters
 
 	lwz		r8, KDP.OldKDP(r1)
 	rlwinm.	r9, r11,  0, 16, 16
@@ -799,33 +887,58 @@ IntDecrementer_0x54
 
 
 
+###              ######   #####  ### 
+ #  #    # ##### #     # #     #  #  
+ #  ##   #   #   #     # #        #  
+ #  # #  #   #   #     #  #####   #  
+ #  #  # #   #   #     #       #  #  
+ #  #   ##   #   #     # #     #  #  
+### #    #   #   ######   #####  ### 
+
+;	Kick it to the FDP-associated IntDSITranslation
+
 	align	kIntAlign
 
-IntDSI	;	OUTSIDE REFERER
+IntDSI
+
 	mfsprg	r1, 0
-	stmw	r2,  0x0008(r1)
+	stmw	r2, EWA.r2(r1)
 	mfsprg	r11, 1
-	stw		r0,  0x0000(r1)
-	stw		r11,  0x0004(r1)
-	li		r0,  0x00
+
+	stw		r0, EWA.r0(r1)
+	stw		r11, EWA.r1(r1) ; Why?
+
+	li		r0, 0
+
 	mfspr	r10, srr0
 	mfspr	r11, srr1
 	mfsprg	r12, 2
 	mfcr	r13
 	mfsprg	r24, 3
+
 	lwz		r16, EWA.Flags(r1)
-	lwz		r1, -0x0004(r1)
+	lwz		r1, EWA.PA_KDP(r1)
+
 	mfspr	r26, dsisr
-	addi	r23, r1,  0x4e0
-	andis.	r28, r26,  0x400
+
+	;	Activate the Translation vecTable, and test DSISR bit 5
+	;	("Set if the access is due to a lwarx, ldarx, stwcx., or stdcx.
+	;	instruction that addresses memory that is Write Through
+	;	Required or Caching Inhibited; otherwise cleared")
+	addi	r23, r1, KDP.VecBaseTranslation
+	andis.	r28, r26, 0x400			; test bit 5 (see cmt above)
 	mtsprg	3, r23
+
 	mfmsr	r14
-	bne		major_0x03324_0x9c
-	ori		r15, r14,  0x10
+	bne		HandleDSIDueToIllegalSyncPrimitive
+
+	_bset	r15, r14, 27			; temp set MSR[DR]
 	mtmsr	r15
 	isync
-	lwz		r27,  0x0000(r10)
-	mtmsr	r14
+
+	lwz		r27, 0(r10)				; get instruction (should be fine!)
+
+	mtmsr	r14						; restore MSR
 	isync
 
 
@@ -875,7 +988,10 @@ major_0x03324_0x58
 	add		r18, r18, r23
 	blr
 
-major_0x03324_0x9c	;	OUTSIDE REFERER
+
+
+HandleDSIDueToIllegalSyncPrimitive	;	OUTSIDE REFERER
+
 	ori		r15, r14,  0x10
 	mr		r28, r16
 	mfspr	r18, dar
@@ -890,7 +1006,7 @@ major_0x03324_0x9c	;	OUTSIDE REFERER
 	mr		r31, r19
 	mr		r8, r18
 	li		r9,  0x00
-	bl		V2P
+	bl		SpaceL2PUsingBATs ; LogicalPage *r8, MPAddressSpace *r9 // PhysicalPage *r17
 	mr		r16, r28
 	crset	cr3_so
 	mfsprg	r1, 0
@@ -950,9 +1066,9 @@ IntAlignment	;	OUTSIDE REFERER
 	mfspr	r27, dsisr
 	mfspr	r18, dar
 
-	rlwinm.	r21, r21, 0, Task.kFlag9, Task.kFlag9
+	rlwinm.	r21, r21, 0, Task.kFlagTakesAllExceptions, Task.kFlagTakesAllExceptions
 
-	addi	r23, r1, KDP.RedVecBase
+	addi	r23, r1, KDP.VecBaseTranslation
 
 	bne		major_0x03548_0x20
 
@@ -1012,7 +1128,7 @@ FDP_TableBase		equ		0xa00
 	bclr	BO_IF_NOT, 12			; jump now if bit 12 is off
 
 	;	if bit 12 was on, turn on paging and fetch the offending insn
-	;	and also activate the Red vector table
+	;	and also activate the Translation vector table
 	mtmsr	r15
 	isync
 	lwz		r27,  0x0000(r10)
@@ -1041,13 +1157,14 @@ major_0x03548_0x20	;	OUTSIDE REFERER
 	rlwimi	r17, r27,  7, 31, 31
 	xori	r17, r17,  0x01
 	li		r8, ecUnknown24
-	b		major_0x02980
+	b		DataLikeException
 
 
 
 	align	kIntAlign
 
-IntDSIOtherOther	;	OUTSIDE REFERER
+IntDSITranslation	;	OUTSIDE REFERER
+
 	mfsprg	r1, 0
 	mfspr	r31, dsisr
 	mfspr	r27, dar
@@ -1077,7 +1194,7 @@ IntDSIOtherOther	;	OUTSIDE REFERER
 	bgt		cr7, IntDSIOtherOther_0xe0
 	mr		r31, r8
 	mr		r8, r27
-	bl		MPCall_95_0x1e4
+	bl		SpaceGetPagePLE ; LogicalPage *r8, Area *r31 // PLE *r30, notfound cr0.eq
 	beq		IntDSIOtherOther_0xe0
 	lwz		r8,  0x0000(r30)
 	lwz		r16,  0x0098(r31)
@@ -1130,7 +1247,7 @@ IntDSIOtherOther_0x100
 	li		r28,  0x43
 	and		r28, r31, r28
 	cmpwi	cr7, r28,  0x43
-	beql	Local_Panic
+	beql	IntPanicIsland
 	mfsprg	r28, 2
 	mtlr	r28
 	bne		cr7, IntDSIOtherOther_0x144
@@ -1145,9 +1262,9 @@ IntDSIOtherOther_0x100
 IntDSIOtherOther_0x144
 	andi.	r28, r31,  0x03
 	li		r8, ecDataSupAccessViolation
-	beq		major_0x02980
+	beq		DataLikeException
 	li		r8, ecDataWriteViolation
-	b		major_0x02980
+	b		DataLikeException
 
 IntDSIOtherOther_0x158
 	mfsprg	r30, 0
@@ -1187,9 +1304,9 @@ IntDSIOtherOther_0x1c8
 	mtlr	r28
 	beq		IntDSIOtherOther_0x19c
 	li		r8, ecDataInvalidAddress
-	bge		major_0x02980
+	bge		DataLikeException
 	li		r8, ecDataPageFault
-	b		major_0x02980
+	b		DataLikeException
 
 
 
@@ -1252,31 +1369,20 @@ IntMachineCheckMemRetry_0x124
 IntMachineCheckMemRetry_0x14c	;	OUTSIDE REFERER
 	cmplw	r10, r19
 	li		r8, ecDataHardwareFault
-	bne		major_0x02980
+	bne		DataLikeException
 	mfsprg	r1, 0
 	mtsprg	3, r24
 	lmw		r14,  0x0038(r1)
 	li		r8, ecInstHardwareFault
-	b		major_0x02980_0x134
+	b		CodeLikeException
 
 
 
 	align	kIntAlign
 
 IntISI	;	OUTSIDE REFERER
-;	r6 = saved at *(ewa + 0x18)
-;	sprg1 = saved at *(ewa + 4)
-;	rN (0,7,8,9,10,11,12,13, not r1) = saved at *(*(ewa - 0x14) + 0x104 + 8*N)
-	bl		int_prepare
-;	r0 = 0
-;	r1 = *(ewa - 4)
-;	r6 = kdp
-;	r7 = *(ewa - 0x10) # flags?
-;	r8 = ewa
-;	r10 = srr0
-;	r11 = srr1
-;	r12 = sprg2
-;	r13 = cr
+
+	bl		LoadInterruptRegisters
 
 	andis.	r8, r11,  0x4020
 	beq		major_0x039dc_0x14
@@ -1293,7 +1399,7 @@ IntISI	;	OUTSIDE REFERER
 	mfsprg	r24, 3
 	mfmsr	r14
 	ori		r15, r14,  0x10
-	addi	r23, r1,  0x4e0
+	addi	r23, r1, KDP.VecBaseTranslation
 	mtsprg	3, r23
 	mr		r19, r10
 	mtmsr	r15
@@ -1312,33 +1418,22 @@ IntISI	;	OUTSIDE REFERER
 major_0x039dc	;	OUTSIDE REFERER
 	lmw		r14,  0x0038(r8)
 	li		r8, ecInstPageFault
-	blt		major_0x02980_0x134
+	blt		CodeLikeException
 	li		r8, ecInstInvalidAddress
-	b		major_0x02980_0x134
+	b		CodeLikeException
 
 major_0x039dc_0x14	;	OUTSIDE REFERER
 	andis.	r8, r11,  0x800
 	li		r8, ecInstSupAccessViolation
-	bne		major_0x02980_0x134
+	bne		CodeLikeException
 	li		r8, ecInstHardwareFault
-	b		major_0x02980_0x134
+	b		CodeLikeException
 
 
 
 IntMachineCheck	;	OUTSIDE REFERER
-;	r6 = saved at *(ewa + 0x18)
-;	sprg1 = saved at *(ewa + 4)
-;	rN (0,7,8,9,10,11,12,13, not r1) = saved at *(*(ewa - 0x14) + 0x104 + 8*N)
-	bl		int_prepare
-;	r0 = 0
-;	r1 = *(ewa - 4)
-;	r6 = kdp
-;	r7 = *(ewa - 0x10) # flags?
-;	r8 = ewa
-;	r10 = srr0
-;	r11 = srr1
-;	r12 = sprg2
-;	r13 = cr
+
+	bl		LoadInterruptRegisters
 
 	lwz		r9, EWA.CPUBase + CPU.ID(r8)
 	_log	'CPU '
@@ -1366,7 +1461,7 @@ IntMachineCheck	;	OUTSIDE REFERER
 
 @not_L1_data_cache_error
 	li		r8, ecMachineCheck
-	b		major_0x02980_0x134
+	b		CodeLikeException
 
 
 
@@ -1380,7 +1475,7 @@ MaskedInterruptTaken	;	OUTSIDE REFERER
 	lis		r10, -0x4523
 	ori		r10, r10,  0xcb00
 	li		r8, ecMachineCheck
-	b		major_0x02980_0x134
+	b		CodeLikeException
 
 
 
@@ -1412,6 +1507,14 @@ IntDSIOther	;	OUTSIDE REFERER
 
 
 
+              ######                                    #######                      #######                                                   
+#    #  ####  #     # ###### ##### #    # #####  #    # #       #####   ####  #    # #       #    #  ####  ###### #####  ##### #  ####  #    # 
+#   #  #    # #     # #        #   #    # #    # ##   # #       #    # #    # ##  ## #        #  #  #    # #      #    #   #   # #    # ##   # 
+####   #      ######  #####    #   #    # #    # # #  # #####   #    # #    # # ## # #####     ##   #      #####  #    #   #   # #    # # #  # 
+#  #   #      #   #   #        #   #    # #####  #  # # #       #####  #    # #    # #         ##   #      #      #####    #   # #    # #  # # 
+#   #  #    # #    #  #        #   #    # #   #  #   ## #       #   #  #    # #    # #        #  #  #    # #      #        #   # #    # #   ## 
+#    #  ####  #     # ######   #    ####  #    # #    # #       #    #  ####  #    # ####### #    #  ####  ###### #        #   #  ####  #    # 
+
 	align	kIntAlign
 
 ;	dead code?
@@ -1429,7 +1532,7 @@ kcReturnFromException	;	OUTSIDE REFERER
 
 	mtcrf	0x3f, r7
 	cmplwi	cr1, r3,  0x01
-	bc		BO_IF, EWA.kFlagSIGP, _IntReturnFromSIGP
+	bc		BO_IF, EWA.kFlagSIGP, IntReturnFromSIGP
 
 	blt		cr1, major_0x03be0_0x58
 	beq		cr1, major_0x03be0_0x90
@@ -1444,7 +1547,7 @@ kcReturnFromException	;	OUTSIDE REFERER
 	rlwimi	r7, r3, 24,  0,  7
 	blt		major_0x03be0_0xe8
 	li		r8, ecTrapInstr
-	b		major_0x02980_0x134
+	b		CodeLikeException
 
 major_0x03be0_0x58
 	mfsprg	r1, 0
@@ -1483,15 +1586,15 @@ major_0x03be0_0x90
 	lwz		r17,  0x0064(r6)
 	lwz		r20,  0x0068(r6)
 	lwz		r21,  0x006c(r6)
-	lwz		r19,  0x0074(r6)
+	lwz		r19, ContextBlock.SRR0(r6)
 	lwz		r18,  0x007c(r6)
 
 major_0x03be0_0xe8
-	beq		cr2, _IntReturnToSystemContext
+	beq		cr2, IntReturnToSystemContext
 	crclr	cr6_so
 	mfspr	r10, srr0
 	li		r8, ecTrapInstr
-	b		major_0x02980_0x134
+	b		CodeLikeException
 
 
 
@@ -1524,6 +1627,14 @@ save_all_registers	;	OUTSIDE REFERER
 ;	r8 = sprg0 (not used by me)
 
 
+
+#                            ###                                                       ######                                                    
+#        ####    ##   #####   #  #    # ##### ###### #####  #####  #    # #####  ##### #     # ######  ####  #  ####  ##### ###### #####   ####  
+#       #    #  #  #  #    #  #  ##   #   #   #      #    # #    # #    # #    #   #   #     # #      #    # # #        #   #      #    # #      
+#       #    # #    # #    #  #  # #  #   #   #####  #    # #    # #    # #    #   #   ######  #####  #      #  ####    #   #####  #    #  ####  
+#       #    # ###### #    #  #  #  # #   #   #      #####  #####  #    # #####    #   #   #   #      #  ### #      #   #   #      #####       # 
+#       #    # #    # #    #  #  #   ##   #   #      #   #  #   #  #    # #        #   #    #  #      #    # # #    #   #   #      #   #  #    # 
+#######  ####  #    # #####  ### #    #   #   ###### #    # #    #  ####  #        #   #     # ######  ####  #  ####    #   ###### #    #  ####  
 
 ;	How we arrive here:
 ;
@@ -1563,7 +1674,7 @@ save_all_registers	;	OUTSIDE REFERER
 
 	align	5
 
-int_prepare
+LoadInterruptRegisters
 
 	;	Get EWA pointer in r1 (phew)
 	mfsprg	r1, 0
@@ -1607,6 +1718,14 @@ int_prepare
 	blr
 
 
+
+###              ####### ######  #     #                                      
+ #  #    # ##### #       #     # #     # #    #   ##   #    #   ##   # #      
+ #  ##   #   #   #       #     # #     # ##   #  #  #  #    #  #  #  # #      
+ #  # #  #   #   #####   ######  #     # # #  # #    # #    # #    # # #      
+ #  #  # #   #   #       #       #     # #  # # ###### #    # ###### # #      
+ #  #   ##   #   #       #       #     # #   ## #    #  #  #  #    # # #      
+### #    #   #   #       #        #####  #    # #    #   ##   #    # # ###### 
 
 	align	kIntAlign
 
@@ -1809,24 +1928,21 @@ major_0x04180_0x9c
 	lwz		r11, -0x0288(r1)
 	lwz		r13, -0x0284(r1)
 
-;	r6 = saved at *(ewa + 0x18)
-;	sprg1 = saved at *(ewa + 4)
-;	rN (0,7,8,9,10,11,12,13, not r1) = saved at *(*(ewa - 0x14) + 0x104 + 8*N)
-	bl		int_prepare
-;	r0 = 0
-;	r1 = *(ewa - 4)
-;	r6 = kdp
-;	r7 = *(ewa - 0x10) # flags?
-;	r8 = ewa
-;	r10 = srr0
-;	r11 = srr1
-;	r12 = sprg2
-;	r13 = cr
+
+	bl		LoadInterruptRegisters
 
 	li		r8, ecInvalidInstr
-	b		major_0x02980_0x134
+	b		CodeLikeException
 
 
+
+###              ######                       #     #                                     
+ #  #    # ##### #     # ###### #####  ###### ##   ##  ####  #    # # #####  ####  #####  
+ #  ##   #   #   #     # #      #    # #      # # # # #    # ##   # #   #   #    # #    # 
+ #  # #  #   #   ######  #####  #    # #####  #  #  # #    # # #  # #   #   #    # #    # 
+ #  #  # #   #   #       #      #####  #      #     # #    # #  # # #   #   #    # #####  
+ #  #   ##   #   #       #      #   #  #      #     # #    # #   ## #   #   #    # #   #  
+### #    #   #   #       ###### #    # #      #     #  ####  #    # #   #    ####  #    # 
 
 	align	kIntAlign
 
@@ -1905,6 +2021,14 @@ IntThermalEvent	;	OUTSIDE REFERER
 
 
 
+              ######                   #                                                           #####                                          
+#    #  ####  #     # #    # #    #   # #   #      ##### ###### #####  #    #   ##   ##### ###### #     #  ####  #    # ##### ###### #    # ##### 
+#   #  #    # #     # #    # ##   #  #   #  #        #   #      #    # ##   #  #  #    #   #      #       #    # ##   #   #   #       #  #    #   
+####   #      ######  #    # # #  # #     # #        #   #####  #    # # #  # #    #   #   #####  #       #    # # #  #   #   #####    ##     #   
+#  #   #      #   #   #    # #  # # ####### #        #   #      #####  #  # # ######   #   #      #       #    # #  # #   #   #        ##     #   
+#   #  #    # #    #  #    # #   ## #     # #        #   #      #   #  #   ## #    #   #   #      #     # #    # #   ##   #   #       #  #    #   
+#    #  ####  #     #  ####  #    # #     # ######   #   ###### #    # #    # #    #   #   ######  #####   ####  #    #   #   ###### #    #   #   
+
 ;	We can assume that this is being called from the emulator
 
 ;	We accept a logical NCB ptr but the kernel needs a physical one.
@@ -1932,7 +2056,7 @@ kcRunAlternateContext
 
 @found_physical_in_cache ; can come here from below after a more thorough search
 
-	addi	r8, r1, KDP.OrangeVecBase
+	addi	r8, r1, KDP.VecBaseAlternate ; the only use of this vector table?
 	mtsprg	3, r8
 
 	lwz		r8, KDP.LA_EmulatorKernelTrapTable(r1)
@@ -1943,7 +2067,7 @@ kcRunAlternateContext
 
 	stw		r9, EWA.PA_ContextBlock(r1)
 
-	b		_IntReturnToOppositeContext
+	b		IntReturnToOtherBlueContext
 
 
 @search_cache
@@ -2062,7 +2186,7 @@ kcRunAlternateContext
 	lmw		r14, EWA.r14(r1)
 	lwz		r1, EWA.PA_KDP(r1)
 	li		r8, ecTrapInstr
-	b		major_0x02980_0x134
+	b		CodeLikeException
 
 
 
@@ -2077,6 +2201,14 @@ wordfill	;	OUTSIDE REFERER
 	blr
 
 
+
+              ######                              #####                                   
+#    #  ####  #     # ######  ####  ###### ##### #     # #   #  ####  ##### ###### #    # 
+#   #  #    # #     # #      #      #        #   #        # #  #        #   #      ##  ## 
+####   #      ######  #####   ####  #####    #    #####    #    ####    #   #####  # ## # 
+#  #   #      #   #   #           # #        #         #   #        #   #   #      #    # 
+#   #  #    # #    #  #      #    # #        #   #     #   #   #    #   #   #      #    # 
+#    #  ####  #     # ######  ####  ######   #    #####    #    ####    #   ###### #    # 
 
 ;	Handle a 68k reset trap.
 
@@ -2153,7 +2285,7 @@ NonGaryReset
 
 	lwz		r8, KDP.OldKDP(r1)
 	mfsprg	r1, 0
-	addi	r9, r8, KDP.YellowVecBase
+	addi	r9, r8, KDP.VecBaseSystem
 	mtsprg	0, r8		;	old NK has only one EWA!
 	mtsprg	3, r9
 
@@ -2185,6 +2317,14 @@ NonGaryReset
 	b		SchExitInterrupt
 
 
+
+              ######                                                 ###                                                              
+#    #  ####  #     # #####  #  ####  #####  # ##### # ###### ######  #  #    # ##### ###### #####  #####  #    # #####  #####  ####  
+#   #  #    # #     # #    # # #    # #    # #   #   #     #  #       #  ##   #   #   #      #    # #    # #    # #    #   #   #      
+####   #      ######  #    # # #    # #    # #   #   #    #   #####   #  # #  #   #   #####  #    # #    # #    # #    #   #    ####  
+#  #   #      #       #####  # #    # #####  #   #   #   #    #       #  #  # #   #   #      #####  #####  #    # #####    #        # 
+#   #  #    # #       #   #  # #    # #   #  #   #   #  #     #       #  #   ##   #   #      #   #  #   #  #    # #        #   #    # 
+#    #  ####  #       #    # #  ####  #    # #   #   # ###### ###### ### #    #   #   ###### #    # #    #  ####  #        #    ####  
 
 ;	> r1    = kdp
 
@@ -2226,49 +2366,54 @@ kcThud
 
 	stmw	r14, EWA.r14(r1)
 
-	bl		Local_Panic
+	bl		IntPanicIsland
 
 
 
 major_0x046d0	;	OUTSIDE REFERER
-;	r6 = saved at *(ewa + 0x18)
-;	sprg1 = saved at *(ewa + 4)
-;	rN (0,7,8,9,10,11,12,13, not r1) = saved at *(*(ewa - 0x14) + 0x104 + 8*N)
-	bl		int_prepare
-;	r0 = 0
-;	r1 = *(ewa - 4)
-;	r6 = kdp
-;	r7 = *(ewa - 0x10) # flags?
-;	r8 = ewa
-;	r10 = srr0
-;	r11 = srr1
-;	r12 = sprg2
-;	r13 = cr
+
+	bl		LoadInterruptRegisters
 
 	li		r8, ecTrapInstr
-	b		major_0x02980_0x134
+	b		CodeLikeException
 
 
+
+###              #######                                                    #                                                          
+ #  #    # ##### #       #    # ##### ###### #####  #    #   ##   #        # #   #      ##### ###### #####  #    #   ##   ##### ###### 
+ #  ##   #   #   #        #  #    #   #      #    # ##   #  #  #  #       #   #  #        #   #      #    # ##   #  #  #    #   #      
+ #  # #  #   #   #####     ##     #   #####  #    # # #  # #    # #      #     # #        #   #####  #    # # #  # #    #   #   #####  
+ #  #  # #   #   #         ##     #   #      #####  #  # # ###### #      ####### #        #   #      #####  #  # # ######   #   #      
+ #  #   ##   #   #        #  #    #   #      #   #  #   ## #    # #      #     # #        #   #      #   #  #   ## #    #   #   #      
+### #    #   #   ####### #    #   #   ###### #    # #    # #    # ###### #     # ######   #   ###### #    # #    # #    #   #   ###### 
 
 ;	For when the alternate context is running?
 
 	align	kIntAlign
 
-IntExternalOrange
+IntExternalAlternate
 
-	bl		int_prepare
+	bl		LoadInterruptRegisters
 	mtcrf	0x3f, r7
-	bcl		BO_IF_NOT, EWA.kFlagBlue, Local_Panic
+	bcl		BO_IF_NOT, EWA.kFlagBlue, IntPanicIsland
 	li		r8, ecNoException
-	b		major_0x02980_0x134
+	b		CodeLikeException
 
 
+
+###              ######                                            
+ #  #    # ##### #     # #####   ####   ####  #####    ##   #    # 
+ #  ##   #   #   #     # #    # #    # #    # #    #  #  #  ##  ## 
+ #  # #  #   #   ######  #    # #    # #      #    # #    # # ## # 
+ #  #  # #   #   #       #####  #    # #  ### #####  ###### #    # 
+ #  #   ##   #   #       #   #  #    # #    # #   #  #    # #    # 
+### #    #   #   #       #    #  ####   ####  #    # #    # #    # 
 
 	align	kIntAlign
 
 IntProgram
 
-	bl		int_prepare
+	bl		LoadInterruptRegisters
 
 	lwz		r8, KDP.LA_EmulatorKernelTrapTable(r1)
 	mtcr	r11						; UNUSUAL to have SRR1 in condition register
@@ -2411,23 +2556,23 @@ IntProgram
 	rlwinm	r8, r11, 17, 28, 29						; whoa
 	addi	r8, r8,  0x4b3
 	rlwnm	r8, r8, r8, 28, 31
-	b		major_0x02980_0x134
+	b		CodeLikeException
 
 @floating_point_exception
 	li		r8, ecFloatException
 
-	bc		BO_IF, 15, major_0x02980_0x134			; if SRR0 points to subsequent instr
+	bc		BO_IF, 15, CodeLikeException			; if SRR0 points to subsequent instr
 	addi	r10, r10, 4								; if SRR0 points to offending instr
 	rlwimi	r7, r7, 27, 26, 26						; copy EWA.kFlagBE into EWA.kFlag26
-	b		major_0x02980_0x134
+	b		CodeLikeException
 
 
 
 	align	kIntAlign
 
-IntExternalYellow
+IntExternalSystem
 
-	bl		int_prepare
+	bl		LoadInterruptRegisters
 
 
 	;	Sanity check
@@ -2475,6 +2620,14 @@ IntExternalYellow
 
 
 
+ #####  ###  #####  ######  
+#     #  #  #     # #     # 
+#        #  #       #     # 
+ #####   #  #  #### ######  
+      #  #  #     # #       
+#     #  #  #     # #       
+ #####  ###  #####  #       
+
 ;	"SIGnal Plugin": Call the CPU plugin PEF bundle synchronously.
 ;	(blue address space but in supervisor mode without interrupts)
 
@@ -2504,7 +2657,7 @@ SIGP
 	lwz		r16, EWA.PA_CurAddressSpace(r23)
 	slwi	r20, r3, 2
 	stw		r16, EWA.SIGPSpacOnResume(r23)
-	bc		BO_IF, EWA.kFlagSIGP, _IntReturnFromSIGP			; not sure about this
+	bc		BO_IF, EWA.kFlagSIGP, IntReturnFromSIGP			; not sure about this
 	cmpwi	cr2, r8, 0
 	lwz		r18, EWA.SIGPSelector(r23)
 	beq		cr2, @args_in_registers
@@ -2628,7 +2781,7 @@ major_0x04a20	;	OUTSIDE REFERER
 
 
 
-_IntReturnFromSIGP
+IntReturnFromSIGP
 
 	mfsprg	r23, 0
 	lwz		r7, EWA.SIGPSavedR7(r23)
@@ -2672,6 +2825,14 @@ _IntReturnFromSIGP
 	blr
 
 
+
+###               #####                                           
+ #  #    # ##### #     # #   #  ####   ####    ##   #      #      
+ #  ##   #   #   #        # #  #      #    #  #  #  #      #      
+ #  # #  #   #    #####    #    ####  #      #    # #      #      
+ #  #  # #   #         #   #        # #      ###### #      #      
+ #  #   ##   #   #     #   #   #    # #    # #    # #      #      
+### #    #   #    #####    #    ####   ####  #    # ###### ###### 
 
 ;	                       IntSyscall
 
@@ -2734,7 +2895,7 @@ IntSyscall	;	OUTSIDE REFERER
 	
 	;	Positive numbered syscalls are a fast path to MPDispatch (twi 31, r31, 8)
 
-	bl		int_prepare			;	Save the usual suspects and get comfy
+	bl		LoadInterruptRegisters			;	Save the usual suspects and get comfy
 
 	lwz		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.NanoKernelCallCounts + 32(r1)
 	addi	r9, r9, 1
@@ -2748,27 +2909,32 @@ IntSyscall	;	OUTSIDE REFERER
 
 
 
+###              #######                             
+ #  #    # #####    #    #####    ##    ####  ###### 
+ #  ##   #   #      #    #    #  #  #  #    # #      
+ #  # #  #   #      #    #    # #    # #      #####  
+ #  #  # #   #      #    #####  ###### #      #      
+ #  #   ##   #      #    #   #  #    # #    # #      
+### #    #   #      #    #    # #    #  ####  ###### 
+
 	align	kIntAlign
 
 IntTrace	;	OUTSIDE REFERER
-;	r6 = saved at *(ewa + 0x18)
-;	sprg1 = saved at *(ewa + 4)
-;	rN (0,7,8,9,10,11,12,13, not r1) = saved at *(*(ewa - 0x14) + 0x104 + 8*N)
-	bl		int_prepare
-;	r0 = 0
-;	r1 = *(ewa - 4)
-;	r6 = kdp
-;	r7 = *(ewa - 0x10) # flags?
-;	r8 = ewa
-;	r10 = srr0
-;	r11 = srr1
-;	r12 = sprg2
-;	r13 = cr
+
+	bl		LoadInterruptRegisters
 
 	li		r8, ecInstTrace
-	b		major_0x02980_0x134
+	b		CodeLikeException
 
 
+
+###                                     #####                                                  ###              
+ #   ####  #    #  ####  #####  ###### #     #  ####  ###### ##### #    #   ##   #####  ######  #  #    # ##### 
+ #  #    # ##   # #    # #    # #      #       #    # #        #   #    #  #  #  #    # #       #  ##   #   #   
+ #  #      # #  # #    # #    # #####   #####  #    # #####    #   #    # #    # #    # #####   #  # #  #   #   
+ #  #  ### #  # # #    # #####  #            # #    # #        #   # ## # ###### #####  #       #  #  # #   #   
+ #  #    # #   ## #    # #   #  #      #     # #    # #        #   ##  ## #    # #   #  #       #  #   ##   #   
+###  ####  #    #  ####  #    # ######  #####   ####  #        #   #    # #    # #    # ###### ### #    #   #   
 
 	align	kIntAlign
 
@@ -2784,6 +2950,14 @@ IgnoreSoftwareInt	;	OUTSIDE REFERER
 
 
 
+
+#     #                                    ######                       #     #                                     ###              
+#     #   ##   #    # #####  #      ###### #     # ###### #####  ###### ##   ##  ####  #    # # #####  ####  #####   #  #    # ##### 
+#     #  #  #  ##   # #    # #      #      #     # #      #    # #      # # # # #    # ##   # #   #   #    # #    #  #  ##   #   #   
+####### #    # # #  # #    # #      #####  ######  #####  #    # #####  #  #  # #    # # #  # #   #   #    # #    #  #  # #  #   #   
+#     # ###### #  # # #    # #      #      #       #      #####  #      #     # #    # #  # # #   #   #    # #####   #  #  # #   #   
+#     # #    # #   ## #    # #      #      #       #      #   #  #      #     # #    # #   ## #   #   #    # #   #   #  #   ##   #   
+#     # #    # #    # #####  ###### ###### #       ###### #    # #      #     #  ####  #    # #   #    ####  #    # ### #    #   #   
 
 	align	kIntAlign
 

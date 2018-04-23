@@ -93,7 +93,7 @@ VMDispatchTableEnd
 @noalt
 
 	lwzx	r8, r8, r7
-	lwz		r9, KDP.PrimaryAddrRangePages(r1)
+	lwz		r9, KDP.VMLogicalPages(r1)
 	add		r8, r8, r7
 	mtlr	r8
 	bltlr	
@@ -203,7 +203,7 @@ VMFinalInit	;	OUTSIDE REFERER
 
 @loop
 	srwi	r4, r31, 12
-	lwz		r9, KDP.PrimaryAddrRangePages(r1)
+	lwz		r9, KDP.VMLogicalPages(r1)
 	bl		GetPARPageInfo
 	bge		cr4, @skip
 	bltl	cr5, RemovePageFromTLB
@@ -239,7 +239,7 @@ VMInit	;	OUTSIDE REFERER
 	cmpw	r7, r8
 	bne		VMReturn1
 
-	stw		r4, KDP.PrimaryAddrRangePages(r1)	; resize PAR
+	stw		r4, KDP.VMLogicalPages(r1)	; resize PAR
 
 	stw		r5, KDP.FlatPageListPtr(r1)			; where did NK find this???
 
@@ -311,7 +311,7 @@ VMInit_0x110
 	cmpw	r4, r7
 	bnel	Local_Panic
 	lwz		r5,  KDP.FlatPageListPtr(r1)
-	lwz		r4, KDP.PrimaryAddrRangePages(r1)
+	lwz		r4, KDP.VMLogicalPages(r1)
 	andi.	r7, r5,  0xfff
 
 	li		r3,  0x02
@@ -354,7 +354,7 @@ VMInit_0x110
 	li		r3,  0x06
 	bne		VMInit_Fail
 
-	stw		r4, KDP.PrimaryAddrRangePages(r1)
+	stw		r4, KDP.VMLogicalPages(r1)
 	lwz		r8, -0x0020(r1)
 	slwi	r7, r4, 12
 	stw		r7,  0x0dc8(r8)
@@ -380,7 +380,7 @@ VMInit_0x1ec
 	lwz		r15,  KDP.FlatPageListPtr(r1)
 	srwi	r7, r5, 10
 	add		r15, r15, r7
-	lwz		r5, KDP.PrimaryAddrRangePages(r1)
+	lwz		r5, KDP.VMLogicalPages(r1)
 
 VMInit_0x218
 	lwz		r16,  0x0000(r15)
@@ -411,7 +411,7 @@ VMInit_0x250
 	sth		r9,  0x0002(r3)
 	sth		r9,  0x000a(r3)
 	lwz		r6,  0x05e8(r1)
-	lwz		r9, KDP.PrimaryAddrRangePages(r1)
+	lwz		r9, KDP.VMLogicalPages(r1)
 	lwz		r15,  KDP.FlatPageListPtr(r1)
 
 VMInit_0x288
@@ -451,7 +451,7 @@ VMInit_0x29c
 	lwz		r16, KDP.FlatPageListPtr(r1)
 	stw		r16, Area.PageMapArrayPtr(r8)
 
-	lwz		r16, KDP.PrimaryAddrRangePages(r1)
+	lwz		r16, KDP.VMLogicalPages(r1)
 	slwi	r16, r16, 12
 	stw		r16, Area.Length(r8)
 	subi	r16, r16, 1
@@ -475,7 +475,7 @@ VMInit_0x29c
 VMInit_Fail
 	lwz		r7, KDP.TotalPhysicalPages(r1)
 	lwz		r8, KDP.FlatPageListSegPtrs + 0(r1)
-	stw		r7, KDP.PrimaryAddrRangePages(r1)
+	stw		r7, KDP.VMLogicalPages(r1)
 	stw		r8, KDP.FlatPageListPtr(r1)
 
 	b		VMReturn
@@ -498,7 +498,7 @@ VMExchangePages	;	OUTSIDE REFERER
 	mr		r6, r15
 	mr		r4, r5
 	mr		r5, r16
-	lwz		r9, KDP.PrimaryAddrRangePages(r1)
+	lwz		r9, KDP.VMLogicalPages(r1)
 	bl		GetPARPageInfo
 	bge		cr4, VMReturnMinus1
 	bgt		cr5, VMReturnMinus1
@@ -548,7 +548,7 @@ VMGetPhysicalPage	;	OUTSIDE REFERER
 VMGetPhysicalPage_0x28
 ;	r6 = ewa
 	bl		SchRestoreStartingAtR14
-	lwz		r9, KDP.PrimaryAddrRangePages(r1)
+	lwz		r9, KDP.VMLogicalPages(r1)
 
 VMGetPhysicalPage_0x30
 	bl		GetPARPageInfo
@@ -578,8 +578,8 @@ getPTEntryGivenPage	;	OUTSIDE REFERER
 	beq		getPTEntryGivenPage_0x3c
 	bns		cr7, getPTEntryGivenPage_0x3c
 	bge		cr5, getPTEntryGivenPage_0x3c
-	bl		MPCall_95_0x2e0
-	bl		MPCall_95_0x334
+	bl		InvalPTE ; page *r8, PTE r16/r17, PTE *r18, PLE *r30 // PLEflags cr5-7
+	bl		SetPTE ; PTE r16/r17, PTE *r18
 	lwz		r3,  0x0000(r30)
 	rlwimi	r3, r17,  0,  0, 19
 
@@ -591,7 +591,7 @@ getPTEntryGivenPage_0x3c
 getPTEntryGivenPage_0x48
 ;	r6 = ewa
 	bl		SchRestoreStartingAtR14
-	lwz		r9, KDP.PrimaryAddrRangePages(r1)
+	lwz		r9, KDP.VMLogicalPages(r1)
 
 getPTEntryGivenPage_0x50
 	bl		GetPARPageInfo
@@ -654,8 +654,8 @@ major_0x08d88_0x74
 
 major_0x08d88_0x8c
 	mr		r8, r29
-	bl		MPCall_95_0x1e4
-	bl		MPCall_95_0x2b0
+	bl		SpaceGetPagePLE ; LogicalPage *r8, Area *r31 // PLE *r30, notfound cr0.eq
+	bl		GetPTEFromPLE ; PLE *r30 // PTE r16/r17, PTE *r18, PTEflags cr0, PLEflags cr5-7
 	mtlr	r27
 	crclr	cr0_lt
 	crclr	cr0_eq
@@ -708,7 +708,7 @@ VMIsResident	;	OUTSIDE REFERER
 VMIsResident_0x28
 ;	r6 = ewa
 	bl		SchRestoreStartingAtR14
-	lwz		r9, KDP.PrimaryAddrRangePages(r1)
+	lwz		r9, KDP.VMLogicalPages(r1)
 
 VMIsResident_0x30
 	bl		GetPARPageInfo
@@ -1136,8 +1136,8 @@ VMMarkBacking	;	OUTSIDE REFERER
 	beq		major_0x08d88_0xa8
 	bns		cr7, VMMarkBacking_0x30
 	bge		cr5, VMMarkBacking_0x30
-	bl		MPCall_95_0x2e0
-	bl		MPCall_95_0x348
+	bl		InvalPTE ; page *r8, PTE r16/r17, PTE *r18, PLE *r30 // PLEflags cr5-7
+	bl		DeletePTE ; PTE *r18, PLE *r30
 
 VMMarkBacking_0x30
 	lwz		r18,  0x0000(r30)
@@ -1152,7 +1152,7 @@ VMMarkBacking_0x30
 VMMarkBacking_0x50
 ;	r6 = ewa
 	bl		SchRestoreStartingAtR14
-	lwz		r9, KDP.PrimaryAddrRangePages(r1)
+	lwz		r9, KDP.VMLogicalPages(r1)
 
 VMMarkBacking_0x58
 	bl		GetPARPageInfo
@@ -1255,7 +1255,7 @@ VMMarkResident	;	OUTSIDE REFERER
 VMMarkResident_0x50
 ;	r6 = ewa
 	bl		SchRestoreStartingAtR14
-	lwz		r9, KDP.PrimaryAddrRangePages(r1)
+	lwz		r9, KDP.VMLogicalPages(r1)
 
 VMMarkResident_0x58
 	bl		GetPARPageInfo
@@ -1313,8 +1313,8 @@ setPTEntryGivenPage	;	OUTSIDE REFERER
 	beq		major_0x08d88_0xa8
 	bns		cr7, setPTEntryGivenPage_0x34
 	bge		cr5, setPTEntryGivenPage_0x34
-	bl		MPCall_95_0x2e0
-	bl		MPCall_95_0x348
+	bl		InvalPTE ; page *r8, PTE r16/r17, PTE *r18, PLE *r30 // PLEflags cr5-7
+	bl		DeletePTE ; PTE *r18, PLE *r30
 
 setPTEntryGivenPage_0x34
 	lwz		r18,  0x0000(r30)
@@ -1331,7 +1331,7 @@ setPTEntryGivenPage_0x34
 setPTEntryGivenPage_0x5c
 ;	r6 = ewa
 	bl		SchRestoreStartingAtR14
-	lwz		r9, KDP.PrimaryAddrRangePages(r1)
+	lwz		r9, KDP.VMLogicalPages(r1)
 
 setPTEntryGivenPage_0x64
 	mr		r6, r4
@@ -1401,7 +1401,7 @@ VMAllocateMemory	;	OUTSIDE REFERER
 	or		r7, r4, r6
 	rlwinm.	r7, r7,  0,  0, 11
 	ble		cr6, VMReturnMinus1
-	lwz		r9, KDP.PrimaryAddrRangePages(r1)
+	lwz		r9, KDP.VMLogicalPages(r1)
 	bne		cr7, VMReturnMinus1
 	mr		r7, r4
 	bne		VMReturnMinus1
@@ -1423,7 +1423,7 @@ VMAllocateMemory	;	OUTSIDE REFERER
 	b		VMAllocateMemory_0xc0
 
 VMAllocateMemory_0x6c
-	lwz		r9, KDP.PrimaryAddrRangePages(r1)
+	lwz		r9, KDP.VMLogicalPages(r1)
 	addi	r5, r5, -0x01
 
 VMAllocateMemory_0x74
@@ -1431,7 +1431,7 @@ VMAllocateMemory_0x74
 	bl		GetPARPageInfo
 	bltl	cr5, RemovePageFromTLB
 	bltl	cr5, RemovePTEFromHTAB
-	lwz		r9, KDP.PrimaryAddrRangePages(r1)
+	lwz		r9, KDP.VMLogicalPages(r1)
 	subf	r8, r4, r9
 	cmplw	cr7, r5, r8
 	and.	r8, r16, r6
@@ -1498,7 +1498,7 @@ VMAllocateMemory_0x164
 	lwz		r7, KDP.TotalPhysicalPages(r1)
 	subf	r7, r5, r7
 	stw		r7, KDP.TotalPhysicalPages(r1)
-	stw		r7, KDP.PrimaryAddrRangePages(r1)
+	stw		r7, KDP.VMLogicalPages(r1)
 	lwz		r5, -0x0020(r1)
 	slwi	r8, r7, 12
 	stw		r8,  0x0dc4(r5)
@@ -1564,7 +1564,7 @@ VMAllocateMemory_0x1a4
 	ori		r8, r8,  0xc0
 	stw		r8,  0x0008(r31)
 	mr		r8, r31
-	bl		createarea
+	bl		CreateArea
 	cmpwi	r9,  0x00
 	bne		Local_Panic
 	mr		r31, r8
@@ -1575,7 +1575,7 @@ VMAllocateMemory_0x1a4
 	lwz		r16,  0x0024(r8)
 	cmpwi	r16,  0x00
 	bne		Local_Panic
-	lwz		r16, KDP.PrimaryAddrRangePages(r1)
+	lwz		r16, KDP.VMLogicalPages(r1)
 	lwz		r17,  0x002c(r8)
 	slwi	r16, r16, 12
 	cmpw	r17, r16
@@ -1876,7 +1876,7 @@ VMLastExportedFunc_0xd7
 	mr		r31, r5
 	mr		r28, r16
 	mr		r26, r14
-	lwz		r9, KDP.PrimaryAddrRangePages(r1)
+	lwz		r9, KDP.VMLogicalPages(r1)
 	bl		GetPARPageInfo
 	mtlr	r6
 	b		RemovePageFromTLB

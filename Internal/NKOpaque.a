@@ -127,16 +127,16 @@ kFlag5					equ		5
 kFlag6					equ		6
 kFlag7					equ		7
 kFlag8					equ		8
-kFlag9					equ		9
+kFlagTakesAllExceptions	equ		9
 kFlag10					equ		10
 kFlag11					equ		11
 kFlag12					equ		12	; set for idle1, idle2
 kFlag13					equ		13
-kFlag14					equ		14	; set for blue, idle1
+kFlagNotDebuggable		equ		14	; set for blue, idle1
 kFlagBlue				equ		15
 kFlag16					equ		16
 kFlag17					equ		17
-kFlag18					equ		18
+kFlagPageFaulted		equ		18
 kFlag19					equ		19
 kFlag20					equ		20
 kFlagPerfMon			equ		21	; set by MPMarkPMFTask, means perf monitor
@@ -175,7 +175,7 @@ CodeFaultCtr			ds.l	1	; 0e0 ; these two only climb when VM is on
 DataFaultCtr			ds.l	1	; 0e4
 PreemptCtr				ds.l	1	; 0e8
 SomeLabelField			ds.l	1	; 0ec
-YellowVecTblPtr			ds.l	1	; 0f0
+VecBase					ds.l	1	; 0f0
 ExceptionHandlerID		ds.l	1	; 0f4 ; a queue
 ErrToReturnIfIDie		ds.l	1	; 0f8
 						ds.l	1	; 0fc
@@ -447,7 +447,8 @@ kSignature				equ		'SPAC'
 
 ID						ds.l	1	; 00
 Signature				ds.l	1	; 04
-						ds.l	1	; 08
+Flags					ds.l	1	; 08
+kFlag30					equ		30
 TaskCount				ds.l	1	; 0c ; incremented by CreateTask
 RsrvList				ds.l	4	; 10:20 ; LLL
 AreaList				ds.l	4	; 20:30 ; LLL
@@ -561,6 +562,9 @@ kIDClass				equ		11
 kFirstID				equ		0x000b0001
 kSignature				equ		'AREA'
 
+kPLEFlagIsInHTAB		equ		20	; bits 0-19 = HTAB offset if set, else physical page
+kPLEFlagHasPhysPage		equ		31
+
 ;_______________________
 ;	Fields
 ;_______________________
@@ -594,7 +598,7 @@ LLL						ds.l	4	; 54:64 ; member of address space
 						ds.l	1	; 64
 PageSize				ds.l	1	; 68 ; always 4k, the size of a PPC page
 AddressSpacePtr			ds.l	1	; 6c
-ContigPTETemplate		ds.l	1	; 70 ; in contig areas, acts as PTE template for every page
+ContigPTETemplate		ds.l	1	; 70 ; in contig areas, acts as PTE template for every page (whole Area is same page)
 PagedPTETemplate		ds.l	1	; 74 ; when paged area is created this fills PageMapArray
 AlignmentMask			ds.l	1	; 78 ; bit mask that LogicalBase is aligned to
 DefaultAlignmentMask	ds.l	1	; 7c ; always 0xFFFFF000 (page alignment)
@@ -606,6 +610,9 @@ FenceLLL				ds.l	4	; 90:a0 ; function unknown, id is 'fenc'
 
 Size					equ		*
 						endr
+
+;	Page List Entry bits:
+
 
 
 

@@ -34,7 +34,7 @@ NKTop
 	align		5
 	include		'NKTasks.s'
 	align		5
-	include		'NKAddressSpaceMPCalls.s'
+	include		'NKAddressSpaces.s'
 
 	align		5
 	include		'NKPoolAllocator.s'

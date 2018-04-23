@@ -76,7 +76,7 @@ PagingFunc1	;	OUTSIDE REFERER
 
 @_fc
 	mr		r8, r27
-	bl		MPCall_95_0x1e4
+	bl		SpaceGetPagePLE ; LogicalPage *r8, Area *r31 // PLE *r30, notfound cr0.eq
 	lwz		r28,  0x0000(r30)
 	mr		r26, r30
 	mr		r8, r27
@@ -380,7 +380,7 @@ PagingFunc1	;	OUTSIDE REFERER
 	mr		r8, r28
 	bgt		@_600
 	bgt		Local_Panic
-	bl		MPCall_95_0x1e4
+	bl		SpaceGetPagePLE ; LogicalPage *r8, Area *r31 // PLE *r30, notfound cr0.eq
 	mr		r26, r30
 	beql	@_88
 

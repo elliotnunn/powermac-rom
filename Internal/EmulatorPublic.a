@@ -89,9 +89,21 @@ ContextBlock			record	0,INCR
 
 Flags					ds.l	1	; 000 ; (SPAC) copied from kdp by CreateTask
 Enables					ds.l	1	; 004
-	
+
+						org		0x40
+SavedFlags				ds.l	1	; 040 ; from before exception
+
+						org		0x44
+SavedEnables			ds.l	1	; 044 ; from before exception
+
+						org		0x4c
+ExceptionHandler		ds.l	1	; 04c
+
 						org		0x5c
 LA_EmulatorKernelTrapTable ds.l	1
+
+						org		0x74
+SRR0					ds.l	1	; 074
 
 						org		0x84
 LA_EmulatorEntry		ds.l	1	; 084 ; Entry pt of emulator; set by NK Init.s

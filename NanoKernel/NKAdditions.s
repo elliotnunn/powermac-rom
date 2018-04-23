@@ -16,7 +16,7 @@ NKDebug
 
 	beq		@already_physical
 	li		r9, 0
-	bl		V2P			; takes page EA in r8, r9=0, returns page PA in r17
+	bl		SpaceL2PUsingBATs ; LogicalPage *r8, MPAddressSpace *r9 // PhysicalPage *r17
 	beq		@fail
 	rlwimi	r8, r17,  0,  0, 19
 @already_physical

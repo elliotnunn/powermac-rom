@@ -198,13 +198,13 @@ FinishInitBuiltin
 
 		llabel	r8, IgnoreSoftwareInt
 		add		r8, r8, r9
-		stw		r8, KDP.YellowVecBase + VecTable.ProgramIntVector(r1)
+		stw		r8, KDP.VecBaseSystem + VecTable.ProgramIntVector(r1)
 
 		llabel	r8, HandlePerfMonitorInt
 		add		r8, r8, r9
-		stw		r8, KDP.YellowVecBase + VecTable.PerfMonitorVector(r1)
+		stw		r8, KDP.VecBaseSystem + VecTable.PerfMonitorVector(r1)
 
-		addi	r8, r1, KDP.YellowVecBase
+		addi	r8, r1, KDP.VecBaseSystem
 		mtsprg	3, r8
 
 
@@ -366,21 +366,21 @@ InitHighLevel
 
 
 
-;	Fill with Panics: Yellow, Orange, Red (KDP)
-;	                  Violet, Blue (PSA)
+;	Fill the old-style KDP vector tables, and also two new PSA ones,
+;	with panics
 
 	llabel	r23, panic
 	add		r23, r23, r25
 
-	addi	r8, r1, KDP.YellowVecBase
+	addi	r8, r1, KDP.VecBaseSystem
 	li		r22,	VecTable.Size
 	bl		wordfill
 
-	addi	r8, r1, KDP.OrangeVecBase
+	addi	r8, r1, KDP.VecBaseAlternate
 	li		r22,	VecTable.Size
 	bl		wordfill
 
-	addi	r8, r1, KDP.RedVecBase
+	addi	r8, r1, KDP.VecBaseTranslation
 	li		r22,	VecTable.Size
 	bl		wordfill
 
@@ -405,12 +405,13 @@ InitHighLevel
 
 
 
-;	Activate Yellow and fill Yellow and Orange (KDP)
+;	Populate System and Alternate Context vector tables.
+;	Activate System Context vector table (will enter 68k emu soon).
 
-	addi	r9, r1, KDP.YellowVecBase
+	addi	r9, r1, KDP.VecBaseSystem
 	mtsprg	3, r9
 
-	addi	r8, r1, KDP.OrangeVecBase
+	addi	r8, r1, KDP.VecBaseAlternate
 
 	llabel	r23, panic
 	add		r23, r23, r25
@@ -432,14 +433,15 @@ InitHighLevel
 	stw		r23, VecTable.ISIVector(r9)
 	stw		r23, VecTable.ISIVector(r8)
 
-	;	Difference: Yellow seems more likely to reach PIH
-	llabel	r23, IntExternalYellow
+	;	Here is the difference between the System and Alternate
+	;	vector tables
+	llabel	r23, IntExternalSystem
 	add		r23, r23, r25
-	stw		r23, VecTable.ExternalIntVector(r9)	; yellow
+	stw		r23, VecTable.ExternalIntVector(r9)
 
-	llabel	r23, IntExternalOrange
+	llabel	r23, IntExternalAlternate
 	add		r23, r23, r25
-	stw		r23, VecTable.ExternalIntVector(r8)	; orange
+	stw		r23, VecTable.ExternalIntVector(r8)
 
 	llabel	r23, IntAlignment
 	add		r23, r23, r25
@@ -490,9 +492,9 @@ InitHighLevel
 
 
 
-;	Fill Red (KDP), used while were emulating some instructions
+;	Fill the Translation vector table
 
-	addi	r8, r1, KDP.RedVecBase
+	addi	r8, r1, KDP.VecBaseTranslation
 
 	llabel	r23, panic
 	add		r23, r23, r25
@@ -502,7 +504,7 @@ InitHighLevel
 	add		r23, r23, r25
 	stw		r23, VecTable.MachineCheckVector(r8)
 
-	llabel	r23, IntDSIOtherOther
+	llabel	r23, IntDSITranslation
 	add		r23, r23, r25
 	stw		r23, VecTable.DSIVector(r8)
 
@@ -1026,7 +1028,7 @@ SetProcessorFlags
 
 ;	Initialize the kernel queues. They are called:
 ;
-;	-	PHYS	(free list, in KDP, by InitFreeList)
+;	-	PHYS	(free list, in KDP, by InitFreePageList)
 ;	-	DLYQ	(in KDP, by me)
 ;	-	DBUG	(in KDP, by me)
 ;	-	PAGQ	(in KDP, has ID, by me)
@@ -1037,7 +1039,7 @@ SetProcessorFlags
 	;	Free list in hardcoded KDP location
 	;	ARG		KernelData *r1
 	;	CLOB	r8, r9
-	bl		InitFreeList
+	bl		InitFreePageList
 
 
 	;	Delay queue in hardcoded KDP location
@@ -1132,7 +1134,7 @@ SetProcessorFlags
 	li		r8, 2
 	stb		r8, Task.State(r31)
 
-	lisori	r8,	0x30028 ; (Z>>Task.kFlag14) | (Z>>Task.kFlagBlue) | (Z>>Task.kFlag26) | (Z>>Task.kFlag28)
+	lisori	r8,	0x30028 ; (Z>>Task.kFlagNotDebuggable) | (Z>>Task.kFlagBlue) | (Z>>Task.kFlag26) | (Z>>Task.kFlag28)
 	stw		r8, Task.Flags(r31)
 
 	li		r8, 200
@@ -1226,7 +1228,7 @@ SetProcessorFlags
 	stw		r8, Task.Name(r31)
 
 
-	lisori	r8, 0xA0040 ; (Z>>Task.kFlag12) | (Z>>Task.kFlag14) | (Z>>Task.kFlag25)
+	lisori	r8, 0xA0040 ; (Z>>Task.kFlag12) | (Z>>Task.kFlagNotDebuggable) | (Z>>Task.kFlag25)
 	stw		r8, Task.Flags(r31)
 
 	;	For the scheduler
@@ -1626,7 +1628,7 @@ PrimeFreeListFromBanks
 @loop
 	lwz		r8, 0(r29)
 	rlwinm	r8, r8, 0, 0, 19		;	physical base of page
-	bl		free_list_add_page
+	bl		FreePageListPush ; PhysicalPage *r8
 
 	subi	r17, r17, 1
 	subi	r29, r29, 4
@@ -1661,7 +1663,7 @@ PrimeFreeListFromSystemHeap
 @stupidloop
 	rlwinm r8, r18, 0, 0, 19
 
-	bl		free_list_add_page
+	bl		FreePageListPush ; PhysicalPage *r8
 	addi	r17, r17, -0x01
 	addi	r18, r18, 0x1000
 	cmpwi	r17, 0x00
@@ -1685,7 +1687,7 @@ DonePrimingFreeList
 
 	_log	'VMLogicalPages: '
 
-	lwz		r8, 0x06a8(r1) ; kdp.phys_pages
+	lwz		r8, KDP.VMLogicalPages(r1)
 	mr		r8, r8
 	bl		Printw
 
@@ -1764,7 +1766,7 @@ ReconcileMemory
 
 	;	The above, divided by 4096
 	srwi	r19, r19, 12
-	stw		r19, KDP.PrimaryAddrRangePages(r1)
+	stw		r19, KDP.VMLogicalPages(r1)
 
 	addi	r29, r1, KDP.FlatPageListSegPtrs - 4
 	addi	r19, r1, KDP.SegMaps - 8
@@ -1794,7 +1796,7 @@ ReconcileMemory
 	;	Number of pages in that last segment
 	sth		r22, 0x0002(r8)
 
-	lwz		r17, KDP.PrimaryAddrRangePages(r1)
+	lwz		r17, KDP.VMLogicalPages(r1)
 	lwz		r18, KDP.TotalPhysicalPages(r1)
 	stw		r17, KDP.TotalPhysicalPages(r1)
 
@@ -1815,7 +1817,7 @@ ReconcileMemory
 
 @loop
 	mr		r8, r31
-	bl		free_list_add_page
+	bl		FreePageListPush ; PhysicalPage *r8
 	addi	r31, r31, 4096
 	subi	r18, r18, 1
 	cmpwi	r18, 0
@@ -1827,7 +1829,7 @@ ReconcileMemory
 
 ;	Create Areas (an abstract NKv2 structure) from the Trampoline's PageMap
 
-	bl		convert_pmdts_to_areas
+	bl		CreateAreasFromPageMap
 
 
 
@@ -1870,7 +1872,7 @@ finish_old_world
 	addi	r29, r1,  0x5e8
 	bl		PagingFunc2
 	bl		PagingFlushTLB
-	bl		convert_pmdts_to_areas
+	bl		CreateAreasFromPageMap
 	bl		ProbePerfMonitor
 	lwz		r27,  0x0630(r1)
 	lwz		r27,  0x0094(r27)
@@ -1931,7 +1933,7 @@ setup_0x11f0
 
 	_log	'Nanokernel replaced. Returning to boot process^n'
 
-	addi	r9, r1, KDP.OrangeVecBase
+	addi	r9, r1, KDP.VecBaseAlternate
 	mtsprg	3, r9
 
 ;	r1 = kdp
@@ -1954,7 +1956,7 @@ CancelReplacement
 	lwz		r8, KDP.OldKDP(r1)
 	mtsprg	0, r8
 
-	addi	r9, r8, KDP.OrangeVecBase
+	addi	r9, r8, KDP.VecBaseAlternate
 	mtsprg	3, r9
 
 

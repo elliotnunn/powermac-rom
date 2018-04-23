@@ -17,7 +17,7 @@ NKFiles = ¶
 	{NKDir}NKMPCalls.s						¶
 	{NKDir}NKSync.s							¶
 	{NKDir}NKTasks.s						¶
-	{NKDir}NKAddressSpaceMPCalls.s			¶
+	{NKDir}NKAddressSpaces.s				¶
 	{NKDir}NKPoolAllocator.s				¶
 	{NKDir}NKTimers.s						¶
 	{NKDir}NKScheduler.s					¶
