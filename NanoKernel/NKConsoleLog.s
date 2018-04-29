@@ -501,99 +501,98 @@ serial_flush	;	OUTSIDE REFERER
 	ori		r30, r31, MSR_DR
 	mtmsr	r30
 	isync
-	lbz		r29,  0x0002(r28)
+	lbz		r29,  0x0002(r28);make sure next write goes to command register
 	li		r29,  0x09
-	stb		r29,  0x0002(r28)
+	stb		r29,  0x0002(r28);set register pointer to 9 (next write goes to WR9)
 	eieio
-	li		r29,  0x80
-	stb		r29,  0x0002(r28)
+	li		r29,  0x80;load code for channel A (also disables interrupts)
+	stb		r29,  0x0002(r28);reset channel A
 	eieio
-	lbz		r29,  0x0002(r28)
+	lbz		r29,  0x0002(r28);make sure next write goes to command register
 	li		r29,  0x04
+	stb		r29,  0x0002(r28);set register pointer to 4 (next write goes to WR4)
+	eieio
+	li		r29,  0x48;X16 clock, 8-bit sync, 1.5 stop bits, parity off
 	stb		r29,  0x0002(r28)
 	eieio
-	li		r29,  0x48
-	stb		r29,  0x0002(r28)
-	eieio
-	lbz		r29,  0x0002(r28)
+	lbz		r29,  0x0002(r28);make sure next write goes to command register
 	li		r29,  0x03
+	stb		r29,  0x0002(r28);set reg pointer to 3 (next write to WR3)
+	eieio
+	li		r29,  0xc0;recieve 8 bits per character (but recieve off)
 	stb		r29,  0x0002(r28)
 	eieio
-	li		r29,  0xc0
-	stb		r29,  0x0002(r28)
-	eieio
-	lbz		r29,  0x0002(r28)
+	lbz		r29,  0x0002(r28);make sure next write goes to command register
 	li		r29,  0x05
+	stb		r29,  0x0002(r28);set reg pointer to 5 (next write to WR5)
+	eieio
+	li		r29,  0x60;transmit 8 bits per char (but transmit off)
 	stb		r29,  0x0002(r28)
 	eieio
-	li		r29,  0x60
-	stb		r29,  0x0002(r28)
-	eieio
-	lbz		r29,  0x0002(r28)
+	lbz		r29,  0x0002(r28);make sure next write goes to command register
 	li		r29,  0x09
-	stb		r29,  0x0002(r28)
+	stb		r29,  0x0002(r28);set reg pointer to 9 (next write to WR9)
 	eieio
 	li		r29,  0x00
-	stb		r29,  0x0002(r28)
+	stb		r29,  0x0002(r28);stop channel A reset?
 	eieio
-	lbz		r29,  0x0002(r28)
+	lbz		r29,  0x0002(r28);make sure next write goes to command register
 	li		r29,  0x0a
+	stb		r29,  0x0002(r28);set reg pointer to 10 (next write to WR10)
+	eieio
+	li		r29,  0x00;8-bit sync, NRZ encoding
 	stb		r29,  0x0002(r28)
 	eieio
-	li		r29,  0x00
-	stb		r29,  0x0002(r28)
-	eieio
-	lbz		r29,  0x0002(r28)
+	lbz		r29,  0x0002(r28);make sure next write goes to command register
 	li		r29,  0x0b
+	stb		r29,  0x0002(r28);set reg pointer to 11 (next write to WR11)
+	eieio
+	li		r29,  0x50;rx and tx using BR Generator
 	stb		r29,  0x0002(r28)
 	eieio
-	li		r29,  0x50
-	stb		r29,  0x0002(r28)
-	eieio
-	lbz		r29,  0x0002(r28)
+	lbz		r29,  0x0002(r28);make sure next write goes to command register
 	li		r29,  0x0c
+	stb		r29,  0x0002(r28);set reg pointer to 12 (next write to WR12)
+	eieio
+	li		r29,  0x00;0 time constant low byte
 	stb		r29,  0x0002(r28)
 	eieio
-	li		r29,  0x00
-	stb		r29,  0x0002(r28)
-	eieio
-	lbz		r29,  0x0002(r28)
+	lbz		r29,  0x0002(r28);make sure next write goes to command register
 	li		r29,  0x0d
+	stb		r29,  0x0002(r28);set reg pointer to 13 (next write to WR13)
+	eieio
+	li		r29,  0x00;0 time constant high byte
 	stb		r29,  0x0002(r28)
 	eieio
-	li		r29,  0x00
-	stb		r29,  0x0002(r28)
-	eieio
-	lbz		r29,  0x0002(r28)
+	lbz		r29,  0x0002(r28);make sure next write goes to command register
 	li		r29,  0x0e
+	stb		r29,  0x0002(r28);set reg pointer to 14 (next write to WR14)
+	eieio
+	li		r29,  0x01;enable Baud Rate generator
 	stb		r29,  0x0002(r28)
 	eieio
-	li		r29,  0x01
-	stb		r29,  0x0002(r28)
-	eieio
-	lbz		r29,  0x0002(r28)
+	lbz		r29,  0x0002(r28);make sure next write goes to command register
 	li		r29,  0x03
+	stb		r29,  0x0002(r28);set reg pointer to 3 (next write to WR3)
+	eieio
+	li		r29,  0xc1;enable reciever
 	stb		r29,  0x0002(r28)
 	eieio
-	li		r29,  0xc1
-	stb		r29,  0x0002(r28)
-	eieio
-	lbz		r29,  0x0002(r28)
+	lbz		r29,  0x0002(r28);make sure next write goes to command register
 	li		r29,  0x05
+	stb		r29,  0x0002(r28);set reg pointer to 5 (next write to WR5)
+	eieio
+	li		r29,  0xea;assert DTR and RTS, set 8 bit characters, and enable transmitter
 	stb		r29,  0x0002(r28)
 	eieio
-	li		r29,  0xea
-	stb		r29,  0x0002(r28)
-	eieio
-	mtmsr	r31
+	mtmsr	r31		;restore previous MSR
 	isync
 	blr
 
 
 
 ;	                       serial_io
-
-;	See disclaimer above.
+;appears to set BAT 3 so the scc can be accessed from logical memory space.
 
 serial_io	;	OUTSIDE REFERER
 	mfspr	r26, srr0
