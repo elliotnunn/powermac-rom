@@ -522,19 +522,22 @@ TasksFuncThatIsNotAMPCall
 	blr
 
 
+;	int MPIsTaskBlue(TaskID)
+;	Returns true if the Task ID is the same as the blue Task.
+;	If the Task ID sent is 0, it uses the calling Task's ID.
 
-	DeclareMPCall	11, MPCall_11
+	DeclareMPCall	11, MPIsTaskBlue
 
-MPCall_11	;	OUTSIDE REFERER
+MPIsTaskBlue	;	OUTSIDE REFERER
 	mfsprg	r16, 0
 	cmpwi	r3,  0x00
 	lwz		r17, PSA.PA_BlueTask(r1)
-	lwz		r18, -0x0008(r16)
-	lwz		r19,  0x0000(r17)
-	bne		MPCall_11_0x1c
-	lwz		r3,  0x0000(r18)
+	lwz		r18, EWA.PA_CurTask(r16)
+	lwz		r19,  Task.ID(r17)
+	bne		@ID_Provided
+	lwz		r3,  Task.ID(r18);if r3 is 0, use calling Task's ID
 
-MPCall_11_0x1c
+@ID_Provided
 	cmpw	r3, r19
 	li		r3,  0x01
 	beq		CommonMPCallReturnPath
@@ -542,21 +545,24 @@ MPCall_11_0x1c
 	b		CommonMPCallReturnPath
 
 
-
+;	returns the ID and SomeLabelField of the blue Task.
+;	Needs a name. MPGetBlueTaskIDAndSomeLabelField() isn't good enough
 	DeclareMPCall	12, MPCall_12
 
 MPCall_12	;	OUTSIDE REFERER
 	mfsprg	r14, 0
-	lwz		r15, -0x0008(r14)
-	lwz		r3,  0x0000(r15)
-	lwz		r4,  0x00ec(r15)
+	lwz		r15, EWA.PA_CurTask(r14)
+	lwz		r3,  Task.ID(r15)
+	lwz		r4,  Task.SomeLabelField(r15)
 	b		CommonMPCallReturnPath
 
 
+;	OSStatus MPSetTaskWeight(TaskID, weight)
+;	sets the weight of a Task. Recalculates scheduler stuff if needed.
+;	Name is just a guess. Change it if you find out what this is really called.
+	DeclareMPCall	14, MPSetTaskWeight
 
-	DeclareMPCall	14, MPCall_14
-
-MPCall_14	;	OUTSIDE REFERER
+MPSetTaskWeight	;	OUTSIDE REFERER
 	cmpwi	r4,  0x01
 	cmpwi	cr1, r4, 10000
 	blt		ReturnMPCallInvalidIDErr
@@ -572,22 +578,22 @@ MPCall_14	;	OUTSIDE REFERER
 
 	bne		ReleaseAndReturnMPCallInvalidIDErr
 	mr		r31, r8
-	lbz		r16,  0x0018(r31)
+	lbz		r16,  Task.State(r31)
 	cmpwi	r16,  0x01
-	bne		MPCall_14_0x70
-	lwz		r16,  0x0008(r31)
-	lwz		r17,  0x001c(r31)
-	lwz		r18,  0x0014(r16)
-	subf	r17, r17, r4
-	add		r18, r17, r18
+	bne		@Set_Weight;if task isn't running, you can change its weight freely
+	lwz		r16,  Task.QueueMember(r31)
+	lwz		r17,  Task.Weight(r31)
+	lwz		r18,  ReadyQueue.TotalWeight(r16)
+	subf	r17, r17, r4	;get the change in weight
+	add		r18, r17, r18;add the change to ReadyQueue.TotalWeight
 	cmpwi	r17,  0x00
-	stw		r18,  0x0014(r16)
-	beq		MPCall_14_0x70
+	stw		r18,  ReadyQueue.TotalWeight(r16)
+	beq		@Set_Weight;don't mess with scheduler if weight is unchanged
 	mr		r8, r31
 	bl		FlagSchEval
 
-MPCall_14_0x70
-	stw		r4,  0x001c(r31)
+@Set_Weight
+	stw		r4,  Task.Weight(r31)
 
 ;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall
@@ -723,16 +729,15 @@ MPCall_58	;	OUTSIDE REFERER
 
 	lwz		r29, Task.Flags(r31)
 	mtcr	r29
-
 	li		r3, kMPTaskAbortedErr
-	bc		BO_IF, 30, ReleaseAndReturnMPCall
+	bc		BO_IF, Task.kFlagAborted, ReleaseAndReturnMPCall
 
-	bc		BO_IF, 18, MPCall_58_0x44
-	bc		BO_IF_NOT, 22, ReleaseAndReturnMPCallOOM
+	bc		BO_IF, Task.kFlagPageFaulted, MPCall_58_0x44
+	bc		BO_IF_NOT, Task.kFlagStopped, ReleaseAndReturnMPCallOOM
 
 MPCall_58_0x44
 	mtcr	r4
-	lwz		r30,  0x0088(r31)
+	lwz		r30,  Task.ContextBlockPtr(r31)
 	bc		BO_IF_NOT, 31, MPCall_58_0x68
 	li		r8,  0x1c
 	bl		PoolAlloc
@@ -743,8 +748,8 @@ MPCall_58_0x44
 
 MPCall_58_0x68
 	li		r17,  0x3800
-	rlwinm.	r8, r29,  0, 18, 18
-	andc	r29, r29, r17
+	rlwinm.	r8, r29,  0, 18, 18;Task.kFlagPageFaulted, but empw complains when I call it that
+	andc	r29, r29, r17	;clear Task.kFlagPageFaulted, Task.kFlag19, and Task.kFlag20
 	li		r17,  0x00
 	bne		cr7, MPCall_58_0x80
 	ori		r17, r17,  0x400
@@ -754,8 +759,8 @@ MPCall_58_0x80
 	ori		r17, r17,  0x200
 
 MPCall_58_0x88
-	lwz		r18,  0x00a4(r30)
-	rlwimi	r18, r17,  0, 21, 22
+	lwz		r18,  ContextBlock.MSR(r30)
+	rlwimi	r18, r17,  0, MSR_SEbit, MSR_BEbit
 	stw		r18,  0x00a4(r30)
 	li		r19,  0x600
 	lwz		r17,  0x0008(r31)
@@ -913,13 +918,13 @@ MPCall_60	;	OUTSIDE REFERER
 	mtcr	r16
 
 	li		r3, kMPTaskAbortedErr
-	bc		BO_IF, 30, ReleaseAndReturnMPCall
+	bc		BO_IF, Task.kFlagAborted, ReleaseAndReturnMPCall
 
-	bc		BO_IF, 18, MPCall_60_0x4c
-	bc		BO_IF_NOT, 22, ReleaseAndReturnMPCallOOM
+	bc		BO_IF, Task.kFlagPageFaulted, MPCall_60_0x4c
+	bc		BO_IF_NOT, Task.kFlagStopped, ReleaseAndReturnMPCallOOM
 
 MPCall_60_0x4c
-	lbz		r16,  0x0018(r31)
+	lbz		r16,  Task.State(r31)
 	cmpwi	r16,  0x00
 	bne		ReleaseAndReturnMPCallOOM
 	cmpwi	r4,  0x00
@@ -932,11 +937,11 @@ MPCall_60_0x4c
 	beq		cr1, MPCall_60_0x1c0
 	cmpwi	r4,  0x04
 	bne		ReleaseAndReturnMPCallOOM
-	lwz		r16,  0x0088(r31)
+	lwz		r16,  Task.ContextBlockPtr(r31)
 	li		r17,  0x00
 	cmplwi	r5,  0x00
 	cmplwi	cr1, r5,  0x04
-	beq		MPCall_60_0xac
+	beq		MPCall_60_0xac;gets ID of Area SRR0 is in
 	beq		cr1, MPCall_60_0xc0
 	cmplwi	r5,  0x08
 	cmplwi	cr1, r5,  0x0c
@@ -945,41 +950,41 @@ MPCall_60_0x4c
 	b		ReleaseAndReturnMPCallOOM
 
 MPCall_60_0xac
-	lwz		r8,  0x0070(r31)
-	lwz		r9,  0x0074(r16)
+	lwz		r8,  Task.AddressSpacePtr(r31)
+	lwz		r9,  ContextBlock.SRR0(r16)
 	bl		FindAreaAbove
-	lwz		r17,  0x0000(r8)
+	lwz		r17,  Area.ID(r8)
 	b		MPCall_60_0x36c
 
 MPCall_60_0xc0
-	lwz		r17,  0x0074(r16)
+	lwz		r17,  ContextBlock.SRR0(r16)
 	b		MPCall_60_0x36c
 
 MPCall_60_0xc8
-	lwz		r17,  0x00f8(r31)
+	lwz		r17,  Task.ErrToReturnIfIDie(r31)
 	b		MPCall_60_0x36c
 
 MPCall_60_0xd0
-	lwz		r17,  0x0040(r16)
-	lwz		r18,  0x0064(r16)
-	rlwinm.	r8, r17,  0, 27, 27
+	lwz		r17,  ContextBlock.SavedFlags(r16)
+	lwz		r18,  0x0064(r16);some unknown ContextBlock value
+	rlwinm.	r8, r17,  0, EWA.kFlagLowSaves, EWA.kFlagLowSaves
 	li		r17,  0x02
 	beq		MPCall_60_0x36c
-	rlwinm.	r8, r18,  0,  1,  1
+	rlwinm.	r8, r18,  0,  EWA.kFlag1, EWA.kFlag1
 	li		r17,  0x01
 	bne		MPCall_60_0x36c
 	li		r17,  0x00
 	b		MPCall_60_0x36c
 
 MPCall_60_0xf8
-	lwz		r16,  0x0088(r31)
+	lwz		r16,  Task.ContextBlockPtr(r31)
 	cmplwi	cr1, r5,  0xf8
 	andi.	r17, r5,  0x07
 	addi	r16, r16,  0xfc
 	b		MPCall_60_0x124
 
 MPCall_60_0x10c
-	lwz		r16,  0x0088(r31)
+	lwz		r16,  Task.ContextBlockPtr(r31)
 	cmplwi	r5,  0x100
 	cmplwi	cr1, r5,  0xf8
 	beq		MPCall_60_0x144
@@ -1440,16 +1445,17 @@ MPCall_63	;	OUTSIDE REFERER
 	cmpwi	r9, Task.kIDClass
 
 	bne		ReleaseAndReturnMPCallInvalidIDErr
-	stw		r4,  0x00ec(r8)
+	stw		r4,  Task.SomeLabelField(r8)
 
 ;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall
 
 
+;	OSStatus MPSetTaskCPU(TaskID, CPUID)
+;	Makes it so that a Task can only run on a single CPU.
+	DeclareMPCall	114, MPSetTaskCPU
 
-	DeclareMPCall	114, MPCall_114
-
-MPCall_114	;	OUTSIDE REFERER
+MPSetTaskCPU	;	OUTSIDE REFERER
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
@@ -1469,28 +1475,28 @@ MPCall_114	;	OUTSIDE REFERER
 
 	mr		r30, r8
 	bne		ReleaseAndReturnMPCallInvalidIDErr
-	lwz		r16,  0x0064(r31)
-	lwz		r17,  0x00e8(r31)
-	rlwinm.	r8, r16,  0, 30, 30
+	lwz		r16,  Task.Flags(r31)
+	lwz		r17,  Task.PreemptCtr(r31)
+	rlwinm.	r8, r16,  0, Task.kFlagAborted, Task.kFlagAborted
 	cmplw	cr1, r17, r5
-	lwz		r18,  0x0018(r30)
+	lwz		r18,  CPU.Flags(r30)
 	bne		ReleaseAndReturnMPCallOOM
 	bne		cr1, ReleaseAndReturnMPCallOOM
-	rlwinm.	r8, r18,  0, 28, 28
+	rlwinm.	r8, r18,  0, CPU.kFlagScheduled, CPU.kFlagScheduled
 	cmplwi	cr1, r17,  0x04
 	beq		ReleaseAndReturnMPCallOOM
-	lwz		r16,  0x0064(r31)
+	lwz		r16,  Task.Flags(r31)
 	lhz		r17, CPU.EWA + EWA.CPUIndex(r30)
-	ori		r16, r16,  0x40
-	stw		r16,  0x0064(r31)
-	sth		r17,  0x001a(r31)
-	rlwinm.	r8, r16,  0, 26, 26
+	ori		r16, r16,  0x40;Task.kFlag25
+	stw		r16,  Task.Flags(r31)
+	sth		r17,  Task.CPUIndex(r31)
+	rlwinm.	r8, r16,  0, Task.kFlag26, Task.kFlag26
 	mr		r8, r31
-	bne		MPCall_114_0x90
+	bne		@No_Requeueing
 	bl		SchTaskUnrdy
 	bl		SchRdyTaskNow
 
-MPCall_114_0x90
+@No_Requeueing
 	bl		FlagSchEvaluationIfTaskRequires
 
 ;	r1 = kdp

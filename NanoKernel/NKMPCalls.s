@@ -1610,12 +1610,12 @@ MPMarkPMFTask
 	mr.			r8, r3
 	lwz			r31, EWA.PA_CurTask(r30)
 
-	beq			@use_blue_task_instead
+	beq			@use_this_task_instead
 	bl			LookupID
 	cmpwi		r9, Task.kIDClass
 	mr			r31, r8
 	bne			ReleaseAndReturnMPCallInvalidIDErr
-@use_blue_task_instead
+@use_this_task_instead
 
 ;	Insert bit 31 of r4 into bit 21 of these flags
 	lwz			r17, Task.Flags(r31)
@@ -2035,7 +2035,7 @@ MPCall_133	;	OUTSIDE REFERER
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
 	cmpw	r3, r0
-	lwz		r16,  0x0edc(r1)
+	lwz		r16,  KDP.NanoKernelInfo + NKNanoKernelInfo.ConfigFlags(r1)
 	li		r17,  0x0b
 	blt		MPCall_133_0x34
 	and		r3, r3, r17
