@@ -1,25 +1,25 @@
 ; System = FFFFFFFF, Alt = 7DF2F700 (ecInstPageFault and ecDataPageFault disabled), same +/- VM
-ecNoException				equ		0		; CodeLikeException
+ecNoException				equ		0		; Exception
 ecSystemCall				equ		1		; ?
-ecTrapInstr					equ		2		; CodeLikeException
-ecFloatException			equ		3		; CodeLikeException
-ecInvalidInstr				equ		4		; CodeLikeException
+ecTrapInstr					equ		2		; Exception
+ecFloatException			equ		3		; Exception
+ecInvalidInstr				equ		4		; Exception
 ecPrivilegedInstr			equ		5		; ?
-ecMachineCheck				equ		7		; CodeLikeException
-ecInstTrace					equ		8		; CodeLikeException
-ecInstInvalidAddress		equ		10		; CodeLikeException
-ecInstHardwareFault			equ		11		; CodeLikeException
-ecInstPageFault				equ		12		; CodeLikeException
-ecInstSupAccessViolation	equ		14		; CodeLikeException
+ecMachineCheck				equ		7		; Exception
+ecInstTrace					equ		8		; Exception
+ecInstInvalidAddress		equ		10		; Exception
+ecInstHardwareFault			equ		11		; Exception
+ecInstPageFault				equ		12		; Exception
+ecInstSupAccessViolation	equ		14		; Exception
 
-;	Usually from IntDSITranslation (also IntAlignment and IntMachineCheck)
-ecDataInvalidAddress		equ		18		; DataLikeException
-ecDataHardwareFault			equ		19		; DataLikeException
-ecDataPageFault				equ		20		; DataLikeException
-ecDataWriteViolation		equ		21		; DataLikeException
-ecDataSupAccessViolation	equ		22		; DataLikeException
+;	Usually from MemRetryDSI (also IntAlignment and IntMachineCheck)
+ecDataInvalidAddress		equ		18		; ExceptionMemRetried
+ecDataHardwareFault			equ		19		; ExceptionMemRetried
+ecDataPageFault				equ		20		; ExceptionMemRetried
+ecDataWriteViolation		equ		21		; ExceptionMemRetried
+ecDataSupAccessViolation	equ		22		; ExceptionMemRetried
 ecDataSupWriteViolation		equ		23		; ?
-ecUnknown24					equ		24		; DataLikeException
+ecUnknown24					equ		24		; ExceptionMemRetried
 
 
 
@@ -35,7 +35,7 @@ IntLocalBlockMPCall
 
 	align	5
 
-DataLikeException
+ExceptionMemRetried
 
 	mfsprg	r1, 0
 	mtsprg	3, r24
@@ -162,7 +162,7 @@ PreferRegistersFromEWASavingContextBlock	;	OUTSIDE REFERER
 
 ;	This is the only path to UnhandledCodeFault
 
-CodeLikeException
+Exception
 
 	mfsprg	r1, 0
 	mtcrf	0x3f, r7
@@ -188,8 +188,8 @@ CodeLikeException
 	;		SIGP-return exceptions obviously separate
 	;		MTasks (non-blue) -> UnhandledCodeFault (ends up going to backing store)
 	;		Exception enabled for blue task (i.e. in system context) -> field exception to task
-	;		Not actually a code fault -> system context (68k interrupt)
-	;		Data fault that blue does not wish to handle
+	;		Code fault for blue task but exception is disabled -> UnhandledCodeFault
+	;		Non-code fault for blue task -> system context (68k interrupt)
 
 	bc		BO_IF, EWA.kFlagSIGP,				IntReturnFromSIGP
 	bc		BO_IF_NOT, EWA.kFlagBlue,			UnhandledCodeFault
@@ -396,7 +396,7 @@ major_0x02ccc	;	OUTSIDE REFERER
 
 	stw		r7, EWA.Flags(r1)
 	li		r8, ecInstTrace
-	b		CodeLikeException
+	b		Exception
 @return
 
 	blr
@@ -446,7 +446,7 @@ major_0x02ccc_0x30
 	rlwimi	r25, r17,  4, 23, 27
 	mtcrf	 0x10, r26					; so the second nybble of the entry is copied to cr3
 	lha		r22,  0x0c00(r25)
-	addi	r23, r8, KDP.VecBaseTranslation
+	addi	r23, r8, KDP.VecBaseMemRetry
 	add		r22, r22, r25
 	mfsprg	r24, 3
 	mtlr	r22
@@ -895,7 +895,7 @@ IntDecrementer_0x54
  #  #   ##   #   #     # #     #  #  
 ### #    #   #   ######   #####  ### 
 
-;	Kick it to the FDP-associated IntDSITranslation
+;	Kick it to the FDP-associated MemRetryDSI
 
 	align	kIntAlign
 
@@ -925,7 +925,7 @@ IntDSI
 	;	("Set if the access is due to a lwarx, ldarx, stwcx., or stdcx.
 	;	instruction that addresses memory that is Write Through
 	;	Required or Caching Inhibited; otherwise cleared")
-	addi	r23, r1, KDP.VecBaseTranslation
+	addi	r23, r1, KDP.VecBaseMemRetry
 	andis.	r28, r26, 0x400			; test bit 5 (see cmt above)
 	mtsprg	3, r23
 
@@ -1068,7 +1068,7 @@ IntAlignment	;	OUTSIDE REFERER
 
 	rlwinm.	r21, r21, 0, Task.kFlagTakesAllExceptions, Task.kFlagTakesAllExceptions
 
-	addi	r23, r1, KDP.VecBaseTranslation
+	addi	r23, r1, KDP.VecBaseMemRetry
 
 	bne		major_0x03548_0x20
 
@@ -1157,24 +1157,24 @@ major_0x03548_0x20	;	OUTSIDE REFERER
 	rlwimi	r17, r27,  7, 31, 31
 	xori	r17, r17,  0x01
 	li		r8, ecUnknown24
-	b		DataLikeException
+	b		ExceptionMemRetried
 
 
 
 	align	kIntAlign
 
-IntDSITranslation	;	OUTSIDE REFERER
+MemRetryDSI	;	OUTSIDE REFERER
 
 	mfsprg	r1, 0
 	mfspr	r31, dsisr
 	mfspr	r27, dar
 	andis.	r28, r31,  0xc030
 	lwz		r1, -0x0004(r1)
-	bne		IntDSIOtherOther_0x1c8
+	bne		MemRetryDSI_0x1c8
 	mfspr	r30, srr1
 	andi.	r28, r30,  0x4000
 	mfsprg	r30, 0
-	beq		IntDSIOtherOther_0x100
+	beq		MemRetryDSI_0x100
 	stw		r8, -0x00e0(r30)
 	stw		r9, -0x00dc(r30)
 	mfcr	r8
@@ -1190,47 +1190,47 @@ IntDSITranslation	;	OUTSIDE REFERER
 	lwz		r17,  0x0028(r8)
 	cmplw	r27, r16
 	cmplw	cr7, r27, r17
-	blt		IntDSIOtherOther_0xe0
-	bgt		cr7, IntDSIOtherOther_0xe0
+	blt		MemRetryDSI_0xe0
+	bgt		cr7, MemRetryDSI_0xe0
 	mr		r31, r8
 	mr		r8, r27
 	bl		SpaceGetPagePLE ; LogicalPage *r8, Area *r31 // PLE *r30, notfound cr0.eq
-	beq		IntDSIOtherOther_0xe0
+	beq		MemRetryDSI_0xe0
 	lwz		r8,  0x0000(r30)
 	lwz		r16,  0x0098(r31)
 	rlwinm	r28, r8,  0, 29, 30
 	cmpwi	cr7, r28,  0x04
 	cmpwi	r28,  0x02
-	beq		cr7, IntDSIOtherOther_0xe0
-	beq		IntDSIOtherOther_0xe0
+	beq		cr7, MemRetryDSI_0xe0
+	beq		MemRetryDSI_0xe0
 
-IntDSIOtherOther_0x98
+MemRetryDSI_0x98
 	addi	r17, r31,  0x90
 	cmpw	r16, r17
 	addi	r17, r16,  0x14
-	beq		IntDSIOtherOther_0x158
+	beq		MemRetryDSI_0x158
 	lwz		r9,  0x0010(r16)
 	add		r9, r9, r17
 
-IntDSIOtherOther_0xb0
+MemRetryDSI_0xb0
 	lwz		r18,  0x0000(r17)
 	cmplw	cr7, r17, r9
 	lwz		r19,  0x0004(r17)
-	bgt		cr7, IntDSIOtherOther_0xd8
+	bgt		cr7, MemRetryDSI_0xd8
 	cmplw	r27, r18
 	cmplw	cr7, r27, r19
-	blt		IntDSIOtherOther_0xd0
-	ble		cr7, IntDSIOtherOther_0xe0
+	blt		MemRetryDSI_0xd0
+	ble		cr7, MemRetryDSI_0xe0
 
-IntDSIOtherOther_0xd0
+MemRetryDSI_0xd0
 	addi	r17, r17,  0x08
-	b		IntDSIOtherOther_0xb0
+	b		MemRetryDSI_0xb0
 
-IntDSIOtherOther_0xd8
+MemRetryDSI_0xd8
 	lwz		r16,  0x0008(r16)
-	b		IntDSIOtherOther_0x98
+	b		MemRetryDSI_0x98
 
-IntDSIOtherOther_0xe0
+MemRetryDSI_0xe0
 	mfsprg	r30, 0
 	mfspr	r31, dsisr
 	lwz		r8, -0x00e0(r30)
@@ -1240,7 +1240,7 @@ IntDSIOtherOther_0xe0
 	lwz		r18, -0x00d0(r30)
 	lwz		r19, -0x00cc(r30)
 
-IntDSIOtherOther_0x100
+MemRetryDSI_0x100
 	andis.	r28, r31,  0x800
 	addi	r29, r1, KDP.BATs + 0xa0
 	bnel	PagingL2PWithBATs
@@ -1250,23 +1250,23 @@ IntDSIOtherOther_0x100
 	beql	IntPanicIsland
 	mfsprg	r28, 2
 	mtlr	r28
-	bne		cr7, IntDSIOtherOther_0x144
+	bne		cr7, MemRetryDSI_0x144
 	mfspr	r28, srr0
 	addi	r28, r28,  0x04
 	lwz		r26,  0x0e90(r1)
 	mtspr	srr0, r28
 	addi	r26, r26,  0x01
 	stw		r26,  0x0e90(r1)
-	b		IntDSIOtherOther_0x19c
+	b		MemRetryDSI_0x19c
 
-IntDSIOtherOther_0x144
+MemRetryDSI_0x144
 	andi.	r28, r31,  0x03
 	li		r8, ecDataSupAccessViolation
-	beq		DataLikeException
+	beq		ExceptionMemRetried
 	li		r8, ecDataWriteViolation
-	b		DataLikeException
+	b		ExceptionMemRetried
 
-IntDSIOtherOther_0x158
+MemRetryDSI_0x158
 	mfsprg	r30, 0
 	lwz		r16,  0x0f00(r1)
 	lwz		r8, -0x00c8(r30)
@@ -1285,16 +1285,16 @@ IntDSIOtherOther_0x158
 	mtlr	r28
 	mtspr	srr1, r29
 
-IntDSIOtherOther_0x19c
+MemRetryDSI_0x19c
 	mfsprg	r1, 1
 	rlwinm	r26, r25, 30, 24, 31
 	rfi
 	dcb.b	32, 0
 
 
-IntDSIOtherOther_0x1c8
+MemRetryDSI_0x1c8
 	andis.	r28, r31,  0x8010
-	bne		IntMachineCheckMemRetry_0x14c
+	bne		MemRetryMachineCheck_0x14c
 
 	_Lock			PSA.HTABLock, scratch1=r28, scratch2=r31
 
@@ -1302,15 +1302,15 @@ IntDSIOtherOther_0x1c8
 	_AssertAndRelease	PSA.HTABLock, scratch=r28
 	mfsprg	r28, 2
 	mtlr	r28
-	beq		IntDSIOtherOther_0x19c
+	beq		MemRetryDSI_0x19c
 	li		r8, ecDataInvalidAddress
-	bge		DataLikeException
+	bge		ExceptionMemRetried
 	li		r8, ecDataPageFault
-	b		DataLikeException
+	b		ExceptionMemRetried
 
 
 
-IntMachineCheckMemRetry	;	OUTSIDE REFERER
+MemRetryMachineCheck	;	OUTSIDE REFERER
 	mfsprg	r1, 0
 	mr		r28, r8
 
@@ -1341,9 +1341,9 @@ IntMachineCheckMemRetry	;	OUTSIDE REFERER
 	lwz		r27,  0x0694(r1)
 	subf	r28, r19, r27
 	cmpwi	r28, -0x10
-	blt		IntMachineCheckMemRetry_0x14c
+	blt		MemRetryMachineCheck_0x14c
 	cmpwi	r28,  0x10
-	bgt		IntMachineCheckMemRetry_0x14c
+	bgt		MemRetryMachineCheck_0x14c
 
 	_Lock			PSA.HTABLock, scratch1=r28, scratch2=r29
 
@@ -1357,24 +1357,26 @@ IntMachineCheckMemRetry	;	OUTSIDE REFERER
 	rlwinm.	r28, r28,  0,  0, 14
 	sync
 	tlbie	r27
-	beq		IntMachineCheckMemRetry_0x124
+	beq		MemRetryMachineCheck_0x124
 	sync
 	tlbsync
 
-IntMachineCheckMemRetry_0x124
+MemRetryMachineCheck_0x124
 	sync
 	isync
 	_AssertAndRelease	PSA.HTABLock, scratch=r28
 
-IntMachineCheckMemRetry_0x14c	;	OUTSIDE REFERER
+
+
+MemRetryMachineCheck_0x14c	;	OUTSIDE REFERER
 	cmplw	r10, r19
 	li		r8, ecDataHardwareFault
-	bne		DataLikeException
+	bne		ExceptionMemRetried
 	mfsprg	r1, 0
 	mtsprg	3, r24
 	lmw		r14,  0x0038(r1)
 	li		r8, ecInstHardwareFault
-	b		CodeLikeException
+	b		Exception
 
 
 
@@ -1396,10 +1398,14 @@ IntISI	;	OUTSIDE REFERER
 	_AssertAndRelease	PSA.HTABLock, scratch=r28
 	mfsprg	r8, 0
 	bne		major_0x039dc
+
+
+	;	MemRetry
+
 	mfsprg	r24, 3
 	mfmsr	r14
 	ori		r15, r14,  0x10
-	addi	r23, r1, KDP.VecBaseTranslation
+	addi	r23, r1, KDP.VecBaseMemRetry
 	mtsprg	3, r23
 	mr		r19, r10
 	mtmsr	r15
@@ -1418,16 +1424,16 @@ IntISI	;	OUTSIDE REFERER
 major_0x039dc	;	OUTSIDE REFERER
 	lmw		r14,  0x0038(r8)
 	li		r8, ecInstPageFault
-	blt		CodeLikeException
+	blt		Exception
 	li		r8, ecInstInvalidAddress
-	b		CodeLikeException
+	b		Exception
 
 major_0x039dc_0x14	;	OUTSIDE REFERER
 	andis.	r8, r11,  0x800
 	li		r8, ecInstSupAccessViolation
-	bne		CodeLikeException
+	bne		Exception
 	li		r8, ecInstHardwareFault
-	b		CodeLikeException
+	b		Exception
 
 
 
@@ -1461,7 +1467,7 @@ IntMachineCheck	;	OUTSIDE REFERER
 
 @not_L1_data_cache_error
 	li		r8, ecMachineCheck
-	b		CodeLikeException
+	b		Exception
 
 
 
@@ -1475,13 +1481,13 @@ MaskedInterruptTaken	;	OUTSIDE REFERER
 	lis		r10, -0x4523
 	ori		r10, r10,  0xcb00
 	li		r8, ecMachineCheck
-	b		CodeLikeException
+	b		Exception
 
 
 
 	align	kIntAlign
 
-IntDSIOther	;	OUTSIDE REFERER
+PIHDSI	;	OUTSIDE REFERER
 	mfspr	r8, dsisr
 	rlwimi	r11, r8,  0,  0,  9
 	andis.	r8, r11,  0x4020
@@ -1531,23 +1537,23 @@ kcReturnFromException	;	OUTSIDE REFERER
 	_bset	r11, r11, MSR_EEbit
 
 	mtcrf	0x3f, r7
-	cmplwi	cr1, r3,  0x01
+	cmplwi	cr1, r3, 1									; exception handler return value
 	bc		BO_IF, EWA.kFlagSIGP, IntReturnFromSIGP
 
 	blt		cr1, major_0x03be0_0x58
 	beq		cr1, major_0x03be0_0x90
 
 
-	addi	r8, r3, -0x20
+	subi	r8, r3, 32
 	lwz		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.ExceptionForcedCount(r1)
-	cmplwi	r8,  0xe0
+	cmplwi	r8, 224
 	addi	r9, r9, 1
 	stw		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.ExceptionForcedCount(r1)
 	mfsprg	r1, 0
 	rlwimi	r7, r3, 24,  0,  7
 	blt		major_0x03be0_0xe8
 	li		r8, ecTrapInstr
-	b		CodeLikeException
+	b		Exception
 
 major_0x03be0_0x58
 	mfsprg	r1, 0
@@ -1594,7 +1600,7 @@ major_0x03be0_0xe8
 	crclr	cr6_so
 	mfspr	r10, srr0
 	li		r8, ecTrapInstr
-	b		CodeLikeException
+	b		Exception
 
 
 
@@ -1932,7 +1938,7 @@ major_0x04180_0x9c
 	bl		LoadInterruptRegisters
 
 	li		r8, ecInvalidInstr
-	b		CodeLikeException
+	b		Exception
 
 
 
@@ -2186,7 +2192,7 @@ kcRunAlternateContext
 	lmw		r14, EWA.r14(r1)
 	lwz		r1, EWA.PA_KDP(r1)
 	li		r8, ecTrapInstr
-	b		CodeLikeException
+	b		Exception
 
 
 
@@ -2375,7 +2381,7 @@ major_0x046d0	;	OUTSIDE REFERER
 	bl		LoadInterruptRegisters
 
 	li		r8, ecTrapInstr
-	b		CodeLikeException
+	b		Exception
 
 
 
@@ -2397,7 +2403,7 @@ IntExternalAlternate
 	mtcrf	0x3f, r7
 	bcl		BO_IF_NOT, EWA.kFlagBlue, IntPanicIsland
 	li		r8, ecNoException
-	b		CodeLikeException
+	b		Exception
 
 
 
@@ -2443,7 +2449,7 @@ IntProgram
 	bc		BO_IF_NOT, 26, @_IntProgram_0x58
 	stw		r14, ContextBlock.r14(r6)
 	mfsprg	r14, 3
-	addi	r8, r1, PSA.BlueVecBase
+	addi	r8, r1, PSA.VecBasePIH
 	mfmsr	r9
 	mtsprg	3, r8
 	_bset	r8, r9, 27				; turn on data paging (MSR[DR]) for just a sec
@@ -2556,15 +2562,15 @@ IntProgram
 	rlwinm	r8, r11, 17, 28, 29						; whoa
 	addi	r8, r8,  0x4b3
 	rlwnm	r8, r8, r8, 28, 31
-	b		CodeLikeException
+	b		Exception
 
 @floating_point_exception
 	li		r8, ecFloatException
 
-	bc		BO_IF, 15, CodeLikeException			; if SRR0 points to subsequent instr
+	bc		BO_IF, 15, Exception			; if SRR0 points to subsequent instr
 	addi	r10, r10, 4								; if SRR0 points to offending instr
 	rlwimi	r7, r7, 27, 26, 26						; copy EWA.kFlagBE into EWA.kFlag26
-	b		CodeLikeException
+	b		Exception
 
 
 
@@ -2771,7 +2777,8 @@ SIGP
 
 
 
-major_0x04a20	;	OUTSIDE REFERER
+major_0x04a20
+
 	mfsprg	r23, 0
 	lwz		r6, -0x0014(r23)
 	lwz		r7, -0x0010(r23)
@@ -2924,7 +2931,7 @@ IntTrace	;	OUTSIDE REFERER
 	bl		LoadInterruptRegisters
 
 	li		r8, ecInstTrace
-	b		CodeLikeException
+	b		Exception
 
 
 

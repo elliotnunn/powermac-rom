@@ -295,7 +295,7 @@ PDM_PIH
 
 	bl			SchSaveStartingAtR20
 
-	addi		r9, r1, PSA.BlueVecBase
+	addi		r9, r1, PSA.VecBasePIH
 	andis.		r8, r11, 0x8000 >> 14		;	SRR1 mystery bit
 
 	mfsprg		r30, 3
@@ -374,7 +374,7 @@ PBX_PIH
 	bl		SchSaveStartingAtR20
 ;	r8 = sprg0 (not used by me)
 
-	addi	r9, r1, PSA.BlueVecBase
+	addi	r9, r1, PSA.VecBasePIH
 	andis.	r8, r11,  0x02
 	mfsprg	r30, 3
 	bne		PBX_PIH_0x38
@@ -438,7 +438,7 @@ GazellePIH
 	bl		SchSaveStartingAtR20
 ;	r8 = sprg0 (not used by me)
 
-	addi	r9, r1, PSA.BlueVecBase
+	addi	r9, r1, PSA.VecBasePIH
 	andis.	r8, r11,  0x02
 	mfsprg	r30, 3
 	bne		GazellePIH_0x38
@@ -526,7 +526,7 @@ TNT_PIH
 	bl		SchSaveStartingAtR20
 ;	r8 = sprg0 (not used by me)
 
-	addi	r9, r1, PSA.BlueVecBase
+	addi	r9, r1, PSA.VecBasePIH
 	andis.	r8, r11,  0x02
 	mfsprg	r30, 3
 	bne		TNT_PIH_0x38
@@ -602,7 +602,7 @@ GossamerPIH
 	bl		SchSaveStartingAtR20
 ;	r8 = sprg0 (not used by me)
 
-	addi	r9, r1, PSA.BlueVecBase
+	addi	r9, r1, PSA.VecBasePIH
 	andis.	r8, r11,  0x02
 	mfsprg	r30, 3
 	bne		GossamerPIH_0x38
@@ -695,7 +695,7 @@ NewWorldPowerBookPIH
 	bl		SchSaveStartingAtR20
 ;	r8 = sprg0 (not used by me)
 
-	addi	r9, r1, PSA.BlueVecBase
+	addi	r9, r1, PSA.VecBasePIH
 	andis.	r8, r11,  0x02
 	mfsprg	r30, 3
 	bne		NewWorldPowerBookPIH_0x38
@@ -772,7 +772,7 @@ CordycepsPIH
 	bl		SchSaveStartingAtR20
 ;	r8 = sprg0 (not used by me)
 
-	addi	r9, r1, PSA.BlueVecBase
+	addi	r9, r1, PSA.VecBasePIH
 	andis.	r8, r11,  0x02
 	mfsprg	r30, 3
 	bne		CordycepsPIH_0x38
@@ -836,7 +836,7 @@ NewWorldPIH
 	bl		SchSaveStartingAtR20
 ;	r8 = sprg0 (not used by me)
 
-	addi	r9, r1, PSA.BlueVecBase
+	addi	r9, r1, PSA.VecBasePIH
 	andis.	r8, r11,  0x02
 	mfsprg	r30, 3
 	bne		NewWorldPIH_0x38
@@ -1024,7 +1024,7 @@ UnknownPIH
 	bl		SchSaveStartingAtR20
 ;	r8 = sprg0 (not used by me)
 
-	addi	r9, r1, PSA.BlueVecBase
+	addi	r9, r1, PSA.VecBasePIH
 	andis.	r8, r11,  0x02
 	mfsprg	r30, 3
 	bne		UnknownPIH_0x38

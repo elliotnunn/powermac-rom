@@ -380,7 +380,7 @@ InitHighLevel
 	li		r22,	VecTable.Size
 	bl		wordfill
 
-	addi	r8, r1, KDP.VecBaseTranslation
+	addi	r8, r1, KDP.VecBaseMemRetry
 	li		r22,	VecTable.Size
 	bl		wordfill
 
@@ -388,7 +388,7 @@ InitHighLevel
 	li		r22,	VecTable.Size
 	bl		wordfill
 
-	addi	r8, r1, PSA.BlueVecBase
+	addi	r8, r1, PSA.VecBasePIH
 	li		r22,	VecTable.Size
 	bl		wordfill
 
@@ -399,7 +399,7 @@ InitHighLevel
 	llabel	r23, IgnoreSoftwareInt
 	add		r23, r23, r25
 
-	addi	r8, r1, PSA.GreenVecBase
+	addi	r8, r1, PSA.VecBaseScreenConsole
 	li		r22,	VecTable.Size
 	bl		wordfill
 
@@ -494,17 +494,17 @@ InitHighLevel
 
 ;	Fill the Translation vector table
 
-	addi	r8, r1, KDP.VecBaseTranslation
+	addi	r8, r1, KDP.VecBaseMemRetry
 
 	llabel	r23, panic
 	add		r23, r23, r25
 	stw		r23, VecTable.SystemResetVector(r8)
 
-	llabel	r23, IntMachineCheckMemRetry
+	llabel	r23, MemRetryMachineCheck
 	add		r23, r23, r25
 	stw		r23, VecTable.MachineCheckVector(r8)
 
-	llabel	r23, IntDSITranslation
+	llabel	r23, MemRetryDSI
 	add		r23, r23, r25
 	stw		r23, VecTable.DSIVector(r8)
 
@@ -550,7 +550,7 @@ InitHighLevel
 
 ;	Fill Blue (PSA)
 
-	addi	r8, r1, PSA.BlueVecBase
+	addi	r8, r1, PSA.VecBasePIH
 
 	llabel	r23, panic
 	add		r23, r23, r25
@@ -560,7 +560,7 @@ InitHighLevel
 	add		r23, r23, r25
 	stw		r23, VecTable.MachineCheckVector(r8)
 
-	llabel	r23, IntDSIOther
+	llabel	r23, PIHDSI
 	add		r23, r23, r25
 	stw		r23, VecTable.DSIVector(r8)
 

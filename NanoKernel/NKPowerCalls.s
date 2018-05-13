@@ -18,7 +18,7 @@ InitIdleVecTable
 	mflr	r9
 	llabel	r23, panic
 	add		r23, r23, r25
-	addi	r8, r1, PSA.IdleVecBase
+	addi	r8, r1, PSA.VecBaseIdle
 	li		r22, VecTable.Size
 	bl		wordfill
 	mtlr	r9
@@ -106,7 +106,7 @@ PwrIdle
 	;	Activate the interrupt table that will rouse the CPU
 
 	mfsprg	r31, 3				; will restore r31 => SPRG3 after state exited
-	addi	r8, r1, PSA.IdleVecBase
+	addi	r8, r1, PSA.VecBaseIdle
 	mtsprg	3, r8
 
 

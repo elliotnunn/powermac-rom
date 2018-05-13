@@ -78,7 +78,7 @@ ScreenConsole_redraw	;	OUTSIDE REFERER
 	mfcr	r15
 	stw		r14, PSA._3f0(r1)
 	stw		r15, PSA._3ec(r1)
-	addi	r26, r1, PSA.GreenVecBase
+	addi	r26, r1, PSA.VecBaseScreenConsole
 	mfsprg	r2, 3
 	mtsprg	3, r26
 	lwz		r26,  0x0edc(r1)
