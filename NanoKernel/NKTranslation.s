@@ -285,7 +285,7 @@ FDP_023c
 
 FDP_024c
 		li		r8, 18
-		b		DataLikeException
+		b		ExceptionMemRetried
 
 
 FDP_0254	;	stswi
@@ -2351,7 +2351,7 @@ FDP_1354
 		stw		r9,  0x0ea0(r6)
 		lwz		r6, -0x0014(r1)
 		lwz		r7, -0x0010(r1)
-		b		CodeLikeException
+		b		Exception
 
 
 

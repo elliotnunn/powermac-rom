@@ -148,9 +148,9 @@ SevenFFFDead2			ds.l	1	; -8dc
 SevenFFFDead3			ds.l	1	; -8d8
 SevenFFFDead4			ds.l	1	; -8d4
 VioletVecBase			ds.l	48	; -8d0:-810
-IdleVecBase				ds.l	48	; -810:-750 ; to wake from DOZE/NAP/SLEEP state
-BlueVecBase				ds.l	48	; -750:-690 ; gets enabled by PDM PIH
-GreenVecBase			ds.l	48	; -690:-5d0
+VecBaseIdle				ds.l	48	; -810:-750 ; to wake from DOZE/NAP/SLEEP state
+VecBasePIH				ds.l	48	; -750:-690 ; gets enabled by PDM PIH
+VecBaseScreenConsole	ds.l	48	; -690:-5d0
 DiagInfo				ds.b	256	; -5d0:-4d0
 ProcessorState			ds.b	128	; -4d0:-450 ; interesting what this gets used by
 FreeList				ds.l	4	; -450:-440
@@ -582,7 +582,7 @@ NCBPointerCacheEnd
 
 VecBaseSystem			ds.l	48	; 360:420 ; when 68k emulator is running, *or* any MTask
 VecBaseAlternate		ds.l	48	; 420:4e0 ; native PowerPC in blue task
-VecBaseTranslation		ds.l	48	; 4e0:5a0 ; "FDP" instruction emulation
+VecBaseMemRetry			ds.l	48	; 4e0:5a0 ; "FDP" instruction emulation
 OldKDP					ds.l	1	; 5a0 ; gotten from the old SPRG0
 OtherFreeThing			ds.l	1	; 5a4
 TopOfFreePages			ds.l	1	; 5a8 ; gotten from the old SPRG0
