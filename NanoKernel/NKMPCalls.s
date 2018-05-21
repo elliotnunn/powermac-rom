@@ -350,8 +350,6 @@ MPCall_1	;	OUTSIDE REFERER
 
 
 
-;	               KCRegisterCpuPlugin
-
 ;	ARG		MPCoherenceGroupID r3, CpuPluginPtr r4, CpuPluginSize r5, CpuPluginDesc r6
 ;	RET		OSStatus r3
 
@@ -860,9 +858,10 @@ MPCall_36	;	OUTSIDE REFERER
 ;	< r3    = MP result code
 ;	< r4    = next_id
 
-	DeclareMPCall	37, KCGetNextID
+	DeclareMPCall	37, MPGetNextID
 
-KCGetNextID	;	OUTSIDE REFERER
+MPGetNextID
+
 	mr		r8, r4
 	mr		r9, r3
 	bl		GetNextIDOfClass
@@ -886,9 +885,9 @@ KCGetNextID	;	OUTSIDE REFERER
 ;	ARG		ProcessID r3, IDClass r4, ID r5
 ;	RET		MPErr r3, IDClass r4, ID r5
 
-	DeclareMPCall	116, KCGetNextIDOwnedByProcess
+	DeclareMPCall	116, MPGetNextIDOwnedByProcess
 
-KCGetNextIDOwnedByProcess	;	OUTSIDE REFERER
+MPGetNextIDOwnedByProcess
 
 	;	Confirm that owner ID in r3 is a Process
 
@@ -1051,85 +1050,79 @@ MPCall_38_0x48
 
 
 
-	DeclareMPCall	62, MPCall_62
+	DeclareMPCall	62, MPGetNextCpuID
 
-MPCall_62	;	OUTSIDE REFERER
+MPGetNextCpuID
+
 	mr.		r8, r3
-	bne		MPCall_62_0x18
+	bne		@r3_nonzero
+
+;r3 zero
 	mfsprg	r15, 0
 	lwz		r31, EWA.CPUBase + CPU.LLL + LLL.Freeform(r15)
-	lwz		r3,  0x0000(r31)
-	b		MPCall_62_0x24
+	lwz		r3, 0(r31)
+	b		@endif
 
-MPCall_62_0x18
-;	r8 = id
+@r3_nonzero
  	bl		LookupID
 	cmpwi	r9, CoherenceGroup.kIDClass
-
 	bne		ReturnMPCallInvalidIDErr
+@endif
 
-MPCall_62_0x24
+@loop
 	mr		r8, r4
-	li		r9,  0x07
+	li		r9, CPU.kIDClass
 	bl		GetNextIDOfClass
-	cmpwi	r8,  0x00
+	cmpwi	r8, 0
 	beq		ReturnMPCallInvalidIDErr
+
 	mr		r4, r8
 
-;	r8 = id
 	bl		LookupID
-;	r8 = something not sure what
-;	r9 = 0:inval, 1:proc, 2:task, 3:timer, 4:q, 5:sema, 6:cr, 7:cpu, 8:addrspc, 9:evtg, 10:cohg, 11:area, 12:not, 13:log
-
-	lwz		r16,  0x0008(r8)
-	lwz		r17,  0x0000(r16)
+	lwz		r16, CPU.LLL + LLL.Freeform(r8)
+	lwz		r17, CPU.ID(r16)
 	cmpw	r17, r3
-	bne		MPCall_62_0x24
+	bne		@loop
+
 	b		ReturnZeroFromMPCall
 
 
 
-	DeclareMPCall	42, KCCreateCpuStruct
+	DeclareMPCall	42, MPCreateProcessor
 
-KCCreateCpuStruct	;	OUTSIDE REFERER
+MPCreateProcessor
+
 	mr.		r8, r3
-	bne		KCCreateCpuStruct_0x14
+	bne		@cgrpProvided
+
 	mfsprg	r15, 0
 	lwz		r30, EWA.CPUBase + CPU.LLL + LLL.Freeform(r15)
-	b		KCCreateCpuStruct_0x24
+	b		@gotCgrp
 
-KCCreateCpuStruct_0x14
-;	r8 = id
+@cgrpProvided
  	bl		LookupID
 	cmpwi	r9, CoherenceGroup.kIDClass
-
 	mr		r30, r8
 	bne		ReturnMPCallInvalidIDErr
 
-KCCreateCpuStruct_0x24
-	li		r8, 960
+@gotCgrp
 
-;	r1 = kdp
-;	r8 = size
+	li		r8, CPU.Size
 	bl		PoolAllocClear
-;	r8 = ptr
-
 	mr.		r31, r8
 	beq		ScrambleMPCall
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
-	li		r9,  0x07
-
-;	r1 = kdp
-;	r9 = kind
+	li		r9, CPU.kIDClass
 	bl		MakeID
-	cmpwi	r8,  0x00
-	bne+	KCCreateCpuStruct_0x68
+	cmpwi	r8, 0
+	bne+	@success
+
 	mr		r8, r31
 	bl		PoolFree
 	b		ReleaseAndScrambleMPCall
-KCCreateCpuStruct_0x68
+@success
 
 
 	stw		r8, CPU.ID(r31)
@@ -1193,7 +1186,6 @@ KCCreateCpuStruct_0x68
 	oris	r8, r8, 0xffff
 	stw		r8, 0x003c(r30)
 
-;	r1 = kdp
 	b		ReleaseAndReturnZeroFromMPCall
 
 
@@ -1242,11 +1234,11 @@ MPDeleteProcessor
 
 
 
-	DeclareMPCall	44, KCStartCPU
+	DeclareMPCall	44, MPStartScheduling
 
 ;	ARG		CpuID r3
 
-KCStartCPU	;	OUTSIDE REFERER
+MPStartScheduling
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
@@ -1380,34 +1372,30 @@ MPCall_44_0x15c
 
 
 
-;	                    KCStopScheduling
+	DeclareMPCall	45, MPStopScheduling
 
-
-	DeclareMPCall	45, KCStopScheduling
-
-KCStopScheduling	;	OUTSIDE REFERER
+MPStopScheduling
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
 	mr		r8, r3
-
-;	r8 = id
  	bl		LookupID
 	cmpwi	r9, CPU.kIDClass
-
 	bne		ReleaseAndReturnMPCallInvalidIDErr
-	mr		r30, r8
-	lwz		r16,  0x0018(r30)
-	rlwinm.	r8, r16,  0, 28, 28
 
-;	r1 = kdp
+	mr		r30, r8
+	lwz		r16, CPU.Flags(r30)
+	rlwinm.	r8, r16, 0, CPU.kFlagScheduled, CPU.kFlagScheduled
 	beq		ReleaseAndReturnZeroFromMPCall
-	lwz		r31,  0x001c(r30)
-	clrlwi.	r8, r16,  0x1f
+
+	lwz		r31, CPU.IdleTaskPtr(r30)
+
+	rlwinm.	r8, r16, 0, CPU.kFlag31, CPU.kFlag31
 	bne		ReleaseAndReturnMPCallOOM
-	lbz		r17,  0x0019(r31)
-	cmpwi	r17,  0x00
-	beq		KCStopScheduling_0x94
+
+	lbz		r17, Task.Priority(r31)
+	cmpwi	r17, Task.kCriticalPriority
+	beq		@running_critical_task
 
 	lwz		r17, Task.Flags(r31)
 	_bset	r17, r17, Task.kFlag8
@@ -1415,19 +1403,24 @@ KCStopScheduling	;	OUTSIDE REFERER
 
 	mr		r8, r31
 	bl		SchTaskUnrdy
-	li		r17,  0x00
-	stb		r17,  0x0019(r31)
+
+	li		r17, Task.kCriticalPriority
+	stb		r17, Task.Priority(r31)
+
 	mr		r8, r31
 	bl		SchRdyTaskLater
+
 	bl		CalculateTimeslice
+
 	mr		r8, r31
 	bl		FlagSchEval
-	lwz		r8,  0x064c(r1)
+
+	lwz		r8, KDP.PA_NanoKernelCode(r1)
 	llabel	r9, SchIdleTaskStopper
 	add		r8, r8, r9
-	stw		r8,  0x01fc(r31)
+	stw		r8, Task.ContextBlock + ContextBlock.CodePtr(r31)
 
-KCStopScheduling_0x94
+@running_critical_task
 	_AssertAndRelease	PSA.SchLock + Lock.Count, scratch=r16
 	b		MPCall_6_0x78
 
@@ -1486,25 +1479,25 @@ MPCall_48_Bad	;	OUTSIDE REFERER
 
 
 
-;	                       NKxprintf
+;	                       MPDebugPutString
 
 
-	DeclareMPCall	96, NKxprintf
+	DeclareMPCall	96, MPDebugPutString
 
-NKxprintf	;	OUTSIDE REFERER
+MPDebugPutString	;	OUTSIDE REFERER
 	rlwinm.	r9, r11,  0, 27, 27
 	mr		r8, r3
-	beq		NKxprintf_0x1c
+	beq		MPDebugPutString_0x1c
 	li		r9,  0x00
 	bl		SpaceL2PUsingBATs ; LogicalPage *r8, MPAddressSpace *r9 // PhysicalPage *r17
-	beq		NKxprintf_0x24
+	beq		MPDebugPutString_0x24
 	rlwimi	r8, r17,  0,  0, 19
 
-NKxprintf_0x1c
+MPDebugPutString_0x1c
 	bl		PrintS
 	b		ReturnZeroFromMPCall
 
-NKxprintf_0x24
+MPDebugPutString_0x24
 	_log	'NKxprintf (V->P translation error)^n'
 	b		ReturnMPCallOOM
 
@@ -1512,9 +1505,10 @@ NKxprintf_0x24
 
 ;	ARG		long r3, int r4 size (1:byte, 2:half, else:word)
 
-	DeclareMPCall	97, NKPrintHex
+	DeclareMPCall	97, MPDebugPutHex
 
-NKPrintHex
+MPDebugPutHex
+
 	mr		r8, r3
 
 	cmpwi	r4, 1
@@ -1537,46 +1531,40 @@ NKPrintHex
 
 
 
-	DeclareMPCall	124, NKPrintDecimal
+	DeclareMPCall	124, MPDebugPutDec
 
-NKPrintDecimal	;	OUTSIDE REFERER
+MPDebugPutDec
+
 	mr		r8, r3
 	bl		Printd
 	b		CommonMPCallReturnPath
 
 
 
-;	                   KCSetBlueProcessID
+	DeclareMPCall	99, MPSetBlueProcessID
 
+MPSetBlueProcessID
 
-	DeclareMPCall	99, KCSetBlueProcessID
-
-KCSetBlueProcessID	;	OUTSIDE REFERER
 	mfsprg	r16, 0
-	rlwinm.	r8, r7,  0, 10, 10
+	rlwinm.	r8, r7, 0, EWA.kFlagBlue, EWA.kFlagBlue
 	lwz		r31, EWA.PA_CurTask(r16)
-	beq		ReturnMPCallOOM
+	beq		ReturnMPCallOOM ; not in blue -> fail
+
 	mr		r8, r3
-
-;	r8 = id
 	bl		LookupID
-;	r8 = something not sure what
-;	r9 = 0:inval, 1:proc, 2:task, 3:timer, 4:q, 5:sema, 6:cr, 7:cpu, 8:addrspc, 9:evtg, 10:cohg, 11:area, 12:not, 13:log
-
 	cmpwi	r9, Process.kIDClass
 	bne		ReturnMPCallInvalidIDErr
+
 	stw		r3, Task.ProcessID(r31)
-	stw		r4, 0x00ec(r31)
+	stw		r4, Task.SomeLabelField(r31)
+
 	b		ReturnZeroFromMPCall
 
 
 
-;	                KCRegisterThermalHandler
+	DeclareMPCall	104, MPRegisterThermalHandler
 
-
-	DeclareMPCall	104, KCRegisterThermalHandler
-
-KCRegisterThermalHandler	;	OUTSIDE REFERER
+MPRegisterThermalHandler
 
 	_Lock		PSA.SchLock, scratch1=r16, scratch2=r17
 
@@ -1593,12 +1581,9 @@ KCRegisterThermalHandler	;	OUTSIDE REFERER
 
 
 
-;	                  KCRegisterPMFHandler
+	DeclareMPCall	105, MPRegisterPMFHandler
 
-
-	DeclareMPCall	105, KCRegisterPMFHandler
-
-KCRegisterPMFHandler	;	OUTSIDE REFERER
+MPRegisterPMFHandler
 
 	_Lock		PSA.SchLock, scratch1=r16, scratch2=r17
 
@@ -1615,12 +1600,9 @@ KCRegisterPMFHandler	;	OUTSIDE REFERER
 
 
 
-;	                     KCMarkPMFTask
+	DeclareMPCall	106, MPMarkPMFTask
 
-
-	DeclareMPCall	106, KCMarkPMFTask
-
-KCMarkPMFTask	;	OUTSIDE REFERER
+MPMarkPMFTask
 
 	_Lock		PSA.SchLock, scratch1=r16, scratch2=r17
 
@@ -2025,14 +2007,11 @@ MPCall_115_0x144
 
 
 
-;	               KCRegisterExternalHandler
-
 ;	Point external interrupts (thing PIHes) towards this notification
 
+	DeclareMPCall	121, MPRegisterExternalHandler
 
-	DeclareMPCall	121, KCRegisterExternalHandler
-
-KCRegisterExternalHandler
+MPRegisterExternalHandler
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
