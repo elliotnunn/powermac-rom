@@ -350,8 +350,6 @@ MPCall_1	;	OUTSIDE REFERER
 
 
 
-;	               KCRegisterCpuPlugin
-
 ;	ARG		MPCoherenceGroupID r3, CpuPluginPtr r4, CpuPluginSize r5, CpuPluginDesc r6
 ;	RET		OSStatus r3
 
@@ -860,9 +858,10 @@ MPCall_36	;	OUTSIDE REFERER
 ;	< r3    = MP result code
 ;	< r4    = next_id
 
-	DeclareMPCall	37, KCGetNextID
+	DeclareMPCall	37, MPGetNextID
 
-KCGetNextID	;	OUTSIDE REFERER
+MPGetNextID
+
 	mr		r8, r4
 	mr		r9, r3
 	bl		GetNextIDOfClass
@@ -886,9 +885,9 @@ KCGetNextID	;	OUTSIDE REFERER
 ;	ARG		ProcessID r3, IDClass r4, ID r5
 ;	RET		MPErr r3, IDClass r4, ID r5
 
-	DeclareMPCall	116, KCGetNextIDOwnedByProcess
+	DeclareMPCall	116, MPGetNextIDOwnedByProcess
 
-KCGetNextIDOwnedByProcess	;	OUTSIDE REFERER
+MPGetNextIDOwnedByProcess
 
 	;	Confirm that owner ID in r3 is a Process
 
@@ -2008,14 +2007,11 @@ MPCall_115_0x144
 
 
 
-;	               KCRegisterExternalHandler
-
 ;	Point external interrupts (thing PIHes) towards this notification
 
+	DeclareMPCall	121, MPRegisterExternalHandler
 
-	DeclareMPCall	121, KCRegisterExternalHandler
-
-KCRegisterExternalHandler
+MPRegisterExternalHandler
 
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
