@@ -3,3 +3,8 @@ SetDirectory "{Parent}"								# too easy
 
 Make -w > :BuildResults:BuildOut
 :BuildResults:BuildOut
+
+# So that PowerROM is definitely the newest thing in the tree!
+SetDirectory :BuildResults:
+Catenate PowerROM > PowerROM_
+Rename -y PowerROM_ PowerROM

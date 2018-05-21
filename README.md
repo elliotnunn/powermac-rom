@@ -52,7 +52,15 @@ Using EMPW, that's:
 
 	empw -b EasyBuild
 
+Even nicer is this Unix shell script, which avoids unnecessary launches of the emulator:
+
+	./EasyBuild.sh
+
 The 4 MB image will be at `BuildResults/PowerROM`.
+
+Using a different 68k ROM image
+-------------------------------
+Clone https://github.com/elliotnunn/mac-rom next door to this repo, and uncomment the "Diving into mac-rom repo" lines in `EasyBuild.sh`
 
 What's next?
 ------------
