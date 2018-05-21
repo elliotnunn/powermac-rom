@@ -7,6 +7,12 @@ MainTarget				Ä	{ResultDir}PowerROM
 
 
 
+{LinkerDir}LinkPowerROM.tool	Ä	{LinkerDir}LinkPowerROM.c
+	SC -o "{TempFolder}LinkPowerROM.o" {Deps}
+	ILink -d -t MPST -c 'MPS ' -o {Targ} "{Libraries}Stubs.o" "{CLibraries}StdCLib.o" "{Libraries}MacRuntime.o" "{Libraries}IntEnv.o" "{Libraries}Interface.o" "{TempFolder}LinkPowerROM.o"
+
+
+
 RomBin					=	:RomMondo.bin
 
 
@@ -38,7 +44,7 @@ EmulatorBin				=	Emulator.x
 
 
 
-{ResultDir}PowerROM		Ä	{RomBin} {ExceptionTableBin} {ConfigInfoBin} {NKBin} {EmulatorBin}
+{ResultDir}PowerROM		Ä	{LinkerDir}LinkPowerROM.tool {RomBin} {ExceptionTableBin} {ConfigInfoBin} {NKBin} {EmulatorBin}
 	{LinkerDir}LinkPowerROM {Targ}						¶
 		RomTop:											¶
 			0x000000 Mac68kRomTop:						¶
@@ -48,7 +54,7 @@ EmulatorBin				=	Emulator.x
 			0x300000 ExTblTop:							¶
 				{ExceptionTableBin}						¶
 														¶
-			0x30d000 ConfigInfoChecksum:				¶
+			0x30d000 CHECKSUM							¶
 				{ConfigInfoBin}							¶
 														¶
 			0x310000 NKTop:								¶
@@ -57,4 +63,4 @@ EmulatorBin				=	Emulator.x
 			0x360000									¶
 				{EmulatorBin}							¶
 		0x400000 RomBtm:								¶
-		> {ResultDir}LinkerScript ; {ResultDir}LinkerScript
+		> Dev:Null # unless you want debug output
