@@ -163,24 +163,27 @@ def MRAlignLoads():
     waterfall = FINAL_LOADSTORE_LIST
 
     for wi in range(len(waterfall)):
-        thisone = waterfall[wi]
+        sizes = waterfall[wi]
 
-        label('MRLoad' + thisone)
+        label('MRLoad' + sizes)
 
-        size_list = [int(x) for x in thisone]
-        this_size = size_list[0]
-        total_size = sum(size_list)
-        remain_size = sum(size_list[1:])
+        sizes_as_list = [int(x) for x in sizes]
+        this_size = sizes_as_list[0]
+        total_size = sum(sizes_as_list)
+        remain_size = sum(sizes_as_list[1:])
 
-        if thisone == '8': # 2 x lwz
+
+        # PART 1: load a number of bytes equal to the first element in "sizes"
+
+        if sizes == '8': # special case
             directive('lwz', 'mrLow', '-8(mrBase)')
             directive('lwz', 'mrHigh', '-4(mrBase)')
 
-        elif thisone == '44': # just do a straight load of the first 4, no scratch
+        elif sizes == '44': # special case: no need for scratch register
             directive('lwz', 'mrHigh', '-%d(mrBase)' % total_size)
             directive('subi', 'mrCtr', 'mrCtr', 2 * this_size)
 
-        elif thisone == '4': # special case: emulate lwarx if asked
+        elif sizes == '4': # special case: emulate lwarx if asked
             directive('bc', 'BO_IF', 23, '@atomic')
             directive('lwz', 'mrLow', '-4(mrBase)')
             directive('b', 'MRExecuted')
@@ -192,7 +195,7 @@ def MRAlignLoads():
             inst = {1: 'lbz', 2: 'lhz', 4: 'lwz'}[this_size]
 
             directive(inst, 'mrScratch', '-%d(mrBase)' % total_size)
-            if len(thisone) > 1: directive('subi', 'mrCtr', 'mrCtr', 2 * this_size)
+            if len(sizes) > 1: directive('subi', 'mrCtr', 'mrCtr', 2 * this_size)
 
             for regexponent, regname in [(4,'mrHigh'), (0,'mrLow')]:
                 thisexponent = remain_size
@@ -209,20 +212,21 @@ def MRAlignLoads():
 
                 directive('rlwimi', regname, 'mrScratch', normlshift(lshift), '0x%08X' % mask)
 
-        # We've done our load. Now jump to the proc that does the rest of them!
 
-        if thisone[1:] == '4': # special case... inline an lwz!
+        # PART 2: jump somewhere that will do the rest of the loads in "sizes"
+
+        if sizes[1:] == '4': # special case: inline an lwz instead of jumping to 'MRLoad4'
             directive('lwz', 'mrLow', '-4(mrBase)')
             directive('b', 'MRExecuted')
 
-        elif remain_size == 0:
+        elif remain_size == 0: # finished executing
             directive('b', 'MRExecuted')
 
-        elif wi + 1 < len(waterfall) and waterfall[wi+1] == thisone[1:]:
-            pass # fall through
+        elif wi + 1 < len(waterfall) and waterfall[wi+1] == sizes[1:]: # fall through
+            pass
 
         else:
-            directive('b', 'MRLoad' + thisone[1:])
+            directive('b', 'MRLoad' + sizes[1:])
 
         print()
 
