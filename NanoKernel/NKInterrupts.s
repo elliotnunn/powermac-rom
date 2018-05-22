@@ -366,7 +366,7 @@ IntReturnToOtherBlueContext
 
 IntReturn	;	OUTSIDE REFERER
 
-	andi.	r8, r7, (1 << (31 - 26)) | (1 << (31 - 27))
+	andi.	r8, r7, (1 << (31 - EWA.kFlag26)) | (1 << (31 - EWA.kFlagLowSaves))
 	mfsprg	r1, 0
 	bnel	major_0x02ccc								; my counters say almost never called!
 	li		r8, 0
@@ -457,7 +457,7 @@ major_0x02ccc_0x30
 	isync
 	rlwimi	r25, r26,  2, 22, 29		; apparently the lower byte of the entry is an FDP (code?) offset, /4!
 	bnelr
-	b		FDP_011c
+	b		MRExecuted
 
 
 
@@ -1139,7 +1139,7 @@ FDP_TableBase		equ		0xa00
 
 
 
-major_0x03548	;	OUTSIDE REFERER
+IcbiNextBlock ; msr r14 //	;	OUTSIDE REFERER
 	sync
 	mtmsr	r14
 	isync

@@ -141,29 +141,29 @@ FDP_00e8	;	lwbrx, lhbrx, lmw, lhzu(x), lhfsu(x), lfdu(x)
 		b		FDP_03AC
 
 
-FDP_00f4
+MRStore4bToWordMod2
 		srwi	r23, r21, 16
-		sth		r23, -0x0004(r19)
+		sth		r23, -4(r19)
 		subi	r17, r17, 4
-		sth		r21, -0x0002(r19)
-		b		FDP_011C
+		sth		r21, -4(r19)
+		b		MRExecuted
 
-
-FDP_0108
-		lhz		r23, -0x0004(r19)
+MRLoad22
+		lhz		r23, -4(r19)
 		subi	r17, r17, 4
 		insrwi	r21, r23, 16, 0
-
-
-FDP_0114
-		lhz		r23, -0x0002(r19)
+MRLoad2
+		lhz		r23, -2(r19)
 		insrwi	r21, r23, 16, 16
 
 
 FDP_011c	;	exported, r25 = address of routine in MixedTable
+MRExecuted
 		li		r0, -3
 		sc
-		bl		major_0x03548
+
+		bl		IcbiNextBlock ; msr r14 //
+
 		rlwinm.	r28, r17, 18, 25, 29
 		mtlr	r25
 		mfsprg	r1, 0
@@ -285,7 +285,7 @@ FDP_023c
 
 FDP_024c
 		li		r8, 18
-		b		ExceptionMemRetried
+		b		DataLikeException
 
 
 FDP_0254	;	stswi
@@ -441,30 +441,38 @@ FDP_03ac
 		isync
 		insrwi	r25, r26, 8, 22
 		bnelr
-		b		FDP_011C
+		b		MRExecuted
+
+
+
+
+
+
+
+
 
 
 FDP_03ec
-		lbz		r23, -0x0008(r19)
+		lbz		r23, -8(r19)
 		subi	r17, r17, 2
 		insrwi	r20, r23, 8, 0
 
 
 FDP_03f8
-		lhz		r23, -0x0007(r19)
+		lhz		r23, -7(r19)
 		subi	r17, r17, 4
 		insrwi	r20, r23, 16, 8
 		b		FDP_0414
 
 
 FDP_0408
-		lbz		r23, -0x0006(r19)
+		lbz		r23, -6(r19)
 		subi	r17, r17, 2
 		insrwi	r20, r23, 8, 16
 
 
 FDP_0414
-		lwz		r23, -0x0005(r19)
+		lwz		r23, -5(r19)
 		subi	r17, r17, 8
 		inslwi	r20, r23, 8, 24
 		insrwi	r21, r23, 24, 0
@@ -472,12 +480,12 @@ FDP_0414
 
 
 FDP_0428
-		lbz		r23, -0x0008(r19)
+		lbz		r23, -8(r19)
 		subi	r17, r17, 2
 		insrwi	r20, r23, 8, 0
 
 FDP_0434
-		lwz		r23, -0x0007(r19)
+		lwz		r23, -7(r19)
 		subi	r17, r17, 8
 		inslwi	r20, r23, 24, 8
 		insrwi	r21, r23, 8, 0
@@ -485,13 +493,13 @@ FDP_0434
 
 
 FDP_0448
-		lbz		r23, -0x0006(r19)
+		lbz		r23, -6(r19)
 		subi	r17, r17, 2
 		insrwi	r20, r23, 8, 16
 
 
 FDP_0454
-		lhz		r23, -0x0005(r19)
+		lhz		r23, -5(r19)
 		subi	r17, r17, 4
 		rlwimi	r20, r23, 24, 24, 31
 		insrwi	r21, r23, 8, 0
@@ -499,110 +507,110 @@ FDP_0454
 
 
 FDP_0468
-		lbz		r23, -0x0004(r19)
+		lbz		r23, -4(r19)
 		subi	r17, r17, 2
 		insrwi	r21, r23, 8, 0
 
 
 FDP_0474
-		lhz		r23, -0x0003(r19)
+		lhz		r23, -3(r19)
 		subi	r17, r17, 4
 		insrwi	r21, r23, 16, 8
 		b		FDP_0490
 
 
 FDP_0484
-		lbz		r23, -0x0002(r19)
+		lbz		r23, -2(r19)
 		subi	r17, r17, 2
 		insrwi	r21, r23, 8, 16
 
 
 FDP_0490
-		lbz		r23, -0x0001(r19)
+		lbz		r23, -1(r19)
 		insrwi	r21, r23, 8, 24
-		b		FDP_011C
+		b		MRExecuted
 
 
 FDP_049c
-		lhz		r23, -0x0008(r19)
+		lhz		r23, -8(r19)
 		subi	r17, r17, 4
 		insrwi	r20, r23, 16, 0
 		b		FDP_04B8
 
 
 FDP_04ac
-		lbz		r23, -0x0007(r19)
+		lbz		r23, -7(r19)
 		subi	r17, r17, 2
 		insrwi	r20, r23, 8, 8
 
 
 FDP_04b8
-		lwz		r23, -0x0006(r19)
+		lwz		r23, -6(r19)
 		subi	r17, r17, 8
 		inslwi	r20, r23, 16, 16
 		insrwi	r21, r23, 16, 0
-		b		FDP_0114
+		b		MRLoad2bFromWordMod2
 
 
 FDP_04cc
-		lbz		r23, -0x0005(r19)
+		lbz		r23, -5(r19)
 		subi	r17, r17, 2
 		insrwi	r20, r23, 8, 24
-		b		FDP_0108
+		b		MRLoad4bFromWordMod2
 
 
 FDP_04dc
-		lbz		r23, -0x0003(r19)
+		lbz		r23, -3(r19)
 		subi	r17, r17, 2
 		insrwi	r21, r23, 8, 8
-		b		FDP_0114
+		b		MRLoad2bFromWordMod2
 
 
 FDP_04ec
-		lwz		r20, -0x0008(r19)
+		lwz		r20, -8(r19)
 		subi	r17, r17, 8
-		lwz		r21, -0x0004(r19)
-		b		FDP_011C
+		lwz		r21, -4(r19)
+		b		MRExecuted
 
 
 FDP_04fc
-		lbz		r23, -0x0007(r19)
+		lbz		r23, -7(r19)
 		subi	r17, r17, 2
 		insrwi	r20, r23, 8, 8
 
 
 FDP_0508
-		lhz		r23, -0x0006(r19)
+		lhz		r23, -6(r19)
 		subi	r17, r17, 4
 		insrwi	r20, r23, 16, 16
-		lwz		r21, -0x0004(r19)
-		b		FDP_011C
+		lwz		r21, -4(r19)
+		b		MRExecuted
 
 
 FDP_051c
-		lbz		r23, -0x0005(r19)
+		lbz		r23, -5(r19)
 		subi	r17, r17, 2
 		insrwi	r20, r23, 8, 24
-		lwz		r21, -0x0004(r19)
-		b		FDP_011C
+		lwz		r21, -4(r19)
+		b		MRExecuted
 
 
 FDP_0530
 		bso		cr5, FDP_053C
-		lwz		r21, -0x0004(r19)
-		b		FDP_011C
+		lwz		r21, -4(r19)
+		b		MRExecuted
 
 
 FDP_053c
 		li		r23, -4
 		lwarx	r21, r23, r19
-		b		FDP_011C
+		b		MRExecuted
 
 
 FDP_0548
-		lwz		r20, -0x0008(r19)
-		lwz		r21, -0x0004(r19)
-		b		FDP_011C
+		lwz		r20, -8(r19)
+		lwz		r21, -4(r19)
+		b		MRExecuted
 
 
 FDP_0554
@@ -617,155 +625,155 @@ FDP_0554
 
 FDP_0570
 		srwi	r23, r20, 24
-		stb		r23, -0x0008(r19)
+		stb		r23, -8(r19)
 		subi	r17, r17, 2
 
 
 FDP_057c
 		srwi	r23, r20, 8
-		sth		r23, -0x0007(r19)
+		sth		r23, -7(r19)
 		subi	r17, r17, 4
 		b		FDP_0598
 
 
 FDP_058c
 		srwi	r23, r20, 8
-		stb		r23, -0x0006(r19)
+		stb		r23, -6(r19)
 		subi	r17, r17, 2
 
 
 FDP_0598
 		srwi	r23, r21, 8
 		insrwi	r23, r20, 8, 0
-		stw		r23, -0x0005(r19)
+		stw		r23, -5(r19)
 		subi	r17, r17, 8
-		stb		r21, -0x0001(r19)
-		b		FDP_011C
+		stb		r21, -1(r19)
+		b		MRExecuted
 
 
 FDP_05b0
 		srwi	r23, r20, 24
-		stb		r23, -0x0008(r19)
+		stb		r23, -8(r19)
 		subi	r17, r17, 2
 
 
 FDP_05bc
 		srwi	r23, r21, 24
 		insrwi	r23, r20, 24, 0
-		stw		r23, -0x0007(r19)
+		stw		r23, -7(r19)
 		subi	r17, r17, 8
 		b		FDP_05FC
 
 
 FDP_05d0
 		srwi	r23, r20, 8
-		stb		r23, -0x0006(r19)
+		stb		r23, -6(r19)
 		subi	r17, r17, 2
 
 
 FDP_05dc
 		srwi	r23, r21, 24
 		insrwi	r23, r20, 8, 16
-		sth		r23, -0x0005(r19)
+		sth		r23, -5(r19)
 		subi	r17, r17, 4
 		b		FDP_05FC
 
 
 FDP_05f0
 		srwi	r23, r21, 24
-		stb		r23, -0x0004(r19)
+		stb		r23, -4(r19)
 		subi	r17, r17, 2
 
 
 FDP_05fc
 		srwi	r23, r21, 8
-		sth		r23, -0x0003(r19)
+		sth		r23, -3(r19)
 		subi	r17, r17, 4
-		stb		r21, -0x0001(r19)
-		b		FDP_011C
+		stb		r21, -1(r19)
+		b		MRExecuted
 
 
 FDP_0610
 		srwi	r23, r21, 8
-		stb		r23, -0x0002(r19)
+		stb		r23, -2(r19)
 		subi	r17, r17, 2
 
 
 FDP_061c
-		stb		r21, -0x0001(r19)
-		b		FDP_011C
+		stb		r21, -1(r19)
+		b		MRExecuted
 
 
 FDP_0624
 		srwi	r23, r20, 16
-		sth		r23, -0x0008(r19)
+		sth		r23, -8(r19)
 		subi	r17, r17, 4
 		b		FDP_0640
 
 
 FDP_0634
 		srwi	r23, r20, 16
-		stb		r23, -0x0007(r19)
+		stb		r23, -7(r19)
 		subi	r17, r17, 2
 
 
 FDP_0640
 		srwi	r23, r21, 16
 		insrwi	r23, r20, 16, 0
-		stw		r23, -0x0006(r19)
+		stw		r23, -6(r19)
 		subi	r17, r17, 8
-		sth		r21, -0x0002(r19)
-		b		FDP_011C
+		sth		r21, -2(r19)
+		b		MRExecuted
 
 
 FDP_0658
-		stb		r20, -0x0005(r19)
+		stb		r20, -5(r19)
 		subi	r17, r17, 2
-		b		FDP_00F4
+		b		MRStore4bToWordMod2
 
 
 FDP_0664
 		srwi	r23, r21, 16
-		stb		r23, -0x0003(r19)
+		stb		r23, -3(r19)
 		subi	r17, r17, 2
 
 
 FDP_0670
-		sth		r21, -0x0002(r19)
-		b		FDP_011C
+		sth		r21, -2(r19)
+		b		MRExecuted
 
 
 FDP_0678
-		stw		r20, -0x0008(r19)
+		stw		r20, -8(r19)
 		subi	r17, r17, 8
-		stw		r21, -0x0004(r19)
-		b		FDP_011C
+		stw		r21, -4(r19)
+		b		MRExecuted
 
 
 FDP_0688
 		srwi	r23, r20, 16
-		stb		r23, -0x0007(r19)
+		stb		r23, -7(r19)
 		subi	r17, r17, 2
 
 
 FDP_0694
-		sth		r20, -0x0006(r19)
+		sth		r20, -6(r19)
 		subi	r17, r17, 4
-		stw		r21, -0x0004(r19)
-		b		FDP_011C
+		stw		r21, -4(r19)
+		b		MRExecuted
 
 
 FDP_06a4
-		stb		r20, -0x0005(r19)
+		stb		r20, -5(r19)
 		subi	r17, r17, 2
-		stw		r21, -0x0004(r19)
-		b		FDP_011C
+		stw		r21, -4(r19)
+		b		MRExecuted
 
 
 FDP_06b4
 		bso		cr5, FDP_06C0
-		stw		r21, -0x0004(r19)
-		b		FDP_011C
+		stw		r21, -4(r19)
+		b		MRExecuted
 
 
 FDP_06c0
@@ -774,13 +782,13 @@ FDP_06c0
 		isync
 		mfcr	r23
 		rlwimi	r13, r23, 0, 0, 3
-		b		FDP_011C
+		b		MRExecuted
 
 
 FDP_06d8
-		stw		r20, -0x0008(r19)
-		stw		r21, -0x0004(r19)
-		b		FDP_011C
+		stw		r20, -8(r19)
+		stw		r21, -4(r19)
+		b		MRExecuted
 
 
 FDP_06e4
@@ -1666,13 +1674,13 @@ HalfWordTable										;	FDP + 0xc00
 		HalfWordTableEntry		 38,	FDP_0670
 		HalfWordTableEntry		 39,	FDP_0610
 
-		HalfWordTableEntry		 40,	FDP_0114
+		HalfWordTableEntry		 40,	MRLoad2bFromWordMod2
 		HalfWordTableEntry		 41,	FDP_0484
-		HalfWordTableEntry		 42,	FDP_0114
+		HalfWordTableEntry		 42,	MRLoad2bFromWordMod2
 		HalfWordTableEntry		 43,	FDP_0484
-		HalfWordTableEntry		 44,	FDP_0114
+		HalfWordTableEntry		 44,	MRLoad2bFromWordMod2
 		HalfWordTableEntry		 45,	FDP_0484
-		HalfWordTableEntry		 46,	FDP_0114
+		HalfWordTableEntry		 46,	MRLoad2bFromWordMod2
 		HalfWordTableEntry		 47,	FDP_0484
 
 		HalfWordTableEntry		 48,	FDP_0664
@@ -1695,20 +1703,20 @@ HalfWordTable										;	FDP + 0xc00
 
 		HalfWordTableEntry		 64,	FDP_06b4
 		HalfWordTableEntry		 65,	FDP_05f0
-		HalfWordTableEntry		 66,	FDP_00f4
+		HalfWordTableEntry		 66,	MRStore4bToWordMod2
 		HalfWordTableEntry		 67,	FDP_05f0
 		HalfWordTableEntry		 68,	FDP_06b4
 		HalfWordTableEntry		 69,	FDP_05f0
-		HalfWordTableEntry		 70,	FDP_00f4
+		HalfWordTableEntry		 70,	MRStore4bToWordMod2
 		HalfWordTableEntry		 71,	FDP_05f0
 
 		HalfWordTableEntry		 72,	FDP_0530
 		HalfWordTableEntry		 73,	FDP_0468
-		HalfWordTableEntry		 74,	FDP_0108
+		HalfWordTableEntry		 74,	MRLoad4bFromWordMod2
 		HalfWordTableEntry		 75,	FDP_0468
 		HalfWordTableEntry		 76,	FDP_0530
 		HalfWordTableEntry		 77,	FDP_0468
-		HalfWordTableEntry		 78,	FDP_0108
+		HalfWordTableEntry		 78,	MRLoad4bFromWordMod2
 		HalfWordTableEntry		 79,	FDP_0468
 
 		HalfWordTableEntry		 80,	FDP_06a4
@@ -2351,7 +2359,7 @@ FDP_1354
 		stw		r9,  0x0ea0(r6)
 		lwz		r6, -0x0014(r1)
 		lwz		r7, -0x0010(r1)
-		b		Exception
+		b		CodeLikeException
 
 
 
@@ -3841,69 +3849,69 @@ major_0x07d80_0x20	;	OUTSIDE REFERER
 
 FDP_2620
 		dc.l	0x7C00B8CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7C20B8CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7C40B8CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7C60B8CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7C80B8CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7CA0B8CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7CC0B8CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7CE0B8CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7D00B8CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7D20B8CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7D40B8CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7D60B8CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7D80B8CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7DA0B8CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7DC0B8CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7DE0B8CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7E00B8CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7E20B8CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7E40B8CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7E60B8CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7E80B8CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7EA0B8CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7EC0B8CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7EE0B8CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7F00B8CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7F20B8CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7F40B8CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7F60B8CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7F80B8CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7FA0B8CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7FC0B8CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7FE0B8CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7C00B80E
 		b		FDP_0DA0
 		dc.l	0x7C20B80E
@@ -3968,6 +3976,7 @@ FDP_2620
 		b		FDP_0DA0
 		dc.l	0x7FE0B80E
 		b		FDP_0DA0
+SixEFourPointsHere
 		dc.l	0x7C00B84E
 		b		FDP_0DA0
 		dc.l	0x7C20B84E
@@ -4097,69 +4106,69 @@ FDP_2620
 		dc.l	0x7FE0B88E
 		b		FDP_0DA0
 		dc.l	0x7C00B9CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7C20B9CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7C40B9CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7C60B9CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7C80B9CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7CA0B9CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7CC0B9CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7CE0B9CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7D00B9CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7D20B9CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7D40B9CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7D60B9CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7D80B9CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7DA0B9CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7DC0B9CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7DE0B9CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7E00B9CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7E20B9CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7E40B9CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7E60B9CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7E80B9CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7EA0B9CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7EC0B9CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7EE0B9CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7F00B9CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7F20B9CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7F40B9CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7F60B9CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7F80B9CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7FA0B9CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7FC0B9CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7FE0B9CE
-		b		FDP_011C
+		b		MRExecuted
 		dc.l	0x7C00B90E
 		b		FDP_104C
 		dc.l	0x7C20B90E
