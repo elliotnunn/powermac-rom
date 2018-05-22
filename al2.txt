@@ -1,0 +1,137 @@
+MRLoad1241
+		lbz		mrScratch, -8(mrBase)
+		subi	mrCtr, mrCtr, 2
+		rlwimi	mrHigh, mrScratch, 8, 0xFF000000
+
+MRLoad241
+		lhz		mrScratch, -7(mrBase)
+		subi	mrCtr, mrCtr, 4
+		rlwimi	mrHigh, mrScratch, 24, 0x00FFFF00
+		b		MRLoad41
+
+MRLoad141
+		lbz		mrScratch, -6(mrBase)
+		subi	mrCtr, mrCtr, 2
+		rlwimi	mrHigh, mrScratch, 24, 0x0000FF00
+
+MRLoad41
+		lwz		mrScratch, -5(mrBase)
+		subi	mrCtr, mrCtr, 8
+		rlwimi	mrHigh, mrScratch, 24, 0x000000FF
+		rlwimi	mrLow, mrScratch, 24, 0xFFFFFF00
+		b		MRLoad1
+
+MRLoad1421
+		lbz		mrScratch, -8(mrBase)
+		subi	mrCtr, mrCtr, 2
+		rlwimi	mrHigh, mrScratch, 8, 0xFF000000
+
+MRLoad421
+		lwz		mrScratch, -7(mrBase)
+		subi	mrCtr, mrCtr, 8
+		rlwimi	mrHigh, mrScratch, 8, 0x00FFFFFF
+		rlwimi	mrLow, mrScratch, 8, 0xFF000000
+		b		MRLoad21
+
+MRLoad1221
+		lbz		mrScratch, -6(mrBase)
+		subi	mrCtr, mrCtr, 2
+		rlwimi	mrHigh, mrScratch, 24, 0x0000FF00
+
+MRLoad221
+		lhz		mrScratch, -5(mrBase)
+		subi	mrCtr, mrCtr, 4
+		rlwimi	mrHigh, mrScratch, 8, 0x000000FF
+		rlwimi	mrLow, mrScratch, 8, 0xFF000000
+		b		MRLoad21
+
+MRLoad121
+		lbz		mrScratch, -4(mrBase)
+		subi	mrCtr, mrCtr, 2
+		rlwimi	mrLow, mrScratch, 8, 0xFF000000
+
+MRLoad21
+		lhz		mrScratch, -3(mrBase)
+		subi	mrCtr, mrCtr, 4
+		rlwimi	mrLow, mrScratch, 24, 0x00FFFF00
+		b		MRLoad1
+
+MRLoad11
+		lbz		mrScratch, -2(mrBase)
+		subi	mrCtr, mrCtr, 2
+		rlwimi	mrLow, mrScratch, 24, 0x0000FF00
+
+MRLoad1
+		lbz		mrScratch, -1(mrBase)
+		rlwimi	mrLow, mrScratch, 0, 0x000000FF
+		b		MRExecuted
+
+MRLoad242
+		lhz		mrScratch, -8(mrBase)
+		subi	mrCtr, mrCtr, 4
+		rlwimi	mrHigh, mrScratch, 16, 0xFFFF0000
+		b		MRLoad42
+
+MRLoad142
+		lbz		mrScratch, -7(mrBase)
+		subi	mrCtr, mrCtr, 2
+		rlwimi	mrHigh, mrScratch, 16, 0x00FF0000
+
+MRLoad42
+		lwz		mrScratch, -6(mrBase)
+		subi	mrCtr, mrCtr, 8
+		rlwimi	mrHigh, mrScratch, 16, 0x0000FFFF
+		rlwimi	mrLow, mrScratch, 16, 0xFFFF0000
+		b		MRLoad2
+
+MRLoad122
+		lbz		mrScratch, -5(mrBase)
+		subi	mrCtr, mrCtr, 2
+		rlwimi	mrHigh, mrScratch, 0, 0x000000FF
+		b		MRLoad22
+
+MRLoad12
+		lbz		mrScratch, -3(mrBase)
+		subi	mrCtr, mrCtr, 2
+		rlwimi	mrLow, mrScratch, 16, 0x00FF0000
+		b		MRLoad2
+
+MRLoad44
+		lwz		mrHigh, -8(mrBase)
+		subi	mrCtr, mrCtr, 8
+		lwz		mrLow, -4(mrBase)
+		b		MRExecuted
+
+MRLoad124
+		lbz		mrScratch, -7(mrBase)
+		subi	mrCtr, mrCtr, 2
+		rlwimi	mrHigh, mrScratch, 16, 0x00FF0000
+
+MRLoad24
+		lhz		mrScratch, -6(mrBase)
+		subi	mrCtr, mrCtr, 4
+		rlwimi	mrHigh, mrScratch, 0, 0x0000FFFF
+		lwz		mrLow, -4(mrBase)
+		b		MRExecuted
+
+MRLoad14
+		lbz		mrScratch, -5(mrBase)
+		subi	mrCtr, mrCtr, 2
+		rlwimi	mrHigh, mrScratch, 0, 0x000000FF
+		lwz		mrLow, -4(mrBase)
+		b		MRExecuted
+
+MRLoad4
+		bc		BO_IF, 23, @atomic
+		lwz		mrLow, -4(mrBase)
+		b		MRExecuted
+@atomic
+		li		mrScratch, -4
+		lwarx	mrScratch, mrBase
+		b		MRExecuted
+
+MRLoad8
+		lwz		mrLow, -8(mrBase)
+		lwz		mrHigh, -4(mrBase)
+		b		MRExecuted
+

@@ -151,6 +151,12 @@ MRLoadVector
 		_bset	r11, r11, 6
 		blr
 
+
+
+
+
+
+
 MRStore1241
 		srwi	mrScratch, mrHigh, 24
 		stb		mrScratch, -8(mrBase)

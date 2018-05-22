@@ -940,7 +940,7 @@ print_memory_logical_0x8
 
 print_memory_logical_0x24
 	mr		r27, r16
-	bl		PagingFunc1
+	bl		GetMeAccessToThisPage ; Page *r27 // success cr0.eq
 	beq		print_memory_logical_0x5c
 	blt		print_memory_logical_0x48
 	_log	'..'
@@ -974,7 +974,7 @@ print_memory_logical_0x84
 
 print_memory_logical_0xac
 	mr		r27, r16
-	bl		PagingFunc1
+	bl		GetMeAccessToThisPage ; Page *r27 // success cr0.eq
 	li		r8,  0x20
 	bne		print_memory_logical_0xdc
 	bl		PagingL2PWithoutBATs

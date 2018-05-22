@@ -19,7 +19,7 @@ ecDataPageFault				equ		20		; ExceptionMemRetried
 ecDataWriteViolation		equ		21		; ExceptionMemRetried
 ecDataSupAccessViolation	equ		22		; ExceptionMemRetried
 ecDataSupWriteViolation		equ		23		; ?
-ecUnknown24					equ		24		; ExceptionMemRetried
+ecAlignment					equ		24		; ExceptionMemRetried
 
 
 
@@ -1070,7 +1070,7 @@ IntAlignment	;	OUTSIDE REFERER
 
 	addi	r23, r1, KDP.VecBaseMemRetry
 
-	bne		major_0x03548_0x20
+	bne		ThrowAlignmentException
 
 	;	DSISR for misaligned X-form instruction:
 
@@ -1087,7 +1087,7 @@ FDP_TableBase		equ		0xa00
 
 	;	Get the FDP and F.O. if we were in MSR_LE mode
 	lwz		r25,  KDP.PA_FDP(r1)
-	bne		major_0x03548_0x20
+	bne		ThrowAlignmentException
 
 
 	rlwinm.	r21, r27, 17, 30, 31	; evaluate hi two bits of XO (or 0 for d-form?)
@@ -1139,7 +1139,8 @@ FDP_TableBase		equ		0xa00
 
 
 
-IcbiNextBlock ; msr r14 //	;	OUTSIDE REFERER
+IcbiNextBlock ; msr r14 //
+
 	sync
 	mtmsr	r14
 	isync
@@ -1149,14 +1150,18 @@ IcbiNextBlock ; msr r14 //	;	OUTSIDE REFERER
 	isync
 	blr
 
-major_0x03548_0x20	;	OUTSIDE REFERER
-	li		r8,  0x00
-	lis		r17, -0x100
+
+ThrowAlignmentException
+
+	li		r8, 0
+	lis		r17, 0xFF00
 	mtcr	r8
 	mr		r19, r18
-	rlwimi	r17, r27,  7, 31, 31
-	xori	r17, r17,  0x01
-	li		r8, ecUnknown24
+
+	rlwimi	r17, r27, 7, 31, 31			; why ~DSISR[6]... those DSISR bytes are reserved?
+	xori	r17, r17, 1
+
+	li		r8, ecAlignment
 	b		ExceptionMemRetried
 
 
@@ -1250,14 +1255,18 @@ MemRetryDSI_0x100
 	beql	IntPanicIsland
 	mfsprg	r28, 2
 	mtlr	r28
-	bne		cr7, MemRetryDSI_0x144
+
+	bc		BO_IF_NOT, 30, MemRetryDSI_0x144
+
+	;	"Ignore write to ROM", for example
 	mfspr	r28, srr0
-	addi	r28, r28,  0x04
-	lwz		r26,  0x0e90(r1)
+	addi	r28, r28, 4
+	lwz		r26, KDP.NanoKernelInfo + NKNanoKernelInfo.QuietWriteCount(r1)
 	mtspr	srr0, r28
-	addi	r26, r26,  0x01
-	stw		r26,  0x0e90(r1)
-	b		MemRetryDSI_0x19c
+	addi	r26, r26, 1
+	stw		r26, KDP.NanoKernelInfo + NKNanoKernelInfo.QuietWriteCount(r1)
+
+	b		MemRetryDSI_GracefulExit
 
 MemRetryDSI_0x144
 	andi.	r28, r31,  0x03
@@ -1285,7 +1294,7 @@ MemRetryDSI_0x158
 	mtlr	r28
 	mtspr	srr1, r29
 
-MemRetryDSI_0x19c
+MemRetryDSI_GracefulExit
 	mfsprg	r1, 1
 	rlwinm	r26, r25, 30, 24, 31
 	rfi
@@ -1296,15 +1305,18 @@ MemRetryDSI_0x1c8
 	andis.	r28, r31,  0x8010
 	bne		MemRetryMachineCheck_0x14c
 
-	_Lock			PSA.HTABLock, scratch1=r28, scratch2=r31
-
-	bl		PagingFunc1
+	_Lock				PSA.HTABLock, scratch1=r28, scratch2=r31
+	bl		GetMeAccessToThisPage ; Page *r27 // success cr0.eq
 	_AssertAndRelease	PSA.HTABLock, scratch=r28
+
 	mfsprg	r28, 2
 	mtlr	r28
-	beq		MemRetryDSI_0x19c
+
+	beq		MemRetryDSI_GracefulExit
+
 	li		r8, ecDataInvalidAddress
 	bge		ExceptionMemRetried
+
 	li		r8, ecDataPageFault
 	b		ExceptionMemRetried
 
@@ -1337,10 +1349,13 @@ MemRetryMachineCheck	;	OUTSIDE REFERER
 	_log	'^n'
 
 	mr		r8, r28
+
 	lwz		r1, EWA.PA_KDP(r1)
 	lwz		r27,  0x0694(r1)
+
 	subf	r28, r19, r27
 	cmpwi	r28, -0x10
+
 	blt		MemRetryMachineCheck_0x14c
 	cmpwi	r28,  0x10
 	bgt		MemRetryMachineCheck_0x14c
@@ -1350,7 +1365,9 @@ MemRetryMachineCheck	;	OUTSIDE REFERER
 	lwz		r28,  0x0e98(r1)
 	addi	r28, r28,  0x01
 	stw		r28,  0x0e98(r1)
+
 	lwz		r29,  0x0698(r1)
+
 	li		r28,  0x00
 	stw		r28,  0x0000(r29)
 	mfspr	r28, pvr
@@ -1394,7 +1411,7 @@ IntISI	;	OUTSIDE REFERER
 	_Lock			PSA.HTABLock, scratch1=r28, scratch2=r31
 
 	mr		r27, r10
-	bl		PagingFunc1
+	bl		GetMeAccessToThisPage ; Page *r27 // success cr0.eq
 	_AssertAndRelease	PSA.HTABLock, scratch=r28
 	mfsprg	r8, 0
 	bne		major_0x039dc
@@ -1499,7 +1516,7 @@ PIHDSI	;	OUTSIDE REFERER
 	_Lock			PSA.HTABLock, scratch1=r28, scratch2=r31
 
 	mfspr	r27, dar
-	bl		PagingFunc1
+	bl		GetMeAccessToThisPage ; Page *r27 // success cr0.eq
 	_AssertAndRelease	PSA.HTABLock, scratch=r28
 	mfsprg	r8, 0
 	bne		major_0x039dc

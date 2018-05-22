@@ -1868,7 +1868,7 @@ VMLastExportedFunc_0xd7
 	mr		r14, r26
 	mflr	r6
 	slwi	r27, r4, 12
-	bl		PagingFunc1
+	bl		GetMeAccessToThisPage ; Page *r27 // success cr0.eq
 	bnel	Local_Panic
 	mr		r27, r7
 	mr		r29, r8

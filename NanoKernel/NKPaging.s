@@ -5,7 +5,7 @@ Local_Panic		set		*
 
 	align	5
 
-PagingFunc1	;	OUTSIDE REFERER
+GetMeAccessToThisPage ; Page *r27 // success cr0.eq	;	OUTSIDE REFERER
 	mfsprg	r29, 0
 	mflr	r28
 	stw		r8, -0x00dc(r29)

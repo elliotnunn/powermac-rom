@@ -85,22 +85,35 @@ def list_perms_ending_with(x):
         yield from list_perms_ending_with(nextlet + x)
 
 
-SPECIAL_LOADSTORE_RETURN_PATHS = ['2', '22']
-
-def final_loadstore_list():
+def final_load_list():
     """
-    Big waterfall of loads/stores!
+    Big waterfall of loads!
     """
     the_list = []
 
     for ender in '8421':
         for x in list_perms_ending_with(ender):
-            if x not in SPECIAL_LOADSTORE_RETURN_PATHS:
+            if x not in ('2','22'):
                 the_list.append(x)
 
     return list(reversed(the_list))
 
-FINAL_LOADSTORE_LIST = final_loadstore_list()
+FINAL_LOAD_LIST = final_load_list()
+
+def final_store_list():
+    """
+    Big waterfall of stores!
+    """
+    the_list = []
+
+    for ender in '8421':
+        for x in list_perms_ending_with(ender):
+            if x not in []:
+                the_list.append(x)
+
+    return list(reversed(the_list))
+
+FINAL_STORE_LIST = final_store_list()
 
 
 ################################################################
@@ -160,7 +173,7 @@ def MRVectorAlignDispatchTable():
 
 
 def MRAlignLoads():
-    waterfall = FINAL_LOADSTORE_LIST
+    waterfall = FINAL_LOAD_LIST
 
     for wi in range(len(waterfall)):
         sizes = waterfall[wi]
@@ -230,6 +243,81 @@ def MRAlignLoads():
 
         print()
 
+def MRAlignStores():
+    waterfall = FINAL_STORE_LIST
+
+    for wi in range(len(waterfall)):
+        sizes = waterfall[wi]
+
+        label('MRStore' + sizes)
+
+        sizes_as_list = [int(x) for x in sizes]
+        this_size = sizes_as_list[0]
+        total_size = sum(sizes_as_list)
+        remain_size = sum(sizes_as_list[1:])
 
 
-MRAlignLoads()
+        # PART 1: load a number of bytes equal to the first element in "sizes"
+
+        inst = {1: 'stb', 2: 'sth', 4: 'stw', 8: 'no way'}[this_size]
+
+        if sizes == '8': # special case
+            directive('stw', 'mrLow', '-8(mrBase)')
+            directive('stw', 'mrHigh', '-4(mrBase)')
+
+        elif remain_size == 4: # straight store!
+            directive(inst, 'mrHigh', '-%d(mrBase)' % total_size)
+            if len(sizes) > 1: directive('subi', 'mrCtr', 'mrCtr', 2 * this_size)
+
+        elif sizes == '4': # special case: emulate lwarx if asked
+            directive('bc', 'BO_IF', 23, '@atomic')
+            directive('stw', 'mrLow', '-4(mrBase)')
+            directive('b', 'MRExecuted')
+            label('@atomic')
+            directive('li', 'mrScratch', -4)
+            directive('stwcx.', 'mrScratch', 'mrBase')
+            directive('isync')
+            directive('mfcr', 'mrScratch')
+            directive('rlwimi', 'r13', 'mrScratch', 0, '0xFF000000')
+
+        else: # arrange intermediate register then store it
+            fiddler = 'rlwinm'
+
+            for regexponent, regname in [(0,'mrLow'), (4,'mrHigh')]:
+                thisexponent = remain_size
+                if regexponent >= thisexponent + this_size: continue
+                if thisexponent >= regexponent + 4: continue
+
+                lshift = (regexponent - thisexponent) * 8
+
+                mask = (1 << (8 * this_size)) - 1
+
+                directive(fiddler, 'mrScratch', regname, normlshift(lshift), '0x%08X' % mask)
+                fiddler = 'rlwimi'
+
+            directive(inst, 'mrScratch', '-%d(mrBase)' % total_size)
+            if len(sizes) > 1: directive('subi', 'mrCtr', 'mrCtr', 2 * this_size)
+
+
+        # PART 2: jump somewhere that will do the rest of the loads in "sizes"
+
+        if wi + 1 < len(waterfall) and waterfall[wi+1] == sizes[1:] and sizes[1:] != '4': # fall through
+            # but beware the special case!
+            pass
+
+        elif len(sizes[1:]) == 1: # special case: inline a single store instead of jumping
+            inst = {1: 'stb', 2: 'sth', 4: 'stw', 8: 'no way'}[remain_size]
+            directive(inst, 'mrLow', '-%d(mrBase)' % remain_size)
+            directive('b', 'MRExecuted')
+
+        elif remain_size == 0: # finished executing
+            directive('b', 'MRExecuted')
+
+        else:
+            directive('b', 'MRStore' + sizes[1:])
+
+        print()
+
+
+
+MRAlignStores()

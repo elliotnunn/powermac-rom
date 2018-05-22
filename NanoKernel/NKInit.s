@@ -1885,7 +1885,7 @@ finish_old_world
 	sync	
 
 setup_0x1160
-	bl		PagingFunc1
+	bl		GetMeAccessToThisPage ; Page *r27 // success cr0.eq
 	lwz		r27,  0x0630(r1)
 	lwz		r27,  0x009c(r27)
 	bl		PagingL2PWithoutBATs
@@ -1897,7 +1897,7 @@ setup_0x1160
 	sync	
 
 setup_0x1188
-	bl		PagingFunc1
+	bl		GetMeAccessToThisPage ; Page *r27 // success cr0.eq
 	lwz		r27,  0x0630(r1)
 	lwz		r27,  0x00a0(r27)
 	lis		r19,  0x00
@@ -1914,7 +1914,7 @@ setup_0x11a0
 	sync	
 
 setup_0x11bc
-	bl		PagingFunc1
+	bl		GetMeAccessToThisPage ; Page *r27 // success cr0.eq
 	cmplw	r27, r19
 	addi	r27, r27, -0x1000
 	bgt		setup_0x11a0
@@ -1929,7 +1929,7 @@ setup_0x11bc
 	sync	
 
 setup_0x11f0
-	bl		PagingFunc1
+	bl		GetMeAccessToThisPage ; Page *r27 // success cr0.eq
 
 	_log	'Nanokernel replaced. Returning to boot process^n'
 
