@@ -1,3 +1,22 @@
+;	AUTO-GENERATED SYMBOL LIST
+;	IMPORTS:
+;	  NKConsoleLog
+;	    printh
+;	    printw
+;	  NKInit
+;	    CancelReplacement
+;	    InitHighLevel
+;	    InitIRP
+;	  NKPrimaryIntHandlers
+;	    LookupInterruptHandler
+;	  NKScreenConsole
+;	    InitScreenConsole
+;	  NKTranslation
+;	    FDP
+;	EXPORTS:
+;	  InitReplacement (=> NKInit)
+
+
 ;		sprg0 = old KDP/EWA/r1 ptr
 ;		r3 = PA_NanoKernelCode
 ;		r4 = physical base of our global area

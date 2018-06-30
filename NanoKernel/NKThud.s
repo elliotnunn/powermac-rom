@@ -1,3 +1,24 @@
+;	AUTO-GENERATED SYMBOL LIST
+;	IMPORTS:
+;	  NKConsoleLog
+;	    getchar
+;	    print_unknown
+;	    printc
+;	    printh
+;	    prints
+;	    printw
+;	  NKIndex
+;	    GetNextIDOfClass
+;	    LookupID
+;	  NKInterrupts
+;	    Exception
+;	  NKPaging
+;	    PagingFunc1
+;	    PagingL2PWithoutBATs
+;	EXPORTS:
+;	  panic (=> NKAddressSpaces, NKIndex, NKInit, NKInterrupts, NKMPCalls, NKPaging, NKPoolAllocator, NKPowerCalls, NKRTASCalls, NKScheduler, NKSleep, NKSync, NKTasks, NKTimers, NKTranslation, NKVMCalls)
+;	  panic_non_interactive (=> NKTimers)
+
 
 	align	5
 

@@ -15,6 +15,19 @@
 ;	accessed by way of this ID. The kernel presently handles 65,000
 ;	simultaneous IDs with a bit pattern reuse probability of 1 in 4
 ;	billion.
+;
+;	AUTO-GENERATED SYMBOL LIST
+;	IMPORTS:
+;	  NKPoolAllocator
+;	    PoolAllocClear
+;	  NKThud
+;	    panic
+;	EXPORTS:
+;	  DeleteID (=> NKAddressSpaces, NKMPCalls, NKSync, NKTasks, NKTimers)
+;	  GetNextIDOfClass (=> NKAddressSpaces, NKMPCalls, NKThud)
+;	  InitIDIndex (=> NKInit)
+;	  LookupID (=> NKAddressSpaces, NKInterrupts, NKMPCalls, NKPrimaryIntHandlers, NKSync, NKTasks, NKThud, NKTimers)
+;	  MakeID (=> NKAddressSpaces, NKInit, NKMPCalls, NKSync, NKTasks)
 ;_______________________________________________________________________
 
 Local_Panic		set		*

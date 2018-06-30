@@ -1,3 +1,29 @@
+;	AUTO-GENERATED SYMBOL LIST
+;	IMPORTS:
+;	  NKIndex
+;	    LookupID
+;	  NKInterrupts
+;	    IntReturn
+;	  NKMPCalls
+;	    ReturnMPCallOOM
+;	    ReturnParamErrFromMPCall
+;	  NKScheduler
+;	    CalculateTimeslice
+;	    FlagSchEvaluationIfTaskRequires
+;	    SchRdyTaskLater
+;	    SchRestoreStartingAtR14
+;	    SchRestoreStartingAtR20
+;	    SchSaveStartingAtR20
+;	    SchTaskUnrdy
+;	  NKSync
+;	    CauseNotification
+;	  NKTimers
+;	    DequeueTimer
+;	EXPORTS:
+;	  LookupInterruptHandler (=> NKBuiltinInit, NKReplacementInit)
+
+
+
 ;	LookupInterruptHandler
 
 ;	Called at init time to get the (64b-aligned) physical address

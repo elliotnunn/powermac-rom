@@ -3,6 +3,26 @@ Local_Panic		set		*
 
 
 
+;	AUTO-GENERATED SYMBOL LIST
+;	IMPORTS:
+;	  NKAddressSpaces
+;	    FindAreaAbove
+;	    MPCall_95_0x254
+;	    SpaceGetPagePLE
+;	  NKConsoleLog
+;	    printw
+;	  NKThud
+;	    panic
+;	EXPORTS:
+;	  PagingFlushTLB (=> NKInit, NKScheduler, NKSleep)
+;	  PagingFunc1 (=> NKInit, NKInterrupts, NKThud, NKVMCalls)
+;	  PagingFunc2 (=> NKInit)
+;	  PagingFunc2AndAHalf (=> NKSleep)
+;	  PagingL2PWithBATs (=> NKInterrupts, NKMPCalls, NKRTASCalls, NKSleep)
+;	  PagingL2PWithoutBATs (=> NKInit, NKScreenConsole, NKThud)
+
+
+
 	align	5
 
 PagingFunc1	;	OUTSIDE REFERER

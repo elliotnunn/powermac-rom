@@ -1,3 +1,17 @@
+;	AUTO-GENERATED SYMBOL LIST
+;	IMPORTS:
+;	  NKInterrupts
+;	    IntHandleSpecialFPException
+;	    IntReturn
+;	    bugger_around_with_floats
+;	  NKPaging
+;	    PagingL2PWithBATs
+;	  NKThud
+;	    panic
+;	EXPORTS:
+;	  kcRTASDispatch (=> NKInit)
+
+
 Local_Panic		set		*
 				b		panic
 

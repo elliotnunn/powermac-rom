@@ -1,3 +1,24 @@
+;	AUTO-GENERATED SYMBOL LIST
+;	IMPORTS:
+;	  NKInterrupts
+;	    SIGP
+;	  NKMPCalls
+;	    CommonMPCallReturnPath
+;	    ReturnMPCallOOM
+;	    ReturnParamErrFromMPCall
+;	    ReturnZeroFromMPCall
+;	  NKPaging
+;	    PagingFlushTLB
+;	    PagingFunc2AndAHalf
+;	    PagingL2PWithBATs
+;	  NKScheduler
+;	    Save_f0_f31
+;	    Save_v0_v31
+;	    SchSwitchSpace
+;	  NKThud
+;	    panic
+
+
 ;	Implements two MPCalls that seem to have something to do with COHGs
 
 

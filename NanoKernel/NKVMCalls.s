@@ -1,3 +1,34 @@
+;	AUTO-GENERATED SYMBOL LIST
+;	IMPORTS:
+;	  NKAddressSpaces
+;	    CreateArea
+;	    DeletePTE
+;	    FindAreaAbove
+;	    GetPTEFromPLE
+;	    InvalPTE
+;	    SetPTE
+;	    SpaceGetPagePLE
+;	  NKConsoleLog
+;	    printw
+;	  NKInterrupts
+;	    IntReturn
+;	  NKPaging
+;	    PagingFunc1
+;	  NKPoolAllocator
+;	    PoolAllocClear
+;	  NKScheduler
+;	    SchRestoreStartingAtR14
+;	    SchSaveStartingAtR14
+;	  NKThud
+;	    panic
+;	EXPORTS:
+;	  EditPTEInHTAB (=> NKMPCalls)
+;	  GetPARPageInfo (=> NKMPCalls)
+;	  RemovePageFromTLB (=> NKMPCalls)
+;	  VMSecondLastExportedFunc (=> NKMPCalls)
+;	  kcVMDispatch (=> NKInit)
+
+
 Local_Panic		set		*
 				b		panic
 

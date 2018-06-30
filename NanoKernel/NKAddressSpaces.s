@@ -1,3 +1,53 @@
+;	AUTO-GENERATED SYMBOL LIST
+;	IMPORTS:
+;	  NKConsoleLog
+;	    printw
+;	  NKIndex
+;	    DeleteID
+;	    GetNextIDOfClass
+;	    LookupID
+;	    MakeID
+;	  NKMPCalls
+;	    CommonMPCallReturnPath
+;	    ReleaseAndMPCallWasBad
+;	    ReleaseAndReturnMPCall
+;	    ReleaseAndReturnMPCallInvalidIDErr
+;	    ReleaseAndReturnMPCallOOM
+;	    ReleaseAndReturnMPCallPrivilegedErr
+;	    ReleaseAndReturnParamErrFromMPCall
+;	    ReleaseAndReturnZeroFromMPCall
+;	    ReleaseAndScrambleMPCall
+;	    ReturnMPCallInvalidIDErr
+;	    ReturnMPCallOOM
+;	    ReturnParamErrFromMPCall
+;	    ReturnZeroFromMPCall
+;	    major_0x0b0cc
+;	  NKPoolAllocator
+;	    PoolAllocClear
+;	    PoolFree
+;	  NKSync
+;	    CauseNotification
+;	    SetEvent
+;	  NKThud
+;	    panic
+;	EXPORTS:
+;	  CreateArea (=> NKVMCalls)
+;	  CreateAreasFromPageMap (=> NKInit)
+;	  DeletePTE (=> NKVMCalls)
+;	  FindAreaAbove (=> NKInterrupts, NKPaging, NKTasks, NKVMCalls)
+;	  FreePageListPush (=> NKInit)
+;	  GetPTEFromPLE (=> NKVMCalls)
+;	  InitFreePageList (=> NKInit)
+;	  InvalPTE (=> NKVMCalls)
+;	  MPCall_95_0x254 (=> NKPaging)
+;	  NKCreateAddressSpaceSub (=> NKInit)
+;	  SetPTE (=> NKVMCalls)
+;	  SpaceGetPagePLE (=> NKInterrupts, NKPaging, NKVMCalls)
+;	  SpaceL2PIgnoringBATs (=> NKMPCalls)
+;	  SpaceL2PUsingBATs (=> NKInterrupts, NKMPCalls)
+
+
+
  #####                              ######                         ###                                    
 #     # #####    ##    ####  ###### #     #   ##   #    # #  ####   #   ####  #        ##   #    # #####  
 #       #    #  #  #  #    # #      #     #  #  #  ##   # # #    #  #  #      #       #  #  ##   # #    # 

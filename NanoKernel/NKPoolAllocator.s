@@ -34,6 +34,23 @@
 
 
 
+;	AUTO-GENERATED SYMBOL LIST
+;	IMPORTS:
+;	  NKConsoleLog
+;	    printc
+;	    printd
+;	    printw
+;	  NKThud
+;	    panic
+;	EXPORTS:
+;	  ExtendPool (=> NKMPCalls)
+;	  InitPool (=> NKInit)
+;	  PoolAlloc (=> NKInterrupts, NKSync, NKTasks)
+;	  PoolAllocClear (=> NKAddressSpaces, NKIndex, NKInit, NKMPCalls, NKSync, NKTasks, NKTimers, NKVMCalls)
+;	  PoolFree (=> NKAddressSpaces, NKMPCalls, NKSync, NKTasks, NKTimers)
+
+
+
 Block			record
 
 kBeginSize		equ		8	

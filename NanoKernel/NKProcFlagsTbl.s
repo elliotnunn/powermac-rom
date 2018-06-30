@@ -1,3 +1,7 @@
+;	AUTO-GENERATED SYMBOL LIST
+;	EXPORTS:
+;	  ProcessorFlagsTable (=> NKInit)
+
 ;	Contains the table used by Init.s:SetProcessorFlags, and a label to find it with.
 ;
 ;	Using this table, three fields in KDP are set:

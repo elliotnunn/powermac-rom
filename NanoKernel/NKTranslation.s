@@ -14,6 +14,28 @@
 ;	magic. The tables here contain relative references to other tables
 ;	in Interrupts.s. What a mess.
 
+;	AUTO-GENERATED SYMBOL LIST
+;	IMPORTS:
+;	  NKInterrupts
+;	    Exception
+;	    ExceptionMemRetried
+;	    FloatLoadJumpTable
+;	    FloatSaveJumpTable
+;	    IgnoreSoftwareInt
+;	    LoadInterruptRegisters
+;	    major_0x03324
+;	    major_0x03548
+;	  NKThud
+;	    panic
+;	EXPORTS:
+;	  FDP (=> NKBuiltinInit, NKReplacementInit)
+;	  FDPEmulateInstruction (=> NKInterrupts)
+;	  FDP_003c (=> NKInterrupts)
+;	  FDP_011c (=> NKInterrupts)
+;	  FDP_0DA0 (=> NKInterrupts)
+;	  FDP_1c40 (=> NKInit)
+;	  ProbePerfMonitor (=> NKInit)
+
 
 		align	11
 

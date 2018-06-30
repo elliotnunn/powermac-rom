@@ -38,6 +38,101 @@
 ;		r6 = PA_EDP or zero?
 ;		r7 = ROMHeader.ROMRelease (e.g. 0x10B5 is 1.0ß5)
 
+;	AUTO-GENERATED SYMBOL LIST
+;	IMPORTS:
+;	  NKAddressSpaces
+;	    CreateAreasFromPageMap
+;	    FreePageListPush
+;	    InitFreePageList
+;	    NKCreateAddressSpaceSub
+;	  NKBuiltinInit
+;	    InitBuiltin
+;	  NKCache
+;	    kcCacheDispatch
+;	  NKConsoleLog
+;	    printb
+;	    printc
+;	    printd
+;	    printw
+;	  NKIndex
+;	    InitIDIndex
+;	    MakeID
+;	  NKInterrupts
+;	    HandlePerfMonitorInt
+;	    IgnoreSoftwareInt
+;	    IntAlignment
+;	    IntDSI
+;	    IntDecrementer
+;	    IntExternalAlternate
+;	    IntExternalSystem
+;	    IntFPUnavail
+;	    IntISI
+;	    IntMachineCheck
+;	    IntPerfMonitor
+;	    IntProgram
+;	    IntSyscall
+;	    IntThermalEvent
+;	    IntTrace
+;	    MemRetryDSI
+;	    MemRetryMachineCheck
+;	    PIHDSI
+;	    kcPrioritizeInterrupts
+;	    kcResetSystem
+;	    kcReturnFromException
+;	    kcRunAlternateContext
+;	    kcThud
+;	    major_0x046d0
+;	    major_0x04a20
+;	    wordfill
+;	  NKMPCalls
+;	    kcMPDispatch
+;	  NKPaging
+;	    PagingFlushTLB
+;	    PagingFunc1
+;	    PagingFunc2
+;	    PagingL2PWithoutBATs
+;	  NKPoolAllocator
+;	    InitPool
+;	    PoolAllocClear
+;	  NKPowerCalls
+;	    InitIdleVecTable
+;	    kcPowerDispatch
+;	  NKProcFlagsTbl
+;	    ProcessorFlagsTable
+;	  NKRTASCalls
+;	    kcRTASDispatch
+;	  NKReplacementInit
+;	    InitReplacement
+;	  NKScheduler
+;	    CalculateTimeslice
+;	    FlagSchEval
+;	    SchIdleTask
+;	    SchInit
+;	    SchRdyTaskNow
+;	    SchRestoreStartingAtR14
+;	    SchSwitchSpace
+;	  NKScreenConsole
+;	    InitScreenConsole
+;	  NKTasks
+;	    CreateTask
+;	  NKThud
+;	    panic
+;	  NKTimers
+;	    InitTMRQs
+;	    StartTimeslicing
+;	  NKTranslation
+;	    FDP_1c40
+;	    ProbePerfMonitor
+;	  NKVMCalls
+;	    kcVMDispatch
+;	EXPORTS:
+;	  CancelReplacement (=> NKReplacementInit)
+;	  FinishInitBuiltin (=> NKBuiltinInit)
+;	  InitHighLevel (=> NKReplacementInit)
+;	  InitIRP (=> NKBuiltinInit, NKReplacementInit)
+;	  ResetBuiltinKernel (=> NKInterrupts)
+
+
 
 ;	First we need to avoid executing the data that follows:
 

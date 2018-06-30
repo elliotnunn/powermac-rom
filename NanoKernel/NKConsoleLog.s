@@ -1,3 +1,20 @@
+;	AUTO-GENERATED SYMBOL LIST
+;	IMPORTS:
+;	  NKScreenConsole
+;	    ScreenConsole_putchar
+;	    ScreenConsole_redraw
+;	EXPORTS:
+;	  getchar (=> NKThud, NKTimers)
+;	  print_unknown (=> NKThud)
+;	  printb (=> NKInit, NKMPCalls, NKTimers)
+;	  printc (=> NKInit, NKPoolAllocator, NKThud)
+;	  printd (=> NKInit, NKMPCalls, NKPoolAllocator, NKTimers)
+;	  printh (=> NKBuiltinInit, NKMPCalls, NKReplacementInit, NKScheduler, NKThud, NKTimers)
+;	  prints (=> NKMPCalls, NKThud)
+;	  printw (=> NKAddressSpaces, NKInit, NKInterrupts, NKMPCalls, NKPaging, NKPoolAllocator, NKReplacementInit, NKScheduler, NKThud, NKTimers, NKVMCalls)
+
+
+
 ;	                         prints
 
 ;	_log null-terminated string with a few special escapes.

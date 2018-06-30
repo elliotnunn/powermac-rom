@@ -1,3 +1,23 @@
+;	AUTO-GENERATED SYMBOL LIST
+;	IMPORTS:
+;	  NKConsoleLog
+;	    printh
+;	  NKInit
+;	    FinishInitBuiltin
+;	    InitIRP
+;	  NKPrimaryIntHandlers
+;	    LookupInterruptHandler
+;	  NKProcInfoTbl
+;	    OverrideProcessorInfo
+;	    ProcessorInfoTable
+;	  NKScreenConsole
+;	    InitScreenConsole
+;	  NKTranslation
+;	    FDP
+;	EXPORTS:
+;	  InitBuiltin (=> NKInit)
+
+
 ;	When we receive control:
 ;		r3 = ConfigInfo
 ;		r4 = ProcessorInfo

@@ -23,6 +23,97 @@ ecUnknown24					equ		24		; ExceptionMemRetried
 
 
 
+;	AUTO-GENERATED SYMBOL LIST
+;	IMPORTS:
+;	  NKAddressSpaces
+;	    FindAreaAbove
+;	    SpaceGetPagePLE
+;	    SpaceL2PUsingBATs
+;	  NKCache
+;	    FlushL1CacheUsingMSSCR0
+;	  NKConsoleLog
+;	    printw
+;	  NKIndex
+;	    LookupID
+;	  NKInit
+;	    ResetBuiltinKernel
+;	  NKMPCalls
+;	    BlockMPCall
+;	    kcMPDispatch
+;	  NKPaging
+;	    PagingFunc1
+;	    PagingL2PWithBATs
+;	  NKPoolAllocator
+;	    PoolAlloc
+;	  NKScheduler
+;	    FlagSchEval
+;	    Restore_v0_v31
+;	    Save_v0_v31
+;	    SchEval
+;	    SchExitInterrupt
+;	    SchFiddlePriorityShifty
+;	    SchRdyTaskNow
+;	    SchRestoreStartingAtR14
+;	    SchReturn
+;	    SchSaveStartingAtR14
+;	    SchSwitchSpace
+;	    SchTaskUnrdy
+;	  NKSync
+;	    CauseNotification
+;	    EnqueueMessage
+;	    UnblockBlueIfCouldBePolling
+;	  NKTasks
+;	    ThrowTaskToDebugger
+;	  NKThud
+;	    panic
+;	  NKTimers
+;	    TimerDispatch
+;	  NKTranslation
+;	    FDPEmulateInstruction
+;	    FDP_003c
+;	    FDP_011c
+;	    FDP_0DA0
+;	EXPORTS:
+;	  Exception (=> NKThud, NKTranslation)
+;	  ExceptionMemRetried (=> NKTranslation)
+;	  FloatLoadJumpTable (=> NKTranslation)
+;	  FloatSaveJumpTable (=> NKTranslation)
+;	  HandlePerfMonitorInt (=> NKInit)
+;	  IgnoreSoftwareInt (=> NKInit, NKTranslation)
+;	  IntAlignment (=> NKInit)
+;	  IntDSI (=> NKInit)
+;	  IntDecrementer (=> NKInit)
+;	  IntExternalAlternate (=> NKInit)
+;	  IntExternalSystem (=> NKInit)
+;	  IntFPUnavail (=> NKInit)
+;	  IntHandleSpecialFPException (=> NKRTASCalls)
+;	  IntISI (=> NKInit)
+;	  IntMachineCheck (=> NKInit)
+;	  IntPerfMonitor (=> NKInit)
+;	  IntProgram (=> NKInit)
+;	  IntReturn (=> NKCache, NKMPCalls, NKPowerCalls, NKPrimaryIntHandlers, NKRTASCalls, NKVMCalls)
+;	  IntSyscall (=> NKInit)
+;	  IntThermalEvent (=> NKInit)
+;	  IntTrace (=> NKInit)
+;	  LoadInterruptRegisters (=> NKTranslation)
+;	  MemRetryDSI (=> NKInit)
+;	  MemRetryMachineCheck (=> NKInit)
+;	  PIHDSI (=> NKInit)
+;	  SIGP (=> NKMPCalls, NKScheduler, NKSleep)
+;	  bugger_around_with_floats (=> NKRTASCalls)
+;	  kcPrioritizeInterrupts (=> NKInit)
+;	  kcResetSystem (=> NKInit)
+;	  kcReturnFromException (=> NKInit)
+;	  kcRunAlternateContext (=> NKInit)
+;	  kcThud (=> NKInit)
+;	  major_0x03324 (=> NKTranslation)
+;	  major_0x03548 (=> NKTranslation)
+;	  major_0x046d0 (=> NKInit)
+;	  major_0x04a20 (=> NKInit)
+;	  wordfill (=> NKInit, NKPowerCalls)
+
+
+
 IntPanicIsland
 	b		panic
 

@@ -9,6 +9,85 @@
 
 
 
+;	AUTO-GENERATED SYMBOL LIST
+;	IMPORTS:
+;	  NKAddressSpaces
+;	    SpaceL2PIgnoringBATs
+;	    SpaceL2PUsingBATs
+;	  NKConsoleLog
+;	    printb
+;	    printd
+;	    printh
+;	    prints
+;	    printw
+;	  NKIndex
+;	    DeleteID
+;	    GetNextIDOfClass
+;	    LookupID
+;	    MakeID
+;	  NKInterrupts
+;	    IntReturn
+;	    SIGP
+;	  NKPaging
+;	    PagingL2PWithBATs
+;	  NKPoolAllocator
+;	    ExtendPool
+;	    PoolAllocClear
+;	    PoolFree
+;	  NKScheduler
+;	    CalculateTimeslice
+;	    FlagSchEval
+;	    FlagSchEvaluationIfTaskRequires
+;	    NewCpuEntryPoint
+;	    Save_v0_v31
+;	    SchEval
+;	    SchIdleTask
+;	    SchIdleTaskStopper
+;	    SchRdyTaskLater
+;	    SchRdyTaskNow
+;	    SchRestoreStartingAtR14
+;	    SchSaveStartingAtR14
+;	    SchTaskUnrdy
+;	  NKScreenConsole
+;	    ScreenConsole_redraw
+;	  NKTasks
+;	    CreateTask
+;	  NKThud
+;	    panic
+;	  NKTimers
+;	    DequeueTimer
+;	    EnqueueTimer
+;	    GetTime
+;	  NKVMCalls
+;	    EditPTEInHTAB
+;	    GetPARPageInfo
+;	    RemovePageFromTLB
+;	    VMSecondLastExportedFunc
+;	EXPORTS:
+;	  BlockMPCall (=> NKInterrupts, NKSync)
+;	  CommonMPCallReturnPath (=> NKAddressSpaces, NKSleep, NKTasks)
+;	  MPCall_6_0x78 (=> NKTasks)
+;	  ReleaseAndMPCallWasBad (=> NKAddressSpaces)
+;	  ReleaseAndReturnMPCall (=> NKAddressSpaces, NKSync, NKTasks)
+;	  ReleaseAndReturnMPCallBlueBlocking (=> NKSync)
+;	  ReleaseAndReturnMPCallInvalidIDErr (=> NKAddressSpaces, NKSync, NKTasks)
+;	  ReleaseAndReturnMPCallOOM (=> NKAddressSpaces, NKSync, NKTasks)
+;	  ReleaseAndReturnMPCallPrivilegedErr (=> NKAddressSpaces)
+;	  ReleaseAndReturnMPCallTaskAborted (=> NKSync)
+;	  ReleaseAndReturnParamErrFromMPCall (=> NKAddressSpaces, NKSync)
+;	  ReleaseAndReturnZeroFromMPCall (=> NKAddressSpaces, NKSync, NKTasks)
+;	  ReleaseAndScrambleMPCall (=> NKAddressSpaces, NKSync, NKTasks)
+;	  ReleaseAndTimeoutMPCall (=> NKSync)
+;	  ReturnMPCallInvalidIDErr (=> NKAddressSpaces, NKTasks)
+;	  ReturnMPCallOOM (=> NKAddressSpaces, NKPrimaryIntHandlers, NKSleep, NKSync, NKTasks)
+;	  ReturnParamErrFromMPCall (=> NKAddressSpaces, NKPrimaryIntHandlers, NKSleep)
+;	  ReturnZeroFromMPCall (=> NKAddressSpaces, NKSleep, NKSync)
+;	  ScrambleMPCall (=> NKSync)
+;	  kcMPDispatch (=> NKInit, NKInterrupts)
+;	  major_0x0b0cc (=> NKAddressSpaces)
+
+
+
 ;MPCall_Panic		set		MPCall_Panic
 
 

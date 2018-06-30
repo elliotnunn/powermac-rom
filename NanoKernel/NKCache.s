@@ -39,6 +39,15 @@
 ;			checked L1 but did not set	1
 ;			checked L2 but did not set	2
 
+;	AUTO-GENERATED SYMBOL LIST
+;	IMPORTS:
+;	  NKInterrupts
+;	    IntReturn
+;	EXPORTS:
+;	  FlushCaches (=> NKPowerCalls)
+;	  FlushL1CacheUsingMSSCR0 (=> NKInterrupts)
+;	  kcCacheDispatch (=> NKInit)
+
 ;	DeclareMPCall 199, kcCacheDispatch			; DEBUG
 
 kcCacheDispatch

@@ -1,3 +1,42 @@
+;	AUTO-GENERATED SYMBOL LIST
+;	IMPORTS:
+;	  NKConsoleLog
+;	    getchar
+;	    printb
+;	    printd
+;	    printh
+;	    printw
+;	  NKIndex
+;	    DeleteID
+;	    LookupID
+;	  NKPoolAllocator
+;	    PoolAllocClear
+;	    PoolFree
+;	  NKScheduler
+;	    CalculateTimeslice
+;	    FlagSchEvaluationIfTaskRequires
+;	    SchRdyTaskNow
+;	    SchTaskUnrdy
+;	    clear_cr0_lt
+;	    major_0x149d4
+;	  NKSync
+;	    EnqueueMessage
+;	    SetEvent
+;	    SignalSemaphore
+;	  NKThud
+;	    panic
+;	    panic_non_interactive
+;	EXPORTS:
+;	  DequeueTimer (=> NKMPCalls, NKPrimaryIntHandlers, NKSync, NKTasks)
+;	  EnqueueTimer (=> NKMPCalls, NKSync)
+;	  GetTime (=> NKMPCalls, NKScheduler, NKSync, NKTasks)
+;	  InitTMRQs (=> NKInit)
+;	  SetTimesliceFromCurTime (=> NKScheduler)
+;	  StartTimeslicing (=> NKInit)
+;	  TimebaseTicksPerPeriod (=> NKScheduler, NKSync)
+;	  TimerDispatch (=> NKInterrupts)
+
+
 Local_Panic		set		*
 				b		panic
 

@@ -1,3 +1,47 @@
+;	AUTO-GENERATED SYMBOL LIST
+;	IMPORTS:
+;	  NKConsoleLog
+;	    printh
+;	    printw
+;	  NKInterrupts
+;	    SIGP
+;	  NKPaging
+;	    PagingFlushTLB
+;	  NKTasks
+;	    TasksFuncThatIsNotAMPCall
+;	  NKThud
+;	    panic
+;	  NKTimers
+;	    GetTime
+;	    SetTimesliceFromCurTime
+;	    TimebaseTicksPerPeriod
+;	EXPORTS:
+;	  CalculateTimeslice (=> NKInit, NKMPCalls, NKPrimaryIntHandlers, NKSync, NKTasks, NKTimers)
+;	  FlagSchEval (=> NKInit, NKInterrupts, NKMPCalls, NKTasks)
+;	  FlagSchEvaluationIfTaskRequires (=> NKMPCalls, NKPrimaryIntHandlers, NKSync, NKTasks, NKTimers)
+;	  NewCpuEntryPoint (=> NKMPCalls)
+;	  Restore_v0_v31 (=> NKInterrupts)
+;	  Save_f0_f31 (=> NKSleep)
+;	  Save_v0_v31 (=> NKInterrupts, NKMPCalls, NKSleep)
+;	  SchEval (=> NKInterrupts, NKMPCalls)
+;	  SchExitInterrupt (=> NKInterrupts)
+;	  SchFiddlePriorityShifty (=> NKInterrupts)
+;	  SchIdleTask (=> NKInit, NKMPCalls)
+;	  SchIdleTaskStopper (=> NKMPCalls)
+;	  SchInit (=> NKInit)
+;	  SchRdyTaskLater (=> NKMPCalls, NKPrimaryIntHandlers, NKSync)
+;	  SchRdyTaskNow (=> NKInit, NKInterrupts, NKMPCalls, NKSync, NKTasks, NKTimers)
+;	  SchRestoreStartingAtR14 (=> NKInit, NKInterrupts, NKMPCalls, NKPrimaryIntHandlers, NKVMCalls)
+;	  SchRestoreStartingAtR20 (=> NKPrimaryIntHandlers)
+;	  SchReturn (=> NKInterrupts)
+;	  SchSaveStartingAtR14 (=> NKInterrupts, NKMPCalls, NKVMCalls)
+;	  SchSaveStartingAtR20 (=> NKPrimaryIntHandlers)
+;	  SchSwitchSpace (=> NKInit, NKInterrupts, NKSleep)
+;	  SchTaskUnrdy (=> NKInterrupts, NKMPCalls, NKPrimaryIntHandlers, NKSync, NKTasks, NKTimers)
+;	  clear_cr0_lt (=> NKTimers)
+;	  major_0x149d4 (=> NKTimers)
+
+
 Local_Panic		set		*
 				b		panic
 

@@ -1,3 +1,44 @@
+;	AUTO-GENERATED SYMBOL LIST
+;	IMPORTS:
+;	  NKAddressSpaces
+;	    FindAreaAbove
+;	  NKIndex
+;	    DeleteID
+;	    LookupID
+;	    MakeID
+;	  NKMPCalls
+;	    CommonMPCallReturnPath
+;	    MPCall_6_0x78
+;	    ReleaseAndReturnMPCall
+;	    ReleaseAndReturnMPCallInvalidIDErr
+;	    ReleaseAndReturnMPCallOOM
+;	    ReleaseAndReturnZeroFromMPCall
+;	    ReleaseAndScrambleMPCall
+;	    ReturnMPCallInvalidIDErr
+;	    ReturnMPCallOOM
+;	  NKPoolAllocator
+;	    PoolAlloc
+;	    PoolAllocClear
+;	    PoolFree
+;	  NKScheduler
+;	    CalculateTimeslice
+;	    FlagSchEval
+;	    FlagSchEvaluationIfTaskRequires
+;	    SchRdyTaskNow
+;	    SchTaskUnrdy
+;	  NKSync
+;	    EnqueueMessage
+;	  NKThud
+;	    panic
+;	  NKTimers
+;	    DequeueTimer
+;	    GetTime
+;	EXPORTS:
+;	  CreateTask (=> NKInit, NKMPCalls)
+;	  TasksFuncThatIsNotAMPCall (=> NKScheduler)
+;	  ThrowTaskToDebugger (=> NKInterrupts)
+
+
 ;	This file mostly provides MPCall implementations related to multitasking.
 ;	We won't understand this very well until someone disassembles MPLibrary.
 

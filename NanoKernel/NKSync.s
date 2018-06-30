@@ -1,3 +1,48 @@
+;	AUTO-GENERATED SYMBOL LIST
+;	IMPORTS:
+;	  NKIndex
+;	    DeleteID
+;	    LookupID
+;	    MakeID
+;	  NKMPCalls
+;	    BlockMPCall
+;	    ReleaseAndReturnMPCall
+;	    ReleaseAndReturnMPCallBlueBlocking
+;	    ReleaseAndReturnMPCallInvalidIDErr
+;	    ReleaseAndReturnMPCallOOM
+;	    ReleaseAndReturnMPCallTaskAborted
+;	    ReleaseAndReturnParamErrFromMPCall
+;	    ReleaseAndReturnZeroFromMPCall
+;	    ReleaseAndScrambleMPCall
+;	    ReleaseAndTimeoutMPCall
+;	    ReturnMPCallOOM
+;	    ReturnZeroFromMPCall
+;	    ScrambleMPCall
+;	  NKPoolAllocator
+;	    PoolAlloc
+;	    PoolAllocClear
+;	    PoolFree
+;	  NKScheduler
+;	    CalculateTimeslice
+;	    FlagSchEvaluationIfTaskRequires
+;	    SchRdyTaskLater
+;	    SchRdyTaskNow
+;	    SchTaskUnrdy
+;	  NKThud
+;	    panic
+;	  NKTimers
+;	    DequeueTimer
+;	    EnqueueTimer
+;	    GetTime
+;	    TimebaseTicksPerPeriod
+;	EXPORTS:
+;	  CauseNotification (=> NKAddressSpaces, NKInterrupts, NKPrimaryIntHandlers)
+;	  EnqueueMessage (=> NKInterrupts, NKTasks, NKTimers)
+;	  SetEvent (=> NKAddressSpaces, NKTimers)
+;	  SignalSemaphore (=> NKTimers)
+;	  UnblockBlueIfCouldBePolling (=> NKInterrupts)
+
+
  #######  ##     ## ######## ##     ## ########  ######  
 ##     ## ##     ## ##       ##     ## ##       ##    ## 
 ##     ## ##     ## ##       ##     ## ##       ##       

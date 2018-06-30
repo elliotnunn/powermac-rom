@@ -1,3 +1,13 @@
+;	AUTO-GENERATED SYMBOL LIST
+;	IMPORTS:
+;	  NKPaging
+;	    PagingL2PWithoutBATs
+;	EXPORTS:
+;	  InitScreenConsole (=> NKBuiltinInit, NKInit, NKReplacementInit)
+;	  ScreenConsole_putchar (=> NKConsoleLog)
+;	  ScreenConsole_redraw (=> NKConsoleLog, NKMPCalls)
+
+
 ScreenConsoleX			equ		24
 ScreenConsoleY			equ		22
 

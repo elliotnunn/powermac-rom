@@ -1,3 +1,17 @@
+;	AUTO-GENERATED SYMBOL LIST
+;	IMPORTS:
+;	  NKCache
+;	    FlushCaches
+;	  NKInterrupts
+;	    IntReturn
+;	    wordfill
+;	  NKThud
+;	    panic
+;	EXPORTS:
+;	  InitIdleVecTable (=> NKInit)
+;	  kcPowerDispatch (=> NKInit)
+
+
 #### ##    ## #### ########    ##     ## ########  ######     ######## ########  ##       
  ##  ###   ##  ##     ##       ##     ## ##       ##    ##       ##    ##     ## ##       
  ##  ####  ##  ##     ##       ##     ## ##       ##             ##    ##     ## ##       

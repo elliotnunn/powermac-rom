@@ -1,3 +1,8 @@
+;	AUTO-GENERATED SYMBOL LIST
+;	EXPORTS:
+;	  OverrideProcessorInfo (=> NKBuiltinInit)
+;	  ProcessorInfoTable (=> NKBuiltinInit)
+
 ;	Contains the table used by InitBuiltin.s:OverrideProcessorInfo
 ;
 ;	If the Trampoline fails to pass in a signed HardwareInfo struct,
