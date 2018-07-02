@@ -31,18 +31,13 @@
 ;	  NKThud
 ;	    panic
 ;	EXPORTS:
-;	  CreateArea (=> NKVMCalls)
 ;	  CreateAreasFromPageMap (=> NKInit)
-;	  DeletePTE (=> NKVMCalls)
-;	  FindAreaAbove (=> NKIntHandlers, NKPaging, NKTasks, NKVMCalls)
+;	  FindAreaAbove (=> NKIntHandlers, NKPaging, NKTasks)
 ;	  FreePageListPush (=> NKInit)
-;	  GetPTEFromPLE (=> NKVMCalls)
 ;	  InitFreePageList (=> NKInit)
-;	  InvalPTE (=> NKVMCalls)
 ;	  MPCall_95_0x254 (=> NKPaging)
 ;	  NKCreateAddressSpaceSub (=> NKInit)
-;	  SetPTE (=> NKVMCalls)
-;	  SpaceGetPagePLE (=> NKIntHandlers, NKPaging, NKVMCalls)
+;	  SpaceGetPagePLE (=> NKIntHandlers, NKPaging)
 ;	  SpaceL2PIgnoringBATs (=> NKMPCalls)
 ;	  SpaceL2PUsingBATs (=> NKIntHandlers, NKMPCalls)
 

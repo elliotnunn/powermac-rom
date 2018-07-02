@@ -46,7 +46,7 @@
 ;	  ExtendPool (=> NKMPCalls)
 ;	  InitPool (=> NKInit)
 ;	  PoolAlloc (=> NKExceptions, NKSync, NKTasks)
-;	  PoolAllocClear (=> NKAddressSpaces, NKIndex, NKInit, NKMPCalls, NKSync, NKTasks, NKTimers, NKVMCalls)
+;	  PoolAllocClear (=> NKAddressSpaces, NKIndex, NKInit, NKMPCalls, NKSync, NKTasks, NKTimers)
 ;	  PoolFree (=> NKAddressSpaces, NKMPCalls, NKSync, NKTasks, NKTimers)
 
 

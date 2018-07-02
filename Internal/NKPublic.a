@@ -587,10 +587,7 @@ OldKDP					ds.l	1	; 5a0 ; gotten from the old SPRG0
 OtherFreeThing			ds.l	1	; 5a4
 TopOfFreePages			ds.l	1	; 5a8 ; gotten from the old SPRG0
 						ds.l	1	; 5ac
-PA_InterruptHandler		ds.l	1	; 5b0
-LA_NCB					ds.l	1	; 5b4 ; most recent physical address found
-HiLevelPerfMonitorBits	ds.l	1	; 5b8
-						ds.l	1	; 5bc
+FlatPageListSegPtrs		ds.l	4	; 5b0:5c0
 PerfMonitorBits			ds.l	1	; 5c0
 						ds.l	1	; 5c4
 SegMap32SupInitPtr		ds.l	1	; 5c8
@@ -615,9 +612,9 @@ PA_NanoKernelCode		ds.l	1	; 64c ; Calculated by NanoKernel itself.
 PA_FDP					ds.l	1	; 650 ; See notes in NanoKernel. Very interesting.
 LA_ECB					ds.l	1	; 654 ; Logical ptr into EDP.
 PA_ECB					ds.l	1	; 658 ; gets called "system context"
-PA_ECB_Old				ds.l	1	; 65c ; copied from NKv<=01.01 to EWA.PA_ContextBlock.
-						ds.l	1	; 660
-						ds.l	1	; 664
+PA_ContextBlock			ds.l	1	; 65c ; moved to EWA (per-CPU) in NKv2
+Flags					ds.l	1	; 660 ; moved to EWA (per-CPU) in NKv2
+Enables					ds.l	1	; 664 ; moved to EWA (per-CPU) in NKv2
 						ds.l	1	; 668
 PA_PageMapEnd			ds.l	1	; 66c ; Set at the same time as PA_PageMapStart below...
 TestIntMaskInit			ds.l	1	; 670 ; These are all copied from ConfigInfo...
@@ -644,7 +641,7 @@ CpuSpecificByte2		ds.b	1	; 6b9 ; probably not flags (set in same way)
 						ds.b	1	; 6ba
 						ds.b	1	; 6bb
 						ds.l	1	; 6bc
-FlatPageListSegPtrs		ds.l	16	; 6c0
+						ds.l	16	; 6c0 ; was FlatPageListSegPtrs
 
 StartOfPanicArea					; PROTECTED BY THUD LOCK
 ThudSavedR0				ds.l	1	; 700
@@ -753,9 +750,11 @@ ZeroWord				ds.l	1	; 910 ; Only NewWorld and Unknown PIHes touch this
 						ds.l	1	; 914
 						ds.l	1	; 918
 						ds.l	1	; 91c
-PageMap					ds.b	1184; 920:dc0
-NanoKernelInfo			ds.b	352	; dc0:f20 ; see NKNanoKernelInfo in PPCInfoRecordsPriv
-ProcessorInfo			ds.b	160	; f20:fc0
+						ds.b	0x3a0	; 920:cc0
+SystemInfo				ds.b	192	; cc0:d80
+DiagnosticInfo			ds.b	256	; d80:e80
+NanoKernelInfo			ds.b	256	; e80:f80 ; see NKNanoKernelInfo in PPCInfoRecordsPriv
+ProcessorInfo			ds.b	64	; f80:fc0
 InfoRecord				ds.b	64	; fc0:1000 ; was main copy in NKv1, now vestigial?
 
 						endr

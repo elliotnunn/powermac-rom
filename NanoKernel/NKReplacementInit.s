@@ -171,16 +171,16 @@ InitReplacement
 
 	bgt		@replaces_later_than_0101
 
-	;	
-	lwz		r12, KDP.PA_ECB_Old(r1)
+	;	Move some per-cpu values from KDP to EWA
+	lwz		r12, KDP.PA_ContextBlock(r1)
 	stw		r12, EWA.PA_ContextBlock(r1)
 
-	lwz		r12, 0x660(r1)
-	oris	r12, r12, 0x20
+	lwz		r12, KDP.Flags(r1)
+	_bset	r12, r12, EWA.kFlag9
 	stw		r12, EWA.Flags(r1)
 
-	lwz		r12,  0x0664(r1)
-	stw		r12, EWA.Enables(r1)		; boy, better figure out what this is
+	lwz		r12, KDP.Enables(r1)
+	stw		r12, EWA.Enables(r1)
 
 	b		@endif
 @replaces_later_than_0101

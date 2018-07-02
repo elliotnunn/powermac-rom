@@ -62,7 +62,6 @@
 ;	  NKVMCalls
 ;	    EditPTEInHTAB
 ;	    GetPARPageInfo
-;	    RemovePageFromTLB
 ;	    VMSecondLastExportedFunc
 ;	EXPORTS:
 ;	  BlockMPCall (=> NKExceptions, NKSync)
