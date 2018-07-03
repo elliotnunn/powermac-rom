@@ -133,4 +133,5 @@ for path in fnames:
                             o.write(l)
                             break
 
-    os.rename(path + '~', path)
+    open(path, 'wb').write(open(path + '~', 'rb').read().replace(b'\n', b'\r'))
+    os.unlink(path + '~')
