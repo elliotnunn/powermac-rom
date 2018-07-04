@@ -1,8 +1,9 @@
 ;	AUTO-GENERATED SYMBOL LIST
 ;	IMPORTS:
-;	  NKInterrupts
-;	    IntHandleSpecialFPException
+;	  NKExceptions
 ;	    IntReturn
+;	  NKFloatInts
+;	    IntHandleSpecialFPException
 ;	    bugger_around_with_floats
 ;	  NKPaging
 ;	    PagingL2PWithBATs

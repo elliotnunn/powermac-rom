@@ -36,11 +36,11 @@
 ;	    GetTime
 ;	    TimebaseTicksPerPeriod
 ;	EXPORTS:
-;	  CauseNotification (=> NKAddressSpaces, NKInterrupts, NKPrimaryIntHandlers)
-;	  EnqueueMessage (=> NKInterrupts, NKTasks, NKTimers)
+;	  CauseNotification (=> NKAddressSpaces, NKExceptions, NKIntMisc, NKPrimaryIntHandlers)
+;	  EnqueueMessage (=> NKExceptions, NKTasks, NKTimers)
 ;	  SetEvent (=> NKAddressSpaces, NKTimers)
 ;	  SignalSemaphore (=> NKTimers)
-;	  UnblockBlueIfCouldBePolling (=> NKInterrupts)
+;	  UnblockBlueIfCouldBePolling (=> NKExceptions)
 
 
  #######  ##     ## ######## ##     ## ########  ######  

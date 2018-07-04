@@ -11,8 +11,18 @@
 
 NKTop
 	include		'NKInit.s'
+
 	align		5
-	include		'NKInterrupts.s'
+IntPanicIsland
+	b			Panic
+	include		'NKExceptions.s'
+	align		5
+	include		'NKIntHandlers.s'
+	align		5
+	include		'NKFloatInts.s'
+	align		6
+	include		'NKIntMisc.s'
+
 	align		5
 	include		'NKPaging.s'
 	align		5

@@ -1,9 +1,9 @@
 ;	AUTO-GENERATED SYMBOL LIST
 ;	IMPORTS:
+;	  NKExceptions
+;	    IntReturn
 ;	  NKIndex
 ;	    LookupID
-;	  NKInterrupts
-;	    IntReturn
 ;	  NKMPCalls
 ;	    ReturnMPCallOOM
 ;	    ReturnParamErrFromMPCall

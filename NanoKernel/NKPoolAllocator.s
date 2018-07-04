@@ -45,7 +45,7 @@
 ;	EXPORTS:
 ;	  ExtendPool (=> NKMPCalls)
 ;	  InitPool (=> NKInit)
-;	  PoolAlloc (=> NKInterrupts, NKSync, NKTasks)
+;	  PoolAlloc (=> NKExceptions, NKSync, NKTasks)
 ;	  PoolAllocClear (=> NKAddressSpaces, NKIndex, NKInit, NKMPCalls, NKSync, NKTasks, NKTimers, NKVMCalls)
 ;	  PoolFree (=> NKAddressSpaces, NKMPCalls, NKSync, NKTasks, NKTimers)
 

@@ -20,13 +20,14 @@
 ;	    printh
 ;	    prints
 ;	    printw
+;	  NKExceptions
+;	    IntReturn
 ;	  NKIndex
 ;	    DeleteID
 ;	    GetNextIDOfClass
 ;	    LookupID
 ;	    MakeID
-;	  NKInterrupts
-;	    IntReturn
+;	  NKIntMisc
 ;	    SIGP
 ;	  NKPaging
 ;	    PagingL2PWithBATs
@@ -64,7 +65,7 @@
 ;	    RemovePageFromTLB
 ;	    VMSecondLastExportedFunc
 ;	EXPORTS:
-;	  BlockMPCall (=> NKInterrupts, NKSync)
+;	  BlockMPCall (=> NKExceptions, NKSync)
 ;	  CommonMPCallReturnPath (=> NKAddressSpaces, NKSleep, NKTasks)
 ;	  MPCall_6_0x78 (=> NKTasks)
 ;	  ReleaseAndMPCallWasBad (=> NKAddressSpaces)
@@ -83,7 +84,7 @@
 ;	  ReturnParamErrFromMPCall (=> NKAddressSpaces, NKPrimaryIntHandlers, NKSleep)
 ;	  ReturnZeroFromMPCall (=> NKAddressSpaces, NKSleep, NKSync)
 ;	  ScrambleMPCall (=> NKSync)
-;	  kcMPDispatch (=> NKInit, NKInterrupts)
+;	  kcMPDispatch (=> NKInit, NKIntMisc)
 ;	  major_0x0b0cc (=> NKAddressSpaces)
 
 

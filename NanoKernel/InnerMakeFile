@@ -7,7 +7,10 @@ NKFiles = ¶
 	{NKDir}NKBuiltinInit.s					¶
 	{NKDir}NKProcFlagsTbl.s					¶
 	{NKDir}NKProcInfoTbl.s					¶
-	{NKDir}NKInterrupts.s					¶
+	{NKDir}NKExceptions.s					¶
+	{NKDir}NKIntHandlers.s					¶
+	{NKDir}NKFloatInts.s					¶
+	{NKDir}NKIntMisc.s						¶
 	{NKDir}NKPaging.s						¶
 	{NKDir}NKTranslation.s					¶
 	{NKDir}NKVMCalls.s						¶

@@ -34,7 +34,7 @@
 ;	  CreateArea (=> NKVMCalls)
 ;	  CreateAreasFromPageMap (=> NKInit)
 ;	  DeletePTE (=> NKVMCalls)
-;	  FindAreaAbove (=> NKInterrupts, NKPaging, NKTasks, NKVMCalls)
+;	  FindAreaAbove (=> NKIntHandlers, NKPaging, NKTasks, NKVMCalls)
 ;	  FreePageListPush (=> NKInit)
 ;	  GetPTEFromPLE (=> NKVMCalls)
 ;	  InitFreePageList (=> NKInit)
@@ -42,9 +42,9 @@
 ;	  MPCall_95_0x254 (=> NKPaging)
 ;	  NKCreateAddressSpaceSub (=> NKInit)
 ;	  SetPTE (=> NKVMCalls)
-;	  SpaceGetPagePLE (=> NKInterrupts, NKPaging, NKVMCalls)
+;	  SpaceGetPagePLE (=> NKIntHandlers, NKPaging, NKVMCalls)
 ;	  SpaceL2PIgnoringBATs (=> NKMPCalls)
-;	  SpaceL2PUsingBATs (=> NKInterrupts, NKMPCalls)
+;	  SpaceL2PUsingBATs (=> NKIntHandlers, NKMPCalls)
 
 
 

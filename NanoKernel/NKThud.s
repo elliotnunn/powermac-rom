@@ -7,16 +7,16 @@
 ;	    printh
 ;	    prints
 ;	    printw
+;	  NKExceptions
+;	    Exception
 ;	  NKIndex
 ;	    GetNextIDOfClass
 ;	    LookupID
-;	  NKInterrupts
-;	    Exception
 ;	  NKPaging
 ;	    PagingFunc1
 ;	    PagingL2PWithoutBATs
 ;	EXPORTS:
-;	  panic (=> NKAddressSpaces, NKIndex, NKInit, NKInterrupts, NKMPCalls, NKPaging, NKPoolAllocator, NKPowerCalls, NKRTASCalls, NKScheduler, NKSleep, NKSync, NKTasks, NKTimers, NKTranslation, NKVMCalls)
+;	  panic (=> NKAddressSpaces, NKIndex, NKInit, NKMPCalls, NKPaging, NKPoolAllocator, NKPowerCalls, NKRTASCalls, NKScheduler, NKSleep, NKSync, NKTasks, NKTimers, NKTranslation, NKVMCalls)
 ;	  panic_non_interactive (=> NKTimers)
 
 

@@ -2,8 +2,9 @@
 ;	IMPORTS:
 ;	  NKCache
 ;	    FlushCaches
-;	  NKInterrupts
+;	  NKExceptions
 ;	    IntReturn
+;	  NKIntMisc
 ;	    wordfill
 ;	  NKThud
 ;	    panic

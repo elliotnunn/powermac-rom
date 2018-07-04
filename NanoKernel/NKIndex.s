@@ -26,7 +26,7 @@
 ;	  DeleteID (=> NKAddressSpaces, NKMPCalls, NKSync, NKTasks, NKTimers)
 ;	  GetNextIDOfClass (=> NKAddressSpaces, NKMPCalls, NKThud)
 ;	  InitIDIndex (=> NKInit)
-;	  LookupID (=> NKAddressSpaces, NKInterrupts, NKMPCalls, NKPrimaryIntHandlers, NKSync, NKTasks, NKThud, NKTimers)
+;	  LookupID (=> NKAddressSpaces, NKExceptions, NKIntMisc, NKMPCalls, NKPrimaryIntHandlers, NKSync, NKTasks, NKThud, NKTimers)
 ;	  MakeID (=> NKAddressSpaces, NKInit, NKMPCalls, NKSync, NKTasks)
 ;_______________________________________________________________________
 

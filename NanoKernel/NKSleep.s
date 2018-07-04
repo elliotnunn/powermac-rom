@@ -1,6 +1,6 @@
 ;	AUTO-GENERATED SYMBOL LIST
 ;	IMPORTS:
-;	  NKInterrupts
+;	  NKIntMisc
 ;	    SIGP
 ;	  NKMPCalls
 ;	    CommonMPCallReturnPath

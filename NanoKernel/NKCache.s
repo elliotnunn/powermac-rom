@@ -41,11 +41,11 @@
 
 ;	AUTO-GENERATED SYMBOL LIST
 ;	IMPORTS:
-;	  NKInterrupts
+;	  NKExceptions
 ;	    IntReturn
 ;	EXPORTS:
 ;	  FlushCaches (=> NKPowerCalls)
-;	  FlushL1CacheUsingMSSCR0 (=> NKInterrupts)
+;	  FlushL1CacheUsingMSSCR0 (=> NKIntHandlers)
 ;	  kcCacheDispatch (=> NKInit)
 
 ;	DeclareMPCall 199, kcCacheDispatch			; DEBUG

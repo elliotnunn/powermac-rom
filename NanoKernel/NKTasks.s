@@ -36,7 +36,7 @@
 ;	EXPORTS:
 ;	  CreateTask (=> NKInit, NKMPCalls)
 ;	  TasksFuncThatIsNotAMPCall (=> NKScheduler)
-;	  ThrowTaskToDebugger (=> NKInterrupts)
+;	  ThrowTaskToDebugger (=> NKExceptions)
 
 
 ;	This file mostly provides MPCall implementations related to multitasking.

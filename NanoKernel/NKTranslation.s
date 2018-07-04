@@ -16,23 +16,26 @@
 
 ;	AUTO-GENERATED SYMBOL LIST
 ;	IMPORTS:
-;	  NKInterrupts
+;	  NKExceptions
 ;	    Exception
 ;	    ExceptionMemRetried
+;	  NKFloatInts
 ;	    FloatLoadJumpTable
 ;	    FloatSaveJumpTable
-;	    IgnoreSoftwareInt
+;	  NKIntHandlers
 ;	    LoadInterruptRegisters
 ;	    major_0x03324
 ;	    major_0x03548
+;	  NKIntMisc
+;	    IgnoreSoftwareInt
 ;	  NKThud
 ;	    panic
 ;	EXPORTS:
 ;	  FDP (=> NKBuiltinInit, NKReplacementInit)
-;	  FDPEmulateInstruction (=> NKInterrupts)
-;	  FDP_003c (=> NKInterrupts)
-;	  FDP_011c (=> NKInterrupts)
-;	  FDP_0DA0 (=> NKInterrupts)
+;	  FDPEmulateInstruction (=> NKIntMisc)
+;	  FDP_003c (=> NKFloatInts)
+;	  FDP_011c (=> NKExceptions)
+;	  FDP_0DA0 (=> NKFloatInts, NKIntHandlers)
 ;	  FDP_1c40 (=> NKInit)
 ;	  ProbePerfMonitor (=> NKInit)
 

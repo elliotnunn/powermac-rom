@@ -10,7 +10,7 @@
 ;	    SpaceGetPagePLE
 ;	  NKConsoleLog
 ;	    printw
-;	  NKInterrupts
+;	  NKExceptions
 ;	    IntReturn
 ;	  NKPaging
 ;	    PagingFunc1

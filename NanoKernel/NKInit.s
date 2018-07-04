@@ -54,31 +54,33 @@
 ;	    printc
 ;	    printd
 ;	    printw
+;	  NKFloatInts
+;	    IntFPUnavail
 ;	  NKIndex
 ;	    InitIDIndex
 ;	    MakeID
-;	  NKInterrupts
-;	    HandlePerfMonitorInt
-;	    IgnoreSoftwareInt
+;	  NKIntHandlers
 ;	    IntAlignment
 ;	    IntDSI
 ;	    IntDecrementer
-;	    IntExternalAlternate
-;	    IntExternalSystem
-;	    IntFPUnavail
 ;	    IntISI
 ;	    IntMachineCheck
+;	    MemRetryDSI
+;	    MemRetryMachineCheck
+;	    PIHDSI
+;	    kcReturnFromException
+;	  NKIntMisc
+;	    HandlePerfMonitorInt
+;	    IgnoreSoftwareInt
+;	    IntExternalAlternate
+;	    IntExternalSystem
 ;	    IntPerfMonitor
 ;	    IntProgram
 ;	    IntSyscall
 ;	    IntThermalEvent
 ;	    IntTrace
-;	    MemRetryDSI
-;	    MemRetryMachineCheck
-;	    PIHDSI
 ;	    kcPrioritizeInterrupts
 ;	    kcResetSystem
-;	    kcReturnFromException
 ;	    kcRunAlternateContext
 ;	    kcThud
 ;	    major_0x046d0
@@ -130,7 +132,7 @@
 ;	  FinishInitBuiltin (=> NKBuiltinInit)
 ;	  InitHighLevel (=> NKReplacementInit)
 ;	  InitIRP (=> NKBuiltinInit, NKReplacementInit)
-;	  ResetBuiltinKernel (=> NKInterrupts)
+;	  ResetBuiltinKernel (=> NKIntMisc)
 
 
 

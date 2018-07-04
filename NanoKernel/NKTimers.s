@@ -34,7 +34,7 @@
 ;	  SetTimesliceFromCurTime (=> NKScheduler)
 ;	  StartTimeslicing (=> NKInit)
 ;	  TimebaseTicksPerPeriod (=> NKScheduler, NKSync)
-;	  TimerDispatch (=> NKInterrupts)
+;	  TimerDispatch (=> NKIntHandlers)
 
 
 Local_Panic		set		*

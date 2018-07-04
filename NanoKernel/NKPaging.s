@@ -15,10 +15,10 @@ Local_Panic		set		*
 ;	    panic
 ;	EXPORTS:
 ;	  PagingFlushTLB (=> NKInit, NKScheduler, NKSleep)
-;	  PagingFunc1 (=> NKInit, NKInterrupts, NKThud, NKVMCalls)
+;	  PagingFunc1 (=> NKInit, NKIntHandlers, NKThud, NKVMCalls)
 ;	  PagingFunc2 (=> NKInit)
 ;	  PagingFunc2AndAHalf (=> NKSleep)
-;	  PagingL2PWithBATs (=> NKInterrupts, NKMPCalls, NKRTASCalls, NKSleep)
+;	  PagingL2PWithBATs (=> NKIntHandlers, NKIntMisc, NKMPCalls, NKRTASCalls, NKSleep)
 ;	  PagingL2PWithoutBATs (=> NKInit, NKScreenConsole, NKThud)
 
 

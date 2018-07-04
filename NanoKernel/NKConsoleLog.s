@@ -11,7 +11,7 @@
 ;	  printd (=> NKInit, NKMPCalls, NKPoolAllocator, NKTimers)
 ;	  printh (=> NKBuiltinInit, NKMPCalls, NKReplacementInit, NKScheduler, NKThud, NKTimers)
 ;	  prints (=> NKMPCalls, NKThud)
-;	  printw (=> NKAddressSpaces, NKInit, NKInterrupts, NKMPCalls, NKPaging, NKPoolAllocator, NKReplacementInit, NKScheduler, NKThud, NKTimers, NKVMCalls)
+;	  printw (=> NKAddressSpaces, NKExceptions, NKInit, NKIntHandlers, NKIntMisc, NKMPCalls, NKPaging, NKPoolAllocator, NKReplacementInit, NKScheduler, NKThud, NKTimers, NKVMCalls)
 
 
 

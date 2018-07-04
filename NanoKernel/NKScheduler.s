@@ -3,7 +3,7 @@
 ;	  NKConsoleLog
 ;	    printh
 ;	    printw
-;	  NKInterrupts
+;	  NKIntMisc
 ;	    SIGP
 ;	  NKPaging
 ;	    PagingFlushTLB
@@ -17,27 +17,27 @@
 ;	    TimebaseTicksPerPeriod
 ;	EXPORTS:
 ;	  CalculateTimeslice (=> NKInit, NKMPCalls, NKPrimaryIntHandlers, NKSync, NKTasks, NKTimers)
-;	  FlagSchEval (=> NKInit, NKInterrupts, NKMPCalls, NKTasks)
+;	  FlagSchEval (=> NKExceptions, NKInit, NKMPCalls, NKTasks)
 ;	  FlagSchEvaluationIfTaskRequires (=> NKMPCalls, NKPrimaryIntHandlers, NKSync, NKTasks, NKTimers)
 ;	  NewCpuEntryPoint (=> NKMPCalls)
-;	  Restore_v0_v31 (=> NKInterrupts)
+;	  Restore_v0_v31 (=> NKIntMisc)
 ;	  Save_f0_f31 (=> NKSleep)
-;	  Save_v0_v31 (=> NKInterrupts, NKMPCalls, NKSleep)
-;	  SchEval (=> NKInterrupts, NKMPCalls)
-;	  SchExitInterrupt (=> NKInterrupts)
-;	  SchFiddlePriorityShifty (=> NKInterrupts)
+;	  Save_v0_v31 (=> NKExceptions, NKMPCalls, NKSleep)
+;	  SchEval (=> NKExceptions, NKMPCalls)
+;	  SchExitInterrupt (=> NKIntMisc)
+;	  SchFiddlePriorityShifty (=> NKIntHandlers)
 ;	  SchIdleTask (=> NKInit, NKMPCalls)
 ;	  SchIdleTaskStopper (=> NKMPCalls)
 ;	  SchInit (=> NKInit)
 ;	  SchRdyTaskLater (=> NKMPCalls, NKPrimaryIntHandlers, NKSync)
-;	  SchRdyTaskNow (=> NKInit, NKInterrupts, NKMPCalls, NKSync, NKTasks, NKTimers)
-;	  SchRestoreStartingAtR14 (=> NKInit, NKInterrupts, NKMPCalls, NKPrimaryIntHandlers, NKVMCalls)
+;	  SchRdyTaskNow (=> NKExceptions, NKInit, NKMPCalls, NKSync, NKTasks, NKTimers)
+;	  SchRestoreStartingAtR14 (=> NKExceptions, NKInit, NKIntHandlers, NKIntMisc, NKMPCalls, NKPrimaryIntHandlers, NKVMCalls)
 ;	  SchRestoreStartingAtR20 (=> NKPrimaryIntHandlers)
-;	  SchReturn (=> NKInterrupts)
-;	  SchSaveStartingAtR14 (=> NKInterrupts, NKMPCalls, NKVMCalls)
+;	  SchReturn (=> NKExceptions)
+;	  SchSaveStartingAtR14 (=> NKExceptions, NKIntHandlers, NKIntMisc, NKMPCalls, NKVMCalls)
 ;	  SchSaveStartingAtR20 (=> NKPrimaryIntHandlers)
-;	  SchSwitchSpace (=> NKInit, NKInterrupts, NKSleep)
-;	  SchTaskUnrdy (=> NKInterrupts, NKMPCalls, NKPrimaryIntHandlers, NKSync, NKTasks, NKTimers)
+;	  SchSwitchSpace (=> NKInit, NKIntMisc, NKSleep)
+;	  SchTaskUnrdy (=> NKExceptions, NKMPCalls, NKPrimaryIntHandlers, NKSync, NKTasks, NKTimers)
 ;	  clear_cr0_lt (=> NKTimers)
 ;	  major_0x149d4 (=> NKTimers)
 
