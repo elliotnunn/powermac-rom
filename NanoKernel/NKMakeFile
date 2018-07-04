@@ -1,0 +1,28 @@
+# I expect these variables to be set already:
+# NKDir, NKIncDir, NKBin
+
+NKFiles = ¶
+    {NKDir}NanoKernel.s                     ¶
+    {NKDir}NKStructs.s                      ¶
+    {NKDir}NKEquates.s                      ¶
+    {NKDir}NKMacros.s                       ¶
+    {NKDir}NKInit.s                         ¶
+    {NKDir}NKSystemCrash.s                  ¶
+    {NKDir}NKHotInts.s                      ¶
+    {NKDir}NKColdInts.s                     ¶
+    {NKDir}MROptabCode.s                    ¶
+    {NKDir}MRMemtabCode.s                   ¶
+    {NKDir}MRInterrupts.s                   ¶
+    {NKDir}MROptab.s                        ¶
+    {NKDir}MRMemtab.s                       ¶
+    {NKDir}MRRestab.s                       ¶
+    {NKDir}NKMemory.s                       ¶
+    {NKDir}NKExceptions.s                   ¶
+    {NKDir}NKFloatingPt.s                   ¶
+    {NKDir}NKSoftInts.s                     ¶
+    {NKDir}NKReset.s                        ¶
+    {NKDir}NKLegacyVM.s                     ¶
+
+# We get warning 3202 from ALIGN directives -- kill it
+{NKBin}                     Ä   {NKDir}NanoKernel.s {NKFiles}
+    PPCAsm -o {Targ} -w 3202 -i {NKIncDir} -i "{AIncludes}" {NKDir}NanoKernel.s

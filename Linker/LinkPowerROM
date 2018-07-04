@@ -86,7 +86,7 @@ End
 Echo ------------------------------
 
 Echo "Running PPCLink..."
-PPCLink -xm library -codestart 0 -warn -o "{DEST_X}" {LinkList}
+PPCLink -xm library -dead off -codestart 0 -warn -o "{DEST_X}" {LinkList}
 
 Echo "Dumping temp xcoff to DEST..."
 "{CTOOL}" fromx "{DEST_X}" "{DEST}"

@@ -36,7 +36,7 @@ NKDir					=	:NanoKernel:
 NKIncDir				=	:Internal:
 NKBin					=	{ResultDir}NanoKernel.x
 NKOpts					=
-#include "{NKDir}InnerMakeFile"
+#include "{NKDir}NKMakeFile"
 
 
 

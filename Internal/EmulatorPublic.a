@@ -74,6 +74,9 @@ Reg12					ds.l	1	; 770
 Reg13					ds.l	1	; 774
 Reg14					ds.l	1	; 778
 
+						org		0x800
+FuncPtrs				ds.l	120	; 800:9e0
+
 						org		0xf00
 BootstrapVersion		ds.b	16	; f00:f10 ; Bootstrap loader version info, from ConfigInfo
 
@@ -83,124 +86,6 @@ BootstrapVersion		ds.b	16	; f00:f10 ; Bootstrap loader version info, from Config
 
 
 
-;	Lives in EDP. Keeping a separate record to EDP makes the code nicer.
-;	Gets called the "system context"
-ContextBlock			record	0,INCR
+; Move this!
 
-Flags					ds.l	1	; 000 ; (SPAC) copied from kdp by CreateTask
-Enables					ds.l	1	; 004
 
-						org		0x40
-SavedFlags				ds.l	1	; 040 ; from before exception
-
-						org		0x44
-SavedEnables			ds.l	1	; 044 ; from before exception
-
-						org		0x4c
-ExceptionHandler		ds.l	1	; 04c
-
-						org		0x5c
-LA_EmulatorKernelTrapTable ds.l	1
-
-						org		0x74
-SRR0					ds.l	1	; 074
-
-						org		0x84
-LA_EmulatorEntry		ds.l	1	; 084 ; Entry pt of emulator; set by NK Init.s
-
-						org		0x94
-LA_EmulatorData			ds.l	1
-
-						org		0x9c
-LA_DispatchTable		ds.l	1
-
-						org		0xa4
-MSR						ds.l	1	; 0a4 ; (SPAC) copied from kdp by CreateTask
-
-						org		0xc4
-MQ						ds.l	1	; 0c4 ; 601 only
-EDPOffsetSWIRelated		ds.l	1	; 0c8
-PriorityShifty			ds.l	1	; 0cc ; if low nybble is empty, SchInit sets this to 2
-SWIEventGroupID			ds.l	1	; 0d0 ; what?
-XER						ds.l	1	; 0d4
-VectorSaveArea			ds.l	1	; 0d8 ; AltiVec hack: vector registers don't fit in CB!
-CR						ds.l	1	; 0dc ; from heartbeat code, unsure of meaning (ANDed with PostIntMaskInit) r13
-PageInSystemHeap		ds.l	1	; 0e0 ; these are set by StartInit.a:FiddleWithEmulator
-OtherPageInSystemHeap	ds.l	1	; 0e4
-FE000000				ds.l	1	; 0e8 ; also LR?
-LR						ds.l	1	; 0ec
-CTR						ds.l	1	; 0f0
-KernelCTR				ds.l	1	; 0f4
-
-						org		0xfc
-CodePtr					ds.l	1	; 0fc ; probably goes in SRR0?
-
-						org		0x100
-						ds.l	1
-r0						ds.l	1	; 104
-						ds.l	1
-r1						ds.l	1	; 10c
-						ds.l	1
-r2						ds.l	1	; 114
-						ds.l	1
-r3						ds.l	1	; 11c
-						ds.l	1
-r4						ds.l	1	; 124
-						ds.l	1
-r5						ds.l	1	; 12c
-						ds.l	1
-r6						ds.l	1	; 134
-						ds.l	1
-r7						ds.l	1	; 13c
-						ds.l	1
-r8						ds.l	1	; 144
-						ds.l	1
-r9						ds.l	1	; 14c
-						ds.l	1
-r10						ds.l	1	; 154
-						ds.l	1
-r11						ds.l	1	; 15c
-						ds.l	1
-r12						ds.l	1	; 164
-						ds.l	1
-r13						ds.l	1	; 16c
-						ds.l	1
-r14						ds.l	1	; 174
-						ds.l	1
-r15						ds.l	1	; 17c
-						ds.l	1
-r16						ds.l	1	; 184
-						ds.l	1
-r17						ds.l	1	; 18c
-						ds.l	1
-r18						ds.l	1	; 194
-						ds.l	1
-r19						ds.l	1	; 19c
-						ds.l	1
-r20						ds.l	1	; 1a4
-						ds.l	1
-r21						ds.l	1	; 1ac
-						ds.l	1
-r22						ds.l	1	; 1b4
-						ds.l	1
-r23						ds.l	1	; 1bc
-						ds.l	1
-r24						ds.l	1	; 1c4
-						ds.l	1
-r25						ds.l	1	; 1cc
-						ds.l	1
-r26						ds.l	1	; 1d4
-						ds.l	1
-r27						ds.l	1	; 1dc
-						ds.l	1
-r28						ds.l	1	; 1e4
-						ds.l	1
-r29						ds.l	1	; 1ec
-						ds.l	1
-r30						ds.l	1	; 1f4
-						ds.l	1
-r31						ds.l	1	; 1fc
-
-FloatRegisters			ds.d	32	; 200:300
-
-						endr
