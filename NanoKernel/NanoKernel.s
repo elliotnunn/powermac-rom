@@ -46,7 +46,7 @@ Panic
 
 	org			0x289C
 
-	include		'NKIntMisc.s'
-	include		'NKVMCalls.s'
+	include		'NKSoftInt.s'
+	include		'NKLegacyVM.s'
 
 NKBtm
