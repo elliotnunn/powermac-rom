@@ -587,17 +587,19 @@ OldKDP					ds.l	1	; 5a0 ; gotten from the old SPRG0
 OtherFreeThing			ds.l	1	; 5a4
 TopOfFreePages			ds.l	1	; 5a8 ; gotten from the old SPRG0
 						ds.l	1	; 5ac
-FlatPageListSegPtrs		ds.l	4	; 5b0:5c0
+PARPerSegmentPLEPtrs	ds.l	4	; 5b0:5c0 ; for each PAR segment, a ptr into the PAR PageList
 PerfMonitorBits			ds.l	1	; 5c0
 						ds.l	1	; 5c4
-SegMap32SupInitPtr		ds.l	1	; 5c8
-BatMap32SupInit			ds.l	1	; 5cc
-SegMap32UsrInitPtr		ds.l	1	; 5d0
-BatMap32UsrInit			ds.l	1	; 5d4
-SegMap32CPUInitPtr		ds.l	1	; 5d8
-BatMap32CPUInit			ds.l	1	; 5dc
-SegMap32OvlInitPtr		ds.l	1	; 5e0
-BatMap32OvlInit			ds.l	1	; 5e4
+
+SupervisorSegMapPtr		ds.l	1	; 5c8 ; these are for enabling overlay, etc
+SupervisorBatMap		ds.l	1	; 5cc
+UserSegMapPtr			ds.l	1	; 5d0
+UserBatMap				ds.l	1	; 5d4
+CPUSegMapPtr			ds.l	1	; 5d8
+CPUBatMap				ds.l	1	; 5dc
+OverlaySegMapPtr		ds.l	1	; 5e0
+OverlayBatMap			ds.l	1	; 5e4
+
 						ds.l	1	; 5e8
 						ds.l	1	; 5ec
 NanoKernelCallTable		ds.l	16	; 5f0:630
@@ -641,7 +643,7 @@ CpuSpecificByte2		ds.b	1	; 6b9 ; probably not flags (set in same way)
 						ds.b	1	; 6ba
 						ds.b	1	; 6bb
 						ds.l	1	; 6bc
-						ds.l	16	; 6c0 ; was FlatPageListSegPtrs
+						ds.l	16	; 6c0 ; was PARPerSegmentPLEPtrs
 
 StartOfPanicArea					; PROTECTED BY THUD LOCK
 ThudSavedR0				ds.l	1	; 700
@@ -879,7 +881,7 @@ Size					equ		*
 ;	and I have misunderstood.
 ;_______________________________________________________________________
 
-PMDT					record	0,INCR
+PageMapEntry			record	0,INCR
 LBase					ds.w	1	; 0 ; (base - segment) >> 12
 PageCount				ds.w	1	; 2 ; page count MINUS ONE
 PBaseAndFlags			ds.l	1	; 4 ; PBase page aligned

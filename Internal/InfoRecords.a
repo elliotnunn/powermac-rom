@@ -188,7 +188,7 @@ Bank24Size				ds.l	1			; 0f4, irp+eb4 ; Number of bytes in  RAM bank 24
 Bank25Start				ds.l	1			; 0f8, irp+eb8 ; Starting address of RAM bank 25
 Bank25Size				ds.l	1			; 0fc, irp+ebc ; Number of bytes in  RAM bank 25
 EndOfBanks
-MaxBanks				equ		26			; Pads out to old struct len (cache block), more to come...
+MaxBanks				equ		16			; Pads out to old struct len (cache block), more to come...
 
 											; Interrupt Support Data
 IntCntrBaseAddr			ds.l	1			; 100, irp+ec0 ; Interrupt Controller Base Address  (variable is used since this is a PCI Dev and address is relocatable)
