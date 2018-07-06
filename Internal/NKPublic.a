@@ -583,13 +583,12 @@ NCBPointerCacheEnd
 VecBaseSystem			ds.l	48	; 360:420 ; when 68k emulator is running, *or* any MTask
 VecBaseAlternate		ds.l	48	; 420:4e0 ; native PowerPC in blue task
 VecBaseMemRetry			ds.l	48	; 4e0:5a0 ; "FDP" instruction emulation
-OldKDP					ds.l	1	; 5a0 ; gotten from the old SPRG0
-OtherFreeThing			ds.l	1	; 5a4
+FloatEmScratch			ds.d	1	; 5a0:5a8
 TopOfFreePages			ds.l	1	; 5a8 ; gotten from the old SPRG0
 						ds.l	1	; 5ac
 PARPerSegmentPLEPtrs	ds.l	4	; 5b0:5c0 ; for each PAR segment, a ptr into the PAR PageList
-PerfMonitorBits			ds.l	1	; 5c0
-						ds.l	1	; 5c4
+FloatingPtTemp1			ds.l	1	; 5c0
+FloatingPtTemp2			ds.l	1	; 5c4
 
 SupervisorSegMapPtr		ds.l	1	; 5c8 ; these are for enabling overlay, etc
 SupervisorBatMap		ds.l	1	; 5cc

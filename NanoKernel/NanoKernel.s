@@ -46,10 +46,13 @@ IntDSI
 IntAlignment
 	org 0xC00
 FDP
+	org 0xC38
+FDP_003C
 	org	0xA38
 loc_A38
 	org	0xD50
 loc_D50
+FDP_0DA0
 	org 0x13F4
 MemRetryDSI
 	org 0x1498
@@ -93,22 +96,8 @@ IntReturn
 	org 0x23F0
 major_0x02ccc
 	org 0x2500
-IntFPUnavail
-	org 0x2550
-major_0x03e18
-	org 0x2558
-IntHandleSpecialFPException
-	org 0x2574
-LoadFloatsFromContextBlock
-	org 0x2600
-bugger_around_with_floats
-	org 0x269C
-FloatTables_0
 
-
-
-	org			0x289C
-
+	include		'NKFloatingPt.s'
 	include		'NKSoftInt.s'
 	include		'NKLegacyVM.s'
 
