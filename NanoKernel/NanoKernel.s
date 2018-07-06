@@ -46,6 +46,10 @@ IntDSI
 IntAlignment
 	org 0xC00
 FDP
+	org	0xA38
+loc_A38
+	org	0xD50
+loc_D50
 	org 0x13F4
 MemRetryDSI
 	org 0x1498
