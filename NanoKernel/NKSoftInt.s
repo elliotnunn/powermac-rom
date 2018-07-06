@@ -38,7 +38,7 @@ KCallRunAlternateContext
 	clrlwi	r7, r7, 8
 	stw		r8, ContextBlock.LA_EmulatorKernelTrapTable(r9)
 
-	stw		r9, EWA.PA_ContextBlock(r1)
+	stw		r9, KDP.PA_ContextBlock(r1)
 
 	b		IntReturnToOtherBlueContext
 
@@ -298,7 +298,7 @@ IntProgram ; (also called when the Alternate Context gets an External Int => Exc
 	xoris	r8, r8, 0xfff
 	cmplwi	cr7, r8, 16			; only traps 0-15 are allowed
 	slwi	r8, r8, 2			; (for "success" case below)
-	bge		@illegalTrap
+	bge		cr7, @illegalTrap
 
 	;	SUCCESSFUL TRAP from outside emulator KCall table
 	;	=> Service call then return to following instruction
