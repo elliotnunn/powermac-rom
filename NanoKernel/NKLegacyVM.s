@@ -125,7 +125,7 @@ VMReturn	;	OUTSIDE REFERER
 
 VMInit	;	OUTSIDE REFERER
 	lwz		r7, KDP.FlatPageListPtr(r1)			; check that zero seg isn't empty
-	lwz		r8, KDP.FlatPageListSegPtrs + 0(r1)
+	lwz		r8, KDP.PARPerSegmentPLEPtrs + 0(r1)
 	cmpw	r7, r8
 	bne		VMReturn1
 
@@ -150,7 +150,7 @@ VMInit_BigLoop
 	bne		VMInit_0x110
 	bnel	cr1, VMPanic
 	rlwinm	r15, r8, 22,  0, 29
-	addi	r3, r1, KDP.FlatPageListSegPtrs
+	addi	r3, r1, KDP.PARPerSegmentPLEPtrs
 	rlwimi	r3, r5,  2, 28, 29
 	stw		r15,  0x0000(r3)
 	slwi	r3, r5, 16
@@ -319,7 +319,7 @@ VMInit_0x29c
 
 VMInit_Fail
 	lwz		r7, KDP.TotalPhysicalPages(r1)
-	lwz		r8, KDP.FlatPageListSegPtrs + 0(r1)
+	lwz		r8, KDP.PARPerSegmentPLEPtrs + 0(r1)
 	stw		r7, KDP.VMLogicalPages(r1)
 	stw		r8, KDP.FlatPageListPtr(r1)
 
@@ -798,7 +798,7 @@ VMShouldClean	;	OUTSIDE REFERER
 
 VMAllocateMemory	;	OUTSIDE REFERER
 	lwz		r7,  KDP.FlatPageListPtr(r1)
-	lwz		r8, KDP.FlatPageListSegPtrs + 0(r1)
+	lwz		r8, KDP.PARPerSegmentPLEPtrs + 0(r1)
 	cmpwi	cr6, r5,  0x00
 	cmpw	cr7, r7, r8
 	or		r7, r4, r6
@@ -1148,7 +1148,7 @@ VMLastExportedFunc_0xd7
 ;	                     major_0x09c9c                      
 
 major_0x09c9c	;	OUTSIDE REFERER
-	addi	r8, r1, KDP.FlatPageListSegPtrs
+	addi	r8, r1, KDP.PARPerSegmentPLEPtrs
 	lwz		r9, KDP.TotalPhysicalPages(r1)
 	rlwimi	r8, r7, 18, 28, 29
 	cmplw	r7, r9

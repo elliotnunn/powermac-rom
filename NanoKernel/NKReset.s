@@ -1,6 +1,7 @@
 ;	AUTO-GENERATED SYMBOL LIST
 
 
+
 ;	These registers will be used throughout
 
 rCI 	set		rCI
@@ -121,7 +122,7 @@ InitKCalls
 
 	;	Start with a default function
 	
-	_kaddr	r23, rNK, kcThud
+	_kaddr	r23, rNK, KCallSystemCrash
 
 	addi	r8, r1, KDP.NanoKernelCallTable
 
@@ -135,22 +136,22 @@ InitKCalls
 
 	;	Then some overrides (names still pretty poor)
 
-	_kaddr	r23, rNK, kcReturnFromException
+	_kaddr	r23, rNK, KCallReturnFromException
 	stw		r23, NanoKernelCallTable.ReturnFromException(r8)
 
-	_kaddr	r23, rNK, kcRunAlternateContext
+	_kaddr	r23, rNK, KCallRunAlternateContext
 	stw		r23, NanoKernelCallTable.RunAlternateContext(r8)
 
-	_kaddr	r23, rNK, kcResetSystem
+	_kaddr	r23, rNK, KCallResetSystem
 	stw		r23, NanoKernelCallTable.ResetSystem(r8)
 
-	_kaddr	r23, rNK, kcVMDispatch
+	_kaddr	r23, rNK, KCallVMDispatch
 	stw		r23, NanoKernelCallTable.VMDispatch(r8)
 
-	_kaddr	r23, rNK, kcPrioritizeInterrupts
+	_kaddr	r23, rNK, KCallPrioritizeInterrupts
 	stw		r23, NanoKernelCallTable.PrioritizeInterrupts(r8)
 
-	_kaddr	r23, rNK, kcThud
+	_kaddr	r23, rNK, KCallThud
 	stw		r23, NanoKernelCallTable.Thud(r8)
 
 

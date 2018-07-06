@@ -2,35 +2,7 @@
 # NKDir, NKIncDir, NKBin
 
 NKFiles = ¶
-	{NKDir}NKInit.s							¶
-	{NKDir}NKReplacementInit.s				¶
-	{NKDir}NKBuiltinInit.s					¶
-	{NKDir}NKProcFlagsTbl.s					¶
-	{NKDir}NKProcInfoTbl.s					¶
-	{NKDir}NKExceptions.s					¶
-	{NKDir}NKIntHandlers.s					¶
-	{NKDir}NKFloatInts.s					¶
-	{NKDir}NKIntMisc.s						¶
-	{NKDir}NKPaging.s						¶
-	{NKDir}NKTranslation.s					¶
-	{NKDir}NKVMCalls.s						¶
-	{NKDir}NKPowerCalls.s					¶
-	{NKDir}NKRTASCalls.s					¶
-	{NKDir}NKCache.s						¶
-	{NKDir}NKMPCalls.s						¶
-	{NKDir}NKSync.s							¶
-	{NKDir}NKTasks.s						¶
-	{NKDir}NKAddressSpaces.s				¶
-	{NKDir}NKPoolAllocator.s				¶
-	{NKDir}NKTimers.s						¶
-	{NKDir}NKScheduler.s					¶
-	{NKDir}NKIndex.s						¶
-	{NKDir}NKPrimaryIntHandlers.s			¶
-	{NKDir}NKConsoleLog.s					¶
-	{NKDir}NKSleep.s						¶
-	{NKDir}NKThud.s							¶
-	{NKDir}NKScreenConsole.s				¶
-	{NKDir}NKAdditions.s					¶
+	{NKDir}NanoKernel.s						¶
 
 NKIncludes = ¶
 	{NKDir}NKMacros.s						¶

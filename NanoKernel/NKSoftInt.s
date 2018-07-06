@@ -163,10 +163,10 @@ KCallResetSystem ; PPC trap 1, or indirectly, 68k RESET
 
 	xoris	r8, r3, 'Ga'
 	cmplwi	r8,     'ry'
-	bne		@actually_reset
+	bne		Reset
 	xoris	r8, r4, 0x0505
 	cmplwi	r8,     0x1956
-	bne		@actually_reset
+	bne		Reset
 
 	;	Gary Davidian skeleton key: r5/D0 = MSR bits to unset, r7/D2 = MSR bits to set
 	andc	r11, r11, r5
@@ -174,11 +174,11 @@ KCallResetSystem ; PPC trap 1, or indirectly, 68k RESET
 	or		r11, r11, r8
 	b		IntReturn
 
-@actually_reset
+Reset
 	include	'NKReset.s'
 
 	lmw		r14, EWA.r14(r1)
-	b		kcPrioritizeInterrupts
+	b		KCallPrioritizeInterrupts
 
 ########################################################################
 
@@ -204,7 +204,7 @@ KCallPrioritizeInterrupts
 	lwz		r8, ContextBlock.r8(r6)
 	lwz		r9, ContextBlock.r9(r6)
 	lwz		r6, EWA.r6(r1)
-										blrl ; (could this ever fall though to kcThud?)
+										blrl ; (could this ever fall though to KCallallSystemCrash?)
 
 ########################################################################
 
@@ -309,8 +309,8 @@ IntProgram ; (also called when the Alternate Context gets an External Int => Exc
 	stw		r10, KDP.NanoKernelInfo + NKNanoKernelInfo.NanoKernelCallCounts(r8)
 	lwz		r8, KDP.NanoKernelCallTable(r8)
 	mtlr	r8
-	addi	r10, r10, 4			; continue executing the next instruction
-	rlwimi	r7, r7, 32-5, 26, 26 ; something about MSR[SE]
+	addi	r10, r10, 4				; continue executing the next instruction
+	rlwimi	r7, r7, 32-5, 26, 26	; something about MSR[SE]
 	blr
 
 	;	Cannot service with a KCall => throw Exception
@@ -336,7 +336,7 @@ IntProgram ; (also called when the Alternate Context gets an External Int => Exc
 	li		r8, ecFloatException
 	bc		BO_IF, 15, Exception	; SRR1[15] set => handler can retry
 	addi	r10, r10, 4
-	rlwimi	r7, r7, 32-5, 26, 26 ; something about MSR[SE]
+	rlwimi	r7, r7, 32-5, 26, 26	; something about MSR[SE]
 	b		Exception				; SRR1[15] unset => can't retry
 
 ########################################################################

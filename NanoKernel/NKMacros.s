@@ -302,3 +302,11 @@ _bclr_lbit set 31
 	ENDIF
 
 	ENDM
+
+
+	MACRO
+	_kaddr &rd, &rs, &label
+
+	addi	&rd, &rs, (&label-NKTop)
+
+	ENDM
