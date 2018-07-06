@@ -8,16 +8,13 @@ IllegalInstruction
 
 ########################################################################
 
-;	We can assume that this is being called from the emulator
+	align	kIntAlign
+KCallRunAlternateContext
+;	ARG		ContextBlock *r3, flags r4
 
 ;	We accept a logical NCB ptr but the kernel needs a physical one.
 ;	So we keep a four-entry cache in KDP, mapping logical NCB ptrs
-;	to physical ones. But when are there multiple alt contexts?
-
-;	ARG		flags? r3, mask r4
-
-	align	kIntAlign
-KCallRunAlternateContext
+;	to physical ones. Never seen multiple contexts used before though.
 
 	and.	r8, r4, r13
 	lwz		r9, KDP.NCBCacheLA0(r1)
@@ -158,7 +155,9 @@ KCallRunAlternateContext
 ########################################################################
 
 	align	kIntAlign
-KCallResetSystem ; PPC trap 1, or indirectly, 68k RESET
+KCallResetSystem
+;	PPC trap 1, or indirectly, 68k RESET
+
 	stmw	r14, EWA.r14(r1)
 
 	xoris	r8, r3, 'Ga'
@@ -184,7 +183,6 @@ Reset
 
 	align	kIntAlign
 KCallPrioritizeInterrupts
-
 	;	Left side: roll back the interrupt preparation before the int handler repeats is
 	;	Right side: jump to the external interrupt handler (PIH or IntProgram)
 	mtsprg	2, r12
@@ -207,8 +205,6 @@ KCallPrioritizeInterrupts
 										blrl ; (could this ever fall though to KCallSystemCrash?)
 
 ########################################################################
-
-;	Move registers from CB to EWA, and Thud.
 
 KCallSystemCrash
 
@@ -243,7 +239,8 @@ KCallSystemCrash
 ########################################################################
 
 	align	kIntAlign
-IntProgram ; (also called when the Alternate Context gets an External Int => Exception)
+IntProgram
+;	(also called when the Alternate Context gets an External Int => Exception)
 
 	;	Standard interrupt palaver
 	mfsprg	r1, 0
