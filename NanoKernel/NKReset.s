@@ -4,16 +4,16 @@
 
 ;	These registers will be used throughout
 
-rCI 	set		rCI
+rCI 	set		r26
 		lwz		rCI, KDP.PA_ConfigInfo(r1)
 
-rNK 	set		rNK
+rNK 	set		r25
 		lwz		rNK, KDP.PA_NanoKernelCode(r1)
 
-rPgMap 	set		rPgMap
+rPgMap 	set		r18
 		lwz		rPgMap, KDP.PA_PageMapStart(r1)
 
-rXER 	set		rXER
+rXER 	set		r17
 		mfxer	rXER
 
 
@@ -54,16 +54,16 @@ rAlt set r8
 	stw		r23, VecTable.ISIVector(rSys)
 	stw		r23, VecTable.ISIVector(rAlt)
 
-	lbz		r22, NKConfigurationInfo.InterruptHandlerKind(rAlt)
+	lbz		r22, NKConfigurationInfo.InterruptHandlerKind(rCI)
 
 	cmpwi	r22, 0
-	_kaddr	r24, rNK, IntForEmulator_1
+	_kaddr	r23, rNK, IntForEmulator_1
 	beq		@chosenIntHandler
 	cmpwi	r22, 1
-	_kaddr	r24, rNK, IntForEmulator_2
+	_kaddr	r23, rNK, IntForEmulator_2
 	beq		@chosenIntHandler
 	cmpwi	r22, 2
-	_kaddr	r24, rNK, IntForEmulator_3
+	_kaddr	r23, rNK, IntForEmulator_3
 	beq		@chosenIntHandler
 
 @chosenIntHandler
@@ -92,10 +92,6 @@ rAlt set r8
 	_kaddr	r23, rNK, IntSyscall
 	stw		r23, VecTable.SyscallVector(rSys)
 	stw		r23, VecTable.SyscallVector(rAlt)
-
-	_kaddr	r23, rNK, IntPerfMonitor
-	stw		r23, VecTable.PerfMonitorVector(rSys)
-	stw		r23, VecTable.PerfMonitorVector(rAlt)
 
 	_kaddr	r23, rNK, IntTrace
 	stw		r23, VecTable.TraceVector(rSys)
@@ -242,14 +238,14 @@ CopyPageMap
 	lwz		r8, NKConfigurationInfo.PageMapKDPOffset(rCI)
 	add		r8, rPgMap, r8
 	lwz		r23, PageMapEntry.PBaseAndFlags(r8)
-	rlwimi	r23, r19, 0, 0, 0xFFFFF000
+	rlwimi	r23, r19, 0, 0xFFFFF000
 	stw		r23, PageMapEntry.PBaseAndFlags(r8)
 
 	lwz		r19, KDP.PA_EmulatorData(r1)
 	lwz		r8, NKConfigurationInfo.PageMapEDPOffset(rCI)
 	add		r8, rPgMap, r8
 	lwz		r23, PageMapEntry.PBaseAndFlags(r8)
-	rlwimi	r23, r19, 0, 0, 0xFFFFF000
+	rlwimi	r23, r19, 0, 0xFFFFF000
 	stw		r23, PageMapEntry.PBaseAndFlags(r8)
 
 
@@ -409,6 +405,8 @@ CreatePARInPageMap
 
 	addi	r29, r1, KDP.PARPerSegmentPLEPtrs - 4	; where to save per-segment PLE ptr
 	addi	r19, r1, KDP.SegMap32SupInit - 8		; which part of PageMap to update 
+
+	stw		r21, KDP.PARPageListPtr(r1)
 
 @next_segment
 	cmplwi	r22, 0xffff				; continue (bgt) while there are still pages left

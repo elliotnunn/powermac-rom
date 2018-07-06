@@ -210,7 +210,6 @@ KCallPrioritizeInterrupts
 
 ;	Move registers from CB to EWA, and Thud.
 
-	align	kIntAlign
 KCallallSystemCrash
 
 	stw		r0, EWA.r0(r1)

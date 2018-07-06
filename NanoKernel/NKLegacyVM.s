@@ -124,14 +124,14 @@ VMReturn	;	OUTSIDE REFERER
 	DeclareVMCall	0, VMInit
 
 VMInit	;	OUTSIDE REFERER
-	lwz		r7, KDP.FlatPageListPtr(r1)			; check that zero seg isn't empty
+	lwz		r7, KDP.PARPageListPtr(r1)			; check that zero seg isn't empty
 	lwz		r8, KDP.PARPerSegmentPLEPtrs + 0(r1)
 	cmpw	r7, r8
 	bne		VMReturn1
 
 	stw		r4, KDP.VMLogicalPages(r1)	; resize PAR
 
-	stw		r5, KDP.FlatPageListPtr(r1)			; where did NK find this???
+	stw		r5, KDP.PARPageListPtr(r1)			; where did NK find this???
 
 	lwz		r6,  0x05e8(r1)
 	li		r5,  0x00
@@ -197,7 +197,7 @@ VMInit_0x110
 	lwz		r7, KDP.TotalPhysicalPages(r1)
 	cmpw	r4, r7
 	bnel	VMPanic
-	lwz		r5,  KDP.FlatPageListPtr(r1)
+	lwz		r5,  KDP.PARPageListPtr(r1)
 	lwz		r4, KDP.VMLogicalPages(r1)
 	andi.	r7, r5,  0xfff
 
@@ -227,7 +227,7 @@ VMInit_0x110
 
 	srwi	r7, r5, 12
 	bl		major_0x09c9c
-	stw		r9,  KDP.FlatPageListPtr(r1)
+	stw		r9,  KDP.PARPageListPtr(r1)
 	mr		r15, r9
 	srwi	r7, r5, 12
 	add		r7, r7, r6
@@ -263,7 +263,7 @@ VMInit_0x1ec
 	ori		r16, r9,  0x21
 	stwx	r16, r15, r6
 	bne		VMInit_0x1ec
-	lwz		r15,  KDP.FlatPageListPtr(r1)
+	lwz		r15,  KDP.PARPageListPtr(r1)
 	srwi	r7, r5, 10
 	add		r15, r15, r7
 	lwz		r5, KDP.VMLogicalPages(r1)
@@ -295,7 +295,7 @@ VMInit_0x250
 	ble		VMInit_0x250
 	lwz		r6,  0x05e8(r1)
 	lwz		r9, KDP.VMLogicalPages(r1)
-	lwz		r15,  KDP.FlatPageListPtr(r1)
+	lwz		r15,  KDP.PARPageListPtr(r1)
 
 VMInit_0x288
 	lwz		r8,  0x0000(r6)
@@ -321,7 +321,7 @@ VMInit_Fail
 	lwz		r7, KDP.TotalPhysicalPages(r1)
 	lwz		r8, KDP.PARPerSegmentPLEPtrs + 0(r1)
 	stw		r7, KDP.VMLogicalPages(r1)
-	stw		r8, KDP.FlatPageListPtr(r1)
+	stw		r8, KDP.PARPageListPtr(r1)
 
 	b		VMReturn
 
@@ -436,7 +436,7 @@ VMIsUnmodified	;	OUTSIDE REFERER
 
 VMLRU	;	OUTSIDE REFERER
 	rlwinm.	r9, r9,  2,  0, 29
-	lwz		r15,  KDP.FlatPageListPtr(r1)
+	lwz		r15,  KDP.PARPageListPtr(r1)
 	lwz		r14, KDP.HTABORG(r1)
 	add		r15, r15, r9
 	srwi	r4, r9,  2
@@ -691,7 +691,7 @@ VMMarkUndefined	;	OUTSIDE REFERER
 	bge		VMReturnMinus1
 	bgt		cr1, VMReturnMinus1
 	bgt		cr2, VMReturnMinus1
-	lwz		r15,  KDP.FlatPageListPtr(r1)
+	lwz		r15,  KDP.PARPageListPtr(r1)
 	slwi	r8, r7,  2
 	li		r7,  0x01
 
@@ -797,7 +797,7 @@ VMShouldClean	;	OUTSIDE REFERER
 	DeclareVMCall	25, VMAllocateMemory
 
 VMAllocateMemory	;	OUTSIDE REFERER
-	lwz		r7,  KDP.FlatPageListPtr(r1)
+	lwz		r7,  KDP.PARPageListPtr(r1)
 	lwz		r8, KDP.PARPerSegmentPLEPtrs + 0(r1)
 	cmpwi	cr6, r5,  0x00
 	cmpw	cr7, r7, r8
@@ -877,7 +877,7 @@ VMAllocateMemory_0xf4
 	stw		r8, KDP.SystemInfo + NKSystemInfo.LogicalMemorySize(r1)
 
 	addi	r14, r1, 120
-	lwz		r15,  KDP.FlatPageListPtr(r1)
+	lwz		r15,  KDP.PARPageListPtr(r1)
 	li		r8, 0
 	addi	r7, r7, -0x01
 	ori		r8, r8, 0xffff
@@ -900,7 +900,7 @@ VMAllocateMemory_0x34c
 VMAllocateMemory_0x2e8
 	lwz		r16,  0x0000(r15)
 	lwz		r7, KDP.TotalPhysicalPages(r1)
-	lwz		r8,  KDP.FlatPageListPtr(r1)
+	lwz		r8,  KDP.PARPageListPtr(r1)
 	slwi	r7, r7,  2
 	add		r7, r7, r8
 	slwi	r8, r5,  2
@@ -936,7 +936,7 @@ VMAllocateMemory_0x324
 
 GetPARPageInfo	;	OUTSIDE REFERER
 	cmplw	cr4, r4, r9	;r9 is VMMaxVirtualPages by convention
-	lwz		r15,  KDP.FlatPageListPtr(r1)
+	lwz		r15,  KDP.PARPageListPtr(r1)
 	slwi	r8, r4,  2
 	bge		cr4, GetPARPageInfo_0x40
 

@@ -31,7 +31,25 @@ SchSwitchSpace
 CauseNotification
 FDPEmulateInstruction
 ReturnFromExceptionFastPath
-
+IntAlignment
+IntDecrementerAlternate
+IntDecrementerSystem
+IntDSI
+IntForEmulator_1
+IntForEmulator_2
+IntForEmulator_3
+IntFPUnavail
+IntISI
+IntMachineCheck
+IntPerfMonitor
+KCallReturnFromException
+KCallSystemCrash
+KCallThud
+KCallVMDispatch
+MemRetryDSI
+MemRetryMachineCheck
+PagingFlushTLB
+PagingFunc2
 	
 	org			0x23AC
 IntReturn

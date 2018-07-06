@@ -635,7 +635,7 @@ PTEGMask				ds.l	1	; 6a0
 HTABORG					ds.l	1	; 6a4
 VMLogicalPages			ds.l	1	; 6a8 ; set at init and changed by VMInit
 TotalPhysicalPages		ds.l	1	; 6ac ; does not take into acct maximum MacOS memory
-FlatPageListPtr			ds.l	1	; 6b0 ; VM puts this in system heap
+PARPageListPtr			ds.l	1	; 6b0 ; VM puts this in system heap
 VMMaxVirtualPages		ds.l	1	; 6b4 ; always 5fffe000, even with VM on
 CpuSpecificBytes
 CpuSpecificByte1		ds.b	1	; 6b8 ; seems to contain flags (set from PVR & tbl by Init.s)
