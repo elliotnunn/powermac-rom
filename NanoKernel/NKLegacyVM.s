@@ -30,7 +30,7 @@ MaxVMCallCount		equ		26
 
 ;	Accessed ONLY via Sup table
 
-kcVMDispatch	;	OUTSIDE REFERER
+KCallVMDispatch	;	OUTSIDE REFERER
 
 	stw		r7, KDP.Flags(r1)
 	lwz		r7, KDP.PA_NanoKernelCode(r1)

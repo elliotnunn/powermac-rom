@@ -1,6 +1,6 @@
 ;	AUTO-GENERATED SYMBOL LIST
 
-
+########################################################################
 
 ;	These registers will be used throughout
 
@@ -16,7 +16,7 @@ rPgMap 	set		r18
 rXER 	set		r17
 		mfxer	rXER
 
-
+########################################################################
 
 InitVectorTables
 
@@ -110,7 +110,7 @@ rAlt set r8
 	_kaddr	r23, rNK, MemRetryDSI
 	stw		r23, VecTable.DSIVector(r8)
 
-
+########################################################################
 
 ;	Fill the NanoKernelCallTable, the IntProgram interface to the NanoKernel
 
@@ -147,16 +147,16 @@ InitKCalls
 	_kaddr	r23, rNK, KCallPrioritizeInterrupts
 	stw		r23, NanoKernelCallTable.PrioritizeInterrupts(r8)
 
-	_kaddr	r23, rNK, KCallThud
+	_kaddr	r23, rNK, KCallSystemCrash
 	stw		r23, NanoKernelCallTable.Thud(r8)
 
-
+########################################################################
 
 ;	Init the NCB Pointer Cache
 
 	_InvalNCBPointerCache scratch=r23
 
-
+########################################################################
 
 ;	Put HTABORG and PTEGMask in KDP, and zero out the last PTEG
 
@@ -189,7 +189,7 @@ InitHTAB
 	;	Flush the TLB after touching the HTAB
 	bl		PagingFlushTLB
 
-
+########################################################################
 
 ;	Get a copy of the PageMap (and the SegMaps required to interpret it)
 
@@ -266,7 +266,7 @@ CopyPageMap
 
 	bgt		@segmap_copynext_segment
 
-
+########################################################################
 
 ;	Copy "BATRangeInit" array
 
@@ -291,7 +291,7 @@ CopyBATRangeInit
 	stwu	r21, 4(r8)		; store LBAT
 	bgt		@bat_copynext_segment
 
-
+########################################################################
 
 ;	Save some ptrs that allow us to enable Overlay mode, etc
 
@@ -315,7 +315,7 @@ CopyBATRangeInit
 	lwz		r23, NKConfigurationInfo.BatMap32OvlInit(rCI)
 	stw		r23, KDP.OverlayBatMap(r1)
 
-
+########################################################################
 
 ;	Create a PageList for the Primary Address Range
 
@@ -378,7 +378,7 @@ CreatePageList
 	b		@nextpage
 @done
 
-
+########################################################################
 
 ;	In the PageMap, create a Primary Address Range matching the size of PageList
 
@@ -428,14 +428,14 @@ CreatePARInPageMap
 	;	Reduce the number of pages in the last segment
 	sth		r22, PageMapEntry.PageCount(r8)
 
-
+########################################################################
 
 ;	Enable the ROM Overlay
 
 	addi	r29, r1, KDP.OverlaySegMapPtr
 	bl		PagingFunc2
 
-
+########################################################################
 
 ;	Make sure some important areas of RAM are in the HTAB
 
@@ -451,8 +451,8 @@ CreatePARInPageMap
 	lwz		r27, NKConfigurationInfo.LA_EmulatorData(r27)
 	bl		PagingFunc1
 
+########################################################################
 
-
-;	Restore the fixedpt exception register (not sure where we clobbered it?)
+;	Restore the fixedpt exception register (clobbered by addic)
 
 	mtxer	rXER

@@ -204,13 +204,13 @@ KCallPrioritizeInterrupts
 	lwz		r8, ContextBlock.r8(r6)
 	lwz		r9, ContextBlock.r9(r6)
 	lwz		r6, EWA.r6(r1)
-										blrl ; (could this ever fall though to KCallallSystemCrash?)
+										blrl ; (could this ever fall though to KCallSystemCrash?)
 
 ########################################################################
 
 ;	Move registers from CB to EWA, and Thud.
 
-KCallallSystemCrash
+KCallSystemCrash
 
 	stw		r0, EWA.r0(r1)
 	stw		r2, EWA.r2(r1)
