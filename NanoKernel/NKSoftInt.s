@@ -5,7 +5,7 @@
 IllegalInstruction
 
 	mfmsr	r9
-	_bset	r8, r9, MSR_DRbit
+	_bset	r8, r9, bitMsrDR
 	mtmsr	r8
 	lwz		r8, 0(r10)
 	mtmsr	r9
@@ -15,19 +15,19 @@ IllegalInstruction
 	stw		r3, EWA.r3(r1)
 	stw		r4, EWA.r4(r1)
 	stw		r5, EWA.r5(r1)
-	lwz		r9, ContextBlock.r7(r6)
+	lwz		r9, CB.r7(r6)
 	stw		r9, EWA.r7(r1)
-	lwz		r9, ContextBlock.r8(r6)
+	lwz		r9, CB.r8(r6)
 	stw		r9, EWA.r8(r1)
-	lwz		r9, ContextBlock.r9(r6)
+	lwz		r9, CB.r9(r6)
 	stw		r9, EWA.r9(r1)
-	lwz		r9, ContextBlock.r10(r6)
+	lwz		r9, CB.r10(r6)
 	stw		r9, EWA.r10(r1)
-	lwz		r9, ContextBlock.r11(r6)
+	lwz		r9, CB.r11(r6)
 	stw		r9, EWA.r11(r1)
-	lwz		r9, ContextBlock.r12(r6)
+	lwz		r9, CB.r12(r6)
 	stw		r9, EWA.r12(r1)
-	lwz		r9, ContextBlock.r13(r6)
+	lwz		r9, CB.r13(r6)
 	stw		r9, EWA.r13(r1)
 	stmw	r14, EWA.r14(r1)
 
@@ -89,7 +89,7 @@ IllegalInstruction
 	addi	r23, r23, 1
 	stw		r23, KDP.NanoKernelInfo + NKNanoKernelInfo.EmulatedUnimpInstCount(r1)
 	mfmsr	r14
-	_bset	r15, r14, MSR_DRbit
+	_bset	r15, r14, bitMsrDR
 	b		loc_A38
 
 ########################################################################
@@ -119,11 +119,11 @@ KCallRunAlternateContext
 	lwz		r8, KDP.LA_EmulatorKernelTrapTable(r1)
 	mtcrf	0x3f, r7
 	clrlwi	r7, r7, 8
-	stw		r8, ContextBlock.LA_EmulatorKernelTrapTable(r9)
+	stw		r8, CB.ExceptionHandlerRetAddr(r9)
 
 	stw		r9, KDP.PA_ContextBlock(r1)
 
-	b		IntReturnToOtherBlueContext
+	b		SwitchContext ; OldCB *r6, NewCB *r9
 
 
 @search_cache
@@ -255,7 +255,7 @@ KCallResetSystem
 
 	;	Gary Davidian skeleton key: r5/D0 = MSR bits to unset, r7/D2 = MSR bits to set
 	andc	r11, r11, r5
-	lwz		r8, ContextBlock.r7(r6)
+	lwz		r8, CB.r7(r6)
 	or		r11, r11, r8
 	b		IntReturn
 
@@ -275,18 +275,18 @@ KCallPrioritizeInterrupts
 	mtsrr0	r10
 	mtsrr1	r11
 	mtcr	r13
-	lwz		r10, ContextBlock.r10(r6)
-	lwz		r11, ContextBlock.r11(r6)
-	lwz		r12, ContextBlock.r12(r6)
-	lwz		r13, ContextBlock.r13(r6)
-	lwz		r7, ContextBlock.r7(r6)
+	lwz		r10, CB.r10(r6)
+	lwz		r11, CB.r11(r6)
+	lwz		r12, CB.r12(r6)
+	lwz		r13, CB.r13(r6)
+	lwz		r7, CB.r7(r6)
 	lwz		r8, EWA.r1(r1)
 										mfsprg	r9, 3
 										lwz		r9, VecTable.ExternalIntVector(r9)
 	mtsprg	1, r8
 										mtlr	r9
-	lwz		r8, ContextBlock.r8(r6)
-	lwz		r9, ContextBlock.r9(r6)
+	lwz		r8, CB.r8(r6)
+	lwz		r9, CB.r9(r6)
 	lwz		r6, EWA.r6(r1)
 										blrl ; (could this ever fall though to KCallSystemCrash?)
 
@@ -300,22 +300,22 @@ KCallSystemCrash
 	stw		r4, EWA.r4(r1)
 	stw		r5, EWA.r5(r1)
 
-	lwz		r8, ContextBlock.r7(r6)
-	lwz		r9, ContextBlock.r8(r6)
+	lwz		r8, CB.r7(r6)
+	lwz		r9, CB.r8(r6)
 	stw		r8, EWA.r7(r1)
 	stw		r9, EWA.r8(r1)
 
-	lwz		r8, ContextBlock.r9(r6)
-	lwz		r9, ContextBlock.r10(r6)
+	lwz		r8, CB.r9(r6)
+	lwz		r9, CB.r10(r6)
 	stw		r8, EWA.r9(r1)
 	stw		r9, EWA.r10(r1)
 
-	lwz		r8, ContextBlock.r11(r6)
-	lwz		r9, ContextBlock.r12(r6)
+	lwz		r8, CB.r11(r6)
+	lwz		r9, CB.r12(r6)
 	stw		r8, EWA.r11(r1)
 	stw		r9, EWA.r12(r1)
 
-	lwz		r8, ContextBlock.r13(r6)
+	lwz		r8, CB.r13(r6)
 	stw		r8, EWA.r13(r1)
 
 	stmw	r14, EWA.r14(r1)
@@ -334,13 +334,13 @@ IntProgram
 	mfsprg	r6, 1
 	stw		r6, EWA.r1(r1)
 	lwz		r6, KDP.PA_ContextBlock(r1)
-	stw		r7, ContextBlock.r7(r6)
-	stw		r8, ContextBlock.r8(r6)
-	stw		r9, ContextBlock.r9(r6)
-	stw		r10, ContextBlock.r10(r6)
-	stw		r11, ContextBlock.r11(r6)
-	stw		r12, ContextBlock.r12(r6)
-	stw		r13, ContextBlock.r13(r6)
+	stw		r7, CB.r7(r6)
+	stw		r8, CB.r8(r6)
+	stw		r9, CB.r9(r6)
+	stw		r10, CB.r10(r6)
+	stw		r11, CB.r11(r6)
+	stw		r12, CB.r12(r6)
+	stw		r13, CB.r13(r6)
 
 	;	Compare SRR0 with address of Emulator's KCall trap table
 	lwz		r8, KDP.LA_EmulatorKernelTrapTable(r1)
@@ -349,11 +349,11 @@ IntProgram
 	xor.	r8, r10, r8
 	lwz		r7, KDP.Flags(r1)
 	mfsprg	r12, 2
-	beq		ReturnFromExceptionFastPath		; KCall in Emulator table => fast path
-	rlwimi. r7, r7, EWA.kFlagEmu, 0, 0
+	beq		KCallReturnFromExceptionFastPath	; KCall in Emulator table => fast path
+	rlwimi. r7, r7, bitFlagEmu, 0, 0
 	cmplwi	cr7, r8, 16 * 4
-	bge		cr0, @fromAltContext			; Alt Context cannot make KCalls; this might be an External Int
-	bge		cr7, @notFromEmulatorTrapTable	; from Emulator but not from its KCall table => do more checks
+	bge		cr0, @fromAltContext				; Alt Context cannot make KCalls; this might be an External Int
+	bge		cr7, @notFromEmulatorTrapTable		; from Emulator but not from its KCall table => do more checks
 
 	;	SUCCESSFUL TRAP from emulator KCall table
 	;	=> Service call then return to link register
@@ -373,14 +373,14 @@ IntProgram
 	mtcrf	0x70, r11
 	bc		BO_IF_NOT, 14, @notTrap
 
-	mfmsr	r9					; fetch the instruction to get the "trap number"
-	_bset	r8, r9, MSR_DRbit
+	mfmsr	r9						; fetch the instruction to get the "trap number"
+	_bset	r8, r9, bitMsrDR
 	mtmsr	r8
 	lwz		r8, 0(r10)
 	mtmsr	r9
 	xoris	r8, r8, 0xfff
-	cmplwi	cr7, r8, 16			; only traps 0-15 are allowed
-	slwi	r8, r8, 2			; (for "success" case below)
+	cmplwi	cr7, r8, 16				; only traps 0-15 are allowed
+	slwi	r8, r8, 2				; (for "success" case below)
 	bge		cr7, @illegalTrap
 
 	;	SUCCESSFUL TRAP from outside emulator KCall table
@@ -396,17 +396,17 @@ IntProgram
 	blr
 
 	;	Cannot service with a KCall => throw Exception
-@fromAltContext					; external interrupt, or a (forbidden) KCall attempt
+@fromAltContext						; external interrupt, or a (forbidden) KCall attempt
 	mfsrr1	r11
 	mtcrf	0x70, r11
-@notTrap						; then it was some other software exception
+@notTrap							; then it was some other software exception
 	bc		BO_IF, 12, IllegalInstruction
 	bc		BO_IF, 11, @floatingPointException
-@illegalTrap					; because we only allow traps 0-15
+@illegalTrap						; because we only allow traps 0-15
 	rlwinm	r8, r11, 17, 28, 29	
 	addi	r8, r8, 0x4b3
 	rlwnm	r8, r8, r8, 28, 31
-	b		Exception			; CLEVER BIT HACKING described below
+	b		Exception				; CLEVER BIT HACKING described below
 
 	;	SRR1[13]	SRR[14]		Exception
 	;	0			0			ecNoException

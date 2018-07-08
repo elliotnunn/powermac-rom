@@ -3,27 +3,38 @@
 ;_______________________________________________________________________
 
 
+;	Helps with making equates
+;	X = 0x00008000, Xbit=16, Xshift=15
+	macro
+	_bitEqu &bit, &name
+&name equ 1 << (31-&bit)
+bit&name equ &bit
+shift&name equ 31 - &bit
+	endm
+
+
+
 kNanoKernelVersion		equ		$0228		
 
 
 ;	PowerPC Machine Status Register (MSR) bits
 ;	(borrowing the _bitEqu macro from NKInfoRecordsPriv.s)
 
-	_bitEqu	MSR_POW, 13
-	_bitEqu	MSR_ILE, 15
-	_bitEqu	MSR_EE, 16
-	_bitEqu	MSR_PR, 17
-	_bitEqu	MSR_FP, 18
-	_bitEqu	MSR_ME, 19
-	_bitEqu	MSR_FE0, 20
-	_bitEqu	MSR_SE, 21
-	_bitEqu	MSR_BE, 22
-	_bitEqu	MSR_FE1, 23
-	_bitEqu	MSR_IP, 25
-	_bitEqu	MSR_IR, 26
-	_bitEqu	MSR_DR, 27
-	_bitEqu	MSR_RI, 30
-	_bitEqu	MSR_LE, 31
+	_bitEqu	13,	MsrPOW
+	_bitEqu	15,	MsrILE
+	_bitEqu	16,	MsrEE
+	_bitEqu	17,	MsrPR
+	_bitEqu	18,	MsrFP
+	_bitEqu	19,	MsrME
+	_bitEqu	20,	MsrFE0
+	_bitEqu	21,	MsrSE
+	_bitEqu	22,	MsrBE
+	_bitEqu	23,	MsrFE1
+	_bitEqu	25,	MsrIP
+	_bitEqu	26,	MsrIR
+	_bitEqu	27,	MsrDR
+	_bitEqu	30,	MsrRI
+	_bitEqu	31,	MsrLE
 
 
 ;	Special Purpose Registers (SPRs) not understood by MPW
@@ -92,3 +103,38 @@ ecDataWriteViolation		equ		21		; ExceptionMemRetried
 ecDataSupAccessViolation	equ		22		; ExceptionMemRetried
 ecDataSupWriteViolation		equ		23		; ?
 ecUnknown24					equ		24		; ExceptionMemRetried
+
+
+;	Runtime Flag equates
+	_bitEqu	0,	Flag0
+	_bitEqu	1,	Flag1
+	_bitEqu	2,	Flag2
+	_bitEqu	3,	Flag3
+	_bitEqu	4,	Flag4
+	_bitEqu	5,	Flag5
+	_bitEqu	6,	Flag6
+	_bitEqu	7,	Flag7
+	_bitEqu	8,	FlagEmu
+	_bitEqu	9,	Flag9
+	_bitEqu	10,	FlagBlue
+	_bitEqu	11,	Flag11
+	_bitEqu	12,	FlagVec
+	_bitEqu	13,	FlagHasMQ
+	_bitEqu	14,	Flag14
+	_bitEqu	15,	Flag15
+	_bitEqu	16,	FlagSIGP
+	_bitEqu	17,	Flag17
+	_bitEqu	18,	Flag18
+	_bitEqu	19,	Flag19
+	_bitEqu	20,	FlagFE0
+	_bitEqu	21,	FlagSE
+	_bitEqu	22,	FlagBE
+	_bitEqu	23,	FlagFE1
+	_bitEqu	24,	Flag24
+	_bitEqu	25,	Flag25
+	_bitEqu	26,	Flag26
+	_bitEqu	27,	FlagLowSaves
+	_bitEqu	28,	Flag28
+	_bitEqu	29,	Flag29
+	_bitEqu	30,	Flag30
+	_bitEqu	31,	Flag31

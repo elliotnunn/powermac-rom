@@ -268,7 +268,7 @@ _bclr_lbit set 31
 	MACRO
 	_FloatRangeToContextBlock &first, &last
 
-	stfd	&first, ContextBlock.FloatRegisters+8*(&first)(r6)
+	stfd	&first, CB.FloatRegisters+8*(&first)(r6)
 
 	IF &first != &last
 	_FloatRangeToContextBlock &first+1, &last
@@ -280,7 +280,7 @@ _bclr_lbit set 31
 	MACRO
 	_FloatRangeFromContextBlock &first, &last
 
-	lfd		&first, ContextBlock.FloatRegisters+8*(&first)(r6)
+	lfd		&first, CB.FloatRegisters+8*(&first)(r6)
 
 	IF &first != &last
 	_FloatRangeFromContextBlock &first+1, &last

@@ -3,27 +3,6 @@
 ;_______________________________________________________________________
 
 ;_______________________________________________________________________
-;	NOTE: DECLARING BIT FIELDS
-;
-;	Bit fields get defined inside a record only in order to give them a
-;	namespace (e.g. MSR_IP). The _bitEqu macro is used to produce three
-;	equates per bit:
-;		(name)		= the bit's place value
-;		(name)bit	= the bit's PowerPC index (0 is leftmost)
-;		(name)shift	= the bit's 68k index (0 is rightmost)
-;_______________________________________________________________________
-
-	macro
-	_bitEqu &name, &bit
-&name equ 1 << (31-&bit)
-&name.bit equ &bit
-&name.shift equ 31 - &bit
-	endm
-
-
-
-
-;_______________________________________________________________________
 ;	INFORECORD PAGE
 ;	
 ;	Lives at 5fffe000 on most (all?) PowerPC Macs. The public-ish part
@@ -131,7 +110,7 @@ NominalReadyQ			ds.l	8	; -9b0:-990 ; unblocked tasks with priority 2
 IdleReadyQ				ds.l	8	; -990:-970 ; unblocked tasks with priority 3
 PriorityFlags			ds.l	1	; -970 ; bit 0 is 0, bit 1 is 1, etc...
 ScrambledMPCallTime		ds.l	1	; -96c ; by MP call return
-FlagsTemplate			ds.l	1	; -968 ; typically just EWA.kFlagVec
+FlagsTemplate			ds.l	1	; -968 ; typically just bitFlagVec
 UserModeMSR				ds.l	1	; -964
 ThudBuffer				ds.b	96	; -960:-900 ; that's the kernel debugger
 NoIdeaR23				ds.l	1	; -900 ; r23 copies here... replated to RTAS?
@@ -505,45 +484,6 @@ r31						ds.l	1	; 07c, cpu+3bc
 ;	Fun fact: offsets past here contain the main kernel globals
 ;	("Kernel Data Page"), but only on CPU-0.
 
-kFlag0			equ		0
-kFlag1			equ		1
-kFlag2			equ		2
-kFlag3			equ		3
-kFlag4			equ		4
-kFlag5			equ		5
-kFlag6			equ		6
-kFlag7			equ		7
-
-							; PER-TASK FLAGS
-kFlagEmu		equ		8	; emulator is running
-kFlag9			equ		9	; * = preserved on alt>sys switch
-kFlagBlue		equ		10	; *
-kFlag11			equ		11	; *
-kFlagVec		equ		12	; *
-kFlagHasMQ		equ		13	; *
-kFlag14			equ		14	; *
-kFlag15			equ		15	; *
-kFlagSIGP		equ		16	; *
-
-							; PER-CONTEXT FLAGS
-kFlag17			equ		17
-kFlag18			equ		18
-kFlag19			equ		19
-
-kFlagFE0		equ		20	; these correspond with MSR bits
-kFlagSE			equ		21
-kFlagBE			equ		22
-kFlagFE1		equ		23
-
-kFlag24			equ		24
-kFlag25			equ		25
-kFlag26			equ		26	; can be copied from kFlagSE
-kFlagLowSaves	equ		27
-kFlag28			equ		28
-kFlag29			equ		29
-kFlag30			equ		30
-kFlag31			equ		31
-
 						endr
 
 
@@ -616,7 +556,7 @@ PA_ECB					ds.l	1	; 658 ; gets called "system context"
 PA_ContextBlock			ds.l	1	; 65c ; moved to EWA (per-CPU) in NKv2
 Flags					ds.l	1	; 660 ; moved to EWA (per-CPU) in NKv2
 Enables					ds.l	1	; 664 ; moved to EWA (per-CPU) in NKv2
-						ds.l	1	; 668
+ContextClock			ds.l	1	; 668
 PA_PageMapEnd			ds.l	1	; 66c ; Set at the same time as PA_PageMapStart below...
 TestIntMaskInit			ds.l	1	; 670 ; These are all copied from ConfigInfo...
 PostIntMaskInit			ds.l	1	; 674

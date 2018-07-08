@@ -50,6 +50,8 @@ FDP
 FDP_003C
 	org	0xA38
 loc_A38
+	org 0xD18
+FDP_011C
 	org	0xD50
 loc_D50
 FDP_0DA0
@@ -76,27 +78,8 @@ PagingL2PWithoutBATs
 	org 0x1F98
 PagingFlushTLB
 	org 0x1FB8
-ExceptionMemRetried
-	org 0x2034
-LetBlueHandleOwnException
-	org 0x20C0
-ReturnFromExceptionFastPath
-	org 0x20D8
-KCallReturnFromException
-	org 0x2194
-LoadInterruptRegisters
-	org 0x21DC
-Exception
-	org 0x2204
-IntReturnToSystemContext
-	org 0x2214
-IntReturnToOtherBlueContext
-	org 0x23AC
-IntReturn
-	org 0x23F0
-major_0x02ccc
-	org 0x2500
 
+	include		'NKExceptions.s'
 	include		'NKFloatingPt.s'
 	include		'NKSoftInt.s'
 	include		'NKLegacyVM.s'

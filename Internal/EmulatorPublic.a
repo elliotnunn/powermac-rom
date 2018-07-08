@@ -83,41 +83,59 @@ BootstrapVersion		ds.b	16	; f00:f10 ; Bootstrap loader version info, from Config
 
 
 
-;	Lives in EDP. Keeping a separate record to EDP makes the code nicer.
-;	Gets called the "system context"
-ContextBlock			record	0,INCR
+; Move this!
 
+
+CB						record	0,INCR
 Flags					ds.l	1	; 000 ; (SPAC) copied from kdp by CreateTask
 Enables					ds.l	1	; 004
-
-						org		0x40
-SavedFlags				ds.l	1	; 040 ; from before exception
-
-						org		0x44
-SavedEnables			ds.l	1	; 044 ; from before exception
-
-						org		0x4c
+						ds.l	1	; 008
+						ds.l	1	; 00c
+						ds.l	1	; 010
+						ds.l	1	; 014
+						ds.l	1	; 018
+						ds.l	1	; 01c
+						ds.l	1	; 020
+LowSave17				ds.l	1	; 024
+LowSave20				ds.l	1	; 028
+LowSave21				ds.l	1	; 02c
+						ds.l	1	; 030
+LowSave19				ds.l	1	; 034
+						ds.l	1	; 038
+LowSave18				ds.l	1	; 03c
+ExceptionOriginFlags	ds.l	1	; 040 ; from before exception
+ExceptionOriginEnables	ds.l	1	; 044 ; from before exception
+						ds.l	1	; 048
 ExceptionHandler		ds.l	1	; 04c
-
-						org		0x5c
-LA_EmulatorKernelTrapTable ds.l	1
-
-						org		0x74
-SRR0					ds.l	1	; 074
-
-						org		0x84
-LA_EmulatorEntry		ds.l	1	; 084 ; Entry pt of emulator; set by NK Init.s
-
-						org		0x94
-LA_EmulatorData			ds.l	1
-
-						org		0x9c
-LA_DispatchTable		ds.l	1
-
-						org		0xa4
+						ds.l	1	; 050
+ExceptionHandlerR4		ds.l	1	; 054
+						ds.l	1	; 058
+ExceptionHandlerRetAddr ds.l	1	; 05c
+						ds.l	1	; 060
+PropagateR17			ds.l	1	; 064
+PropagateR20			ds.l	1	; 068
+PropagateR21			ds.l	1	; 06c
+						ds.l	1	; 070
+PropagateR19			ds.l	1	; 074
+						ds.l	1	; 078
+PropagateR18			ds.l	1	; 07c
+						ds.l	1	; 080
+ExceptionOriginAddr		ds.l	1	; 084 ; Entry pt of emulator; set by NK Init.s
+						ds.l	1	; 088
+ExceptionOriginLR		ds.l	1	; 08c
+						ds.l	1	; 090
+ExceptionOriginR3		ds.l	1	; 094
+						ds.l	1	; 098
+ExceptionOriginR4		ds.l	1	; 09c
+						ds.l	1	; 0a0
 MSR						ds.l	1	; 0a4 ; (SPAC) copied from kdp by CreateTask
-
-						org		0xc4
+						ds.l	1	; 0a8
+						ds.l	1	; 0ac
+						ds.l	1	; 0b0
+						ds.l	1	; 0b4
+						ds.l	1	; 0b8
+						ds.l	1	; 0bc
+						ds.l	1	; 0c0
 MQ						ds.l	1	; 0c4 ; 601 only
 EDPOffsetSWIRelated		ds.l	1	; 0c8
 PriorityShifty			ds.l	1	; 0cc ; if low nybble is empty, SchInit sets this to 2
@@ -131,11 +149,8 @@ FE000000				ds.l	1	; 0e8 ; also LR?
 LR						ds.l	1	; 0ec
 CTR						ds.l	1	; 0f0
 KernelCTR				ds.l	1	; 0f4
-
-						org		0xfc
+						ds.l	1	; 0f8
 CodePtr					ds.l	1	; 0fc ; probably goes in SRR0?
-
-						org		0x100
 						ds.l	1
 r0						ds.l	1	; 104
 						ds.l	1
@@ -200,7 +215,5 @@ r29						ds.l	1	; 1ec
 r30						ds.l	1	; 1f4
 						ds.l	1
 r31						ds.l	1	; 1fc
-
 FloatRegisters			ds.d	32	; 200:300
-
 						endr

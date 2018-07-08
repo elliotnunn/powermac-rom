@@ -14,11 +14,11 @@ IntFPUnavail
 	stw		r11, KDP.NanoKernelInfo + NKNanoKernelInfo.FPUReloadCount(r1)
 
 	mfsrr1	r11
-	_bset	r11, r11, MSR_FPbit
+	_bset	r11, r11, bitMsrFP
 	mtsrr1	r11
 
 	mfmsr	r11				; need this to access float registers
-	_bset	r11, r11, MSR_FPbit
+	_bset	r11, r11, bitMsrFP
 	lwz		r6, KDP.PA_ContextBlock(r1)
 	mtmsr	r11
 
@@ -35,18 +35,20 @@ IntFPUnavail
 
 ########################################################################
 
-major_0x03e18
+EnableFPU
 	rlwinm.	r8, r11, 0, 18, 18
 	bnelr
 
-IntHandleSpecialFPException
-	lwz		r8, 0xe4(r6)
+ReloadFPU
+	lwz		r8, 0xe4(r6)			; ???
 	rlwinm.	r8, r8, 1, 0, 0
+
 	mfmsr	r8
-	_bset	r8, r8, MSR_FPbit
+	_bset	r8, r8, bitMsrFP
 	beqlr
 	mtmsr	r8
-	_bset	r11, r11, MSR_FPbit
+
+	_bset	r11, r11, bitMsrFP
 
 ########################################################################
 
@@ -92,10 +94,10 @@ LoadFloats
 
 DisableFPU
 	mfmsr	r8
-	_bset	r8, r8, MSR_FPbit
+	_bset	r8, r8, bitMsrFP
 	mtmsr	r8
 
-	_bclr	r11, r11, MSR_FPbit
+	_bclr	r11, r11, bitMsrFP
 
 	stfd	f0, 0x200(r6)
 	stfd	f1, 0x208(r6)
