@@ -26,7 +26,7 @@
 ;	three interrupts will return the CPU to full-on mode, and we will return
 ;	from the PowerDispatch call. Called at NK init time.
 
-	align	kIntAlign
+	_alignToCacheBlock
 
 InitIdleVecTable
 
@@ -57,7 +57,7 @@ InitIdleVecTable
 
 ;	ARG		selector r3 (0-11), ...
 
-	align	kIntAlign
+	_alignToCacheBlock
 
 kcPowerDispatch
 

@@ -46,7 +46,7 @@
 
 
 
-	align	kIntAlign
+	_alignToCacheBlock
 
 IntDecrementer	;	OUTSIDE REFERER
 
@@ -108,7 +108,7 @@ IntDecrementer_0x54
 
 ;	Kick it to the FDP-associated MemRetryDSI
 
-	align	kIntAlign
+	_alignToCacheBlock
 
 IntDSI
 
@@ -250,7 +250,7 @@ major_0x03324_0x12c
 
 ;	This int handler is our best foothold into the FDP!
 
-	align	kIntAlign
+	_alignToCacheBlock
 
 IntAlignment	;	OUTSIDE REFERER
 	mfsprg	r1, 0
@@ -372,7 +372,7 @@ major_0x03548_0x20	;	OUTSIDE REFERER
 
 
 
-	align	kIntAlign
+	_alignToCacheBlock
 
 MemRetryDSI	;	OUTSIDE REFERER
 
@@ -591,7 +591,7 @@ MemRetryMachineCheck_0x14c	;	OUTSIDE REFERER
 
 
 
-	align	kIntAlign
+	_alignToCacheBlock
 
 IntISI	;	OUTSIDE REFERER
 
@@ -696,7 +696,7 @@ MaskedInterruptTaken	;	OUTSIDE REFERER
 
 
 
-	align	kIntAlign
+	_alignToCacheBlock
 
 PIHDSI	;	OUTSIDE REFERER
 	mfspr	r8, dsisr
@@ -731,7 +731,7 @@ PIHDSI	;	OUTSIDE REFERER
 #   #  #    # #    #  #        #   #    # #   #  #   ## #       #   #  #    # #    # #        #  #  #    # #      #        #   # #    # #   ## 
 #    #  ####  #     # ######   #    ####  #    # #    # #       #    #  ####  #    # ####### #    #  ####  ###### #        #   #  ####  #    # 
 
-	align	kIntAlign
+	_alignToCacheBlock
 
 ;	dead code?
 

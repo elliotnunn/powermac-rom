@@ -98,7 +98,7 @@ PreferRegistersFromKDPSavingContextBlock
 
 ########################################################################
 
-	align	kIntAlign
+	_alignToCacheBlock
 KCallReturnFromExceptionFastPath
 	lwz		r11, KDP.NanoKernelInfo + NKNanoKernelInfo.NanoKernelCallCounts(r1)
 	mr		r10, r12

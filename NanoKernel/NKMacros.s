@@ -310,3 +310,14 @@ _bclr_lbit set 31
 	addi	&rd, &rs, (&label-NKTop)
 
 	ENDM
+
+
+	MACRO
+	_alignToCacheBlock
+
+	IF (*-NKTop) & 0x1f
+	b * + 4
+	_alignToCacheBlock
+	ENDIF
+
+	ENDM

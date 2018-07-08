@@ -2,7 +2,7 @@
 
 ########################################################################
 
-	align	kIntAlign
+	_alignToCacheBlock
 IntFPUnavail
 ;	Reload the FPU
 

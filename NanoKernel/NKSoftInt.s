@@ -94,7 +94,7 @@ IllegalInstruction
 
 ########################################################################
 
-	align	kIntAlign
+	_alignToCacheBlock
 KCallRunAlternateContext
 ;	ARG		ContextBlock *r3, flags r4
 
@@ -240,7 +240,7 @@ KCallRunAlternateContext
 
 ########################################################################
 
-	align	kIntAlign
+	_alignToCacheBlock
 KCallResetSystem
 ;	PPC trap 1, or indirectly, 68k RESET
 
@@ -267,7 +267,7 @@ Reset
 
 ########################################################################
 
-	align	kIntAlign
+	_alignToCacheBlock
 KCallPrioritizeInterrupts
 	;	Left side: roll back the interrupt preparation before the int handler repeats is
 	;	Right side: jump to the external interrupt handler (PIH or IntProgram)
@@ -324,7 +324,7 @@ KCallSystemCrash
 
 ########################################################################
 
-	align	kIntAlign
+	_alignToCacheBlock
 IntProgram
 ;	(also called when the Alternate Context gets an External Int => Exception)
 
@@ -423,7 +423,7 @@ IntProgram
 
 ########################################################################
 
-	align	kIntAlign
+	_alignToCacheBlock
 IntSyscall
 
 	bl		LoadInterruptRegisters
@@ -435,7 +435,7 @@ IntSyscall
 
 ########################################################################
 
-	align	kIntAlign
+	_alignToCacheBlock
 IntTrace
 
 	bl		LoadInterruptRegisters
