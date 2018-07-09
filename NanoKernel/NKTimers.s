@@ -115,9 +115,9 @@ InitTMRQs_0xb4
 	rlwinm.	r8, r31, 0, NKConfigurationInfo.NanodbgrFlagBit, NKConfigurationInfo.NanodbgrFlagBit
 	beq		@nodebug
 
-	lwz		r8, KDP.NanoKernelInfo + NKNanoKernelInfo.ConfigFlags(r1)
+	lwz		r8, KDP.NKInfo.ConfigFlags(r1)
 	_bset	r8, r8, NKNanoKernelInfo.NanodbgrFlagBit
-	stw		r8, KDP.NanoKernelInfo + NKNanoKernelInfo.ConfigFlags(r1)
+	stw		r8, KDP.NKInfo.ConfigFlags(r1)
 
 	mflr	r30
 
@@ -587,12 +587,12 @@ TimerFire5_0x8	;	OUTSIDE REFERER
 ;	Dead code -- probably removed from TimerTable
 
 	_log	'Heartbeat: Ext '
-	lwz		r16, KDP.NanoKernelInfo + NKNanoKernelInfo.ExternalIntCount(r1)
+	lwz		r16, KDP.NKInfo.ExternalIntCount(r1)
 	mr		r8, r16
 	bl		printd
 
 	_log	'Alerts '
-	lwz		r16, KDP.NanoKernelInfo + NKNanoKernelInfo.AlertCount(r1)
+	lwz		r16, KDP.NKInfo.AlertCount(r1)
 	mr		r8, r16
 	bl		printd
 
@@ -886,7 +886,7 @@ DequeueTimer
 TimebaseTicksPerPeriod
 	mr.		r17, r8
 	li		r19, 250
-	lwz		r9, KDP.ProcessorInfo + NKProcessorInfo.DecClockRateHz(r1)
+	lwz		r9, KDP.ProcInfo.DecClockRateHz(r1)
 
 	bgt+	@period_positive
 	blt+	@period_negative

@@ -63,7 +63,7 @@ kcCacheDispatch
 	cmplwi	r8, 2
 	bgt		@fail_bad_selector
 
-	lwz		r8, KDP.ProcessorInfo + NKProcessorInfo.ProcessorFlags(r1)
+	lwz		r8, KDP.ProcInfo.ProcessorFlags(r1)
 	andi.	r8, r8, 1 << NKProcessorInfo.hasL2CR
 	beq		CacheCallFailNoL2					; no L2CR => fail (what about 601?)
 
@@ -186,7 +186,7 @@ CacheCallL2EnableSelected
 	andis.	r21, r21, 0x8000
 	bne		CacheCallReturn
 
-	lwz		r8, KDP.ProcessorInfo + NKProcessorInfo.ProcessorL2DSize(r1)
+	lwz		r8, KDP.ProcInfo.ProcessorL2DSize(r1)
 	and.	r8, r8, r8
 	beq		CacheCallFailNoL2					; fail if zero-sized cache reported
 
@@ -323,7 +323,7 @@ CacheCallGetInfoForReturnValue
 	blr
 
 @level2
-	lwz		r8, KDP.ProcessorInfo + NKProcessorInfo.ProcessorL2DSize(r1)
+	lwz		r8, KDP.ProcInfo.ProcessorL2DSize(r1)
 	and.	r8, r8, r8
 	beq		CacheCallFailNoL2
 
@@ -375,17 +375,17 @@ FlushCaches
 
 	;	Flush level 1
 
-	lhz		r25, KDP.ProcessorInfo + NKProcessorInfo.DataCacheLineSize(r1)
+	lhz		r25, KDP.ProcInfo.DataCacheLineSize(r1)
 	and.	r25, r25, r25					; r25 = L1-D line size
 	cntlzw	r8, r25
 	beq		@return
 	subfic	r9, r8, 31						; r9 = logb(L1-D line size)
 
-	lwz		r8, KDP.ProcessorInfo + NKProcessorInfo.DataCacheTotalSize(r1)
+	lwz		r8, KDP.ProcInfo.DataCacheTotalSize(r1)
 	and.	r8, r8, r8						; r8 = L1-D size
 	beq		@return
 
-	lwz		r24, KDP.ProcessorInfo + NKProcessorInfo.ProcessorFlags(r1)
+	lwz		r24, KDP.ProcInfo.ProcessorFlags(r1)
 	mtcr	r24
 
 	bc		BO_IF, 31 - NKProcessorInfo.hasMSSregs, @use_SPRs_to_invalidate
@@ -411,7 +411,7 @@ FlushCaches
 
 	;	Flush level 2 (very similar to above)
 
-	lwz		r24, KDP.ProcessorInfo + NKProcessorInfo.ProcessorFlags(r1)
+	lwz		r24, KDP.ProcInfo.ProcessorFlags(r1)
 	andi.	r24, r24, 1 << NKProcessorInfo.hasL2CR
 	beq		@return							; return if L2CR unavailable
 
@@ -419,13 +419,13 @@ FlushCaches
 	andis.	r24, r24, 0x8000
 	beq		@return							; return if L2 off (per L2CR[L2E])
 
-	lhz		r25, KDP.ProcessorInfo + NKProcessorInfo.ProcessorL2DBlockSize(r1)
+	lhz		r25, KDP.ProcInfo.ProcessorL2DBlockSize(r1)
 	and.	r25, r25, r25					; r25 = L2-D line size
 	cntlzw	r8, r25
 	beq		@return
 	subfic	r9, r8, 31						; r9 = logb(L2-D line size)
 
-	lwz		r8, KDP.ProcessorInfo + NKProcessorInfo.ProcessorL2DSize(r1)
+	lwz		r8, KDP.ProcInfo.ProcessorL2DSize(r1)
 	and.	r8, r8, r8						; r8 = L2-D size
 	beq		@return
 
@@ -515,7 +515,7 @@ FlushL1CacheUsingMSSCR0
 
 	;	Return if MSSCR0 unavailable
 
-	lwz		r8, KDP.ProcessorInfo + NKProcessorInfo.ProcessorFlags(r1)
+	lwz		r8, KDP.ProcInfo.ProcessorFlags(r1)
 	mtcr	r8
 	bclr	BO_IF_NOT, 31-NKProcessorInfo.hasMSSregs
 

@@ -298,9 +298,9 @@ CreateTask
 	stw		r8, Task.CreateTime3(r28)
 	stw		r9, Task.CreateTime3 + 4(r28)
 
-	lwz		r16, KDP.NanoKernelInfo + NKNanoKernelInfo.TaskCount(r1)
+	lwz		r16, KDP.NKInfo.TaskCount(r1)
 	addi	r16, r16, 1
-	stw		r16, KDP.NanoKernelInfo + NKNanoKernelInfo.TaskCount(r1)
+	stw		r16, KDP.NKInfo.TaskCount(r1)
 
 	;	Squeeze some info (including my owning process) out of the passed PROC ptr
 	stw		r27, Task.OwningProcessPtr(r28)

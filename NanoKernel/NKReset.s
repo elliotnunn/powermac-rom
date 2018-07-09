@@ -338,7 +338,7 @@ CreatePageList
 	lwz		r20, KDP.KernelMemoryEnd(r1)
 	subi	r29, r21, 4 ; ptr to last added entry
 
-	addi	r19, r1, KDP.SystemInfo + NKSystemInfo.Bank0Start - 8
+	addi	r19, r1, KDP.SysInfo.Bank0Start - 8
 
 	lwz		r23, KDP.PageAttributeInit(r1)	;	default WIMG/PP settings in PTEs
 
@@ -394,9 +394,9 @@ CreatePARInPageMap
 	addi	r19, r22, 4
 	slwi	r19, r19, 10
 	ori		r30, r30, 0xffff
-	stw		r19, KDP.SystemInfo + NKSystemInfo.UsableMemorySize(r1)
+	stw		r19, KDP.SysInfo.UsableMemorySize(r1)
 	srwi	r22, r22, 2
-	stw		r19, KDP.SystemInfo + NKSystemInfo.LogicalMemorySize(r1)
+	stw		r19, KDP.SysInfo.LogicalMemorySize(r1)
 
 	;	convert r19 to pages, and save in some places
 	srwi	r19, r19, 12

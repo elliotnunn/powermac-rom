@@ -704,10 +704,10 @@ ZeroWord				ds.l	1	; 910 ; Only NewWorld and Unknown PIHes touch this
 						ds.l	1	; 918
 						ds.l	1	; 91c
 						ds.b	0x3a0	; 920:cc0
-SystemInfo				ds.b	192	; cc0:d80
-DiagnosticInfo			ds.b	256	; d80:e80
-NanoKernelInfo			ds.b	256	; e80:f80 ; see NKNanoKernelInfo in PPCInfoRecordsPriv
-ProcessorInfo			ds.b	64	; f80:fc0
+SysInfo					ds	NKSystemInfo	; cc0:d80
+DiagInfo				ds	NKDiagInfo		; d80:e80
+NKInfo					ds	NKNanoKernelInfo; e80:f80 ; see NKNanoKernelInfo in PPCInfoRecordsPriv
+ProcInfo				ds	NKProcessorInfo	; f80:fc0
 InfoRecord				ds.b	64	; fc0:1000 ; was main copy in NKv1, now vestigial?
 
 						endr

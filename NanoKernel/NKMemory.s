@@ -90,10 +90,10 @@ PopulateHTAB ; LogicalAddress r28 // Success cr0.eq
 	sync									; because we just wanged the page table
 	stwu	r30, -24(r29)					; PTE[hi] = r30
 
-	lwz		r28, KDP.NanoKernelInfo + NKNanoKernelInfo.HashTableCreateCount(r1)
+	lwz		r28, KDP.NKInfo.HashTableCreateCount(r1)
 	stw		r29, KDP.ApproxCurrentPTEG(r1)
 	addi	r28, r28, 1
-	stw		r28, KDP.NanoKernelInfo + NKNanoKernelInfo.HashTableCreateCount(r1)
+	stw		r28, KDP.NKInfo.HashTableCreateCount(r1)
 	beqlr									; >>>>> RETURN "BEQ" if we got to "Case 1" directly
 
 	cmpwi	r26, 0x5A5A				; Special value set so that we take note of this new temporary PTE?
@@ -115,10 +115,10 @@ PopulateHTAB ; LogicalAddress r28 // Success cr0.eq
 ########################################################################
 ; Helpful code that jumps back to roughly where it started
 @remove_temp_pte
-	lwz		r28, KDP.NanoKernelInfo + NKNanoKernelInfo.HashTableDeleteCount(r1)
+	lwz		r28, KDP.NKInfo.HashTableDeleteCount(r1)
 	lwz		r29, KDP.HtabTempEntryPtr(r1)
 	addi	r28, r28, 1
-	stw		r28, KDP.NanoKernelInfo + NKNanoKernelInfo.HashTableDeleteCount(r1)
+	stw		r28, KDP.NKInfo.HashTableDeleteCount(r1)
 	li		r28, 0
 	stw		r28, 0(r29)
 	lwz		r29, KDP.HtabTempPage(r1)
@@ -257,14 +257,14 @@ PopulateHTAB ; LogicalAddress r28 // Success cr0.eq
 	extrwi	r31, r26, 2, 20
 	cmpwi	cr7, r31, 3							; not a DaddyFlag + CountingFlag? Try again!
 
-	lwz		r31, KDP.NanoKernelInfo + NKNanoKernelInfo.HashTableOverflowCount(r1)
+	lwz		r31, KDP.NKInfo.HashTableOverflowCount(r1)
 	stw		r29, KDP.OverflowingPTEG(r1)
 	addi	r31, r31, 1
-	stw		r31, KDP.NanoKernelInfo + NKNanoKernelInfo.HashTableOverflowCount(r1)
-	lwz		r31, KDP.NanoKernelInfo + NKNanoKernelInfo.HashTableDeleteCount(r1)
+	stw		r31, KDP.NKInfo.HashTableOverflowCount(r1)
+	lwz		r31, KDP.NKInfo.HashTableDeleteCount(r1)
 	stw		r30, 0(r29)
 	addi	r31, r31, 1
-	stw		r31, KDP.NanoKernelInfo + NKNanoKernelInfo.HashTableDeleteCount(r1)
+	stw		r31, KDP.NKInfo.HashTableDeleteCount(r1)
 
 	sync
 	tlbie	r28
@@ -530,7 +530,7 @@ nobats
 ########################################################################
 
 FlushTLB
-	lhz		r29, KDP.ProcessorInfo + NKProcessorInfo.TransCacheTotalSize(r1)
+	lhz		r29, KDP.ProcInfo.TransCacheTotalSize(r1)
 	slwi	r29, r29, 11
 @loop
 	subi	r29, r29, 4096

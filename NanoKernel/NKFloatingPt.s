@@ -8,10 +8,10 @@ IntFPUnavail
 
 	mfsprg	r1, 0
 	stw		r11, KDP.FloatingPtTemp1(r1)
-	lwz		r11, KDP.NanoKernelInfo + NKNanoKernelInfo.FPUReloadCount(r1)
+	lwz		r11, KDP.NKInfo.FPUReloadCount(r1)
 	stw		r6, KDP.FloatingPtTemp2(r1)
 	addi	r11, r11, 1
-	stw		r11, KDP.NanoKernelInfo + NKNanoKernelInfo.FPUReloadCount(r1)
+	stw		r11, KDP.NKInfo.FPUReloadCount(r1)
 
 	mfsrr1	r11
 	_bset	r11, r11, bitMsrFP

@@ -243,7 +243,7 @@ VMInit_0x110
 
 	stw		r4, KDP.VMLogicalPages(r1)
 	slwi	r7, r4, 12
-	stw		r7, KDP.SystemInfo + NKSystemInfo.LogicalMemorySize(r1) ; bug in NKv2??
+	stw		r7, KDP.SysInfo.LogicalMemorySize(r1) ; bug in NKv2??
 	slwi	r7, r4,  2
 	li		r8,  0x00
 
@@ -873,8 +873,8 @@ VMAllocateMemory_0xf4
 	stw		r7, KDP.TotalPhysicalPages(r1)
 	stw		r7, KDP.VMLogicalPages(r1)
 	slwi	r8, r7, 12
-	stw		r8, KDP.SystemInfo + NKSystemInfo.UsableMemorySize(r1)
-	stw		r8, KDP.SystemInfo + NKSystemInfo.LogicalMemorySize(r1)
+	stw		r8, KDP.SysInfo.UsableMemorySize(r1)
+	stw		r8, KDP.SysInfo.LogicalMemorySize(r1)
 
 	addi	r14, r1, 120
 	lwz		r15,  KDP.PARPageListPtr(r1)
@@ -1040,10 +1040,10 @@ EditPTEOnlyInHTAB	;	OUTSIDE REFERER
 ;r15 is address of stored PTE
 ;r16 is PTE value
 RemovePTEFromHTAB	;	OUTSIDE REFERER
-	lwz		r8, KDP.NanoKernelInfo + NKNanoKernelInfo.HashTableDeleteCount(r1);update a value in NanoKernelInfo
+	lwz		r8, KDP.NKInfo.HashTableDeleteCount(r1);update a value in NanoKernelInfo
 	rlwinm	r16, r16,  0, 21, 19	;update PTE flags to indicate not in HTAB
 	addi	r8, r8,  0x01
-	stw		r8, KDP.NanoKernelInfo + NKNanoKernelInfo.HashTableDeleteCount(r1)
+	stw		r8, KDP.NKInfo.HashTableDeleteCount(r1)
 	rlwimi	r16, r9,  0,  0, 19	;move page# back into PTE
 
 	_InvalNCBPointerCache scratch=r8
@@ -1102,10 +1102,10 @@ VMLastExportedFunc_0x83
 	addi	r14, r14,  0x08
 
 VMLastExportedFunc_0x87
-	lwz		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.HashTableCreateCount(r1)
+	lwz		r9, KDP.NKInfo.HashTableCreateCount(r1)
 	rlwinm	r8, r6,  7,  1, 24
 	addi	r9, r9,  0x01
-	stw		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.HashTableCreateCount(r1)
+	stw		r9, KDP.NKInfo.HashTableCreateCount(r1)
 	rlwimi	r8, r4, 22, 26, 31
 	lwz		r9, KDP.PageAttributeInit(r1)
 	oris	r8, r8,  0x8000

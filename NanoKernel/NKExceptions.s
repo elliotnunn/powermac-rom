@@ -23,9 +23,9 @@ ExceptionAfterRetry
 
 	slwi	r8, r8, 2						; increment counter
 	add		r8, r8, r1
-	lwz		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.ExceptionCauseCounts(r8)
+	lwz		r9, KDP.NKInfo.ExceptionCauseCounts(r8)
 	addi	r9, r9, 1
-	stw		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.ExceptionCauseCounts(r8)
+	stw		r9, KDP.NKInfo.ExceptionCauseCounts(r8)
 
 	;	Move regs from KDP to ContextBlock
 	lwz		r8, EWA.r7(r1)
@@ -100,10 +100,10 @@ PreferRegistersFromKDPSavingContextBlock
 
 	_alignToCacheBlock
 KCallReturnFromExceptionFastPath
-	lwz		r11, KDP.NanoKernelInfo + NKNanoKernelInfo.NanoKernelCallCounts(r1)
+	lwz		r11, KDP.NKInfo.NanoKernelCallCounts(r1)
 	mr		r10, r12
 	addi	r11, r11, 1
-	stw		r11, KDP.NanoKernelInfo + NKNanoKernelInfo.NanoKernelCallCounts(r1)
+	stw		r11, KDP.NKInfo.NanoKernelCallCounts(r1)
 	mfsrr1	r11
 	rlwimi	r7, r7, 27, 26, 26							; ?re-enable single stepping
 
@@ -115,10 +115,10 @@ KCallReturnFromException
 
 ;force to system context			; Handler returned >= 1
 	subi	r8, r3, 32
-	lwz		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.ExceptionForcedCount(r1)
+	lwz		r9, KDP.NKInfo.ExceptionForcedCount(r1)
 	cmplwi	r8, 256-32
 	addi	r9, r9, 1
-	stw		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.ExceptionForcedCount(r1)
+	stw		r9, KDP.NKInfo.ExceptionForcedCount(r1)
 	insrwi	r7, r3, 8, 0
 	blt		RunSystemContext			; Handler returned 1-255: force that exception number to System
 	li		r8, ecTrapInstr
@@ -145,10 +145,10 @@ KCallReturnFromException
 	b		IntReturn
 
 @propagate							; Handler returned 1: propagate exception
-	lwz		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.ExceptionPropagateCount(r1)
+	lwz		r9, KDP.NKInfo.ExceptionPropagateCount(r1)
 	lwz		r8, CB.ExceptionOriginFlags(r6)
 	addi	r9, r9, 1
-	stw		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.ExceptionPropagateCount(r1)
+	stw		r9, KDP.NKInfo.ExceptionPropagateCount(r1)
 	lwz		r10, CB.ExceptionOriginAddr(r6)
 	rlwimi	r7, r8, 0, 0xFF00FFFF			; restore most Flags to pre-exception state
 	lwz		r8, CB.ExceptionOriginEnables(r6)
@@ -226,9 +226,9 @@ Exception
 
 	slwi	r8, r8, 2						; Increment counter, easy enough
 	add		r8, r8, r1
-	lwz		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.ExceptionCauseCounts(r8)
+	lwz		r9, KDP.NKInfo.ExceptionCauseCounts(r8)
 	addi	r9, r9, 1
-	stw		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.ExceptionCauseCounts(r8)
+	stw		r9, KDP.NKInfo.ExceptionCauseCounts(r8)
 
 	blt		RunExceptionHandler				; exception enabled => run userspace handler
 	;fall through							; Alt Context has left exception disabled => Sys Context

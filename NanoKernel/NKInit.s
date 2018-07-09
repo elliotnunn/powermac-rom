@@ -273,19 +273,19 @@ FinishInitBuiltin
 
 	;	Copy some choice values out of KDP's copy of NKProcessorInfo
 
-	lwz		r9, KDP.ProcessorInfo + NKProcessorInfo.DecClockRateHz(r1)
-	stw		r9, KDP.ProcessorInfo + NKProcessorInfo.ClockRates + 8(r1)
+	lwz		r9, KDP.ProcInfo.DecClockRateHz(r1)
+	stw		r9, KDP.ProcInfo.ClockRates + 8(r1)
 
-	lwz		r9, KDP.ProcessorInfo + NKProcessorInfo.BusClockRateHz(r1)
-	stw		r9, KDP.ProcessorInfo + NKProcessorInfo.ClockRates + 4(r1)
+	lwz		r9, KDP.ProcInfo.BusClockRateHz(r1)
+	stw		r9, KDP.ProcInfo.ClockRates + 4(r1)
 
-	lwz		r9, KDP.ProcessorInfo + NKProcessorInfo.CpuClockRateHz(r1)
-	stw		r9, KDP.ProcessorInfo + NKProcessorInfo.ClockRates + 0(r1)
+	lwz		r9, KDP.ProcInfo.CpuClockRateHz(r1)
+	stw		r9, KDP.ProcInfo.ClockRates + 0(r1)
 
 	li		r9, 0
-	sth		r9, KDP.ProcessorInfo + NKProcessorInfo.SetToZero(r1)
+	sth		r9, KDP.ProcInfo.SetToZero(r1)
 
-	lwz		r8, KDP.ProcessorInfo + NKProcessorInfo.DecClockRateHz(r1)
+	lwz		r8, KDP.ProcInfo.DecClockRateHz(r1)
 	stw		r8, PSA.DecClockRateHzCopy(r1)
 
 
@@ -757,7 +757,7 @@ SetProcessorFlags
 	slwi	r23, r23,  2
 	add		r8, r25, r23
 	lwz		r23, ProcessorFlagsTable - NKTop + 64(r8)
-	stw		r23, KDP.ProcessorInfo + NKProcessorInfo.ProcessorFlags(r1)
+	stw		r23, KDP.ProcInfo.ProcessorFlags(r1)
 	b		@done
 
 @pvr_has_high_bit_set
@@ -779,7 +779,7 @@ SetProcessorFlags
 	slwi	r23, r23,  2
 	add		r8, r25, r23
 	lwz		r23, ProcessorFlagsTable - NKTop + 128(r8)
-	stw		r23, KDP.ProcessorInfo + NKProcessorInfo.ProcessorFlags(r1)
+	stw		r23, KDP.ProcInfo.ProcessorFlags(r1)
 	b		@done
 
 @done
@@ -870,7 +870,7 @@ SetProcessorFlags
 
 	;	Save ID in self and KDP
 	stw		r8, Process.ID(r31)
-	stw		r8, KDP.NanoKernelInfo + NKNanoKernelInfo.blueProcessID(r1)
+	stw		r8, KDP.NKInfo.blueProcessID(r1)
 
 	;	Sign it
 	lisori	r8,	Process.kSignature
@@ -1164,7 +1164,7 @@ SetProcessorFlags
 	stw		r8, LLL.Freeform(r9)
 
 	;	...which the blue task will probably want to know about
-	stw		r8, KDP.NanoKernelInfo + NKNanoKernelInfo.pageQueueID(r1)
+	stw		r8, KDP.NKInfo.pageQueueID(r1)
 
 	InitList	r9, 'PAGQ', scratch=r16
 
@@ -1215,7 +1215,7 @@ SetProcessorFlags
 	beq		Init_Panic
 
 	lwz		r8, Task.ID(r31)
-	stw		r8, KDP.NanoKernelInfo + NKNanoKernelInfo.blueTaskID(r1)
+	stw		r8, KDP.NKInfo.blueTaskID(r1)
 
 
 	;	Can equal -1 or a 68k interrupt number. PIHes touch it.

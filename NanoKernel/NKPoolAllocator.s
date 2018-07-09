@@ -457,9 +457,9 @@ _pool_page_seg equ 0x1000
 
 	;	Counter can be viewed from Apple System Profiler
 
-	lwz		r16, KDP.NanoKernelInfo + NKNanoKernelInfo.FreePoolExtendCount(r1)
+	lwz		r16, KDP.NKInfo.FreePoolExtendCount(r1)
 	addi	r16, r16, 1
-	stw		r16, KDP.NanoKernelInfo + NKNanoKernelInfo.FreePoolExtendCount(r1)
+	stw		r16, KDP.NKInfo.FreePoolExtendCount(r1)
 	
 	
 	;	Bit of palaver

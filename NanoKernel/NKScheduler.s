@@ -69,7 +69,7 @@ Local_Panic		set		*
 SchInit
 
 	li		r16, 0
-	stw		r16, KDP.NanoKernelInfo + NKNanoKernelInfo.TaskCount(r1)
+	stw		r16, KDP.NKInfo.TaskCount(r1)
 
 	mflr	r20
 
@@ -883,9 +883,9 @@ _SchRdyTaskCommon
 SchSwitchSpace
 
 	;	This is the only function that hits this counter
-	lwz		r17, KDP.NanoKernelInfo + NKNanoKernelInfo.AddrSpcSetCtr(r1)
+	lwz		r17, KDP.NKInfo.AddrSpcSetCtr(r1)
 	addi	r17, r17, 1
-	stw		r17, KDP.NanoKernelInfo + NKNanoKernelInfo.AddrSpcSetCtr(r1)
+	stw		r17, KDP.NKInfo.AddrSpcSetCtr(r1)
 
 	;	Check that we have the right guy (a 'SPAC')
 	lwz		r16, AddressSpace.Signature(r8)
@@ -1026,7 +1026,7 @@ SchSwitchSpace
 	;	This is weird. If the hasExtraBATs flag (my name) is set in ProcessorInfo,
 	;	populate a second (undocumented?) set of BATs from the same struct.
 
-		lwz			r17, KDP.ProcessorInfo + NKProcessorInfo.ProcessorFlags(r1)
+		lwz			r17, KDP.ProcInfo.ProcessorFlags(r1)
 		lwz			r16, AddressSpace.ExtraBAT0U(r8)
 		rlwinm.		r17, r17, 0, 31-NKProcessorInfo.hasExtraBATs, 31-NKProcessorInfo.hasExtraBATs
 		lwz			r17, AddressSpace.ExtraBAT0U(r9)
@@ -1199,9 +1199,9 @@ SchEval
 	lwz		r31, EWA.PA_CurTask(r14)
 	lwz		r1, EWA.PA_KDP(r14)
 
-	lwz		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.SchEvalCount(r1)
+	lwz		r9, KDP.NKInfo.SchEvalCount(r1)
 	addi	r9, r9, 1
-	stw		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.SchEvalCount(r1)
+	stw		r9, KDP.NKInfo.SchEvalCount(r1)
 
 	bl		SchFiddlePriorityShifty
 	lbz		r27,  0x0019(r31)
@@ -2006,9 +2006,9 @@ FlagSchEval
 	;	To force a scheduler evaluation to run on *another* CPU, we interrupt it
 
 AlertSchEvalOnOtherCPU
-	lwz		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.AlertCount(r1)
+	lwz		r9, KDP.NKInfo.AlertCount(r1)
 	addi	r9, r9, 1
-	stw		r9, KDP.NanoKernelInfo + NKNanoKernelInfo.AlertCount(r1)
+	stw		r9, KDP.NKInfo.AlertCount(r1)
 
 	li		r16, kAlert
 	stw		r16, EWA.SIGPSelector(r15)

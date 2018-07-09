@@ -71,10 +71,10 @@ IllegalInstruction
 	addc	r21, r21, r8
 	addze	r20, r20
 	mtxer	r23
-	lwz		r23, KDP.NanoKernelInfo + NKNanoKernelInfo.EmulatedUnimpInstCount(r1)
+	lwz		r23, KDP.NKInfo.EmulatedUnimpInstCount(r1)
 	rlwimi	r7, r7, 27, 26, 26
 	addi	r23, r23, 1
-	stw		r23, KDP.NanoKernelInfo + NKNanoKernelInfo.EmulatedUnimpInstCount(r1)
+	stw		r23, KDP.NKInfo.EmulatedUnimpInstCount(r1)
 
 	stwx	r21, r1, r28			; save register into EWA
 	mr		r16, r7
@@ -84,10 +84,10 @@ IllegalInstruction
 
 
 @STFIWX
-	lwz		r23, KDP.NanoKernelInfo + NKNanoKernelInfo.EmulatedUnimpInstCount(r1)
+	lwz		r23, KDP.NKInfo.EmulatedUnimpInstCount(r1)
 	mr		r27, r8
 	addi	r23, r23, 1
-	stw		r23, KDP.NanoKernelInfo + NKNanoKernelInfo.EmulatedUnimpInstCount(r1)
+	stw		r23, KDP.NKInfo.EmulatedUnimpInstCount(r1)
 	mfmsr	r14
 	_bset	r15, r14, bitMsrDR
 	b		loc_A38
@@ -178,9 +178,9 @@ KCallRunAlternateContext
 
 	;	Found a non-cached physical address for this NCB!
 
-	lwz		r23, KDP.NanoKernelInfo + NKNanoKernelInfo.NCBPtrCacheMissCount(r1)
+	lwz		r23, KDP.NKInfo.NCBPtrCacheMissCount(r1)
 	addi	r23, r23, 1
-	stw		r23, KDP.NanoKernelInfo + NKNanoKernelInfo.NCBPtrCacheMissCount(r1)
+	stw		r23, KDP.NKInfo.NCBPtrCacheMissCount(r1)
 
 
 	;	Stick it in cache slot 3
@@ -358,10 +358,10 @@ IntProgram
 	;	SUCCESSFUL TRAP from emulator KCall table
 	;	=> Service call then return to link register
 	add		r8, r8, r1
-	lwz		r11, KDP.NanoKernelInfo + NKNanoKernelInfo.NanoKernelCallCounts(r8)
+	lwz		r11, KDP.NKInfo.NanoKernelCallCounts(r8)
 	lwz		r10, KDP.NanoKernelCallTable(r8)
 	addi	r11, r11, 1
-	stw		r11, KDP.NanoKernelInfo + NKNanoKernelInfo.NanoKernelCallCounts(r8)
+	stw		r11, KDP.NKInfo.NanoKernelCallCounts(r8)
 	mtlr	r10
 	mr		r10, r12 ; ret addr: LR was saved to SPRG2, SPRG2 to r12 above, r12 to r10 now, r10 to SRR0 to program ctr later
 	mfsrr1	r11
@@ -386,9 +386,9 @@ IntProgram
 	;	SUCCESSFUL TRAP from outside emulator KCall table
 	;	=> Service call then return to following instruction
 	add		r8, r8, r1
-	lwz		r10, KDP.NanoKernelInfo + NKNanoKernelInfo.NanoKernelCallCounts(r8)
+	lwz		r10, KDP.NKInfo.NanoKernelCallCounts(r8)
 	addi	r10, r10, 1
-	stw		r10, KDP.NanoKernelInfo + NKNanoKernelInfo.NanoKernelCallCounts(r8)
+	stw		r10, KDP.NKInfo.NanoKernelCallCounts(r8)
 	lwz		r8, KDP.NanoKernelCallTable(r8)
 	mtlr	r8
 	addi	r10, r10, 4				; continue executing the next instruction

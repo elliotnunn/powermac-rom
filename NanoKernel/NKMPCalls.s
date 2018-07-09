@@ -179,7 +179,7 @@ MPCallTableEnd
 
 ;	Not sure where this counter table is?
 
-	lwz		r16, KDP.NanoKernelInfo + NKNanoKernelInfo.MPDispatchCountTblPtr(r1)
+	lwz		r16, KDP.NKInfo.MPDispatchCountTblPtr(r1)
 	rlwinm	r17, r15,  2, 20, 29
 	cmplwi	r16, 0
 	beq		@no_count
@@ -816,7 +816,7 @@ MPDelayUntil
 MPDelayUntilSys
 
 	rlwinm.	r8, r7, 0, EWA.kFlagBlue, EWA.kFlagBlue
-	lwz		r16, KDP.NanoKernelInfo + NKNanoKernelInfo.ExternalIntCount(r1)
+	lwz		r16, KDP.NKInfo.ExternalIntCount(r1)
 	beq		_MPDelayUntilCommon
 
 	;	Why the hell are we counting interrupts?
@@ -1796,7 +1796,7 @@ NKSetPrInfoClockRates
 	bge		ReturnParamErrFromMPCall
 
 	mulli	r17, r3, 16
-	addi	r18, r1, KDP.ProcessorInfo + NKProcessorInfo.ClockRates
+	addi	r18, r1, KDP.ProcInfo.ClockRates
 	add		r18, r17, r18
 
 	lwz		r16, ContextBlock.r6(r6)
@@ -2114,7 +2114,7 @@ MPCall_133	;	OUTSIDE REFERER
 	_Lock			PSA.SchLock, scratch1=r16, scratch2=r17
 
 	cmpw	r3, r0
-	lwz		r16,  KDP.NanoKernelInfo + NKNanoKernelInfo.ConfigFlags(r1)
+	lwz		r16,  KDP.NKInfo.ConfigFlags(r1)
 	li		r17,  0x0b
 	blt		MPCall_133_0x34
 	and		r3, r3, r17

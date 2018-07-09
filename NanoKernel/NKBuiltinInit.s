@@ -422,13 +422,13 @@ InitBuiltin
 
 	;	If CI.Debug >= 257 && CI.DebugFlags & 2 ...
 	cmplwi	r8, NKConfigurationInfo.DebugThreshold
-	lwz		r8, KDP.NanoKernelInfo + NKNanoKernelInfo.ConfigFlags(r1)
+	lwz		r8, KDP.NKInfo.ConfigFlags(r1)
 
 	if		&TYPE('NKShowLog') = 'UNDEFINED'
 		blt		@no_screen_log
 		lwz		r8, NKConfigurationInfo.DebugFlags(r9)
 		rlwinm.	r8, r8, 0, NKConfigurationInfo.LogFlagBit, NKConfigurationInfo.LogFlagBit
-		lwz		r8, KDP.NanoKernelInfo + NKNanoKernelInfo.ConfigFlags(r1)
+		lwz		r8, KDP.NKInfo.ConfigFlags(r1)
 		beq		@no_screen_log
 	endif
 
@@ -439,7 +439,7 @@ InitBuiltin
 	;	Switch on two other flags
 	ori		r8, r8, 1<< 0		; not sure
 	ori		r8, r8, 1<< 4		; to do with interrupts
-	stw		r8, KDP.NanoKernelInfo + NKNanoKernelInfo.ConfigFlags(r1)
+	stw		r8, KDP.NKInfo.ConfigFlags(r1)
 
 
 
@@ -800,10 +800,10 @@ InitBuiltin
 ;	ProcessorInfoTable.s
 
 	mfpvr	r12
-	stw		r12, KDP.ProcessorInfo + NKProcessorInfo.ProcessorVersionReg(r1)
+	stw		r12, KDP.ProcInfo.ProcessorVersionReg(r1)
 	srwi	r12, r12, 16
 	lwz		r11, KDP.PA_NanoKernelCode(r1)
-	addi	r10, r1, KDP.ProcessorInfo + NKProcessorInfo.Ovr
+	addi	r10, r1, KDP.ProcInfo.Ovr
 	li		r9, NKProcessorInfo.OvrEnd - NKProcessorInfo.Ovr
 
 ;	check for several (some unknown) pre-7410 CPUs, and load their info

@@ -288,7 +288,7 @@ CreateAreasFromPageMap
 	add		r15, r15, r26			; add a page, I think
 	slwi	r16, r16, 12
 
-	lwz		r8, KDP.NanoKernelInfo + NKNanoKernelInfo.blueProcessID(r1)
+	lwz		r8, KDP.NKInfo.blueProcessID(r1)
 	stw		r8, Area.ProcessID(r31)
 
 	lwz		r8, EWA.PA_CurAddressSpace(r1)
@@ -526,7 +526,7 @@ MPGetPageSize
 	cmpwi	r3, 1
 	bne		ReturnParamErrFromMPCall
 
-	lwz		r3, KDP.ProcessorInfo + NKProcessorInfo.PageSize(r1)
+	lwz		r3, KDP.ProcInfo.PageSize(r1)
 	b		CommonMPCallReturnPath
 
 
@@ -4646,7 +4646,7 @@ DeletePTE ; PTE *r18, PLE *r30
 
 	_InvalNCBPointerCache scratch=r16
 
-foo set KDP.NanoKernelInfo + NKNanoKernelInfo.HashTableDeleteCount
+foo set KDP.NKInfo.HashTableDeleteCount
 	lwz		r16, foo(r1)
 	_bclr	r14, r14, Area.kPLEFlagIsInHTAB
 	addi	r16, r16, 1

@@ -199,7 +199,7 @@ CommonPIHPath_0xc	;	OUTSIDE REFERER
 	addi	r8, r31, Task.Timer
 	bl		DequeueTimer
 @task_timer_not_in_use
-	lwz		r16, KDP.NanoKernelInfo + NKNanoKernelInfo.ExternalIntCount(r1)
+	lwz		r16, KDP.NKInfo.ExternalIntCount(r1)
 	stw		r16, PSA.OtherSystemContextPtr(r1)
 
 @now_reschedule_task
@@ -327,9 +327,9 @@ PDM_PIH
 	mfsprg		r30, 3
 
 	bne			@nocount
-	lwz			r21, KDP.NanoKernelInfo + NKNanoKernelInfo.ExternalIntCount(r1)
+	lwz			r21, KDP.NKInfo.ExternalIntCount(r1)
 	addi		r21, r21,  0x01
-	stw			r21, KDP.NanoKernelInfo + NKNanoKernelInfo.ExternalIntCount(r1)
+	stw			r21, KDP.NKInfo.ExternalIntCount(r1)
 @nocount
 
 	;	Switch to Blue vector table

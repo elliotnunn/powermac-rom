@@ -362,14 +362,14 @@ replace_old_kernel_0x198
 	sth		r12, KDP.InfoRecord + InfoRecord.NKNanoKernelInfoVer(r1)
 
 
-	lwz		r8, KDP.ProcessorInfo + NKProcessorInfo.DecClockRateHz(r1)
+	lwz		r8, KDP.ProcInfo.DecClockRateHz(r1)
 	stw		r8, PSA.DecClockRateHzCopy(r1)
 
 
 
 ;	Play with ConfigFlags
 
-	lwz		r8, KDP.NanoKernelInfo + NKNanoKernelInfo.ConfigFlags(r1)
+	lwz		r8, KDP.NKInfo.ConfigFlags(r1)
 
 	_bset	r8, r8, 31		;	always set bit 31
 
@@ -382,7 +382,7 @@ replace_old_kernel_0x198
 	_bset	r8, r8, 27
 @oldrom
 
-	stw		r8, KDP.NanoKernelInfo + NKNanoKernelInfo.ConfigFlags(r1)
+	stw		r8, KDP.NKInfo.ConfigFlags(r1)
 
 
 

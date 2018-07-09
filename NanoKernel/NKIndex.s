@@ -48,7 +48,7 @@ InitIDIndex
 	beq		Local_Panic
 
 	li		r9,  0
-	stw		r9,  KDP.NanoKernelInfo + NKNanoKernelInfo.IDCtr(r1)
+	stw		r9,  KDP.NKInfo.IDCtr(r1)
 
 	sth		r9, Index.HalfOne(r22)
 	sth		r9, Index.HalfTwo(r22)
@@ -158,9 +158,9 @@ MakeID
 @_f0
 	stw		r8,  0x0004(r22)
 	stb		r9,  0x0000(r22)
-	lwz		r9,  KDP.NanoKernelInfo + NKNanoKernelInfo.IDCtr(r1)
+	lwz		r9,  KDP.NKInfo.IDCtr(r1)
 	addi	r9, r9,  0x01
-	stw		r9,  KDP.NanoKernelInfo + NKNanoKernelInfo.IDCtr(r1)
+	stw		r9,  KDP.NKInfo.IDCtr(r1)
 	lhz		r20,  0x0000(r18)
 	lhz		r8,  0x0002(r22)
 	lwz		r21, PSA.IndexPtr(r1)
@@ -206,9 +206,9 @@ DeleteID
 	cmpw	cr1, r23, r20
 	beqlr
 	bnelr	cr1
-	lwz		r9,  KDP.NanoKernelInfo + NKNanoKernelInfo.IDCtr(r1)
+	lwz		r9,  KDP.NKInfo.IDCtr(r1)
 	addi	r9, r9, -0x01
-	stw		r9,  KDP.NanoKernelInfo + NKNanoKernelInfo.IDCtr(r1)
+	stw		r9,  KDP.NKInfo.IDCtr(r1)
 	lhz		r20,  0x0002(r18)
 	stb		r8,  0x0000(r22)
 	addi	r20, r20,  0x01

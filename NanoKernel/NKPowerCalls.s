@@ -290,7 +290,7 @@ PwrSuspendSystem
 
 	;	Disable L2 cache (via L2CR, if present)
 
-	lwz		r26, KDP.ProcessorInfo + NKProcessorInfo.ProcessorFlags(r1)
+	lwz		r26, KDP.ProcInfo.ProcessorFlags(r1)
 	andi.	r26, r26, 1 << NKProcessorInfo.hasL2CR
 	beq		@no_need_to_deactivate_l2
 	mfspr	r9, l2cr
@@ -459,10 +459,10 @@ PwrSuspendSystem
 
 	;	Reactivate L2 cache
 
-	lwz		r26, KDP.ProcessorInfo + NKProcessorInfo.ProcessorFlags(r1)
+	lwz		r26, KDP.ProcInfo.ProcessorFlags(r1)
 	andi.	r26, r26, 1 << NKProcessorInfo.hasL2CR
 	beq		@no_need_to_reactivate_l2
-	lwz		r8, KDP.ProcessorInfo + NKProcessorInfo.ProcessorL2DSize(r1)
+	lwz		r8, KDP.ProcInfo.ProcessorL2DSize(r1)
 	mr.		r8, r8
 	beq		@no_need_to_reactivate_l2
 

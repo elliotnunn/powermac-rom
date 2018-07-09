@@ -138,9 +138,9 @@ IntAlignment
 	mfsprg	r1, 0
 	stmw	r2, EWA.r2(r1)
 
-	lwz		r11, KDP.NanoKernelInfo + NKNanoKernelInfo.MisalignmentCount(r1)
+	lwz		r11, KDP.NKInfo.MisalignmentCount(r1)
 	addi	r11, r11, 1
-	stw		r11, KDP.NanoKernelInfo + NKNanoKernelInfo.MisalignmentCount(r1)
+	stw		r11, KDP.NKInfo.MisalignmentCount(r1)
 
 	mfsprg	r11, 1
 	stw		r0, EWA.r0(r1)

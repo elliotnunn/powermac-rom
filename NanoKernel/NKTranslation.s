@@ -2243,7 +2243,7 @@ ProbePerfMonitor	;	OUTSIDE REFERER
 		lisori		r21, 0xd62611e3
 
 	;	Left-justify the decrementer clock rate
-		lwz			r19, KDP.ProcessorInfo + NKProcessorInfo.DecClockRateHz(r1)
+		lwz			r19, KDP.ProcInfo.DecClockRateHz(r1)
 		cntlzw		r23, r19
 		slw			r19, r19, r23
 
