@@ -44,6 +44,7 @@ IntDecrementerAlternate
 IntDSI
 	org 0xB00
 IntAlignment
+
 	org 0xC00
 FDP
 	org 0xC38
@@ -55,6 +56,7 @@ FDP_011C
 	org	0xD50
 loc_D50
 FDP_0DA0
+
 	org 0x13F4
 MemRetryDSI
 	org 0x1498

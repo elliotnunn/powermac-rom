@@ -24,7 +24,7 @@
 ;	    FloatSaveJumpTable
 ;	  NKIntHandlers
 ;	    LoadInterruptRegisters
-;	    major_0x03324
+;	    EmulateDataAccess
 ;	    major_0x03548
 ;	  NKIntMisc
 ;	    IgnoreSoftwareInt
@@ -3154,10 +3154,10 @@ FDP_1c08
 
 FDP_1c18
 		ble		cr3, FDP_1338
-		b		major_0x03324
+		b		EmulateDataAccess
 		bgt		cr6, FDP_1C18
 		bge		cr4, FDP_1338
-		b		major_0x03324
+		b		EmulateDataAccess
 
 
 
