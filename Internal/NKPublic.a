@@ -549,19 +549,7 @@ SupervisorMemLayout		ds	MemLayout	; 5c8:5d0
 UserMemLayout			ds	MemLayout	; 5d0:5d8
 CpuMemLayout			ds	MemLayout	; 5d8:5e0
 OverlayMemLayout		ds	MemLayout	; 5e0:5e8
-
-SupervisorSegMapPtr		ds.l	1	; 5c8 ; these are for enabling overlay, etc
-SupervisorBatMap		ds.l	1	; 5cc
-
-UserSegMapPtr			ds.l	1	; 5d0
-UserBatMap				ds.l	1	; 5d4
-CPUSegMapPtr			ds.l	1	; 5d8
-CPUBatMap				ds.l	1	; 5dc
-OverlaySegMapPtr		ds.l	1	; 5e0
-OverlayBatMap			ds.l	1	; 5e4
-
-CurrentSegMap			ds.l	1	; 5e8
-CurrentBatMap			ds.l	1	; 5ec
+CurrentMemLayout		ds	MemLayout	; 5e8:5f0
 
 NanoKernelCallTable		ds.l	16	; 5f0:630
 PA_ConfigInfo			ds.l	1	; 630

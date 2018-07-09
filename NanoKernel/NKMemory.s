@@ -4,7 +4,7 @@
 ########################################################################
 
 PopulateHTAB ; LogicalAddress r28 // Success cr0.eq
-	lwz		r29, KDP.CurrentSegMap(r1)
+	lwz		r29, KDP.CurrentMemLayout.SegMapPtr(r1)
 	rlwinm	r28, r27, 7, 0x0000000F << 2	; convert segment of passed ptr to offset into SegMap
 	lwzx	r29, r29, r28					; r29 = ptr to start of segment in PageMap		
 	rlwinm	r28, r27, 20, 0x0000FFFF		; r27 = page index within SegMap
@@ -213,18 +213,18 @@ PopulateHTAB ; LogicalAddress r28 // Success cr0.eq
 	cmpwi	cr7, r28, 0
 	clrrwi	r28, r31, 12
 	cmpw	r28, r1
-	lwz		r30, KDP.PA_ECB(r1)
+	lwz		r30, KDP.PA_ContextBlock(r1)
 
 	beq		cr7, @rethink_pte_search
 	addi	r31, r30, 768-1
 	beq		@rethink_pte_search
 
 	rlwinm	r30, r30, 0, 0xFFFFF000
-	cmpwi	cr7, r28, 14
+	cmpwi	cr7, r28, 30
 	lwz		r30, 0(r29)
 	rlwinm	r31, r31, 0, 0xFFFFF000
-	cmpwi	r28, 15
-	rlwinm	r31, r30, 0, 0x00000200
+	cmpwi	r28, 31
+	rlwinm	r31, r30, 0, 0x00000040
 	beq		cr7, @rethink_pte_search
 	extlwi	r28, r30, 4, 1
 	beq		@rethink_pte_search
@@ -235,7 +235,7 @@ PopulateHTAB ; LogicalAddress r28 // Success cr0.eq
 	rlwinm	r31, r31, 6, 10, 19
 	xor		r28, r28, r31
 
-	lwz		r26, KDP.CurrentSegMap(r1)
+	lwz		r26, KDP.CurrentMemLayout.SegMapPtr(r1)
 	rlwinm	r30, r28, (32-25), 0x00000078
 	lwzx	r26, r26, r30						; r26 pts into PageMap @ current segment
 
@@ -270,7 +270,7 @@ PopulateHTAB ; LogicalAddress r28 // Success cr0.eq
 	tlbie	r28
 	sync
 
-	_InvalNCBPointerCache scratch=r8
+	_InvalNCBPointerCache scratch=r28
 
 	bne		cr7, PopulateHTAB					; not a DaddyFlag + CountingFlag? Retriable...
 
@@ -296,7 +296,7 @@ PopulateHTAB ; LogicalAddress r28 // Success cr0.eq
 
 SwitchMemLayout
 	lwz		r28, MemLayout.SegMapPtr(r29)
-	stw		r28, KDP.CurrentSegMap(r1)
+	stw		r28, KDP.CurrentMemLayout.SegMapPtr(r1)
 	addi	r28, r28, 16*8 + 4
 	lis		r31, 0
 
@@ -311,7 +311,7 @@ SwitchMemLayout
 	lwz		r28, MemLayout.BatMap(r29)
 	andis.	r31, r31, 0xFFFE
 	addi	r29, r1, 0
-	stw		r28, KDP.CurrentBatMap(r1)
+	stw		r28, KDP.CurrentMemLayout.BatMap(r1)
 	beq		@601
 
 	rlwimi	r29, r28, 7, 0x00000078		; BATS, non-601
