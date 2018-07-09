@@ -187,7 +187,7 @@ InitHTAB
 @skip_zeroing_pteg
 
 	;	Flush the TLB after touching the HTAB
-	bl		PagingFlushTLB
+	bl		FlushTLB
 
 ########################################################################
 
@@ -209,12 +209,12 @@ CopyPageMap
 	subi	r22, r22, 4		;	load a word from the CI pagemap (top first)
 	lwzx	r21, r9, r22
 
-	andi.	r23, r21, PageMapEntry.DaddyFlag | PageMapEntry.PhysicalIsRelativeFlag
-	cmpwi	r23, PageMapEntry.PhysicalIsRelativeFlag
+	andi.	r23, r21, PME.DaddyFlag | PME.PhysicalIsRelativeFlag
+	cmpwi	r23, PME.PhysicalIsRelativeFlag
 	bne		@physical_address_not_relative_to_config_info
 
 	;	if the physical address of the area is relative to the ConfigInfo struct:
-	rlwinm	r21, r21, 0, ~PageMapEntry.PhysicalIsRelativeFlag
+	rlwinm	r21, r21, 0, ~PME.PhysicalIsRelativeFlag
 	add		r21, r21, rCI
 @physical_address_not_relative_to_config_info
 
@@ -231,22 +231,22 @@ CopyPageMap
 
 	lwz		r8, NKConfigurationInfo.PageMapIRPOffset(rCI)
 	add		r8, rPgMap, r8
-	lwz		r23, PageMapEntry.PBaseAndFlags(r8)
+	lwz		r23, PME.PBaseAndFlags(r8)
 	rlwimi	r23, r1, 0, 0xFFFFF000
-	stw		r23, PageMapEntry.PBaseAndFlags(r8)
+	stw		r23, PME.PBaseAndFlags(r8)
 
 	lwz		r8, NKConfigurationInfo.PageMapKDPOffset(rCI)
 	add		r8, rPgMap, r8
-	lwz		r23, PageMapEntry.PBaseAndFlags(r8)
+	lwz		r23, PME.PBaseAndFlags(r8)
 	rlwimi	r23, r1, 0, 0xFFFFF000
-	stw		r23, PageMapEntry.PBaseAndFlags(r8)
+	stw		r23, PME.PBaseAndFlags(r8)
 
 	lwz		r19, KDP.PA_EmulatorData(r1)
 	lwz		r8, NKConfigurationInfo.PageMapEDPOffset(rCI)
 	add		r8, rPgMap, r8
-	lwz		r23, PageMapEntry.PBaseAndFlags(r8)
+	lwz		r23, PME.PBaseAndFlags(r8)
 	rlwimi	r23, r19, 0, 0xFFFFF000
-	stw		r23, PageMapEntry.PBaseAndFlags(r8)
+	stw		r23, PME.PBaseAndFlags(r8)
 
 
 	;	Copy the SegMap
@@ -296,24 +296,24 @@ CopyBATRangeInit
 ;	Save some ptrs that allow us to enable Overlay mode, etc
 
 	addi	r23, r1, KDP.SegMap32SupInit
-	stw		r23, KDP.SupervisorSegMapPtr(r1)
+	stw		r23, KDP.SupervisorMemLayout.SegMapPtr(r1)
 	lwz		r23, NKConfigurationInfo.BatMap32SupInit(rCI)
-	stw		r23, KDP.SupervisorBatMap(r1)
+	stw		r23, KDP.SupervisorMemLayout.BatMap(r1)
 
 	addi	r23, r1, KDP.SegMap32UsrInit
-	stw		r23, KDP.UserSegMapPtr(r1)
+	stw		r23, KDP.UserMemLayout.SegMapPtr(r1)
 	lwz		r23, NKConfigurationInfo.BatMap32UsrInit(rCI)
-	stw		r23, KDP.UserBatMap(r1)
+	stw		r23, KDP.UserMemLayout.BatMap(r1)
 
 	addi	r23, r1, KDP.SegMap32CPUInit
-	stw		r23, KDP.CPUSegMapPtr(r1)
+	stw		r23, KDP.CpuMemLayout.SegMapPtr(r1)
 	lwz		r23, NKConfigurationInfo.BatMap32CPUInit(rCI)
-	stw		r23, KDP.CPUBatMap(r1)
+	stw		r23, KDP.CpuMemLayout.BatMap(r1)
 
 	addi	r23, r1, KDP.SegMap32OvlInit
-	stw		r23, KDP.OverlaySegMapPtr(r1)
+	stw		r23, KDP.OverlayMemLayout.SegMapPtr(r1)
 	lwz		r23, NKConfigurationInfo.BatMap32OvlInit(rCI)
-	stw		r23, KDP.OverlayBatMap(r1)
+	stw		r23, KDP.OverlayMemLayout.BatMap(r1)
 
 ########################################################################
 
@@ -382,7 +382,7 @@ CreatePageList
 
 ;	In the PageMap, create a Primary Address Range matching the size of PageList
 
-;	For every segment that contains part of the PAR, the first PageMapEntry will be rewritten
+;	For every segment that contains part of the PAR, the first PME will be rewritten
 ;	Going in, r21/r29 point to first/last element of PageList
 
 CreatePARInPageMap
@@ -411,8 +411,8 @@ CreatePARInPageMap
 @next_segment
 	cmplwi	r22, 0xffff				; continue (bgt) while there are still pages left
 	
-	;	Rewrite the first PageMapEntry in this segment
-	lwzu	r8, 8(r19)				; find PageMapEntry using SegMap32SupInit
+	;	Rewrite the first PME in this segment
+	lwzu	r8, 8(r19)				; find PME using SegMap32SupInit
 	rotlwi	r31, r21, 10
 	ori		r31, r31, 0xC00
 	stw		r30, 0(r8)				; LBase = 0, PageCount = 0xFFFF
@@ -426,14 +426,14 @@ CreatePARInPageMap
 	bgt		@next_segment
 
 	;	Reduce the number of pages in the last segment
-	sth		r22, PageMapEntry.PageCount(r8)
+	sth		r22, PME.PageCount(r8)
 
 ########################################################################
 
 ;	Enable the ROM Overlay
 
-	addi	r29, r1, KDP.OverlaySegMapPtr
-	bl		PagingFunc2
+	addi	r29, r1, KDP.OverlayMemLayout
+	bl		SwitchMemLayout
 
 ########################################################################
 
@@ -441,15 +441,15 @@ CreatePARInPageMap
 
 	lwz		r27, KDP.PA_ConfigInfo(r1)
 	lwz		r27, NKConfigurationInfo.LA_InterruptCtl(r27)
-	bl		PagingFunc1
+	bl		PopulateHTAB
 
 	lwz		r27, KDP.PA_ConfigInfo(r1)
 	lwz		r27, NKConfigurationInfo.LA_KernelData(r27)
-	bl		PagingFunc1
+	bl		PopulateHTAB
 
 	lwz		r27, KDP.PA_ConfigInfo(r1)
 	lwz		r27, NKConfigurationInfo.LA_EmulatorData(r27)
-	bl		PagingFunc1
+	bl		PopulateHTAB
 
 ########################################################################
 

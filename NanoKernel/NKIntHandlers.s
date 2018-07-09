@@ -18,8 +18,8 @@
 ;	  NKIntMisc
 ;	    IntReturnFromSIGP
 ;	  NKPaging
-;	    PagingFunc1
-;	    PagingL2PWithBATs
+;	    PopulateHTAB
+;	    GetPhysicalAddr
 ;	  NKScheduler
 ;	    SchFiddlePriorityShifty
 ;	    SchRestoreStartingAtR14
@@ -454,7 +454,7 @@ MemRetryDSI_0xe0
 MemRetryDSI_0x100
 	andis.	r28, r31,  0x800
 	addi	r29, r1, KDP.BATs + 0xa0
-	bnel	PagingL2PWithBATs
+	bnel	GetPhysicalAddr
 	li		r28,  0x43
 	and		r28, r31, r28
 	cmpwi	cr7, r28,  0x43
@@ -509,7 +509,7 @@ MemRetryDSI_0x1c8
 
 	_Lock			PSA.HTABLock, scratch1=r28, scratch2=r31
 
-	bl		PagingFunc1
+	bl		PopulateHTAB
 	_AssertAndRelease	PSA.HTABLock, scratch=r28
 	mfsprg	r28, 2
 	mtlr	r28
@@ -605,7 +605,7 @@ IntISI	;	OUTSIDE REFERER
 	_Lock			PSA.HTABLock, scratch1=r28, scratch2=r31
 
 	mr		r27, r10
-	bl		PagingFunc1
+	bl		PopulateHTAB
 	_AssertAndRelease	PSA.HTABLock, scratch=r28
 	mfsprg	r8, 0
 	bne		major_0x039dc
@@ -710,7 +710,7 @@ PIHDSI	;	OUTSIDE REFERER
 	_Lock			PSA.HTABLock, scratch1=r28, scratch2=r31
 
 	mfspr	r27, dar
-	bl		PagingFunc1
+	bl		PopulateHTAB
 	_AssertAndRelease	PSA.HTABLock, scratch=r28
 	mfsprg	r8, 0
 	bne		major_0x039dc

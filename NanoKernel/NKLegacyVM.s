@@ -3,7 +3,7 @@
 ;	  NKExceptions
 ;	    IntReturn
 ;	  NKPaging
-;	    PagingFunc1
+;	    PopulateHTAB
 ;	EXPORTS:
 ;	  EditPTEInHTAB (=> NKMPCalls)
 ;	  GetPARPageInfo (=> NKMPCalls)
@@ -1131,7 +1131,7 @@ VMLastExportedFunc_0xd7
 	mr		r14, r26
 	mflr	r6
 	slwi	r27, r4, 12
-	bl		PagingFunc1
+	bl		PopulateHTAB
 	bnel	VMPanic
 	mr		r27, r7
 	mr		r29, r8

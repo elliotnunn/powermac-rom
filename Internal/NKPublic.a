@@ -487,7 +487,15 @@ r31						ds.l	1	; 07c, cpu+3bc
 						endr
 
 
+MemLayout				record	0,INCR
+SegMapPtr				ds.l	1
+BatMap					ds.l	1 ; packed array of 4-bit indices into BATs
+						endr
 
+BAT						record	0,INCR
+U						ds.l	1
+L						ds.l	1
+						endr
 
 ;_______________________________________________________________________
 ;	KERNEL DATA PAGE
@@ -507,8 +515,15 @@ SegMap32CPUInit			ds.l	32	; 180:200
 SegMap32OvlInit			ds.l	32	; 200:280
 BATs					ds.l	32	; 280:300
 
-;	GAP
-						org		0x340
+CurIBAT0				ds		BAT	; 300:308
+CurIBAT1				ds		BAT	; 308:310
+CurIBAT2				ds		BAT	; 310:318
+CurIBAT3				ds		BAT	; 318:320
+CurDBAT0				ds		BAT	; 320:328
+CurDBAT1				ds		BAT	; 328:330
+CurDBAT2				ds		BAT	; 330:338
+CurDBAT3				ds		BAT	; 338:340
+
 NCBPointerCache
 NCBCacheLA0				ds.l	1	; 340
 NCBCachePA0				ds.l	1	; 344
@@ -530,8 +545,14 @@ PARPerSegmentPLEPtrs	ds.l	4	; 5b0:5c0 ; for each PAR segment, a ptr into the PAR
 FloatingPtTemp1			ds.l	1	; 5c0
 FloatingPtTemp2			ds.l	1	; 5c4
 
+SupervisorMemLayout		ds	MemLayout	; 5c8:5d0
+UserMemLayout			ds	MemLayout	; 5d0:5d8
+CpuMemLayout			ds	MemLayout	; 5d8:5e0
+OverlayMemLayout		ds	MemLayout	; 5e0:5e8
+
 SupervisorSegMapPtr		ds.l	1	; 5c8 ; these are for enabling overlay, etc
 SupervisorBatMap		ds.l	1	; 5cc
+
 UserSegMapPtr			ds.l	1	; 5d0
 UserBatMap				ds.l	1	; 5d4
 CPUSegMapPtr			ds.l	1	; 5d8
@@ -539,8 +560,9 @@ CPUBatMap				ds.l	1	; 5dc
 OverlaySegMapPtr		ds.l	1	; 5e0
 OverlayBatMap			ds.l	1	; 5e4
 
-						ds.l	1	; 5e8
-						ds.l	1	; 5ec
+CurrentSegMap			ds.l	1	; 5e8
+CurrentBatMap			ds.l	1	; 5ec
+
 NanoKernelCallTable		ds.l	16	; 5f0:630
 PA_ConfigInfo			ds.l	1	; 630
 PA_EmulatorData			ds.l	1	; 634
@@ -565,11 +587,13 @@ PA_EmulatorIplValue		ds.l	1	; 67c ; Physical ptr into EDP
 SharedMemoryAddrPlus	ds.l	1	; 680 ; Really not sure
 PA_PageMapStart			ds.l	1	; 684 ; Physical ptr to PageMap (= KDP+0x920)
 PageAttributeInit		ds.l	1	; 688 ; defaults for page table entries (see ConfigInfo)
-						ds.l	1	; 68c
-						ds.l	1	; 690
-						ds.l	1	; 694
-						ds.l	1	; 698
-						ds.l	1	; 69c
+
+HtabTempPage			ds.l	1	; 68c
+HtabTempEntryPtr		ds.l	1	; 690
+NewestPageInHtab		ds.l	1	; 694
+ApproxCurrentPTEG		ds.l	1	; 698
+OverflowingPTEG			ds.l	1	; 69c
+
 PTEGMask				ds.l	1	; 6a0
 HTABORG					ds.l	1	; 6a4
 VMLogicalPages			ds.l	1	; 6a8 ; set at init and changed by VMInit
@@ -820,7 +844,7 @@ Size					equ		*
 ;	and I have misunderstood.
 ;_______________________________________________________________________
 
-PageMapEntry			record	0,INCR
+PME						record	0,INCR
 LBase					ds.w	1	; 0 ; (base - segment) >> 12
 PageCount				ds.w	1	; 2 ; page count MINUS ONE
 PBaseAndFlags			ds.l	1	; 4 ; PBase page aligned

@@ -68,17 +68,8 @@ major_0x039dc_0x14
 	org 0x18EC
 IntMachineCheck
 	org 0x18F8
-PagingFunc1
-	org 0x1C74
-PagingFunc2
-	org 0x1E70
-PagingL2PWithBATs
-	org 0x1EDC
-PagingL2PWithoutBATs
-	org 0x1F98
-PagingFlushTLB
-	org 0x1FB8
 
+	include		'NKMemory.s'
 	include		'NKExceptions.s'
 	include		'NKFloatingPt.s'
 	include		'NKSoftInt.s'

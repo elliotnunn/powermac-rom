@@ -150,7 +150,7 @@ KCallRunAlternateContext
 
 	mr		r27, r8
 	addi	r29, r1, KDP.BATs + 0xa0
-	bl		PagingL2PWithBATs
+	bl		GetPhysicalAddr
 	clrlwi	r23, r8, 20
 	beq		@fail
 
@@ -161,7 +161,7 @@ KCallRunAlternateContext
 
 	addi	r27, r27, 0x1000
 	addi	r29, r1, KDP.BATs + 0xa0
-	bl		PagingL2PWithBATs
+	bl		GetPhysicalAddr
 	beq		@fail
 
 	subi	r31, r31, 0x1000
