@@ -566,7 +566,7 @@ PA_ECB					ds.l	1	; 658 ; gets called "system context"
 PA_ContextBlock			ds.l	1	; 65c ; moved to EWA (per-CPU) in NKv2
 Flags					ds.l	1	; 660 ; moved to EWA (per-CPU) in NKv2
 Enables					ds.l	1	; 664 ; moved to EWA (per-CPU) in NKv2
-ContextClock			ds.l	1	; 668
+OtherContextDEC			ds.l	1	; 668 ; ticks the *inactive* context has left out of 1s
 PA_PageMapEnd			ds.l	1	; 66c ; Set at the same time as PA_PageMapStart below...
 TestIntMaskInit			ds.l	1	; 670 ; These are all copied from ConfigInfo...
 PostIntMaskInit			ds.l	1	; 674

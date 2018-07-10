@@ -2,76 +2,64 @@
 
 ########################################################################
 
-	_alignToCacheBlock
+;	Increment the Sys/Alt CPU clocks, and the Dec-int counter
+	_align 6
 IntDecrementerSystem
 	mfsprg	r1, 0
-	stmw	r2, EWA.r2
+	stmw	r2, EWA.r2(r1)
 	mfdec	r31
-	lwz		r30, KDP.ContextBlock(r1)
+	lwz		r30, KDP.OtherContextDEC(r1)
 
-DecCommon
-	mfxer	r29
-	lwz		r28, KDP.ProcessorInfo
+DecCommon ; DEC for Alternate=r30, System=r31
+	mfxer	r29							; we will do carries
+
+	lwz		r28, KDP.ProcInfo.DecClockRateHz(r1)
+	stw		r28, KDP.OtherContextDEC(r1)
+	mtdec	r28							; reset Sys and Alt decrementers
+
+	subf	r31, r31, r28				; System ticks actually elapsed
+	subf	r30, r30, r28				; Alternate ticks actually elapsed
+
+	lwz		r28, KDP.NKInfo.SysContextCpuTime+4(r1)
+	lwz		r27, KDP.NKInfo.SysContextCpuTime(r1)
+	addc	r28, r28, r31
+	addze	r27, r27
+	stw		r28, KDP.NKInfo.SysContextCpuTime+4(r1)
+	stw		r27, KDP.NKInfo.SysContextCpuTime(r1)
+
+	lwz		r28, KDP.NKInfo.AltContextCpuTime+4(r1)
+	lwz		r27, KDP.NKInfo.AltContextCpuTime(r1)
+	addc	r28, r28, r30
+	addze	r27, r27
+	stw		r28, KDP.NKInfo.AltContextCpuTime+4(r1)
+	stw		r27, KDP.NKInfo.AltContextCpuTime(r1)
+
+	mtxer	r29
+
+	stw		r0, EWA.r0(r1)
+	mfsprg	r31, 1
+	stw		r31, EWA.r1(r1)
+
+	lwz		r31, KDP.NKInfo.DecrementerIntCount(r1)
+	addi	r31, r31, 1
+	stw		r31, KDP.NKInfo.DecrementerIntCount(r1)
+
+	lmw		r27, EWA.r27(r1)
+	mfsprg	r1, 2
+	mtlr	r1
+	mfsprg	r1, 1
+	rfi
 
 IntDecrementerAlternate
 	mfsprg	r1, 0
-	stmw	r2, EWA.r2
-	lwz		r31, KDP.ContextBlock(r1)
+	stmw	r2, EWA.r2(r1)
+	lwz		r31, KDP.OtherContextDEC(r1)
 	mfdec	r30
 	b		DecCommon
 
-
-
-IntDecrementer
-	bl		LoadInterruptRegisters
-
-	lwz		r8, KDP.OldKDP(r1)
-	rlwinm.	r9, r11, 0, 16, 16
-	cmpwi	cr1, r8, 0x00
-	beq		MaskedInterruptTaken
-	beq		cr1, IntDecrementer_0x54
-
-	stw		r16, ContextBlock.r16(r6)
-	stw		r17, ContextBlock.r17(r6)
-	stw		r18, ContextBlock.r18(r6)
-	stw		r25, ContextBlock.r25(r6)
-
-	bl		SchFiddlePriorityShifty
-	ble		IntDecrementer_0x48
-
-	lwz		r8, PSA.CriticalReadyQ + ReadyQueue.Timecake + 4(r1)
-	mtspr	dec, r8
-
-	lwz		r16, ContextBlock.r16(r6)
-	lwz		r17, ContextBlock.r17(r6)
-	lwz		r18, ContextBlock.r18(r6)
-	b		IntReturn
-
-IntDecrementer_0x48
-	lwz		r16, 0x0184(r6)
-	lwz		r17, 0x018c(r6)
-	lwz		r18, 0x0194(r6)
-
-IntDecrementer_0x54
-;	r6 = ewa
-	bl		SchSaveStartingAtR14
-;	r8 = sprg0 (not used by me)
-
-
-	_Lock			PSA.SchLock, scratch1=r8, scratch2=r9
-
-	lwz		r8, 0x0e8c(r1)
-	addi	r8, r8, 0x01
-	stw		r8, 0x0e8c(r1)
-	bl		TimerDispatch
-	_AssertAndRelease	PSA.SchLock, scratch=r8
-
-	bl		SchRestoreStartingAtR14
-	b		IntReturn
-
 ########################################################################
 
-	_alignToCacheBlock
+	_align 6
 IntDSI
 	mfsprg	r1, 0
 	stmw	r2, EWA.r2(r1)
@@ -98,7 +86,8 @@ EmulateDataAccess
 	lwzx	r18, r1, r18
 @r0
 	andis.	r26, r27, 0xec00
-	lwz		r16, EWA.Flags(r1)
+	lwz		r16, KDP.Flags(r1)
+	mfsprg	r24, 3
 	rlwinm	r17, r27, 0, 6, 15
 	rlwimi	r16, r16, 27, 26, 26
 	bge		@low_opcode
@@ -133,7 +122,7 @@ EmulateDataAccess
 
 ########################################################################
 
-	_alignToCacheBlock
+	_align 6
 IntAlignment
 	mfsprg	r1, 0
 	stmw	r2, EWA.r2(r1)
@@ -188,10 +177,15 @@ IntAlignment
 	blr
 
 ########################################################################
-; FDP GOES HERE!
+
+; FDP GOES HERE (0xC00)! (just include it as a file?)
+; there are some big mistakes in the labels below!
+	_align 10
+FDP
+	dcb.l	(0x1874-0xC00)/4, 0x46445020 ; 'FDP '
+
 ########################################################################
 
-	_alignToCacheBlock
 IntISI
 	bl		LoadInterruptRegisters
 

@@ -321,3 +321,17 @@ _bclr_lbit set 31
 	ENDIF
 
 	ENDM
+
+
+	MACRO
+	_align &arg
+
+my_align set 1 << (&arg)
+my_mask set my_align - 1
+my_offset set * - NKTop
+my_pad set (my_align - (my_offset & my_mask)) & my_mask
+	IF my_pad
+	dcb.l	my_pad>>2, 0x48000004
+	ENDIF
+
+	ENDM

@@ -307,10 +307,10 @@ SwitchContext ; OldCB *r6, NewCB *r9
 	stw		r31, 0x01fc(r6)
 	bnel	DisableFPU
 
-	lwz		r8, KDP.ContextClock(r1)
+	lwz		r8, KDP.OtherContextDEC(r1)
 	mfdec	r31
 	cmpwi	r8, 0
-	stw		r31, KDP.ContextClock(r1)
+	stw		r31, KDP.OtherContextDEC(r1)
 	mtdec	r8
 	blel	ResetDEC ; to r8
 
