@@ -74,6 +74,9 @@ Reg12					ds.l	1	; 770
 Reg13					ds.l	1	; 774
 Reg14					ds.l	1	; 778
 
+						org		0x800
+FuncPtrs				ds.l	120	; 800:9e0
+
 						org		0xf00
 BootstrapVersion		ds.b	16	; f00:f10 ; Bootstrap loader version info, from ConfigInfo
 
