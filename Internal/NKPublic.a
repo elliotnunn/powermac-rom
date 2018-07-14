@@ -26,38 +26,52 @@ InfoRecord				ds.l	16	; fc0:1000 ; the public part
 ;	Some InfoRecord fields are obliquely referenced from PPCInfoRecordsPriv.h
 ;	(e.g. nkSystemInfoPtr = 0x5FFFEFF0)
 
-InfoRecord				record	0,INCR
-InfoRecordPtr			ds.l	1	; 00 kdp/irp+fc0 ; set in kdp, copied to irp
+InfoRecBlkEntry
 
-Zero					ds.l	1	; 04 kdp/irp+fc4 ; const
 
-NKProcessorStatePtr		ds.l	1	; 08 kdp/irp+fc8 ; in PSA
-NKProcessorStateVer		ds.w	1	; 0c kdp/irp+fcc ; const
-NKProcessorStateLen		ds.w	1	; 0e kdp/irp+fce ; const
+InfoRecBlk				record	64,DECR
+ProcInfo				ds	InfoRecBlkEntry
+SysInfo					ds	InfoRecBlkEntry
+DiagInfo				ds	InfoRecBlkEntry
+NKInfo					ds	InfoRecBlkEntry
+ProcInfo2				ds	InfoRecBlkEntry
+Unknown5				ds	InfoRecBlkEntry
+Unknown6				ds	InfoRecBlkEntry
+Unknown7				ds	InfoRecBlkEntry
+						endr
 
-NKHWInfoPtr				ds.l	1	; 10 kdp/irp+fd0 ; in IRP
-NKHWInfoVer				ds.w	1	; 14 kdp/irp+fd4 ; const
-NKHWInfoLen				ds.w	1	; 16 kdp/irp+fd6 ; const
+InfoRecBlk				record	0,INCR
+UnknownPtr				ds.l	1	; 00
+UnknownVer				ds.l	1	; 04
+UnknownLen				ds.l	1	; 06
 
-NKProcessorInfoPtr		ds.l	1	; 18 kdp/irp+fd8 ; in KDP
-NKProcessorInfoVer		ds.w	1	; 1c kdp/irp+fdc ; const
-NKProcessorInfoLen		ds.w	1	; 1e kdp/irp+fde ; const
+NKProcessorStatePtr		ds.l	1	; 08
+NKProcessorStateVer		ds.w	1	; 0c
+NKProcessorStateLen		ds.w	1	; 0e
 
-NKNanoKernelInfoPtr		ds.l	1	; 20 kdp/irp+fe0 ; in KDP
-NKNanoKernelInfoVer		ds.w	1	; 24 kdp/irp+fe4 ; BCD
-NKNanoKernelInfoLen		ds.w	1	; 26 kdp/irp+fe6 ; const
+NKHWInfoPtr				ds.l	1	; 10
+NKHWInfoVer				ds.w	1	; 14
+NKHWInfoLen				ds.w	1	; 16
 
-NKDiagInfoPtr			ds.l	1	; 28 kdp/irp+fe8 ; in PSA
-NKDiagInfoVer			ds.w	1	; 2c kdp/irp+fec ; const
-NKDiagInfoLen			ds.w	1	; 2e kdp/irp+fee ; const
+NKProcessorInfoPtr		ds.l	1	; 18
+NKProcessorInfoVer		ds.w	1	; 1c
+NKProcessorInfoLen		ds.w	1	; 1e
 
-NKSystemInfoPtr			ds.l	1	; 30 kdp/irp+ff0 ; in IRP
-NKSystemInfoVer			ds.w	1	; 34 kdp/irp+ff4 ; const
-NKSystemInfoLen			ds.w	1	; 36 kdp/irp+ff6 ; const
+NKNanoKernelInfoPtr		ds.l	1	; 20
+NKNanoKernelInfoVer		ds.w	1	; 24
+NKNanoKernelInfoLen		ds.w	1	; 26
 
-NKProcessorInfoPtr2		ds.l	1	; 38 kdp/irp+ff8 ; in KDP (same as above)
-NKProcessorInfoVer2		ds.w	1	; 3c kdp/irp+ffc ; const
-NKProcessorInfoLen2		ds.w	1	; 3e kdp/irp+ffe ; const
+NKDiagInfoPtr			ds.l	1	; 28
+NKDiagInfoVer			ds.w	1	; 2c
+NKDiagInfoLen			ds.w	1	; 2e
+
+NKSystemInfoPtr			ds.l	1	; 30
+NKSystemInfoVer			ds.w	1	; 34
+NKSystemInfoLen			ds.w	1	; 36
+
+NKProcessorInfoPtr2		ds.l	1	; 38
+NKProcessorInfoVer2		ds.w	1	; 3c
+NKProcessorInfoLen2		ds.w	1	; 3e
 
 Size					equ		*
 						endr
@@ -708,7 +722,7 @@ SysInfo					ds	NKSystemInfo	; cc0:d80
 DiagInfo				ds	NKDiagInfo		; d80:e80
 NKInfo					ds	NKNanoKernelInfo; e80:f80 ; see NKNanoKernelInfo in PPCInfoRecordsPriv
 ProcInfo				ds	NKProcessorInfo	; f80:fc0
-InfoRecord				ds.b	64	; fc0:1000 ; was main copy in NKv1, now vestigial?
+InfoRecBlk				ds	InfoRecBlk	; fc0:1000 ; was main copy in NKv1, now vestigial?
 
 						endr
 
