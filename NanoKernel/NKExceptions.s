@@ -43,7 +43,7 @@ ExceptionAfterRetry
 	lwz		r8, KDP.r13(r1)
 	stw		r8, CB.r13(r6)
 
-	bge		RunSystemContext			; Alt Context has left exception disabled => Sys Context
+	bge		RunSystemContext				; Alt Context has left exception disabled => Sys Context
 	;fall through							; exception enabled => run userspace handler
 
 ########################################################################
@@ -62,12 +62,11 @@ RunExceptionHandler
 	li		r8, 0									; r8/Enables = 0 (handler must not throw exception)
 	lwz		r10, CB.ExceptionHandler(r6)			; r10/SRR0 = handler addr
 	lwz		r4, CB.ExceptionHandlerR4(r6)			; r4 = arbitrary second argument
-	lwz		r3, KDP.ECBPtrLogical(r1)						; r3 = ContextBlock ptr
+	lwz		r3, KDP.ECBPtrLogical(r1)				; r3 = ContextBlock ptr
 	bc		BO_IF, bitFlagEmu, @sys
 	lwz		r3, KDP.NCBCacheLA0(r1)
 @sys
-	lwz		r12, KDP.LA_EmuKCallTbl + KCallTbl.ReturnFromException(r1)
-													; r12/LR = address of KCallReturnFromException trap
+	lwz		r12, KDP.EmuKCallTblPtrLogical(r1)		; r12/LR = address of KCallReturnFromException trap
 
 	bcl		BO_IF, bitFlagLowSaves, PreferRegistersFromKDPSavingContextBlock	; ???
 

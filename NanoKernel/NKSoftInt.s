@@ -113,7 +113,7 @@ KCallRunAlternateContext
 	addi	r8, r1, KDP.VecTblAlternate ; the only use of this vector table?
 	mtsprg	3, r8
 
-	lwz		r8, KDP.LA_EmuKCallTbl(r1)
+	lwz		r8, KDP.EmuKCallTblPtrLogical(r1)
 	mtcrf	0x3f, r7
 	clrlwi	r7, r7, 8
 	stw		r8, CB.ExceptionHandlerRetAddr(r9)
@@ -339,7 +339,7 @@ IntProgram
 	stw		r13, CB.r13(r6)
 
 	;	Compare SRR0 with address of Emulator's KCall trap table
-	lwz		r8, KDP.LA_EmuKCallTbl(r1)
+	lwz		r8, KDP.EmuKCallTblPtrLogical(r1)
 	mfsrr0	r10
 	mfcr	r13
 	xor.	r8, r10, r8

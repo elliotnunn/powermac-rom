@@ -164,7 +164,7 @@ InitKernelGlobals
 	lwz		r12, NKConfigurationInfo.LA_EmulatorCode(rCI)
 	lwz		r11, NKConfigurationInfo.KernelTrapTableOffset(rCI)
 	add		r12, r12, r11
-	stw		r12, KDP.LA_EmuKCallTbl(r1)
+	stw		r12, KDP.EmuKCallTblPtrLogical(r1)
 
 	bl		* + 4
 	mflr	r12
@@ -371,7 +371,7 @@ InitEmulator
 	lwz		r12, NKConfigurationInfo.LA_DispatchTable(rCI)			; address of 512kb Emu dispatch table
 	stw		r12, CB.ExceptionOriginR4(r11)
 
-	lwz		r12, KDP.LA_EmuKCallTbl(r1)								; address of KCallReturnFromException trap
+	lwz		r12, KDP.EmuKCallTblPtrLogical(r1)						; address of KCallReturnFromException trap
 	stw		r12, CB.ExceptionHandlerRetAddr(r11)
 
 
@@ -406,7 +406,7 @@ InitEmulator
 	stw		r7, KDP.Flags(r1)
 
 
-	lwz		r10, KDP.LA_EmuKCallTbl(r1)							; Start at KCallReturnFromException trap
+	lwz		r10, KDP.EmuKCallTblPtrLogical(r1)					; Start at KCallReturnFromException trap
 
 
 	mfmsr	r14													; Calculate the user space MSR
