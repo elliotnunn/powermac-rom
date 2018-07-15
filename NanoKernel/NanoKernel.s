@@ -1,6 +1,6 @@
 	include		'InfoRecords.a'
 
-	include		'NKStructs.a'
+	include		'NKStructs.s'
 	include		'NKEquates.s'
 	include		'NKMacros.s'
 

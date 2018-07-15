@@ -28,19 +28,19 @@ ExceptionAfterRetry
 	stw		r9, KDP.NKInfo.ExceptionCauseCounts(r8)
 
 	;	Move regs from KDP to ContextBlock
-	lwz		r8, EWA.r7(r1)
+	lwz		r8, KDP.r7(r1)
 	stw		r8, CB.r7(r6)
-	lwz		r8, EWA.r8(r1)
+	lwz		r8, KDP.r8(r1)
 	stw		r8, CB.r8(r6)
-	lwz		r8, EWA.r9(r1)
+	lwz		r8, KDP.r9(r1)
 	stw		r8, CB.r9(r6)
-	lwz		r8, EWA.r10(r1)
+	lwz		r8, KDP.r10(r1)
 	stw		r8, CB.r10(r6)
-	lwz		r8, EWA.r11(r1)
+	lwz		r8, KDP.r11(r1)
 	stw		r8, CB.r11(r6)
-	lwz		r8, EWA.r12(r1)
+	lwz		r8, KDP.r12(r1)
 	stw		r8, CB.r12(r6)
-	lwz		r8, EWA.r13(r1)
+	lwz		r8, KDP.r13(r1)
 	stw		r8, CB.r13(r6)
 
 	bge		RunSystemContext			; Alt Context has left exception disabled => Sys Context
@@ -80,11 +80,11 @@ RunExceptionHandler
 ########################################################################
 
 major_0x02980_0x100
-	lwz		r0, EWA.r0(r1)
-	lwz		r2, EWA.r2(r1)
-	lwz		r3, EWA.r3(r1)
-	lwz		r4, EWA.r4(r1)
-	lwz		r5, EWA.r5(r1)
+	lwz		r0, KDP.r0(r1)
+	lwz		r2, KDP.r2(r1)
+	lwz		r3, KDP.r3(r1)
+	lwz		r4, KDP.r4(r1)
+	lwz		r5, KDP.r5(r1)
 	blr
 
 PreferRegistersFromKDPSavingContextBlock
@@ -93,7 +93,7 @@ PreferRegistersFromKDPSavingContextBlock
 	stw		r21, CB.PropagateR21(r6)
 	stw		r19, CB.PropagateR19(r6)
 	stw		r18, CB.PropagateR18(r6)
-	lmw		r14, EWA.r14(r1)
+	lmw		r14, KDP.r14(r1)
 	blr
 
 ########################################################################
@@ -161,7 +161,7 @@ KCallReturnFromException
 	lwz		r4, CB.ExceptionOriginR4(r6)
 
 	bc		BO_IF_NOT, bitFlagLowSaves, RunSystemContext
-	stmw	r14, EWA.r14(r1)
+	stmw	r14, KDP.r14(r1)
 	lwz		r17, CB.PropagateR17(r6)
 	lwz		r20, CB.PropagateR20(r6)
 	lwz		r21, CB.PropagateR21(r6)
@@ -196,9 +196,9 @@ KCallReturnFromException
 
 LoadInterruptRegisters
 	mfsprg	r1, 0
-	stw		r6, EWA.r6(r1)
+	stw		r6, KDP.r6(r1)
 	mfsprg	r6, 1
-	stw		r6, EWA.r1(r1)
+	stw		r6, KDP.r1(r1)
 	lwz		r6, KDP.PA_ContextBlock(r1)
 	stw		r7, CB.r7(r6)
 	stw		r8, CB.r8(r6)
@@ -259,7 +259,7 @@ SwitchContext ; OldCB *r6, NewCB *r9
 	stw		r21, CB.LowSave21(r6)
 	stw		r19, CB.LowSave19(r6)
 	stw		r18, CB.LowSave18(r6)
-	lmw		r14, EWA.r14(r1)
+	lmw		r14, KDP.r14(r1)
 @not_low_saves
 
 	mfxer	r8
@@ -277,7 +277,7 @@ SwitchContext ; OldCB *r6, NewCB *r9
 	stw		r12, CB.MQ(r6)
 @no_mq
 
-	lwz		r8, EWA.r1(r1)
+	lwz		r8, KDP.r1(r1)
 	stw		r0, CB.r0(r6)
 	stw		r8, 0x010c(r6)
 	stw		r2, 0x0114(r6)
@@ -339,7 +339,7 @@ SwitchContext ; OldCB *r6, NewCB *r9
 
 	lwz		r8, CB.r1(r6)
 	lwz		r0, CB.r0(r6)
-	stw		r8, EWA.r1(r1)
+	stw		r8, KDP.r1(r1)
 	lwz		r2, 0x0114(r6)
 	lwz		r3, 0x011c(r6)
 	lwz		r4, 0x0124(r6)
@@ -386,8 +386,8 @@ IntReturn
 	lwz		r8, CB.r8(r6)
 	lwz		r9, CB.r9(r6)
 
-	lwz		r6, EWA.r6(r1)		; restore last two registers from EWA
-	lwz		r1, EWA.r1(r1)
+	lwz		r6, KDP.r6(r1)		; restore last two registers from EWA
+	lwz		r1, KDP.r1(r1)
 
 	rfi
 

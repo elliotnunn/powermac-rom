@@ -41,10 +41,10 @@ KCallVMDispatch	;	OUTSIDE REFERER
 	add		r8, r8, r7
 	mtlr	r8
 
-	lwz		r6, EWA.r6(r1)
-	stw		r14, EWA.r14(r1)
-	stw		r15, EWA.r15(r1)
-	stw		r16, EWA.r16(r1)
+	lwz		r6, KDP.r6(r1)
+	stw		r14, KDP.r14(r1)
+	stw		r15, KDP.r15(r1)
+	stw		r16, KDP.r16(r1)
 
 	bltlr
 	b		VMReturnMinus1
@@ -110,9 +110,9 @@ VMReturn1	;	OUTSIDE REFERER
 	li		r3,  0x01
 
 VMReturn	;	OUTSIDE REFERER
-	lwz		r14, EWA.r14(r1)
-	lwz		r15, EWA.r15(r1)
-	lwz		r16, EWA.r16(r1)
+	lwz		r14, KDP.r14(r1)
+	lwz		r15, KDP.r15(r1)
+	lwz		r16, KDP.r16(r1)
 	lwz		r7, KDP.Flags(r1)
 	lwz		r6, KDP.PA_ContextBlock(r1)
 	b		IntReturn

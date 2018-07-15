@@ -5,18 +5,18 @@
 	_align 6
 IntExternal0
 	mfsprg	r1, 0							; Init regs and increment ctr
-	stw		r0, EWA.r2(r1)
-	stw		r2, EWA.r2(r1)
+	stw		r0, KDP.r2(r1)
+	stw		r2, KDP.r2(r1)
 	lwz		r2, KDP.NKInfo.ExternalIntCount(r1)
-	stw		r3, EWA.r3(r1)
+	stw		r3, KDP.r3(r1)
 	addi	r2, r2, 1
 	stw		r2, KDP.NKInfo.ExternalIntCount(r1)
 
 	mfmsr	r2								; Save a self-ptr to FF880000... why?
 	lis		r3, 0xFF88
 	_bset	r0, r2, bitMsrDR
-	stw		r4, EWA.r4(r1)
-	stw		r5, EWA.r5(r1)
+	stw		r4, KDP.r4(r1)
+	stw		r5, KDP.r5(r1)
 	mfsrr0	r4
 	mfsrr1	r5
 	mtmsr	r0
@@ -24,8 +24,8 @@ IntExternal0
 	mtmsr	r2
 	mtsrr0	r4
 	mtsrr1	r5
-	lwz		r4, EWA.r4(r1)
-	lwz		r5, EWA.r5(r1)
+	lwz		r4, KDP.r4(r1)
+	lwz		r5, KDP.r5(r1)
 
 	lwz		r2, KDP.DebugIntPtr(r1)			; Query the shared mem (debug?) for int num
 	mfcr	r0
@@ -35,7 +35,7 @@ IntExternal0
 	ori		r2, r2, 0x8000
 	sth		r2, 0(r3)
 	mfsprg	r2, 2
-	lwz		r3, EWA.r3(r1)
+	lwz		r3, KDP.r3(r1)
 	mtlr	r2
 	beq		@return							; 0 -> no interrupt
 	bgt		@clear							; negative -> clear interrupt
@@ -46,8 +46,8 @@ IntExternal0
 
 @return
 	mtcr	r0								; Set CR and return
-	lwz		r0, EWA.r0(r1)
-	lwz		r2, EWA.r2(r1)
+	lwz		r0, KDP.r0(r1)
+	lwz		r2, KDP.r2(r1)
 	mfsprg	r1, 1
 	rfi
 
@@ -72,18 +72,18 @@ IntLookupTable
 	_align 6
 IntExternal1
 	mfsprg	r1, 0							; Init regs and increment ctr
-	stw		r0, EWA.r2(r1)
-	stw		r2, EWA.r2(r1)
+	stw		r0, KDP.r2(r1)
+	stw		r2, KDP.r2(r1)
 	lwz		r2, KDP.NKInfo.ExternalIntCount(r1)
-	stw		r3, EWA.r3(r1)
+	stw		r3, KDP.r3(r1)
 	addi	r2, r2, 1
 	stw		r2, KDP.NKInfo.ExternalIntCount(r1)
 
 	lis		r2, 0x50F3						; Query OpenPIC at 50F2A000
 	mfmsr	r2
 	_bset	r0, r2, bitMsrDR
-	stw		r4, EWA.r4(r1)
-	stw		r5, EWA.r5(r1)
+	stw		r4, KDP.r4(r1)
+	stw		r5, KDP.r5(r1)
 	mfsrr0	r4
 	mfsrr1	r5
 	mtmsr	r0
@@ -94,8 +94,8 @@ IntExternal1
 	mtmsr	r2
 	mtsrr0	r4
 	mtsrr1	r5
-	lwz		r4, EWA.r4(r1)
-	lwz		r5, EWA.r5(r1)
+	lwz		r4, KDP.r4(r1)
+	lwz		r5, KDP.r5(r1)
 
 	lwz		r3, KDP.PA_NanoKernelCode(r1)	; Loop that number up in the table
 	rlwimi	r3, r0, 0, 0x0000003F
@@ -105,7 +105,7 @@ IntExternal1
 	clrlwi.	r2, r2, 29
 	sth		r2, 0(r3)
 	mfsprg	r2, 2
-	lwz		r3, EWA.r3(r1)
+	lwz		r3, KDP.r3(r1)
 	mtlr	r2
 	beq		@clear							; 0 -> clear interrupt
 											; nonzero -> post interrupt
@@ -115,8 +115,8 @@ IntExternal1
 
 @return
 	mtcr	r0								; Set CR and return
-	lwz		r0, EWA.r0(r1)
-	lwz		r2, EWA.r2(r1)
+	lwz		r0, KDP.r0(r1)
+	lwz		r2, KDP.r2(r1)
 	mfsprg	r1, 1
 	rfi
 
@@ -130,18 +130,18 @@ IntExternal1
 	_align 6
 IntExternal2
 	mfsprg	r1, 0							; Init regs and increment ctr
-	stw		r0, EWA.r2(r1)
-	stw		r2, EWA.r2(r1)
+	stw		r0, KDP.r2(r1)
+	stw		r2, KDP.r2(r1)
 	lwz		r2, KDP.NKInfo.ExternalIntCount(r1)
-	stw		r3, EWA.r3(r1)
+	stw		r3, KDP.r3(r1)
 	addi	r2, r2, 1
 	stw		r2, KDP.NKInfo.ExternalIntCount(r1)
 
 	lis		r2, 0xF300						; Query OpenPIC at F3000028/C
 	mfmsr	r2
 	_bset	r3, r2, bitMsrDR
-	stw		r4, EWA.r4(r1)
-	stw		r5, EWA.r5(r1)
+	stw		r4, KDP.r4(r1)
+	stw		r5, KDP.r5(r1)
 	mfsrr0	r4
 	mfsrr1	r5
 	mtmsr	r3
@@ -152,8 +152,8 @@ IntExternal2
 	mtmsr	r0
 	mtsrr0	r4
 	mtsrr1	r5
-	lwz		r4, EWA.r4(r1)
-	lwz		r5, EWA.r5(r1)
+	lwz		r4, KDP.r4(r1)
+	lwz		r5, KDP.r5(r1)
 
 	mfcr	r0
 											; Interpret OpenPic result:
@@ -182,7 +182,7 @@ IntExternal2
 	lwz		r3, KDP.PA_EmulatorIplValue(r1)
 	sth		r2, 0(r3)
 	mfsprg	r2, 2
-	lwz		r3, EWA.r3(r1)
+	lwz		r3, KDP.r3(r1)
 	mtlr	r2
 	beq		@clear							; 0 -> clear interrupt
 											; nonzero -> post interrupt
@@ -192,8 +192,8 @@ IntExternal2
 
 @return
 	mtcr	r0								; Set CR and return
-	lwz		r0, EWA.r0(r1)
-	lwz		r2, EWA.r2(r1)
+	lwz		r0, KDP.r0(r1)
+	lwz		r2, KDP.r2(r1)
 	mfsprg	r1, 1
 	rfi
 
@@ -208,7 +208,7 @@ IntExternal2
 	_align 6
 IntDecrementerSystem
 	mfsprg	r1, 0
-	stmw	r2, EWA.r2(r1)
+	stmw	r2, KDP.r2(r1)
 	mfdec	r31
 	lwz		r30, KDP.OtherContextDEC(r1)
 
@@ -238,15 +238,15 @@ DecCommon ; DEC for Alternate=r30, System=r31
 
 	mtxer	r29
 
-	stw		r0, EWA.r0(r1)
+	stw		r0, KDP.r0(r1)
 	mfsprg	r31, 1
-	stw		r31, EWA.r1(r1)
+	stw		r31, KDP.r1(r1)
 
 	lwz		r31, KDP.NKInfo.DecrementerIntCount(r1)
 	addi	r31, r31, 1
 	stw		r31, KDP.NKInfo.DecrementerIntCount(r1)
 
-	lmw		r27, EWA.r27(r1)
+	lmw		r27, KDP.r27(r1)
 	mfsprg	r1, 2
 	mtlr	r1
 	mfsprg	r1, 1
@@ -254,7 +254,7 @@ DecCommon ; DEC for Alternate=r30, System=r31
 
 IntDecrementerAlternate
 	mfsprg	r1, 0
-	stmw	r2, EWA.r2(r1)
+	stmw	r2, KDP.r2(r1)
 	lwz		r31, KDP.OtherContextDEC(r1)
 	mfdec	r30
 	b		DecCommon
@@ -264,10 +264,10 @@ IntDecrementerAlternate
 	_align 6
 IntDSI
 	mfsprg	r1, 0
-	stmw	r2, EWA.r2(r1)
+	stmw	r2, KDP.r2(r1)
 	mfsprg	r11, 1
-	stw		r0, EWA.r0(r1)
-	stw		r11, EWA.r1(r1)
+	stw		r0, KDP.r0(r1)
+	stw		r11, KDP.r1(r1)
 
 	mfsrr0	r10
 	mfsrr1	r11
@@ -327,15 +327,15 @@ EmulateDataAccess
 	_align 6
 IntAlignment
 	mfsprg	r1, 0
-	stmw	r2, EWA.r2(r1)
+	stmw	r2, KDP.r2(r1)
 
 	lwz		r11, KDP.NKInfo.MisalignmentCount(r1)
 	addi	r11, r11, 1
 	stw		r11, KDP.NKInfo.MisalignmentCount(r1)
 
 	mfsprg	r11, 1
-	stw		r0, EWA.r0(r1)
-	stw		r11, EWA.r1(r1)
+	stw		r0, KDP.r0(r1)
+	stw		r11, KDP.r1(r1)
 
 	mfsrr0	r10
 	mfsrr1	r11
@@ -394,7 +394,7 @@ IntISI
 	andis.	r8, r11, 0x4020			; what the hell are these MSR bits?
 	beq		major_0x039dc_0x14
 
-	stmw	r14, EWA.r14(r8)
+	stmw	r14, KDP.r14(r8)
 	mr		r27, r10
 	bl		PopulateHTAB
 	bne		@not_in_htab
@@ -410,11 +410,11 @@ IntISI
 	sync
 	mtmsr	r14
 	mtsprg	3, r24
-	lmw		r14, EWA.r14(r8)
+	lmw		r14, KDP.r14(r8)
 	b		IntReturn
 
 @not_in_htab
-	lmw		r14, EWA.r14(r8)
+	lmw		r14, KDP.r14(r8)
 	li		r8, ecInstPageFault
 	blt		Exception
 	li		r8, ecInstInvalidAddress

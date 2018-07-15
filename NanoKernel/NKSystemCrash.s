@@ -31,11 +31,10 @@ SystemCrash
 	mfspr	r0, dar
 	stw		r0, KDP.CrashDAR(r1)
 
-	mfspr	r0, tbu
-	stw		r0, KDP.CrashTBU(r1)
-
-	mfspr	r0, tb
-	stw		r0, KDP.CrashTB(r1)
+	mfspr	r0, rtcu
+	stw		r0, KDP.CrashRTCU(r1)
+	mfspr	r0, rtcl
+	stw		r0, KDP.CrashRTCL(r1)
 
 	mfspr	r0, dec
 	stw		r0, KDP.CrashDEC(r1)

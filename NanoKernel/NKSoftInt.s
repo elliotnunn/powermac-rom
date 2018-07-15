@@ -10,26 +10,26 @@ IllegalInstruction
 	lwz		r8, 0(r10)
 	mtmsr	r9
 
-	stw		r0, EWA.r0(r1)
-	stw		r2, EWA.r2(r1)
-	stw		r3, EWA.r3(r1)
-	stw		r4, EWA.r4(r1)
-	stw		r5, EWA.r5(r1)
+	stw		r0, KDP.r0(r1)
+	stw		r2, KDP.r2(r1)
+	stw		r3, KDP.r3(r1)
+	stw		r4, KDP.r4(r1)
+	stw		r5, KDP.r5(r1)
 	lwz		r9, CB.r7(r6)
-	stw		r9, EWA.r7(r1)
+	stw		r9, KDP.r7(r1)
 	lwz		r9, CB.r8(r6)
-	stw		r9, EWA.r8(r1)
+	stw		r9, KDP.r8(r1)
 	lwz		r9, CB.r9(r6)
-	stw		r9, EWA.r9(r1)
+	stw		r9, KDP.r9(r1)
 	lwz		r9, CB.r10(r6)
-	stw		r9, EWA.r10(r1)
+	stw		r9, KDP.r10(r1)
 	lwz		r9, CB.r11(r6)
-	stw		r9, EWA.r11(r1)
+	stw		r9, KDP.r11(r1)
 	lwz		r9, CB.r12(r6)
-	stw		r9, EWA.r12(r1)
+	stw		r9, KDP.r12(r1)
 	lwz		r9, CB.r13(r6)
-	stw		r9, EWA.r13(r1)
-	stmw	r14, EWA.r14(r1)
+	stw		r9, KDP.r13(r1)
+	stmw	r14, KDP.r14(r1)
 
 	rlwinm	r9, r8, 6, 15, 31
 	cmplwi	r9, 0xB99F
@@ -143,7 +143,7 @@ KCallRunAlternateContext
 
 	;	No luck with the cache
 
-	stmw	r14, EWA.r14(r1)
+	stmw	r14, KDP.r14(r1)
 
 	cmpw	cr1, r8, r6
 	beq		cr1, @fail
@@ -185,7 +185,7 @@ KCallRunAlternateContext
 
 	;	Stick it in cache slot 3
 
-	lmw		r14, EWA.r14(r1)
+	lmw		r14, KDP.r14(r1)
 	stw		r8, KDP.NCBCachePA3(r1)
 
 
@@ -234,7 +234,7 @@ KCallRunAlternateContext
 
 @fail
 
-	lmw		r14, EWA.r14(r1)
+	lmw		r14, KDP.r14(r1)
 	li		r8, ecTrapInstr
 	b		Exception
 
@@ -244,7 +244,7 @@ KCallRunAlternateContext
 KCallResetSystem
 ;	PPC trap 1, or indirectly, 68k RESET
 
-	stmw	r14, EWA.r14(r1)
+	stmw	r14, KDP.r14(r1)
 
 	xoris	r8, r3, 'Ga'
 	cmplwi	r8,     'ry'
@@ -262,7 +262,7 @@ KCallResetSystem
 Reset
 	include	'NKReset.s'
 
-	lmw		r14, EWA.r14(r1)
+	lmw		r14, KDP.r14(r1)
 	b		KCallPrioritizeInterrupts
 
 ########################################################################
@@ -280,45 +280,45 @@ KCallPrioritizeInterrupts
 	lwz		r12, CB.r12(r6)
 	lwz		r13, CB.r13(r6)
 	lwz		r7, CB.r7(r6)
-	lwz		r8, EWA.r1(r1)
+	lwz		r8, KDP.r1(r1)
 										mfsprg	r9, 3
 										lwz		r9, VecTbl.ExternalIntVector(r9)
 	mtsprg	1, r8
 										mtlr	r9
 	lwz		r8, CB.r8(r6)
 	lwz		r9, CB.r9(r6)
-	lwz		r6, EWA.r6(r1)
+	lwz		r6, KDP.r6(r1)
 										blrl ; (could this ever fall though to KCallSystemCrash?)
 
 ########################################################################
 
 KCallSystemCrash
 
-	stw		r0, EWA.r0(r1)
-	stw		r2, EWA.r2(r1)
-	stw		r3, EWA.r3(r1)
-	stw		r4, EWA.r4(r1)
-	stw		r5, EWA.r5(r1)
+	stw		r0, KDP.r0(r1)
+	stw		r2, KDP.r2(r1)
+	stw		r3, KDP.r3(r1)
+	stw		r4, KDP.r4(r1)
+	stw		r5, KDP.r5(r1)
 
 	lwz		r8, CB.r7(r6)
 	lwz		r9, CB.r8(r6)
-	stw		r8, EWA.r7(r1)
-	stw		r9, EWA.r8(r1)
+	stw		r8, KDP.r7(r1)
+	stw		r9, KDP.r8(r1)
 
 	lwz		r8, CB.r9(r6)
 	lwz		r9, CB.r10(r6)
-	stw		r8, EWA.r9(r1)
-	stw		r9, EWA.r10(r1)
+	stw		r8, KDP.r9(r1)
+	stw		r9, KDP.r10(r1)
 
 	lwz		r8, CB.r11(r6)
 	lwz		r9, CB.r12(r6)
-	stw		r8, EWA.r11(r1)
-	stw		r9, EWA.r12(r1)
+	stw		r8, KDP.r11(r1)
+	stw		r9, KDP.r12(r1)
 
 	lwz		r8, CB.r13(r6)
-	stw		r8, EWA.r13(r1)
+	stw		r8, KDP.r13(r1)
 
-	stmw	r14, EWA.r14(r1)
+	stmw	r14, KDP.r14(r1)
 
 	bl		SystemCrash
 
@@ -330,9 +330,9 @@ IntProgram
 
 	;	Standard interrupt palaver
 	mfsprg	r1, 0
-	stw		r6, EWA.r6(r1)
+	stw		r6, KDP.r6(r1)
 	mfsprg	r6, 1
-	stw		r6, EWA.r1(r1)
+	stw		r6, KDP.r1(r1)
 	lwz		r6, KDP.PA_ContextBlock(r1)
 	stw		r7, CB.r7(r6)
 	stw		r8, CB.r8(r6)
