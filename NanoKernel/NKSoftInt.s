@@ -320,7 +320,7 @@ KCallSystemCrash
 
 	stmw	r14, EWA.r14(r1)
 
-	bl		Panic
+	bl		SystemCrash
 
 ########################################################################
 

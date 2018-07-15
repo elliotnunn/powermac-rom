@@ -152,7 +152,7 @@ PopulateHTAB ; LogicalAddress r28 // Success cr0.eq
 	rlwimi	r31, r28, 30, 31, 31
 	beq		@return_daddy_flag
 	bltlr	cr7
-	bl		Panic
+	bl		SystemCrash
 
 ########################################################################
 ; Helpful code that jumps back to roughly where it started
@@ -280,10 +280,10 @@ PopulateHTAB ; LogicalAddress r28 // Success cr0.eq
 	andi.	r30, r28, 0x800
 	rlwinm	r30, r28, (32-9), 0x007FFFF8
 	xor		r30, r30, r29
-	beq		Panic
+	beq		SystemCrash
 	andi.	r30, r30, 0xffff
 	xori	r28, r28, 0x800
-	bne		Panic
+	bne		SystemCrash
 	rlwimi	r28, r31, 0, 0, 19					; r28 = EA of victim of overflow
 	rlwimi	r28, r31, 29, 27, 27
 	rlwimi	r28, r31, 27, 28, 28

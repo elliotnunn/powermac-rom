@@ -9,6 +9,8 @@
 	include		'NKEquates.s'
 	include		'NKMacros.s'
 
+	csect NanoKernel[PR]
+	org 0
 ; I want these to be visibly wrong for the time being
 FDP_TableBase
 FDP_003C
@@ -28,5 +30,4 @@ NKTop
 	include		'NKFloatingPt.s'
 	include		'NKSoftInt.s'
 	include		'NKLegacyVM.s'
-
 NKBtm

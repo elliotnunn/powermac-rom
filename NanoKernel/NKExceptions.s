@@ -241,7 +241,7 @@ RunSystemContext
 	addi	r8, r1, KDP.VecBaseSystem		; System VecTable
 	mtsprg	3, r8
 
-	bcl		BO_IF, bitFlagEmu, Panic		; System Context already running!
+	bcl		BO_IF, bitFlagEmu, SystemCrash	; System Context already running!
 
 	;	Fallthru (new CB in r9, old CB in r6)
 

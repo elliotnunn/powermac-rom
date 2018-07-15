@@ -3,83 +3,6 @@
 ;_______________________________________________________________________
 
 ;_______________________________________________________________________
-;	INFORECORD PAGE
-;	
-;	Lives at 5fffe000 on most (all?) PowerPC Macs. The public-ish part
-;	is the InfoRecord, which lives in the upper 64 bytes. This contains
-;	logical pointers, sizes and versions for the data structures that
-;	are shared between the NanoKernel and userspace. See
-;	PPCInfoRecordsPriv.s for the contents of these structures.
-;
-;_______________________________________________________________________
-
-IRP						record	0xdc0,INCR
-
-SystemInfo				ds.l	80	; dc0:f00 ; other NK versions keep their structures elsewhere,
-HWInfo					ds.l	48	; f00:fc0 ; so always use InfoRecord to find them from userspace
-InfoRecord				ds.l	16	; fc0:1000 ; the public part
-
-						endr
-
-
-
-;	Some InfoRecord fields are obliquely referenced from PPCInfoRecordsPriv.h
-;	(e.g. nkSystemInfoPtr = 0x5FFFEFF0)
-
-InfoRecBlkEntry
-
-
-InfoRecBlk				record	64,DECR
-ProcInfo				ds	InfoRecBlkEntry
-SysInfo					ds	InfoRecBlkEntry
-DiagInfo				ds	InfoRecBlkEntry
-NKInfo					ds	InfoRecBlkEntry
-ProcInfo2				ds	InfoRecBlkEntry
-Unknown5				ds	InfoRecBlkEntry
-Unknown6				ds	InfoRecBlkEntry
-Unknown7				ds	InfoRecBlkEntry
-						endr
-
-InfoRecBlk				record	0,INCR
-UnknownPtr				ds.l	1	; 00
-UnknownVer				ds.l	1	; 04
-UnknownLen				ds.l	1	; 06
-
-NKProcessorStatePtr		ds.l	1	; 08
-NKProcessorStateVer		ds.w	1	; 0c
-NKProcessorStateLen		ds.w	1	; 0e
-
-NKHWInfoPtr				ds.l	1	; 10
-NKHWInfoVer				ds.w	1	; 14
-NKHWInfoLen				ds.w	1	; 16
-
-NKProcessorInfoPtr		ds.l	1	; 18
-NKProcessorInfoVer		ds.w	1	; 1c
-NKProcessorInfoLen		ds.w	1	; 1e
-
-NKNanoKernelInfoPtr		ds.l	1	; 20
-NKNanoKernelInfoVer		ds.w	1	; 24
-NKNanoKernelInfoLen		ds.w	1	; 26
-
-NKDiagInfoPtr			ds.l	1	; 28
-NKDiagInfoVer			ds.w	1	; 2c
-NKDiagInfoLen			ds.w	1	; 2e
-
-NKSystemInfoPtr			ds.l	1	; 30
-NKSystemInfoVer			ds.w	1	; 34
-NKSystemInfoLen			ds.w	1	; 36
-
-NKProcessorInfoPtr2		ds.l	1	; 38
-NKProcessorInfoVer2		ds.w	1	; 3c
-NKProcessorInfoLen2		ds.w	1	; 3e
-
-Size					equ		*
-						endr
-
-
-
-
-;_______________________________________________________________________
 ;	PRIMARY SYSTEM AREA
 ;
 ;	The PSA is Rene's homage to the ESA390's prefix storage area.
@@ -722,8 +645,7 @@ SysInfo					ds	NKSystemInfo	; cc0:d80
 DiagInfo				ds	NKDiagInfo		; d80:e80
 NKInfo					ds	NKNanoKernelInfo; e80:f80 ; see NKNanoKernelInfo in PPCInfoRecordsPriv
 ProcInfo				ds	NKProcessorInfo	; f80:fc0
-InfoRecBlk				ds	InfoRecBlk	; fc0:1000 ; was main copy in NKv1, now vestigial?
-
+InfoRecBlk
 						endr
 
 

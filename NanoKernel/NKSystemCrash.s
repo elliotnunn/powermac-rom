@@ -1,25 +1,25 @@
 SystemCrash
-	mfsprg0	r1
+	mfsprg	r1, 0
 	stw		r0, KDP.ThudSavedR0(r1)
 
-	mfspr	r0, sprg1
+	mfsprg	r0, 1
 	stw		r0, KDP.ThudSavedR1(r1)
 
 	stmw	r2, KDP.ThudSavedR2(r1)
 
-	mfspr	r0, cr
+	mfcr	r0
 	stw		r0, KDP.ThudSavedCR(r1)
 
 	mfspr	r0, mq
 	stw		r0, KDP.ThudSavedMQ(r1)
 
-	mfspr	r0, xer
+	mfxer	r0
 	stw		r0, KDP.ThudSavedXER(r1)
 
-	mfspr	r0, sprg2
+	mfsprg	r0, 2
 	stw		r0, KDP.ThudSavedSPRG2(r1)
 
-	mfspr	r0, ctr
+	mfctr	r0
 	stw		r0, KDP.ThudSavedCTR(r1)
 
 	mfspr	r0, pvr
@@ -43,13 +43,13 @@ SystemCrash
 	stw		r0, KDP.ThudSavedHID0(r1)
 
 	mfspr	r0, sdr1
-	stw		r0, KDP.ThudSavedSDR(r1)
+	stw		r0, KDP.ThudSavedSDR1(r1)
 
-	mfspr	r0, srr0
+	mfsrr0	r0
 	stw		r0, KDP.ThudSavedSRR0(r1)
-	mfspr	r0, srr1
-	stw		r0, KDP.ThudSavedSRR(r1)
-	mfspr	r0, msr
+	mfsrr1	r0
+	stw		r0, KDP.ThudSavedSRR1(r1)
+	mfmsr	r0
 	stw		r0, KDP.ThudSavedMSR(r1)
 
 	mfsr	r0, 0
@@ -85,8 +85,8 @@ SystemCrash
 	mfsr	r0, 15
 	stw		r0, KDP.ThudSavedSR15(r1)
 
-	mfspr	r0, msr
-	ori		r0, r0, 0x2000
+	mfmsr	r0
+	_bset	r0, r0, bitMsrFP
 	mtmsr	r0
 	stfd	f0, KDP.ThudSavedF0(r1)
 	stfd	f1, KDP.ThudSavedF1(r1)
@@ -137,9 +137,9 @@ SystemCrash
 	bne		@nonzero
 
 @retryrtc					; Save RTC in "Mac/Smurf shared message mem"
-	mfrtcu	r2
-	mfrtcl	r3
-	mfrtcu	r0
+	mfspr	r2, rtcu
+	mfspr	r3, rtcl
+	mfspr	r0, rtcu
 	xor.	r0, r0, r2
 	bne		@retryrtc
 	lwz		r1, KDP.SharedMemoryAddr(r1)

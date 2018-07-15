@@ -22,7 +22,7 @@ InitVectorTables
 
 	;	System/Alternate Context tables
 
-	_kaddr	r23, rNK, Panic
+	_kaddr	r23, rNK, SystemCrash
 	addi	r8, r1, KDP.VecBaseSystem
 	li		r22, 3 * VecTable.Size
 @vectab_initnext_segment
@@ -38,7 +38,7 @@ rAlt set r8
 
 	addi	rAlt, r1, KDP.VecBaseAlternate
 
-	_kaddr	r23, rNK, Panic
+	_kaddr	r23, rNK, SystemCrash
 	stw		r23, VecTable.SystemResetVector(rSys)
 	stw		r23, VecTable.SystemResetVector(rAlt)
 

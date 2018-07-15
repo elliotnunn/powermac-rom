@@ -148,20 +148,20 @@ VMInit_BigLoop
 	andi.	r3, r8,  0xc00
 	cmpwi	r3,  0xc00
 	bne		VMInit_0x110
-	bnel	cr1, VMPanic
+	bnel	cr1, SystemCrash
 	rlwinm	r15, r8, 22,  0, 29
 	addi	r3, r1, KDP.PARPerSegmentPLEPtrs
 	rlwimi	r3, r5,  2, 28, 29
 	stw		r15,  0x0000(r3)
 	slwi	r3, r5, 16
 	cmpw	r3, r4
-	bnel	VMPanic
+	bnel	SystemCrash
 
 VMInit_0xa8
 	lwz		r16,  0x0000(r15)
 	addi	r7, r7, -0x01
 	andi.	r3, r16,  0x01
-	beql	VMPanic
+	beql	SystemCrash
 	andi.	r3, r16,  0x800
 	beq		VMInit_0x100
 	lwz		r14, KDP.HTABORG(r1)
@@ -169,15 +169,15 @@ VMInit_0xa8
 	lwzux	r8, r14, r3
 	lwz		r9,  0x0004(r14)
 	andis.	r3, r8,  0x8000
-	beql	VMPanic
+	beql	SystemCrash
 	andi.	r3, r9,  0x03
 	cmpwi	r3,  0x00
-	beql	VMPanic
+	beql	SystemCrash
 	rlwinm	r3, r16, 17, 22, 31
 	rlwimi	r3, r8, 10, 16, 21
 	rlwimi	r3, r8, 21, 12, 15
 	cmpw	r3, r4
-	bnel	VMPanic
+	bnel	SystemCrash
 ;	bl		RemovePageFromTLB
 	bl		RemovePTEFromHTAB
 
@@ -196,7 +196,7 @@ VMInit_0x110
 
 	lwz		r7, KDP.TotalPhysicalPages(r1)
 	cmpw	r4, r7
-	bnel	VMPanic
+	bnel	SystemCrash
 	lwz		r5,  KDP.PARPageListPtr(r1)
 	lwz		r4, KDP.VMLogicalPages(r1)
 	andi.	r7, r5,  0xfff
@@ -271,7 +271,7 @@ VMInit_0x1ec
 VMInit_0x218
 	lwz		r16,  0x0000(r15)
 	andi.	r7, r16,  0x01
-	beql	VMPanic
+	beql	SystemCrash
 	ori		r16, r16,  0x404
 	stw		r16,  0x0000(r15)
 	addi	r5, r5, -0x400
@@ -714,7 +714,7 @@ VMMarkResident	;	OUTSIDE REFERER
 	bl		GetPARPageInfo
 	bge		cr4, VMReturnMinus1
 	bso		cr7, VMReturnMinus1
-	bltl	cr5, VMPanic
+	bltl	cr5, SystemCrash
 	rlwimi	r16, r5, 12,  0, 19
 	ori		r16, r16,  0x01
 	stw		r16,  0x0000(r15)
@@ -947,7 +947,7 @@ GetPARPageInfo_0x10
 	rlwinm	r8, r16, 23,  9, 28;convert page# into an index
 	rlwinm	r9, r16,  0,  0, 19;get unshifted page#
 	bgelr	cr5		;return if PTE is not in HTAB
-	bns		cr7, VMPanic;panic if the PTE is in the HTAB but isn't mapped to a real page
+	bns		cr7, SystemCrash;panic if the PTE is in the HTAB but isn't mapped to a real page
 	lwzux	r8, r14, r8	;get first word of PTE from HTAB
 	lwz		r9,  0x0004(r14);get second word of PTE from HTAB
 	mtcrf	 0x80, r8
@@ -955,7 +955,7 @@ GetPARPageInfo_0x10
 	rlwimi	r16, r9, 27, 28, 28
 	mtcrf	0x07, r16
 	bltlr			;return if PTE is valid
-	bl		VMPanic;panic if PTE isn't valid but is in the HTAB
+	bl		SystemCrash;panic if PTE isn't valid but is in the HTAB
 
 GetPARPageInfo_0x40	;some kind of little-used code path for when VMMaxVirtualPages is invalid? ROM overlay?
 	lis		r9, 4
@@ -1132,7 +1132,7 @@ VMLastExportedFunc_0xd7
 	mflr	r6
 	slwi	r27, r4, 12
 	bl		PopulateHTAB
-	bnel	VMPanic
+	bnel	SystemCrash
 	mr		r27, r7
 	mr		r29, r8
 	mr		r30, r9

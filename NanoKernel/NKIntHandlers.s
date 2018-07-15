@@ -23,7 +23,7 @@ IntExternal0
 	stw		r3, 0(r3)
 	mtmsr	r2
 	mtsrr0	r4
-	mrsrr1	r5
+	mtsrr1	r5
 	lwz		r4, EWA.r4(r1)
 	lwz		r5, EWA.r5(r1)
 
@@ -93,11 +93,11 @@ IntExternal1
 	lbz		r0, -0x6000(r2)
 	mtmsr	r2
 	mtsrr0	r4
-	mrsrr1	r5
+	mtsrr1	r5
 	lwz		r4, EWA.r4(r1)
 	lwz		r5, EWA.r5(r1)
 
-	lwz		r3, KDP.PA_NanoKernelCode		; Loop that number up in the table
+	lwz		r3, KDP.PA_NanoKernelCode(r1)	; Loop that number up in the table
 	rlwimi	r3, r0, 0, 0x0000003F
 	lbz		r2, IntLookupTable-NKTop(r3)
 	mfcr	r0
@@ -151,7 +151,7 @@ IntExternal2
 	lwz		r3, 0x2C(r2)
 	mtmsr	r0
 	mtsrr0	r4
-	mrsrr1	r5
+	mtsrr1	r5
 	lwz		r4, EWA.r4(r1)
 	lwz		r5, EWA.r5(r1)
 
