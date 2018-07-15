@@ -66,7 +66,7 @@ RunExceptionHandler
 	bc		BO_IF, bitFlagEmu, @sys
 	lwz		r3, KDP.NCBCacheLA0(r1)
 @sys
-	lwz		r12, KDP.LA_EmulatorKernelTrapTable + NanoKernelCallTable.ReturnFromException(r1)
+	lwz		r12, KDP.LA_EmulatorKernelTrapTable + KCallTbl.ReturnFromException(r1)
 													; r12/LR = address of KCallReturnFromException trap
 
 	bcl		BO_IF, bitFlagLowSaves, PreferRegistersFromKDPSavingContextBlock	; ???
@@ -173,7 +173,7 @@ KCallReturnFromException
 
 ;	BEFORE
 ;		PowerPC exception vector saved r1/LR in SPRG1/2 and
-;		jumped where directed by the vecTable pointed to by
+;		jumped where directed by the VecTbl pointed to by
 ;		SPRG3. That function bl'ed here.
 ;
 ;	AFTER
@@ -238,7 +238,7 @@ Exception
 RunSystemContext
 	lwz		r9, KDP.PA_ECB(r1)				; System ("Emulator") ContextBlock
 
-	addi	r8, r1, KDP.VecBaseSystem		; System VecTable
+	addi	r8, r1, KDP.VecTblSystem		; System VecTbl
 	mtsprg	3, r8
 
 	bcl		BO_IF, bitFlagEmu, SystemCrash	; System Context already running!
@@ -455,7 +455,7 @@ Trace_0x30
 	insrwi	r25, r17, 4, 24
 	mtcrf	 0x10, r26					; so the second nybble of the entry is copied to cr3
 	lha		r22, 0x0c00(r25)
-	addi	r23, r1, KDP.VecBaseMemRetry
+	addi	r23, r1, KDP.VecTblMemRetry
 	add		r22, r22, r25
 	mfsprg	r24, 3
 	mtlr	r22

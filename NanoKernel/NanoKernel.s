@@ -9,19 +9,9 @@
 	include		'NKEquates.s'
 	include		'NKMacros.s'
 
-	csect NanoKernel[PR]
-	org 0
-; I want these to be visibly wrong for the time being
-FDP_TableBase
-FDP_003C
-loc_A38
-FDP_011C
-loc_D50
-FDP_0DA0
-MemRetryDSI
-MemRetryMachineCheck
-
 NKTop
+	b			SystemCrash
+	org			0
 	include		'NKInit.s'
 	include		'NKSystemCrash.s'
 	include		'NKIntHandlers.s'
@@ -31,3 +21,11 @@ NKTop
 	include		'NKSoftInt.s'
 	include		'NKLegacyVM.s'
 NKBtm
+FDP_TableBase
+FDP_003C
+loc_A38
+FDP_011C
+loc_D50
+FDP_0DA0
+MemRetryDSI
+MemRetryMachineCheck

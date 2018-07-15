@@ -402,7 +402,7 @@ IntISI
 	mfsprg	r24, 3
 	mfmsr	r14
 	_bset	r15, r14, bitMsrDR
-	addi	r23, r1, KDP.VecBaseMemRetry
+	addi	r23, r1, KDP.VecTblMemRetry
 	mtsprg	3, r23
 	mr		r19, r10
 	mtmsr	r15

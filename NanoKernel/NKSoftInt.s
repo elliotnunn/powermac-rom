@@ -113,7 +113,7 @@ KCallRunAlternateContext
 
 @found_physical_in_cache ; can come here from below after a more thorough search
 
-	addi	r8, r1, KDP.VecBaseAlternate ; the only use of this vector table?
+	addi	r8, r1, KDP.VecTblAlternate ; the only use of this vector table?
 	mtsprg	3, r8
 
 	lwz		r8, KDP.LA_EmulatorKernelTrapTable(r1)
@@ -282,7 +282,7 @@ KCallPrioritizeInterrupts
 	lwz		r7, CB.r7(r6)
 	lwz		r8, EWA.r1(r1)
 										mfsprg	r9, 3
-										lwz		r9, VecTable.ExternalIntVector(r9)
+										lwz		r9, VecTbl.ExternalIntVector(r9)
 	mtsprg	1, r8
 										mtlr	r9
 	lwz		r8, CB.r8(r6)
@@ -359,7 +359,7 @@ IntProgram
 	;	=> Service call then return to link register
 	add		r8, r8, r1
 	lwz		r11, KDP.NKInfo.NanoKernelCallCounts(r8)
-	lwz		r10, KDP.NanoKernelCallTable(r8)
+	lwz		r10, KDP.KCallTbl(r8)
 	addi	r11, r11, 1
 	stw		r11, KDP.NKInfo.NanoKernelCallCounts(r8)
 	mtlr	r10
@@ -389,7 +389,7 @@ IntProgram
 	lwz		r10, KDP.NKInfo.NanoKernelCallCounts(r8)
 	addi	r10, r10, 1
 	stw		r10, KDP.NKInfo.NanoKernelCallCounts(r8)
-	lwz		r8, KDP.NanoKernelCallTable(r8)
+	lwz		r8, KDP.KCallTbl(r8)
 	mtlr	r8
 	addi	r10, r10, 4				; continue executing the next instruction
 	rlwimi	r7, r7, 32-5, 26, 26	; something about MSR[SE]

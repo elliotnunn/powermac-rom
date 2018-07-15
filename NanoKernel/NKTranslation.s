@@ -2147,10 +2147,10 @@ ProbePerfMonitor	;	OUTSIDE REFERER
 
 	;	Temporarily disable program interrupts (leave old handler in r20)
 		lwz			r21, KDP.PA_NanoKernelCode(r1)
-		lwz			r20, KDP.VecBaseSystem + VecTable.ProgramIntVector(r1)
+		lwz			r20, KDP.VecTblSystem.ProgramIntVector(r1)
 		llabel		r18, IgnoreSoftwareInt
 		add			r21, r18, r21
-		stw			r21, KDP.VecBaseSystem + VecTable.ProgramIntVector(r1)
+		stw			r21, KDP.VecTblSystem.ProgramIntVector(r1)
 
 
 
@@ -2214,7 +2214,7 @@ ProbePerfMonitor	;	OUTSIDE REFERER
 
 
 	;	Restore program interrupts
-		stw			r20,  KDP.VecBaseSystem + VecTable.ProgramIntVector(r1)
+		stw			r20,  KDP.VecTblSystem.ProgramIntVector(r1)
 
 
 	;	Test r23 and save

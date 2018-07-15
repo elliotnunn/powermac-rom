@@ -9,7 +9,6 @@ rED set r8 ; Emulator Data Page
 
 ########################################################################
 
-	b			*+0x1234
 	li		r0, 0		; Zero lots of fields
 
 ########################################################################
@@ -100,7 +99,7 @@ InitKernelMemory
 	lis		r11, 0x7fff
 	bne		@did_not_panic
 	subf	r11, r13, r1
-	addi	r11, r11, KDP.StartOfPanicArea
+	addi	r11, r11, KDP.CrashTop
 @did_not_panic
 
 	subf	r12, r14, r15								; Erase all of kernel globals, except crash data
@@ -108,7 +107,7 @@ InitKernelMemory
 @eraseloop
 	subic.	r12, r12, 4
 	subf	r10, r11, r12
-	cmplwi	cr7, r10, KDP.EndOfPanicArea - KDP.StartOfPanicArea - 4
+	cmplwi	cr7, r10, KDP.CrashBtm - KDP.CrashTop - 4
 	ble		cr7, @skipwrite
 	stwx	r0, r13, r12
 @skipwrite

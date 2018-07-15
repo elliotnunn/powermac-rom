@@ -23,8 +23,8 @@ InitVectorTables
 	;	System/Alternate Context tables
 
 	_kaddr	r23, rNK, SystemCrash
-	addi	r8, r1, KDP.VecBaseSystem
-	li		r22, 3 * VecTable.Size
+	addi	r8, r1, KDP.VecTblSystem
+	li		r22, 3 * VecTbl.Size
 @vectab_initnext_segment
 	subic.	r22, r22, 4
 	stwx	r23, r8, r22
@@ -33,26 +33,26 @@ InitVectorTables
 rSys set r9 ; to clarify which table is which
 rAlt set r8
 
-	addi	rSys, r1, KDP.VecBaseSystem
+	addi	rSys, r1, KDP.VecTblSystem
 	mtsprg	3, rSys
 
-	addi	rAlt, r1, KDP.VecBaseAlternate
+	addi	rAlt, r1, KDP.VecTblAlternate
 
 	_kaddr	r23, rNK, SystemCrash
-	stw		r23, VecTable.SystemResetVector(rSys)
-	stw		r23, VecTable.SystemResetVector(rAlt)
+	stw		r23, VecTbl.SystemResetVector(rSys)
+	stw		r23, VecTbl.SystemResetVector(rAlt)
 
 	_kaddr	r23, rNK, IntMachineCheck
-	stw		r23, VecTable.MachineCheckVector(rSys)
-	stw		r23, VecTable.MachineCheckVector(rAlt)
+	stw		r23, VecTbl.MachineCheckVector(rSys)
+	stw		r23, VecTbl.MachineCheckVector(rAlt)
 
 	_kaddr	r23, rNK, IntDSI
-	stw		r23, VecTable.DSIVector(rSys)
-	stw		r23, VecTable.DSIVector(rAlt)
+	stw		r23, VecTbl.DSIVector(rSys)
+	stw		r23, VecTbl.DSIVector(rAlt)
 
 	_kaddr	r23, rNK, IntISI
-	stw		r23, VecTable.ISIVector(rSys)
-	stw		r23, VecTable.ISIVector(rAlt)
+	stw		r23, VecTbl.ISIVector(rSys)
+	stw		r23, VecTbl.ISIVector(rAlt)
 
 	lbz		r22, NKConfigurationInfo.InterruptHandlerKind(rCI)
 
@@ -67,88 +67,78 @@ rAlt set r8
 	beq		@chosenIntHandler
 
 @chosenIntHandler
-	stw		r23, VecTable.ExternalIntVector(rSys)
+	stw		r23, VecTbl.ExternalIntVector(rSys)
 
 	_kaddr	r23, rNK, IntProgram
-	stw		r23, VecTable.ExternalIntVector(rAlt)
+	stw		r23, VecTbl.ExternalIntVector(rAlt)
 
 	_kaddr	r23, rNK, IntAlignment
-	stw		r23, VecTable.AlignmentIntVector(rSys)
-	stw		r23, VecTable.AlignmentIntVector(rAlt)
+	stw		r23, VecTbl.AlignmentIntVector(rSys)
+	stw		r23, VecTbl.AlignmentIntVector(rAlt)
 
 	_kaddr	r23, rNK, IntProgram
-	stw		r23, VecTable.ProgramIntVector(rSys)
-	stw		r23, VecTable.ProgramIntVector(rAlt)
+	stw		r23, VecTbl.ProgramIntVector(rSys)
+	stw		r23, VecTbl.ProgramIntVector(rAlt)
 
 	_kaddr	r23, rNK, IntFPUnavail
-	stw		r23, VecTable.FPUnavailVector(rSys)
-	stw		r23, VecTable.FPUnavailVector(rAlt)
+	stw		r23, VecTbl.FPUnavailVector(rSys)
+	stw		r23, VecTbl.FPUnavailVector(rAlt)
 
 	_kaddr	r23, rNK, IntDecrementerSystem
-	stw		r23, VecTable.DecrementerVector(rSys)
+	stw		r23, VecTbl.DecrementerVector(rSys)
 	_kaddr	r23, rNK, IntDecrementerAlternate
-	stw		r23, VecTable.DecrementerVector(rAlt)
+	stw		r23, VecTbl.DecrementerVector(rAlt)
 
 	_kaddr	r23, rNK, IntSyscall
-	stw		r23, VecTable.SyscallVector(rSys)
-	stw		r23, VecTable.SyscallVector(rAlt)
+	stw		r23, VecTbl.SyscallVector(rSys)
+	stw		r23, VecTbl.SyscallVector(rAlt)
 
 	_kaddr	r23, rNK, IntTrace
-	stw		r23, VecTable.TraceVector(rSys)
-	stw		r23, VecTable.TraceVector(rAlt)
+	stw		r23, VecTbl.TraceVector(rSys)
+	stw		r23, VecTbl.TraceVector(rAlt)
 	stw		r23, 0x0080(rSys)			; Unexplored parts of vecBase
 	stw		r23, 0x0080(rAlt)
 
 
 	;	MemRetry vector table
 
-	addi	r8, r1, KDP.VecBaseMemRetry
+	addi	r8, r1, KDP.VecTblMemRetry
 
 	_kaddr	r23, rNK, MemRetryMachineCheck
-	stw		r23, VecTable.MachineCheckVector(r8)
+	stw		r23, VecTbl.MachineCheckVector(r8)
 
 	_kaddr	r23, rNK, MemRetryDSI
-	stw		r23, VecTable.DSIVector(r8)
+	stw		r23, VecTbl.DSIVector(r8)
 
 ########################################################################
 
-;	Fill the NanoKernelCallTable, the IntProgram interface to the NanoKernel
-
+;	Fill the KCallTbl, the IntProgram interface to the NanoKernel
 InitKCalls
-
-	;	Start with a default function
-	
-	_kaddr	r23, rNK, KCallSystemCrash
-
-	addi	r8, r1, KDP.NanoKernelCallTable
-
-	li		r22, NanoKernelCallTable.Size
-
-@kctab_initnext_segment
+	_kaddr	r23, rNK, KCallSystemCrash		; Uninited call -> crash
+	addi	r8, r1, KDP.KCallTbl
+	li		r22, KCallTbl.Size
+@loop
 	subic.	r22, r22, 4
 	stwx	r23, r8, r22
-	bne		@kctab_initnext_segment
-
-
-	;	Then some overrides (names still pretty poor)
+	bne		@loop
 
 	_kaddr	r23, rNK, KCallReturnFromException
-	stw		r23, NanoKernelCallTable.ReturnFromException(r8)
+	stw		r23, KCallTbl.ReturnFromException(r8)
 
 	_kaddr	r23, rNK, KCallRunAlternateContext
-	stw		r23, NanoKernelCallTable.RunAlternateContext(r8)
+	stw		r23, KCallTbl.RunAlternateContext(r8)
 
 	_kaddr	r23, rNK, KCallResetSystem
-	stw		r23, NanoKernelCallTable.ResetSystem(r8)
+	stw		r23, KCallTbl.ResetSystem(r8)
 
 	_kaddr	r23, rNK, KCallVMDispatch
-	stw		r23, NanoKernelCallTable.VMDispatch(r8)
+	stw		r23, KCallTbl.VMDispatch(r8)
 
 	_kaddr	r23, rNK, KCallPrioritizeInterrupts
-	stw		r23, NanoKernelCallTable.PrioritizeInterrupts(r8)
+	stw		r23, KCallTbl.PrioritizeInterrupts(r8)
 
 	_kaddr	r23, rNK, KCallSystemCrash
-	stw		r23, NanoKernelCallTable.Thud(r8)
+	stw		r23, KCallTbl.SystemCrash(r8)
 
 ########################################################################
 

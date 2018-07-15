@@ -1,132 +1,133 @@
 SystemCrash
 	mfsprg	r1, 0
-	stw		r0, KDP.ThudSavedR0(r1)
+
+	stw		r0, KDP.CrashR0(r1)
 
 	mfsprg	r0, 1
-	stw		r0, KDP.ThudSavedR1(r1)
+	stw		r0, KDP.CrashR1(r1)
 
-	stmw	r2, KDP.ThudSavedR2(r1)
+	stmw	r2, KDP.CrashR2(r1)
 
 	mfcr	r0
-	stw		r0, KDP.ThudSavedCR(r1)
+	stw		r0, KDP.CrashCR(r1)
 
 	mfspr	r0, mq
-	stw		r0, KDP.ThudSavedMQ(r1)
+	stw		r0, KDP.CrashMQ(r1)
 
 	mfxer	r0
-	stw		r0, KDP.ThudSavedXER(r1)
+	stw		r0, KDP.CrashXER(r1)
 
 	mfsprg	r0, 2
-	stw		r0, KDP.ThudSavedSPRG2(r1)
+	stw		r0, KDP.CrashLR(r1)
 
 	mfctr	r0
-	stw		r0, KDP.ThudSavedCTR(r1)
+	stw		r0, KDP.CrashCTR(r1)
 
 	mfspr	r0, pvr
-	stw		r0, KDP.ThudSavedPVR(r1)
+	stw		r0, KDP.CrashPVR(r1)
 
 	mfspr	r0, dsisr
-	stw		r0, KDP.ThudSavedDSISR(r1)
+	stw		r0, KDP.CrashDSISR(r1)
 	mfspr	r0, dar
-	stw		r0, KDP.ThudSavedDAR(r1)
+	stw		r0, KDP.CrashDAR(r1)
 
 	mfspr	r0, tbu
-	stw		r0, KDP.ThudSavedTBU(r1)
+	stw		r0, KDP.CrashTBU(r1)
 
 	mfspr	r0, tb
-	stw		r0, KDP.ThudSavedTB(r1)
+	stw		r0, KDP.CrashTB(r1)
 
 	mfspr	r0, dec
-	stw		r0, KDP.ThudSavedDEC(r1)
+	stw		r0, KDP.CrashDEC(r1)
 
 	mfspr	r0, hid0
-	stw		r0, KDP.ThudSavedHID0(r1)
+	stw		r0, KDP.CrashHID0(r1)
 
 	mfspr	r0, sdr1
-	stw		r0, KDP.ThudSavedSDR1(r1)
+	stw		r0, KDP.CrashSDR1(r1)
 
 	mfsrr0	r0
-	stw		r0, KDP.ThudSavedSRR0(r1)
+	stw		r0, KDP.CrashSRR0(r1)
 	mfsrr1	r0
-	stw		r0, KDP.ThudSavedSRR1(r1)
+	stw		r0, KDP.CrashSRR1(r1)
 	mfmsr	r0
-	stw		r0, KDP.ThudSavedMSR(r1)
+	stw		r0, KDP.CrashMSR(r1)
 
 	mfsr	r0, 0
-	stw		r0, KDP.ThudSavedSR0(r1)
+	stw		r0, KDP.CrashSR0(r1)
 	mfsr	r0, 1
-	stw		r0, KDP.ThudSavedSR1(r1)
+	stw		r0, KDP.CrashSR1(r1)
 	mfsr	r0, 2
-	stw		r0, KDP.ThudSavedSR2(r1)
+	stw		r0, KDP.CrashSR2(r1)
 	mfsr	r0, 3
-	stw		r0, KDP.ThudSavedSR3(r1)
+	stw		r0, KDP.CrashSR3(r1)
 	mfsr	r0, 4
-	stw		r0, KDP.ThudSavedSR4(r1)
+	stw		r0, KDP.CrashSR4(r1)
 	mfsr	r0, 5
-	stw		r0, KDP.ThudSavedSR5(r1)
+	stw		r0, KDP.CrashSR5(r1)
 	mfsr	r0, 6
-	stw		r0, KDP.ThudSavedSR6(r1)
+	stw		r0, KDP.CrashSR6(r1)
 	mfsr	r0, 7
-	stw		r0, KDP.ThudSavedSR7(r1)
+	stw		r0, KDP.CrashSR7(r1)
 	mfsr	r0, 8
-	stw		r0, KDP.ThudSavedSR8(r1)
+	stw		r0, KDP.CrashSR8(r1)
 	mfsr	r0, 9
-	stw		r0, KDP.ThudSavedSR9(r1)
+	stw		r0, KDP.CrashSR9(r1)
 	mfsr	r0, 10
-	stw		r0, KDP.ThudSavedSR10(r1)
+	stw		r0, KDP.CrashSR10(r1)
 	mfsr	r0, 11
-	stw		r0, KDP.ThudSavedSR11(r1)
+	stw		r0, KDP.CrashSR11(r1)
 	mfsr	r0, 12
-	stw		r0, KDP.ThudSavedSR12(r1)
+	stw		r0, KDP.CrashSR12(r1)
 	mfsr	r0, 13
-	stw		r0, KDP.ThudSavedSR13(r1)
+	stw		r0, KDP.CrashSR13(r1)
 	mfsr	r0, 14
-	stw		r0, KDP.ThudSavedSR14(r1)
+	stw		r0, KDP.CrashSR14(r1)
 	mfsr	r0, 15
-	stw		r0, KDP.ThudSavedSR15(r1)
+	stw		r0, KDP.CrashSR15(r1)
 
 	mfmsr	r0
 	_bset	r0, r0, bitMsrFP
 	mtmsr	r0
-	stfd	f0, KDP.ThudSavedF0(r1)
-	stfd	f1, KDP.ThudSavedF1(r1)
-	stfd	f2, KDP.ThudSavedF2(r1)
-	stfd	f3, KDP.ThudSavedF3(r1)
-	stfd	f4, KDP.ThudSavedF4(r1)
-	stfd	f5, KDP.ThudSavedF5(r1)
-	stfd	f6, KDP.ThudSavedF6(r1)
-	stfd	f7, KDP.ThudSavedF7(r1)
-	stfd	f8, KDP.ThudSavedF8(r1)
-	stfd	f9, KDP.ThudSavedF9(r1)
-	stfd	f10, KDP.ThudSavedF10(r1)
-	stfd	f11, KDP.ThudSavedF11(r1)
-	stfd	f12, KDP.ThudSavedF12(r1)
-	stfd	f13, KDP.ThudSavedF13(r1)
-	stfd	f14, KDP.ThudSavedF14(r1)
-	stfd	f15, KDP.ThudSavedF15(r1)
-	stfd	f16, KDP.ThudSavedF16(r1)
-	stfd	f17, KDP.ThudSavedF17(r1)
-	stfd	f18, KDP.ThudSavedF18(r1)
-	stfd	f19, KDP.ThudSavedF19(r1)
-	stfd	f20, KDP.ThudSavedF20(r1)
-	stfd	f21, KDP.ThudSavedF21(r1)
-	stfd	f22, KDP.ThudSavedF22(r1)
-	stfd	f23, KDP.ThudSavedF23(r1)
-	stfd	f24, KDP.ThudSavedF24(r1)
-	stfd	f25, KDP.ThudSavedF25(r1)
-	stfd	f26, KDP.ThudSavedF26(r1)
-	stfd	f27, KDP.ThudSavedF27(r1)
-	stfd	f28, KDP.ThudSavedF28(r1)
-	stfd	f29, KDP.ThudSavedF29(r1)
-	stfd	f30, KDP.ThudSavedF30(r1)
-	stfd	f31, KDP.ThudSavedF31(r1)
+	stfd	f0, KDP.CrashF0(r1)
+	stfd	f1, KDP.CrashF1(r1)
+	stfd	f2, KDP.CrashF2(r1)
+	stfd	f3, KDP.CrashF3(r1)
+	stfd	f4, KDP.CrashF4(r1)
+	stfd	f5, KDP.CrashF5(r1)
+	stfd	f6, KDP.CrashF6(r1)
+	stfd	f7, KDP.CrashF7(r1)
+	stfd	f8, KDP.CrashF8(r1)
+	stfd	f9, KDP.CrashF9(r1)
+	stfd	f10, KDP.CrashF10(r1)
+	stfd	f11, KDP.CrashF11(r1)
+	stfd	f12, KDP.CrashF12(r1)
+	stfd	f13, KDP.CrashF13(r1)
+	stfd	f14, KDP.CrashF14(r1)
+	stfd	f15, KDP.CrashF15(r1)
+	stfd	f16, KDP.CrashF16(r1)
+	stfd	f17, KDP.CrashF17(r1)
+	stfd	f18, KDP.CrashF18(r1)
+	stfd	f19, KDP.CrashF19(r1)
+	stfd	f20, KDP.CrashF20(r1)
+	stfd	f21, KDP.CrashF21(r1)
+	stfd	f22, KDP.CrashF22(r1)
+	stfd	f23, KDP.CrashF23(r1)
+	stfd	f24, KDP.CrashF24(r1)
+	stfd	f25, KDP.CrashF25(r1)
+	stfd	f26, KDP.CrashF26(r1)
+	stfd	f27, KDP.CrashF27(r1)
+	stfd	f28, KDP.CrashF28(r1)
+	stfd	f29, KDP.CrashF29(r1)
+	stfd	f30, KDP.CrashF30(r1)
+	stfd	f31, KDP.CrashF31(r1)
 	mffs	f31
-	lwz		r0, KDP.ThudSavedF31+4(r1)
-	stfd	f31, KDP.ThudSavedF31+4(r1)
-	stw		r0, KDP.ThudSavedF31+4(r1)
+	lwz		r0, KDP.CrashF31+4(r1)
+	stfd	f31, KDP.CrashF31+4(r1)
+	stw		r0, KDP.CrashF31+4(r1)
 
-	mfspr	r0, lr
-	stw		r0, KDP.ThudSavedLR(r1)
+	mflr	r0
+	stw		r0, KDP.CrashKernReturn(r1)
 
 ########################################################################
 
