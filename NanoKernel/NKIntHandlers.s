@@ -30,7 +30,7 @@ IntExternal0
 	lwz		r2, KDP.DebugIntPtr(r1)			; Query the shared mem (debug?) for int num
 	mfcr	r0
 	lha		r2, 0(r2)
-	lwz		r3, KDP.PA_EmulatorIplValue(r1)
+	lwz		r3, KDP.EmuIntLevelPtr(r1)
 	rlwinm.	r2, r2, 0, 0x80000007
 	ori		r2, r2, 0x8000
 	sth		r2, 0(r3)
@@ -97,11 +97,11 @@ IntExternal1
 	lwz		r4, KDP.r4(r1)
 	lwz		r5, KDP.r5(r1)
 
-	lwz		r3, KDP.PA_NanoKernelCode(r1)	; Loop that number up in the table
+	lwz		r3, KDP.NKCodePtr(r1)			; Loop that number up in the table
 	rlwimi	r3, r0, 0, 0x0000003F
 	lbz		r2, IntLookupTable-NKTop(r3)
 	mfcr	r0
-	lwz		r3, KDP.PA_EmulatorIplValue(r1)
+	lwz		r3, KDP.EmuIntLevelPtr(r1)
 	clrlwi.	r2, r2, 29
 	sth		r2, 0(r3)
 	mfsprg	r2, 2
@@ -179,7 +179,7 @@ IntExternal2
 											; else -> 0
 
 @gotnum
-	lwz		r3, KDP.PA_EmulatorIplValue(r1)
+	lwz		r3, KDP.EmuIntLevelPtr(r1)
 	sth		r2, 0(r3)
 	mfsprg	r2, 2
 	lwz		r3, KDP.r3(r1)
@@ -282,7 +282,7 @@ IntDSI
 
 EmulateDataAccess
 	rlwinm.	r18, r27, 18, 25, 29			; r16 = 4 * rA (r0 wired to 0)
-	lwz		r25, KDP.PA_FDP(r1)
+	lwz		r25, KDP.RetryCodePtr(r1)
 	li		r21, 0
 	beq		@r0
 	lwzx	r18, r1, r18
@@ -346,7 +346,7 @@ IntAlignment
 	mfdar	r18
 
 	extrwi.	r21, r27, 2, 15			; evaluate hi two bits of XO (or 0 for d-form?)
-	lwz		r25, KDP.PA_FDP(r1)
+	lwz		r25, KDP.RetryCodePtr(r1)
 	rlwinm	r17, r27, 16, 0x03FF0000
 	lwz		r16, KDP.Flags(r1)
 	rlwimi	r25, r27, 24, 23, 29	; add constant fields from dsisr (*4) to FDP

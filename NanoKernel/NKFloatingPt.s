@@ -19,7 +19,7 @@ IntFPUnavail
 
 	mfmsr	r11				; need this to access float registers
 	_bset	r11, r11, bitMsrFP
-	lwz		r6, KDP.PA_ContextBlock(r1)
+	lwz		r6, KDP.CurCBPtr(r1)
 	mtmsr	r11
 
 	bl		LoadFloats

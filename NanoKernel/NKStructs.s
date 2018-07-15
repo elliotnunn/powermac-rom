@@ -190,36 +190,34 @@ CurrentMemLayout		ds	MemLayout	; 5e8:5f0
 
 KCallTbl				ds	KCallTbl	; 5f0:630
 
-PA_ConfigInfo			ds.l	1	; 630
-PA_EmulatorData			ds.l	1	; 634
+ConfigInfoPtr			ds.l	1	; 630
+EDPPtr					ds.l	1	; 634
 KernelMemoryBase		ds.l	1	; 638
-KernelMemoryEnd			ds.l	1	; 63c ; Top of HTAB (and entire kernel reserved area). Set by Init.s
-PA_RelocatedLowMemInit	ds.l	1	; 640 ; From ConfigInfo. Ptr to Mac LowMem vars, which Init.s sets up
-SharedMemoryAddr		ds.l	1	; 644 ; From ConfigInfo. Not sure what latest use is.
-LA_EmulatorKernelTrapTable ds.l	1	; 648 ; Calculated from ConfigInfo.
-PA_NanoKernelCode		ds.l	1	; 64c ; Calculated by NanoKernel itself.
-PA_FDP					ds.l	1	; 650 ; See notes in NanoKernel. Very interesting.
-LA_ECB					ds.l	1	; 654 ; Logical ptr into EDP.
-PA_ECB					ds.l	1	; 658 ; gets called "system context"
-PA_ContextBlock			ds.l	1	; 65c ; moved to EWA (per-CPU) in NKv2
+KernelMemoryEnd			ds.l	1	; 63c
+LowMemPtr				ds.l	1	; 640 ; physical address of PAR Low Memory
+SharedMemoryAddr		ds.l	1	; 644 ; debug?
+EmuKCallTblPtrLogical 	ds.l	1	; 648
+NKCodePtr				ds.l	1	; 64c
+RetryCodePtr			ds.l	1	; 650
+ECBPtrLogical			ds.l	1	; 654 ; Emulator/System ContextBlock
+ECBPtr					ds.l	1	; 658
+CurCBPtr				ds.l	1	; 65c ; moved to EWA (per-CPU) in NKv2
 Flags					ds.l	1	; 660 ; moved to EWA (per-CPU) in NKv2
 Enables					ds.l	1	; 664 ; moved to EWA (per-CPU) in NKv2
-OtherContextDEC			ds.l	1	; 668 ; ticks the *inactive* context has left out of 1s
-PA_PageMapEnd			ds.l	1	; 66c ; Set at the same time as PA_PageMapStart below...
-TestIntMaskInit			ds.l	1	; 670 ; These are all copied from ConfigInfo...
-PostIntMaskInit			ds.l	1	; 674
-ClearIntMaskInit		ds.l	1	; 678
-PA_EmulatorIplValue		ds.l	1	; 67c ; Physical ptr into EDP
-DebugIntPtr				ds.l	1	; 680 ; Within (debug?) shared memory
-PA_PageMapStart			ds.l	1	; 684 ; Physical ptr to PageMap (= KDP+0x920)
-PageAttributeInit		ds.l	1	; 688 ; defaults for page table entries (see ConfigInfo)
-
-HtabTempPage			ds.l	1	; 68c
-HtabTempEntryPtr		ds.l	1	; 690
+OtherContextDEC			ds.l	1	; 668 ; ticks that the *inactive* context has left out of 1s
+PageMapEndPtr			ds.l	1	; 66c ; et at the same time as PageMapStartPtr below
+TestIntMaskInit			ds.l	1	; 670
+PostIntMaskInit			ds.l	1	; 674 ; CR flags to set when posting an interrupt to the Emulator
+ClearIntMaskInit		ds.l	1	; 678 ; CR flags to clear (as mask) when clearing an interrupt
+EmuIntLevelPtr			ds.l	1	; 67c ; physical ptr to an Emulator global
+DebugIntPtr				ds.l	1	; 680 ; within (debug?) shared memory
+PageMapStartPtr			ds.l	1	; 684
+PageAttributeInit		ds.l	1	; 688 ; defaults for PLE/PTE?
+HtabTempPage			ds.l	1	; 68c ; a page that lives temporarily in the HTAB (per its PME)
+HtabTempEntryPtr		ds.l	1	; 690 ; ptr to that PME
 NewestPageInHtab		ds.l	1	; 694
 ApproxCurrentPTEG		ds.l	1	; 698
 OverflowingPTEG			ds.l	1	; 69c
-
 PTEGMask				ds.l	1	; 6a0
 HTABORG					ds.l	1	; 6a4
 VMLogicalPages			ds.l	1	; 6a8 ; set at init and changed by VMInit

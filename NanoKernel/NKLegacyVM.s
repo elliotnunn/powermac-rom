@@ -33,7 +33,7 @@ MaxVMCallCount		equ		26
 KCallVMDispatch	;	OUTSIDE REFERER
 
 	stw		r7, KDP.Flags(r1)
-	lwz		r7, KDP.PA_NanoKernelCode(r1)
+	lwz		r7, KDP.NKCodePtr(r1)
 	cmplwi	r3, MaxVMCallCount
 	insrwi	r7, r3, 7, 24
 	lhz		r8, VMDispatchTable - NKTop(r7)
@@ -114,7 +114,7 @@ VMReturn	;	OUTSIDE REFERER
 	lwz		r15, KDP.r15(r1)
 	lwz		r16, KDP.r16(r1)
 	lwz		r7, KDP.Flags(r1)
-	lwz		r6, KDP.PA_ContextBlock(r1)
+	lwz		r6, KDP.CurCBPtr(r1)
 	b		IntReturn
 
 

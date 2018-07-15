@@ -2146,7 +2146,7 @@ ProbePerfMonitor	;	OUTSIDE REFERER
 
 
 	;	Temporarily disable program interrupts (leave old handler in r20)
-		lwz			r21, KDP.PA_NanoKernelCode(r1)
+		lwz			r21, KDP.NKCodePtr(r1)
 		lwz			r20, KDP.VecTblSystem.ProgramIntVector(r1)
 		llabel		r18, IgnoreSoftwareInt
 		add			r21, r18, r21

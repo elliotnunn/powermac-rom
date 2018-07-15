@@ -11,7 +11,7 @@ ExceptionAfterRetry
 
 	bcl		BO_IF, bitFlag15, major_0x02980_0x100
 
-	lwz		r6, KDP.PA_ContextBlock(r1)
+	lwz		r6, KDP.CurCBPtr(r1)
 
 	_bset	r7, r16, 27
 
@@ -62,11 +62,11 @@ RunExceptionHandler
 	li		r8, 0									; r8/Enables = 0 (handler must not throw exception)
 	lwz		r10, CB.ExceptionHandler(r6)			; r10/SRR0 = handler addr
 	lwz		r4, CB.ExceptionHandlerR4(r6)			; r4 = arbitrary second argument
-	lwz		r3, KDP.LA_ECB(r1)						; r3 = ContextBlock ptr
+	lwz		r3, KDP.ECBPtrLogical(r1)						; r3 = ContextBlock ptr
 	bc		BO_IF, bitFlagEmu, @sys
 	lwz		r3, KDP.NCBCacheLA0(r1)
 @sys
-	lwz		r12, KDP.LA_EmulatorKernelTrapTable + KCallTbl.ReturnFromException(r1)
+	lwz		r12, KDP.LA_EmuKCallTbl + KCallTbl.ReturnFromException(r1)
 													; r12/LR = address of KCallReturnFromException trap
 
 	bcl		BO_IF, bitFlagLowSaves, PreferRegistersFromKDPSavingContextBlock	; ???
@@ -199,7 +199,7 @@ LoadInterruptRegisters
 	stw		r6, KDP.r6(r1)
 	mfsprg	r6, 1
 	stw		r6, KDP.r1(r1)
-	lwz		r6, KDP.PA_ContextBlock(r1)
+	lwz		r6, KDP.CurCBPtr(r1)
 	stw		r7, CB.r7(r6)
 	stw		r8, CB.r8(r6)
 	stw		r9, CB.r9(r6)
@@ -236,7 +236,7 @@ Exception
 ########################################################################
 
 RunSystemContext
-	lwz		r9, KDP.PA_ECB(r1)				; System ("Emulator") ContextBlock
+	lwz		r9, KDP.ECBPtr(r1)				; System ("Emulator") ContextBlock
 
 	addi	r8, r1, KDP.VecTblSystem		; System VecTbl
 	mtsprg	3, r8
@@ -315,8 +315,8 @@ SwitchContext ; OldCB *r6, NewCB *r9
 	blel	ResetDEC ; to r8
 
 	lwz		r8, CB.Flags(r9)							; r8 is the new Flags variable
-	stw		r9, KDP.PA_ContextBlock(r1)
-	xoris	r7, r7, 1 << (15 - bitFlagEmu)			; flip Emulator flag
+	stw		r9, KDP.CurCBPtr(r1)
+	xoris	r7, r7, 1 << (15 - bitFlagEmu)				; flip Emulator flag
 	rlwimi	r11, r8, 0, 20, 23							; "enact" MSR[FE0/SE/BE/FE1]
 	mr		r6, r9										; change the magic ContextBlock register
 	rlwimi	r7, r8, 0, 0x0000FFFF						; change bottom half of flags only

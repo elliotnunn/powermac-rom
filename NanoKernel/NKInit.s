@@ -143,20 +143,20 @@ CopyInfoRecords
 ########################################################################
 
 InitKernelGlobals
-	stw		rCI, KDP.PA_ConfigInfo(r1)
+	stw		rCI, KDP.ConfigInfoPtr(r1)
 
 	addi	r12, r14, 1
 	stw		r12, KDP.SysInfo.HashTableSize(r11)
 
 	addi	rED, r1, 0x1000
-	stw		rED, KDP.PA_EmulatorData(r1)
+	stw		rED, KDP.EDPPtr(r1)
 
 	stw		r13, KDP.KernelMemoryBase(r1)
 	add		r12, r13, r15
 	stw		r12, KDP.KernelMemoryEnd(r1)
 
 	lwz		r12, NKConfigurationInfo.PA_RelocatedLowMemInit(rCI)
-	stw		r12, KDP.PA_RelocatedLowMemInit(r1)
+	stw		r12, KDP.LowMemPtr(r1)
 
 	lwz		r12, NKConfigurationInfo.SharedMemoryAddr(rCI)
 	stw		r12, KDP.SharedMemoryAddr(r1)
@@ -164,24 +164,24 @@ InitKernelGlobals
 	lwz		r12, NKConfigurationInfo.LA_EmulatorCode(rCI)
 	lwz		r11, NKConfigurationInfo.KernelTrapTableOffset(rCI)
 	add		r12, r12, r11
-	stw		r12, KDP.LA_EmulatorKernelTrapTable(r1)
+	stw		r12, KDP.LA_EmuKCallTbl(r1)
 
 	bl		* + 4
 	mflr	r12
 	addi	r12, r12, 4 - *
-	stw		r12, KDP.PA_NanoKernelCode(r1)
+	stw		r12, KDP.NKCodePtr(r1)
 
 	_kaddr	r12, r12, FDP
-	stw		r12, KDP.PA_FDP(r1)
+	stw		r12, KDP.RetryCodePtr(r1)
 
 	lwz		r12, NKConfigurationInfo.LA_EmulatorData(rCI)
 	lwz		r11, NKConfigurationInfo.ECBOffset(rCI)
 	add		r12, r12, r11
-	stw		r12, KDP.LA_ECB(r1)
+	stw		r12, KDP.ECBPtrLogical(r1)
 
 	add		r12, rED, r11
-	stw		r12, KDP.PA_ECB(r1)
-	stw		r12, KDP.PA_ContextBlock(r1)
+	stw		r12, KDP.ECBPtr(r1)
+	stw		r12, KDP.CurCBPtr(r1)
 
 	lwz		r12, NKConfigurationInfo.TestIntMaskInit(rCI)
 	stw		r12, KDP.TestIntMaskInit(r1)
@@ -192,7 +192,7 @@ InitKernelGlobals
 
 	lwz		r12, NKConfigurationInfo.IplValueOffset(rCI)
 	add		r12, rED, r12
-	stw		r12, KDP.PA_EmulatorIplValue(r1)
+	stw		r12, KDP.EmuIntLevelPtr(r1)
 
 	lwz		r12, NKConfigurationInfo.SharedMemoryAddr(rCI)
 	addi	r12, r12, 0x7c
@@ -203,9 +203,9 @@ InitKernelGlobals
 
 	addi	r13, r1, KDP.PageMap
 	lwz		r12, NKConfigurationInfo.PageMapInitSize(rCI)
-	stw		r13, KDP.PA_PageMapStart(r1)
+	stw		r13, KDP.PageMapStartPtr(r1)
 	add		r13, r13, r12
-	stw		r13, KDP.PA_PageMapEnd(r1)
+	stw		r13, KDP.PageMapEndPtr(r1)
 
 ########################################################################
 
@@ -265,7 +265,7 @@ InitProcessorInfo
 	mfpvr	r12
 	stw		r12, KDP.ProcInfo.ProcessorVersionReg(r1)
 	srwi	r12, r12, 16
-	lwz		r11, KDP.PA_NanoKernelCode(r1)
+	lwz		r11, KDP.NKCodePtr(r1)
 	addi	r10, r1, KDP.ProcInfo.Ovr
 	li		r9, NKProcessorInfo.OvrEnd - NKProcessorInfo.Ovr
 	_kaddr	r11, r11, ProcessorInfoTable
@@ -358,7 +358,7 @@ InitEmulator
 	stw		r12, 12(r11)
 
 
-	lwz		r12, NKConfigurationInfo.LA_EmulatorCode(rCI)		; Prepare the System ContextBlock
+	lwz		r12, NKConfigurationInfo.LA_EmulatorCode(rCI)		; Prepare the System ContextBlock:
 	lwz		r11, NKConfigurationInfo.EmulatorEntryOffset(rCI)
 	add		r12, r11, r12
 	lwz		r11, NKConfigurationInfo.ECBOffset(rCI)					; address of declared Emu entry point
@@ -371,11 +371,11 @@ InitEmulator
 	lwz		r12, NKConfigurationInfo.LA_DispatchTable(rCI)			; address of 512kb Emu dispatch table
 	stw		r12, CB.ExceptionOriginR4(r11)
 
-	lwz		r12, KDP.LA_EmulatorKernelTrapTable(r1)					; address of KCallReturnFromException trap
+	lwz		r12, KDP.LA_EmuKCallTbl(r1)								; address of KCallReturnFromException trap
 	stw		r12, CB.ExceptionHandlerRetAddr(r11)
 
 
-	lwz		r10, KDP.PA_RelocatedLowMemInit(r1)					; Zero out bottom 8k of Low Memory
+	lwz		r10, KDP.LowMemPtr(r1)								; Zero out bottom 8k of Low Memory
 	li		r9, 0x2000
 @zeroloop
 	subic.	r9, r9, 4
@@ -384,7 +384,7 @@ InitEmulator
 
 
 	lwz		r11, NKConfigurationInfo.MacLowMemInitOffset(rCI)	; Read address/value pairs from ConfigInfo
-	lwz		r10, KDP.PA_RelocatedLowMemInit(r1)						; and apply them to Low Memory
+	lwz		r10, KDP.LowMemPtr(r1)								; and apply them to Low Memory
 	lwzux	r9, r11, rCI
 @setloop
 	mr.		r9, r9
@@ -406,7 +406,7 @@ InitEmulator
 	stw		r7, KDP.Flags(r1)
 
 
-	lwz		r10, KDP.LA_EmulatorKernelTrapTable(r1)				; Start at KCallReturnFromException trap
+	lwz		r10, KDP.LA_EmuKCallTbl(r1)							; Start at KCallReturnFromException trap
 
 
 	mfmsr	r14													; Calculate the user space MSR

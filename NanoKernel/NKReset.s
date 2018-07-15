@@ -5,13 +5,13 @@
 ;	These registers will be used throughout
 
 rCI 	set		r26
-		lwz		rCI, KDP.PA_ConfigInfo(r1)
+		lwz		rCI, KDP.ConfigInfoPtr(r1)
 
 rNK 	set		r25
-		lwz		rNK, KDP.PA_NanoKernelCode(r1)
+		lwz		rNK, KDP.NKCodePtr(r1)
 
 rPgMap 	set		r18
-		lwz		rPgMap, KDP.PA_PageMapStart(r1)
+		lwz		rPgMap, KDP.PageMapStartPtr(r1)
 
 rXER 	set		r17
 		mfxer	rXER
@@ -148,25 +148,18 @@ InitKCalls
 ########################################################################
 
 ;	Put HTABORG and PTEGMask in KDP, and zero out the last PTEG
-
 InitHTAB
 	mfspr	r8, sdr1
 
-	;	get settable HTABMASK bits
-	rlwinm	r22, r8, 16, 7, 15
+	rlwinm	r22, r8, 16, 7, 15		; Get settable HTABMASK bits
+	rlwinm	r8, r8, 0, 0, 15		; and HTABORG
 
-	;	and HTABORG
-	rlwinm	r8, r8, 0, 0, 15
+	ori		r22, r22, (-64) & 0xffff; "PTEGMask" from upper half of HTABMASK
 
-	;	get a PTEGMask from upper half of HTABMASK
-	ori		r22, r22, (-64) & 0xffff
-
-	;	Save in KDP (OldWorld must do this another way)
-	stw		r8, KDP.HTABORG(r1)
+	stw		r8, KDP.HTABORG(r1)		; Save
 	stw		r22, KDP.PTEGMask(r1)
 
-	;	zero out the last PTEG in the HTAB
-	li		r23, 0
+	li		r23, 0					; Zero out the last PTEG in the HTAB
 	addi	r22, r22, 64
 @next_segment
 	subic.	r22, r22, 4
@@ -174,8 +167,7 @@ InitHTAB
 	bgt		@next_segment
 @skip_zeroing_pteg
 
-	;	Flush the TLB after touching the HTAB
-	bl		FlushTLB
+	bl		FlushTLB				; Flush the TLB after touching the HTAB
 
 ########################################################################
 
@@ -228,7 +220,7 @@ CopyPageMap
 	rlwimi	r23, r1, 0, 0xFFFFF000
 	stw		r23, PME.PBaseAndFlags(r8)
 
-	lwz		r19, KDP.PA_EmulatorData(r1)
+	lwz		r19, KDP.EDPPtr(r1)
 	lwz		r8, NKConfigurationInfo.PageMapEDPOffset(rCI)
 	add		r8, rPgMap, r8
 	lwz		r23, PME.PBaseAndFlags(r8)
@@ -423,15 +415,15 @@ CreatePARInPageMap
 
 ;	Make sure some important areas of RAM are in the HTAB
 
-	lwz		r27, KDP.PA_ConfigInfo(r1)
+	lwz		r27, KDP.ConfigInfoPtr(r1)
 	lwz		r27, NKConfigurationInfo.LA_InterruptCtl(r27)
 	bl		PopulateHTAB
 
-	lwz		r27, KDP.PA_ConfigInfo(r1)
+	lwz		r27, KDP.ConfigInfoPtr(r1)
 	lwz		r27, NKConfigurationInfo.LA_KernelData(r27)
 	bl		PopulateHTAB
 
-	lwz		r27, KDP.PA_ConfigInfo(r1)
+	lwz		r27, KDP.ConfigInfoPtr(r1)
 	lwz		r27, NKConfigurationInfo.LA_EmulatorData(r27)
 	bl		PopulateHTAB
 
