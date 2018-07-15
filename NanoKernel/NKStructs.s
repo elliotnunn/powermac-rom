@@ -325,8 +325,11 @@ CrashF30				ds.d	1	; 8f0
 CrashF31				ds.d	1	; 8f8
 CrashFPSCR				ds.l	1	; 900
 CrashKernReturn			ds.l	1	; 904
-CrashUnknown			ds.l	1	; 908
+CrashUnknown1			ds.l	1	; 908
+CrashUnknown2			ds.l	1	; 90c
 CrashBtm
+
+PageMap					ds.b	0x1a8	; 910:ab8
 
 						org		0xCC0
 SysInfo					ds	NKSystemInfo		; cc0:d80

@@ -93,7 +93,7 @@ InitKernelMemory
 
 	clrrwi	r11, r12, 16								; Init KDP, 2 pages below HTAB
 	subi	r1, r11, 0x2000
-	lwz		r11, KDP.ThudSavedSDR1(r1)
+	lwz		r11, KDP.CrashSDR1(r1)
 	mtsprg	0, r1
 	cmpw	r12, r11
 	lis		r11, 0x7fff
@@ -107,7 +107,7 @@ InitKernelMemory
 @eraseloop
 	subic.	r12, r12, 4
 	subf	r10, r11, r12
-	cmplwi	cr7, r10, KDP.CrashBtm - KDP.CrashTop - 4
+	cmplwi	cr7, r10, KDP.CrashBtm - KDP.CrashTop
 	ble		cr7, @skipwrite
 	stwx	r0, r13, r12
 @skipwrite
@@ -268,7 +268,6 @@ InitProcessorInfo
 	lwz		r11, KDP.NKCodePtr(r1)
 	addi	r10, r1, KDP.ProcInfo.Ovr
 	li		r9, NKProcessorInfo.OvrEnd - NKProcessorInfo.Ovr
-	_kaddr	r11, r11, ProcessorInfoTable
 
 	cmpwi	r12, 1 ; 601
 	addi	r11, r11, NKProcessorInfo.OvrEnd - NKProcessorInfo.Ovr
@@ -401,7 +400,7 @@ InitEmulator
 	cmpwi	r7, 1
 	lis		r7, FlagEmu >> 16										; we will enter System Context (all CPUs)
 	bne		@not_601
-	ori		r7, r7, FlagHasMQ										; but only 601 has MQ register
+	_bset	r7, r7, bitFlagHasMQ									; but only 601 has MQ register
 @not_601
 	stw		r7, KDP.Flags(r1)
 
@@ -425,7 +424,7 @@ InitEmulator
 ########################################################################
 
 ResetContextClock
-	lwz		r8, KDP.ProcInfo.DecClockRateHz
+	lwz		r8, KDP.ProcInfo.DecClockRateHz(r1)
 	stw		r8, KDP.OtherContextDEC(r1)
 	mtdec	r8
 
