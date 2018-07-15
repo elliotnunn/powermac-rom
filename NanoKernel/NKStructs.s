@@ -474,4 +474,4 @@ r30						ds.l	1	; 1f4
 						ds.l	1
 r31						ds.l	1	; 1fc
 FloatRegisters			ds.d	32	; 200:300
-						endr
+	ENDR
