@@ -14,7 +14,7 @@ shift&name equ 31 - &bit
 
 
 
-kNanoKernelVersion		equ		$0228		
+kNanoKernelVersion		equ		$0101	
 
 
 ;	PowerPC Machine Status Register (MSR) bits

@@ -57,7 +57,7 @@ InitKernelMemory
 	lwz		r15, NKSystemInfo.PhysicalMemorySize(rSI)	; Size the HTAB for 2 entries per page
 	subi	r15, r15, 1
 	cntlzw	r12, r15
-	lis		r14, 0x01ff									; r14 = size-1
+	lis		r14, 0x00ff									; r14 = size-1
 	srw		r14, r14, r12
 	ori		r14, r14, 0xffff							; Obey architecture min and max size
 	clrlwi	r14, r14, 9
@@ -146,7 +146,7 @@ InitKernelGlobals
 	stw		rCI, KDP.ConfigInfoPtr(r1)
 
 	addi	r12, r14, 1
-	stw		r12, KDP.SysInfo.HashTableSize(r11)
+	stw		r12, KDP.SysInfo.HashTableSize(r1)
 
 	addi	rED, r1, 0x1000
 	stw		rED, KDP.EDPPtr(r1)
@@ -210,7 +210,7 @@ InitKernelGlobals
 ########################################################################
 
 InitInfoRecords
-	lwz		r11, NKConfigurationInfo.LA_KernelData(rCI)
+	lwz		r11, NKConfigurationInfo.LA_InfoRecord(rCI)
 
 	addi	r12, r11, 0xFC0
 	stw		r12, 0xFC0(r1)
@@ -224,39 +224,39 @@ InitInfoRecords
 	stw		r12, 0xFD0(r1)
 	stw		r0, 0xFD4(r1)
 
-	addi	r12, r11, NKProcessorInfoPtr & 0xFFF
+	addi	r12, r11, KDP.ProcInfo
 	stw		r12, NKProcessorInfoPtr & 0xFFF(r1)
 	li		r12, 0x100
 	sth		r12, NKProcessorInfoVer & 0xFFF(r1)
-	li		r12, 64
+	li		r12, NKProcessorInfo.Size
 	sth		r12, NKProcessorInfoLen & 0xFFF(r1)
 
-	addi	r12, r11, NKNanoKernelInfoPtr & 0xFFF
+	addi	r12, r11, KDP.NKInfo
 	stw		r12, NKNanoKernelInfoPtr & 0xFFF(r1)
 	li		r12, kNanoKernelVersion
 	sth		r12, NKNanoKernelInfoVer & 0xFFF(r1)
-	li		r12, 256
+	li		r12, NKNanoKernelInfo.Size
 	sth		r12, NKNanoKernelInfoLen & 0xFFF(r1)
 
-	addi	r12, r11, NKDiagInfoPtr & 0xFFF
+	addi	r12, r11, KDP.DiagInfo
 	stw		r12, NKDiagInfoPtr & 0xFFF(r1)
 	li		r12, 0x100
 	sth		r12, NKDiagInfoVer & 0xFFF(r1)
-	li		r12, 256
+	li		r12, NKDiagInfo.Size
 	sth		r12, NKDiagInfoLen & 0xFFF(r1)
 
-	addi	r12, r11, NKSystemInfoPtr & 0xFFF
+	addi	r12, r11, KDP.SysInfo
 	stw		r12, NKSystemInfoPtr & 0xFFF(r1)
 	li		r12, 0x102
 	sth		r12, NKSystemInfoVer & 0xFFF(r1)
-	li		r12, 160
+	li		r12, NKSystemInfo.Size
 	sth		r12, NKSystemInfoLen & 0xFFF(r1)
 
-	addi	r12, r11, NKProcessorInfoPtr & 0xFFF
+	addi	r12, r11, KDP.ProcInfo
 	stw		r12, 0xFF8(r1)
 	li		r12, 0x100
 	sth		r12, 0xFFC(r1)
-	li		r12, 64
+	li		r12, NKProcessorInfo.Size
 	sth		r12, 0xFFE(r1)
 
 ########################################################################
@@ -270,7 +270,7 @@ InitProcessorInfo
 	li		r9, NKProcessorInfo.OvrEnd - NKProcessorInfo.Ovr
 
 	cmpwi	r12, 1 ; 601
-	addi	r11, r11, NKProcessorInfo.OvrEnd - NKProcessorInfo.Ovr
+	_kaddr	r11, r11, ProcessorInfoTable
 	beq		CopyProcessorInfo
 
 	cmpwi	r12, 3 ; 603

@@ -5,7 +5,7 @@
 
 PopulateHTAB ; LogicalAddress r28 // Success cr0.eq
 	lwz		r29, KDP.CurrentMemLayout.SegMapPtr(r1)
-	rlwinm	r28, r27, 7, 0x0000000F << 2	; convert segment of passed ptr to offset into SegMap
+	rlwinm	r28, r27, 7, 0x0000000F << 3	; convert segment of passed ptr to offset into SegMap
 	lwzx	r29, r29, r28					; r29 = ptr to start of segment in PageMap		
 	rlwinm	r28, r27, 20, 0x0000FFFF		; r27 = page index within SegMap
 	lhz		r30, PME.LBase(r29)

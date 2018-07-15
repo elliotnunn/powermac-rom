@@ -5,7 +5,7 @@
 	_align 6
 IntExternal0
 	mfsprg	r1, 0							; Init regs and increment ctr
-	stw		r0, KDP.r2(r1)
+	stw		r0, KDP.r0(r1)
 	stw		r2, KDP.r2(r1)
 	lwz		r2, KDP.NKInfo.ExternalIntCount(r1)
 	stw		r3, KDP.r3(r1)
@@ -37,8 +37,8 @@ IntExternal0
 	mfsprg	r2, 2
 	lwz		r3, KDP.r3(r1)
 	mtlr	r2
-	beq		@return							; 0 -> no interrupt
-	bgt		@clear							; negative -> clear interrupt
+	beq		@clear							; 0 -> clear interrupt
+	bgt		@return							; negative -> no interrupt flag
 											; positive -> post interrupt
 
 	lwz		r2, KDP.PostIntMaskInit(r1)		; Post an interrupt via Cond Reg
@@ -72,7 +72,7 @@ IntLookupTable
 	_align 6
 IntExternal1
 	mfsprg	r1, 0							; Init regs and increment ctr
-	stw		r0, KDP.r2(r1)
+	stw		r0, KDP.r0(r1)
 	stw		r2, KDP.r2(r1)
 	lwz		r2, KDP.NKInfo.ExternalIntCount(r1)
 	stw		r3, KDP.r3(r1)
@@ -80,8 +80,8 @@ IntExternal1
 	stw		r2, KDP.NKInfo.ExternalIntCount(r1)
 
 	lis		r2, 0x50F3						; Query OpenPIC at 50F2A000
-	mfmsr	r2
-	_bset	r0, r2, bitMsrDR
+	mfmsr	r3
+	_bset	r0, r3, bitMsrDR
 	stw		r4, KDP.r4(r1)
 	stw		r5, KDP.r5(r1)
 	mfsrr0	r4
@@ -91,7 +91,7 @@ IntExternal1
 	stb		r0, -0x6000(r2)
 	eieio
 	lbz		r0, -0x6000(r2)
-	mtmsr	r2
+	mtmsr	r3
 	mtsrr0	r4
 	mtsrr1	r5
 	lwz		r4, KDP.r4(r1)
@@ -130,7 +130,7 @@ IntExternal1
 	_align 6
 IntExternal2
 	mfsprg	r1, 0							; Init regs and increment ctr
-	stw		r0, KDP.r2(r1)
+	stw		r0, KDP.r0(r1)
 	stw		r2, KDP.r2(r1)
 	lwz		r2, KDP.NKInfo.ExternalIntCount(r1)
 	stw		r3, KDP.r3(r1)
@@ -138,8 +138,8 @@ IntExternal2
 	stw		r2, KDP.NKInfo.ExternalIntCount(r1)
 
 	lis		r2, 0xF300						; Query OpenPIC at F3000028/C
-	mfmsr	r2
-	_bset	r3, r2, bitMsrDR
+	mfmsr	r0
+	_bset	r3, r0, bitMsrDR
 	stw		r4, KDP.r4(r1)
 	stw		r5, KDP.r5(r1)
 	mfsrr0	r4
@@ -410,11 +410,11 @@ IntISI
 	sync
 	mtmsr	r14
 	mtsprg	3, r24
-	lmw		r14, KDP.r14(r8)
+	lmw		r14, KDP.r14(r1)
 	b		IntReturn
 
 @not_in_htab
-	lmw		r14, KDP.r14(r8)
+	lmw		r14, KDP.r14(r1)
 	li		r8, ecInstPageFault
 	blt		Exception
 	li		r8, ecInstInvalidAddress

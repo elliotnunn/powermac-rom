@@ -5,8 +5,6 @@
 	include		'NKMacros.s'
 
 NKTop
-	b			SystemCrash
-	org			0
 	include		'NKInit.s'
 	include		'NKSystemCrash.s'
 	include		'NKIntHandlers.s'
