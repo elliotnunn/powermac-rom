@@ -19,7 +19,6 @@ rXER 	set		r17
 ########################################################################
 
 InitVectorTables
-
 	;	System/Alternate Context tables
 
 	_kaddr	r23, rNK, SystemCrash
@@ -151,7 +150,6 @@ InitKCalls
 ;	Put HTABORG and PTEGMask in KDP, and zero out the last PTEG
 
 InitHTAB
-
 	mfspr	r8, sdr1
 
 	;	get settable HTABMASK bits
@@ -189,7 +187,6 @@ InitHTAB
 ;	in which 256 MB "segments".
 
 CopyPageMap
-
 	;	r9 = PageMap ptr, r22 = PageMap size
 	lwz		r9, NKConfigurationInfo.PageMapInitOffset(rCI)
 	lwz		r22, NKConfigurationInfo.PageMapInitSize(rCI)
@@ -261,7 +258,6 @@ CopyPageMap
 ;	Copy "BATRangeInit" array
 
 CopyBATRangeInit
-
 	addi	r9, rCI, NKConfigurationInfo.BATRangeInit - 4
 	addi	r8, r1, KDP.BATs - 4
 	li		r22, 4*4*8 ; 4 maps * 4 BATs * (UBAT+LBAT=8b)
@@ -323,7 +319,6 @@ CopyBATRangeInit
 ;	Leave ptr to topmost entry in r29.
 
 CreatePageList
-
 	lwz		r21, KDP.KernelMemoryBase(r1) ; "KernelMemory" is forbidden
 	lwz		r20, KDP.KernelMemoryEnd(r1)
 	subi	r29, r21, 4 ; ptr to last added entry
@@ -376,7 +371,6 @@ CreatePageList
 ;	Going in, r21/r29 point to first/last element of PageList
 
 CreatePARInPageMap
-
 	;	r19 = size of RAM represented in PageList ("Usable" and initial "Logical" RAM)
 	;	r22 = number of 4096b pages, minus one page (counter)
 	subf	r22, r21, r29

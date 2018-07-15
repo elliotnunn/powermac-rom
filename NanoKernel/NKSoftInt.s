@@ -3,7 +3,6 @@
 ########################################################################
 
 IllegalInstruction
-
 	mfmsr	r9
 	_bset	r8, r9, bitMsrDR
 	mtmsr	r8
@@ -293,7 +292,6 @@ KCallPrioritizeInterrupts
 ########################################################################
 
 KCallSystemCrash
-
 	stw		r0, KDP.r0(r1)
 	stw		r2, KDP.r2(r1)
 	stw		r3, KDP.r3(r1)
@@ -425,7 +423,6 @@ IntProgram
 
 	_alignToCacheBlock
 IntSyscall
-
 	bl		LoadInterruptRegisters
 	mfmsr	r8
 	subi	r10, r10, 4
@@ -437,7 +434,6 @@ IntSyscall
 
 	_alignToCacheBlock
 IntTrace
-
 	bl		LoadInterruptRegisters
 	li		r8, ecInstTrace
 	b		Exception
