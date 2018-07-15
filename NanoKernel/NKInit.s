@@ -196,7 +196,7 @@ InitKernelGlobals
 
 	lwz		r12, NKConfigurationInfo.SharedMemoryAddr(rCI)
 	addi	r12, r12, 0x7c
-	stw		r12, KDP.SharedMemoryAddrPlus(r1)
+	stw		r12, KDP.DebugIntPtr(r1)
 
 	lwz		r12, NKConfigurationInfo.PageAttributeInit(rCI)
 	stw		r12, KDP.PageAttributeInit(r1)
@@ -261,7 +261,7 @@ InitInfoRecords
 
 ########################################################################
 
-SetProcessorInfo
+InitProcessorInfo
 	mfpvr	r12
 	stw		r12, KDP.ProcInfo.ProcessorVersionReg(r1)
 	srwi	r12, r12, 16

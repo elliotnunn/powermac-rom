@@ -57,13 +57,13 @@ rAlt set r8
 	lbz		r22, NKConfigurationInfo.InterruptHandlerKind(rCI)
 
 	cmpwi	r22, 0
-	_kaddr	r23, rNK, IntForEmulator_1
+	_kaddr	r23, rNK, IntExternal0
 	beq		@chosenIntHandler
 	cmpwi	r22, 1
-	_kaddr	r23, rNK, IntForEmulator_2
+	_kaddr	r23, rNK, IntExternal1
 	beq		@chosenIntHandler
 	cmpwi	r22, 2
-	_kaddr	r23, rNK, IntForEmulator_3
+	_kaddr	r23, rNK, IntExternal2
 	beq		@chosenIntHandler
 
 @chosenIntHandler

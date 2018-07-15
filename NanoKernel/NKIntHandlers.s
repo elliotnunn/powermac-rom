@@ -2,6 +2,208 @@
 
 ########################################################################
 
+	_align 6
+IntExternal0
+	mfsprg	r1, 0							; Init regs and increment ctr
+	stw		r0, EWA.r2(r1)
+	stw		r2, EWA.r2(r1)
+	lwz		r2, KDP.NKInfo.ExternalIntCount(r1)
+	stw		r3, EWA.r3(r1)
+	addi	r2, r2, 1
+	stw		r2, KDP.NKInfo.ExternalIntCount(r1)
+
+	mfmsr	r2								; Save a self-ptr to FF880000... why?
+	lis		r3, 0xFF88
+	_bset	r0, r2, bitMsrDR
+	stw		r4, EWA.r4(r1)
+	stw		r5, EWA.r5(r1)
+	mfsrr0	r4
+	mfsrr1	r5
+	mtmsr	r0
+	stw		r3, 0(r3)
+	mtmsr	r2
+	mtsrr0	r4
+	mrsrr1	r5
+	lwz		r4, EWA.r4(r1)
+	lwz		r5, EWA.r5(r1)
+
+	lwz		r2, KDP.DebugIntPtr(r1)			; Query the shared mem (debug?) for int num
+	mfcr	r0
+	lha		r2, 0(r2)
+	lwz		r3, KDP.PA_EmulatorIplValue(r1)
+	rlwinm.	r2, r2, 0, 0x80000007
+	ori		r2, r2, 0x8000
+	sth		r2, 0(r3)
+	mfsprg	r2, 2
+	lwz		r3, EWA.r3(r1)
+	mtlr	r2
+	beq		@return							; 0 -> no interrupt
+	bgt		@clear							; negative -> clear interrupt
+											; positive -> post interrupt
+
+	lwz		r2, KDP.PostIntMaskInit(r1)		; Post an interrupt via Cond Reg
+	or		r0, r0, r2
+
+@return
+	mtcr	r0								; Set CR and return
+	lwz		r0, EWA.r0(r1)
+	lwz		r2, EWA.r2(r1)
+	mfsprg	r1, 1
+	rfi
+
+@clear
+	lwz		r2, KDP.ClearIntMaskInit(r1)	; Clear an interrupt via Cond Reg
+	and		r0, r0, r2
+	b		@return
+
+########################################################################
+
+	_align 6
+IntLookupTable
+	dc.l	0, 1, 2, 2, 4, 4, 4, 4
+	dc.l	3, 3, 3, 3, 4, 4, 4, 4
+	dc.l	4, 4, 4, 4, 4, 4, 4, 4
+	dc.l	4, 4, 4, 4, 4, 4, 4, 4
+	dc.l	7, 7, 7, 7, 7, 7, 7, 7
+	dc.l	7, 7, 7, 7, 7, 7, 7, 7
+	dc.l	7, 7, 7, 7, 7, 7, 7, 7
+	dc.l	7, 7, 7, 7, 7, 7, 7, 7
+
+	_align 6
+IntExternal1
+	mfsprg	r1, 0							; Init regs and increment ctr
+	stw		r0, EWA.r2(r1)
+	stw		r2, EWA.r2(r1)
+	lwz		r2, KDP.NKInfo.ExternalIntCount(r1)
+	stw		r3, EWA.r3(r1)
+	addi	r2, r2, 1
+	stw		r2, KDP.NKInfo.ExternalIntCount(r1)
+
+	lis		r2, 0x50F3						; Query OpenPIC at 50F2A000
+	mfmsr	r2
+	_bset	r0, r2, bitMsrDR
+	stw		r4, EWA.r4(r1)
+	stw		r5, EWA.r5(r1)
+	mfsrr0	r4
+	mfsrr1	r5
+	mtmsr	r0
+	li		r0, 0xC0
+	stb		r0, -0x6000(r2)
+	eieio
+	lbz		r0, -0x6000(r2)
+	mtmsr	r2
+	mtsrr0	r4
+	mrsrr1	r5
+	lwz		r4, EWA.r4(r1)
+	lwz		r5, EWA.r5(r1)
+
+	lwz		r3, KDP.PA_NanoKernelCode		; Loop that number up in the table
+	rlwimi	r3, r0, 0, 0x0000003F
+	lbz		r2, IntLookupTable-NKTop(r3)
+	mfcr	r0
+	lwz		r3, KDP.PA_EmulatorIplValue(r1)
+	clrlwi.	r2, r2, 29
+	sth		r2, 0(r3)
+	mfsprg	r2, 2
+	lwz		r3, EWA.r3(r1)
+	mtlr	r2
+	beq		@clear							; 0 -> clear interrupt
+											; nonzero -> post interrupt
+
+	lwz		r2, KDP.PostIntMaskInit(r1)		; Post an interrupt via Cond Reg
+	or		r0, r0, r2
+
+@return
+	mtcr	r0								; Set CR and return
+	lwz		r0, EWA.r0(r1)
+	lwz		r2, EWA.r2(r1)
+	mfsprg	r1, 1
+	rfi
+
+@clear
+	lwz		r2, KDP.ClearIntMaskInit(r1)	; Clear an interrupt via Cond Reg
+	and		r0, r0, r2
+	b		@return
+
+########################################################################
+
+	_align 6
+IntExternal2
+	mfsprg	r1, 0							; Init regs and increment ctr
+	stw		r0, EWA.r2(r1)
+	stw		r2, EWA.r2(r1)
+	lwz		r2, KDP.NKInfo.ExternalIntCount(r1)
+	stw		r3, EWA.r3(r1)
+	addi	r2, r2, 1
+	stw		r2, KDP.NKInfo.ExternalIntCount(r1)
+
+	lis		r2, 0xF300						; Query OpenPIC at F3000028/C
+	mfmsr	r2
+	_bset	r3, r2, bitMsrDR
+	stw		r4, EWA.r4(r1)
+	stw		r5, EWA.r5(r1)
+	mfsrr0	r4
+	mfsrr1	r5
+	mtmsr	r3
+	lis		r3, 0x8000
+	stw		r3, 0x28(r2)
+	eieio
+	lwz		r3, 0x2C(r2)
+	mtmsr	r0
+	mtsrr0	r4
+	mrsrr1	r5
+	lwz		r4, EWA.r4(r1)
+	lwz		r5, EWA.r5(r1)
+
+	mfcr	r0
+											; Interpret OpenPic result:
+	rlwinm.	r2, r3, 0, 11, 11				; bit 11 -> 7
+	li		r2, 7
+	bne		@gotnum
+
+	rlwinm	r2, r3, 0, 15, 16				; bit 15-16/21/31 -> 4
+	rlwimi.	r2, r3, 0, 21, 31
+	li		r2, 4
+	bne		@gotnum
+
+	rlwinm.	r2, r3, 0, 18, 18				; bit 18 -> 3
+	li		r2, 3
+	bne		@gotnum
+
+	andis.	r2, r3, 0x7FEA					; bit 1-10/12/14/19-20 -> 2
+	rlwimi.	r2, r3, 0, 19, 20
+	li		r2, 2
+	bne		@gotnum
+
+	extrwi.	r2, r3, 1, 13					; bit 13 -> 1
+											; else -> 0
+
+@gotnum
+	lwz		r3, KDP.PA_EmulatorIplValue(r1)
+	sth		r2, 0(r3)
+	mfsprg	r2, 2
+	lwz		r3, EWA.r3(r1)
+	mtlr	r2
+	beq		@clear							; 0 -> clear interrupt
+											; nonzero -> post interrupt
+
+	lwz		r2, KDP.PostIntMaskInit(r1)		; Post an interrupt via Cond Reg
+	or		r0, r0, r2
+
+@return
+	mtcr	r0								; Set CR and return
+	lwz		r0, EWA.r0(r1)
+	lwz		r2, EWA.r2(r1)
+	mfsprg	r1, 1
+	rfi
+
+@clear
+	lwz		r2, KDP.ClearIntMaskInit(r1)	; Clear an interrupt via Cond Reg
+	and		r0, r0, r2
+	b		@return
+
+########################################################################
+
 ;	Increment the Sys/Alt CPU clocks, and the Dec-int counter
 	_align 6
 IntDecrementerSystem

@@ -586,7 +586,7 @@ TestIntMaskInit			ds.l	1	; 670 ; These are all copied from ConfigInfo...
 PostIntMaskInit			ds.l	1	; 674
 ClearIntMaskInit		ds.l	1	; 678
 PA_EmulatorIplValue		ds.l	1	; 67c ; Physical ptr into EDP
-SharedMemoryAddrPlus	ds.l	1	; 680 ; Really not sure
+DebugIntPtr				ds.l	1	; 680 ; Within (debug?) shared memory
 PA_PageMapStart			ds.l	1	; 684 ; Physical ptr to PageMap (= KDP+0x920)
 PageAttributeInit		ds.l	1	; 688 ; defaults for page table entries (see ConfigInfo)
 
