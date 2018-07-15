@@ -117,7 +117,7 @@ InitKernelMemory
 
 CopyInfoRecords
 	addi	r11, r1, KDP.ProcInfo
-	li		r10, 64
+	li		r10, NKProcessorInfo.Size
 @loop_procinfo
 	subic.	r10, r10, 4
 	lwzx	r12, rPI, r10
@@ -125,7 +125,7 @@ CopyInfoRecords
 	bgt		@loop_procinfo
 
 	addi	r11, r1, KDP.SysInfo
-	li		r10, 160
+	li		r10, NKSystemInfo.Size
 @loop_sysinfo
 	subic.	r10, r10, 4
 	lwzx	r12, rSI, r10
@@ -133,7 +133,7 @@ CopyInfoRecords
 	bgt		@loop_sysinfo
 
 	addi	r11, r1, KDP.DiagInfo
-	li		r10, 256
+	li		r10, NKDiagInfo.Size
 @loop_diaginfo
 	subic.	r10, r10, 4
 	lwzx	r12, rDI, r10
