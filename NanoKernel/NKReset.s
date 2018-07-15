@@ -39,20 +39,20 @@ rAlt set r8
 	addi	rAlt, r1, KDP.VecTblAlternate
 
 	_kaddr	r23, rNK, SystemCrash
-	stw		r23, VecTbl.SystemResetVector(rSys)
-	stw		r23, VecTbl.SystemResetVector(rAlt)
+	stw		r23, VecTbl.SystemReset(rSys)
+	stw		r23, VecTbl.SystemReset(rAlt)
 
 	_kaddr	r23, rNK, IntMachineCheck
-	stw		r23, VecTbl.MachineCheckVector(rSys)
-	stw		r23, VecTbl.MachineCheckVector(rAlt)
+	stw		r23, VecTbl.MachineCheck(rSys)
+	stw		r23, VecTbl.MachineCheck(rAlt)
 
 	_kaddr	r23, rNK, IntDSI
-	stw		r23, VecTbl.DSIVector(rSys)
-	stw		r23, VecTbl.DSIVector(rAlt)
+	stw		r23, VecTbl.DSI(rSys)
+	stw		r23, VecTbl.DSI(rAlt)
 
 	_kaddr	r23, rNK, IntISI
-	stw		r23, VecTbl.ISIVector(rSys)
-	stw		r23, VecTbl.ISIVector(rAlt)
+	stw		r23, VecTbl.ISI(rSys)
+	stw		r23, VecTbl.ISI(rAlt)
 
 	lbz		r22, NKConfigurationInfo.InterruptHandlerKind(rCI)
 
@@ -67,37 +67,37 @@ rAlt set r8
 	beq		@chosenIntHandler
 
 @chosenIntHandler
-	stw		r23, VecTbl.ExternalIntVector(rSys)
+	stw		r23, VecTbl.External(rSys)
 
 	_kaddr	r23, rNK, IntProgram
-	stw		r23, VecTbl.ExternalIntVector(rAlt)
+	stw		r23, VecTbl.External(rAlt)
 
 	_kaddr	r23, rNK, IntAlignment
-	stw		r23, VecTbl.AlignmentIntVector(rSys)
-	stw		r23, VecTbl.AlignmentIntVector(rAlt)
+	stw		r23, VecTbl.Alignment(rSys)
+	stw		r23, VecTbl.Alignment(rAlt)
 
 	_kaddr	r23, rNK, IntProgram
-	stw		r23, VecTbl.ProgramIntVector(rSys)
-	stw		r23, VecTbl.ProgramIntVector(rAlt)
+	stw		r23, VecTbl.Program(rSys)
+	stw		r23, VecTbl.Program(rAlt)
 
 	_kaddr	r23, rNK, IntFPUnavail
-	stw		r23, VecTbl.FPUnavailVector(rSys)
-	stw		r23, VecTbl.FPUnavailVector(rAlt)
+	stw		r23, VecTbl.FPUnavail(rSys)
+	stw		r23, VecTbl.FPUnavail(rAlt)
 
 	_kaddr	r23, rNK, IntDecrementerSystem
-	stw		r23, VecTbl.DecrementerVector(rSys)
+	stw		r23, VecTbl.Decrementer(rSys)
 	_kaddr	r23, rNK, IntDecrementerAlternate
-	stw		r23, VecTbl.DecrementerVector(rAlt)
+	stw		r23, VecTbl.Decrementer(rAlt)
 
 	_kaddr	r23, rNK, IntSyscall
-	stw		r23, VecTbl.SyscallVector(rSys)
-	stw		r23, VecTbl.SyscallVector(rAlt)
+	stw		r23, VecTbl.Syscall(rSys)
+	stw		r23, VecTbl.Syscall(rAlt)
 
 	_kaddr	r23, rNK, IntTrace
-	stw		r23, VecTbl.TraceVector(rSys)
-	stw		r23, VecTbl.TraceVector(rAlt)
-	stw		r23, 0x0080(rSys)			; Unexplored parts of vecBase
-	stw		r23, 0x0080(rAlt)
+	stw		r23, VecTbl.Trace(rSys)
+	stw		r23, VecTbl.Trace(rAlt)
+	stw		r23, VecTbl.OtherTrace(rSys)
+	stw		r23, VecTbl.OtherTrace(rAlt)
 
 
 	;	MemRetry vector table
@@ -105,10 +105,10 @@ rAlt set r8
 	addi	r8, r1, KDP.VecTblMemRetry
 
 	_kaddr	r23, rNK, MemRetryMachineCheck
-	stw		r23, VecTbl.MachineCheckVector(r8)
+	stw		r23, VecTbl.MachineCheck(r8)
 
 	_kaddr	r23, rNK, MemRetryDSI
-	stw		r23, VecTbl.DSIVector(r8)
+	stw		r23, VecTbl.DSI(r8)
 
 ########################################################################
 

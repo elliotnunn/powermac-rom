@@ -282,7 +282,7 @@ KCallPrioritizeInterrupts
 	lwz		r7, CB.r7(r6)
 	lwz		r8, KDP.r1(r1)
 										mfsprg	r9, 3
-										lwz		r9, VecTbl.ExternalIntVector(r9)
+										lwz		r9, VecTbl.External(r9)
 	mtsprg	1, r8
 										mtlr	r9
 	lwz		r8, CB.r8(r6)

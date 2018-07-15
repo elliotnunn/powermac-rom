@@ -1,28 +1,28 @@
 VecTbl					RECORD 0, INCR ; SPRG3 vector table (looked up by ROM vectors)
-						ds.l	1	; 00 ; scratch for IVT?
-SystemResetVector		ds.l	1	; 04 ; called by    IVT+100 (system reset)
-MachineCheckVector		ds.l	1	; 08 ; called by    IVT+200 (machine check)
-DSIVector				ds.l	1	; 0c ; called by    IVT+300 (DSI)
-ISIVector				ds.l	1	; 10 ; called by    IVT+400 (ISI)
-ExternalIntVector		ds.l	1	; 14 ; called by    IVT+500 (external interrupt)
-AlignmentIntVector		ds.l	1	; 18 ; called by    IVT+600 (alignment)
-ProgramIntVector		ds.l	1	; 1c ; called by    IVT+700 (program)
-FPUnavailVector			ds.l	1	; 20 ; called by    IVT+KDP.BATs + 0xa0 (FP unavail)
-DecrementerVector		ds.l	1	; 24 ; called by    IVT+900 (decrementer)
-ReservedVector1			ds.l	1	; 28 ; called by    IVT+a00 (reserved)
-ReservedVector2			ds.l	1	; 2c ; called by    IVT+b00 (reserved)
-SyscallVector			ds.l	1	; 30 ; called by    IVT+c00 (system call)
-TraceVector				ds.l	1	; 34 ; called by    IVT+d00 (trace)
-FPAssistVector			ds.l	1	; 38 ; called by    IVT+e00 (FP assist)
-PerfMonitorVector		ds.l	1	; 3c ; called by    IVT+f00 (perf monitor)
+						ds.l	1	; 00 ; scratch for IVT
+SystemReset				ds.l	1	; 04 ; from IVT+100
+MachineCheck			ds.l	1	; 08 ; from IVT+200
+DSI						ds.l	1	; 0c ; from IVT+300
+ISI						ds.l	1	; 10 ; from IVT+400
+External				ds.l	1	; 14 ; from IVT+500
+Alignment				ds.l	1	; 18 ; from IVT+600
+Program					ds.l	1	; 1c ; from IVT+700
+FPUnavail				ds.l	1	; 20 ; from IVT+800
+Decrementer				ds.l	1	; 24 ; from IVT+900
+ReservedVector1			ds.l	1	; 28 ; from IVT+a00
+ReservedVector2			ds.l	1	; 2c ; from IVT+b00
+Syscall					ds.l	1	; 30 ; from IVT+c00
+Trace					ds.l	1	; 34 ; from IVT+d00
+FPAssist				ds.l	1	; 38 ; from IVT+e00
+PerfMonitor				ds.l	1	; 3c ; from IVT+f00
 						ds.l	1	; 40
 						ds.l	1	; 44
 						ds.l	1	; 48
 						ds.l	1	; 4c ; Vectors from here downwards are called from
-						ds.l	1	; 50 ; odd places in the IVT????
+						ds.l	1	; 50 ; odd places in the IVT
 						ds.l	1	; 54
 						ds.l	1	; 58 ; seems AltiVec-related
-ThermalEventVector		ds.l	1	; 5c
+ThermalEvent			ds.l	1	; 5c
 						ds.l	1	; 60
 						ds.l	1	; 64
 						ds.l	1	; 68
@@ -31,7 +31,7 @@ ThermalEventVector		ds.l	1	; 5c
 						ds.l	1	; 74
 						ds.l	1	; 78
 						ds.l	1	; 7c
-						ds.l	1	; 80 ; shares with TraceVector in Y and G
+OtherTrace				ds.l	1	; 80
 						ds.l	1	; 84
 						ds.l	1	; 88
 						ds.l	1	; 8c
@@ -46,7 +46,7 @@ ThermalEventVector		ds.l	1	; 5c
 						ds.l	1	; b0
 						ds.l	1	; b4
 						ds.l	1	; b8
-						ds.l	1	; bc ; called by IVT+0 (reserved)
+						ds.l	1	; bc ; from IVT+0
 Size					equ		*
 	ENDR
 
