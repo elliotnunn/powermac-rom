@@ -133,7 +133,7 @@ VMInit	;	OUTSIDE REFERER
 
 	stw		r5, KDP.PARPageListPtr(r1)			; where did NK find this???
 
-	lwz		r6,  0x05e8(r1)
+	lwz		r6, KDP.CurrentMemLayout.SegMapPtr(r1)
 	li		r5,  0x00
 	li		r4,  0x00
 
@@ -278,7 +278,7 @@ VMInit_0x218
 	cmpwi	r5,  0x00
 	addi	r15, r15,  0x04
 	bgt		VMInit_0x218
-	lwz		r6,  0x05e8(r1)
+	lwz		r6, KDP.CurrentMemLayout.SegMapPtr(r1)
 	li		r9, 0
 	ori		r7, r9,  0xffff
 	li		r8,  0xa00
@@ -293,7 +293,7 @@ VMInit_0x250
 	addi	r9, r9, 1
 	cmpwi	r9, 3
 	ble		VMInit_0x250
-	lwz		r6,  0x05e8(r1)
+	lwz		r6, KDP.CurrentMemLayout.SegMapPtr(r1)
 	lwz		r9, KDP.VMLogicalPages(r1)
 	lwz		r15,  KDP.PARPageListPtr(r1)
 
@@ -838,7 +838,7 @@ VMAllocateMemory_0xc0
 	rlwinm.	r9, r7,  0,  0, 11
 	blt		cr7, VMReturnMinus1
 	bne		VMReturnMinus1
-	lwz		r14,  0x05e8(r1)
+	lwz		r14, KDP.CurrentMemLayout.SegMapPtr(r1)
 	rlwinm	r9, r7, 19, 25, 28
 	lwzx	r14, r14, r9
 	clrlwi	r9, r7,  0x10
@@ -963,7 +963,7 @@ GetPARPageInfo_0x40	;some kind of little-used code path for when VMMaxVirtualPag
 	rlwinm.	r9, r4,  0,  0, 11
 	blt		cr4, VMReturnMinus1;return failure if r4<VMMaxVirtualPages
 	bne		VMReturnMinus1	;return failure if bits 0-11 of r4 are non-zero
-	lwz		r15,  0x05e8(r1);this appears to be an array of 8-byte structures.
+	lwz		r15, KDP.CurrentMemLayout.SegMapPtr(r1);this appears to be an array of 8-byte structures.
 	rlwinm	r9, r4, 19, 25, 28;copy bits 12-15 or r4 to bits 25-28 of r9
 	lwzx	r15, r15, r9	;do an index for some reason
 	clrlwi	r9, r4,  0x10	;copy bits 16-31 to r9
