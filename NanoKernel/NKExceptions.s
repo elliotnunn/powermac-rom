@@ -267,8 +267,8 @@ SwitchContext ; OldCB *r6, NewCB *r9
 	stw		r8, CB.XER(r6)
 	stw		r12, CB.LR(r6)
 	mfctr	r8
-	stw		r10, CB.CodePtr(r6)
-	stw		r8, CB.KernelCTR(r6)
+	stw		r10, CB.SRR0(r6)
+	stw		r8, CB.CTR(r6)
 
 	bc		BO_IF_NOT, bitFlagHasMQ, @no_mq
 	lwz		r8, CB.MQ(r9)
@@ -329,8 +329,8 @@ SwitchContext ; OldCB *r6, NewCB *r9
 	lwz		r8, CB.XER(r6)
 	lwz		r12, CB.LR(r6)
 	mtxer	r8
-	lwz		r8, CB.KernelCTR(r6)
-	lwz		r10, CB.CodePtr(r6)
+	lwz		r8, CB.CTR(r6)
+	lwz		r10, CB.SRR0(r6)
 	mtctr	r8
 
 	bnel	ReloadFPU									; FP exceptions enabled, so load FPU

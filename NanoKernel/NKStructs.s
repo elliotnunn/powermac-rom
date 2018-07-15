@@ -1,18 +1,4 @@
-BAT			RECORD 0, INCR
-U			ds.l 1
-L			ds.l 1
-	ENDR
-
-########################################################################
-
-MemLayout	RECORD 0, INCR
-SegMapPtr	ds.l 1
-BatMap		ds.l 1 ; packed array of 4-bit indices into BATs
-	ENDR
-
-########################################################################
-
-VecTbl					RECORD 0, INCR
+VecTbl					RECORD 0, INCR ; SPRG3 vector table (looked up by ROM vectors)
 						ds.l	1	; 00 ; scratch for IVT?
 SystemResetVector		ds.l	1	; 04 ; called by    IVT+100 (system reset)
 MachineCheckVector		ds.l	1	; 08 ; called by    IVT+200 (machine check)
@@ -66,7 +52,7 @@ Size					equ		*
 
 ########################################################################
 
-KCallTbl				RECORD 0, INCR
+KCallTbl				RECORD 0, INCR ; NanoKernel call table
 ReturnFromException		ds.l	1	; 00, trap  0
 RunAlternateContext		ds.l	1	; 04, trap  1
 ResetSystem				ds.l	1	; 08, trap  2 ; 68k RESET
@@ -109,7 +95,21 @@ Size					equ		*
 
 ########################################################################
 
-KDP						RECORD 0x80, INCR
+BAT			RECORD 0, INCR
+U			ds.l 1
+L			ds.l 1
+	ENDR
+
+########################################################################
+
+MemLayout	RECORD 0, INCR
+SegMapPtr	ds.l 1
+BatMap		ds.l 1 ; packed array of 4-bit indices into BATs
+	ENDR
+
+########################################################################
+
+KDP						RECORD 0x80, INCR ; Kernel Data Page
 r0						ds.l	1	; 000 ; used for quick register saves at interrupt time
 r1						ds.l	1	; 004
 r2						ds.l	1	; 008
@@ -338,3 +338,137 @@ ProcInfo				ds	NKProcessorInfo		; f80:fc0
 
 InfoRecBlk				ds.b	64	; fc0:1000 ; Access using ptr equates in InfoRecords
 	ENDR
+
+########################################################################
+
+CB						RECORD 0,INCR ; ContextBlock (Emulator/System or Native/Alternate)
+Flags					ds.l	1	; 000
+Enables					ds.l	1	; 004
+						ds.l	1	; 008
+						ds.l	1	; 00c
+						ds.l	1	; 010
+						ds.l	1	; 014
+						ds.l	1	; 018
+						ds.l	1	; 01c
+						ds.l	1	; 020
+LowSave17				ds.l	1	; 024
+LowSave20				ds.l	1	; 028
+LowSave21				ds.l	1	; 02c
+						ds.l	1	; 030
+LowSave19				ds.l	1	; 034
+						ds.l	1	; 038
+LowSave18				ds.l	1	; 03c
+ExceptionOriginFlags	ds.l	1	; 040 ; from before exception
+ExceptionOriginEnables	ds.l	1	; 044 ; from before exception
+						ds.l	1	; 048
+ExceptionHandler		ds.l	1	; 04c
+						ds.l	1	; 050
+ExceptionHandlerR4		ds.l	1	; 054
+						ds.l	1	; 058
+ExceptionHandlerRetAddr ds.l	1	; 05c
+						ds.l	1	; 060
+PropagateR17			ds.l	1	; 064
+PropagateR20			ds.l	1	; 068
+PropagateR21			ds.l	1	; 06c
+						ds.l	1	; 070
+PropagateR19			ds.l	1	; 074
+						ds.l	1	; 078
+PropagateR18			ds.l	1	; 07c
+						ds.l	1	; 080
+ExceptionOriginAddr		ds.l	1	; 084
+						ds.l	1	; 088
+ExceptionOriginLR		ds.l	1	; 08c
+						ds.l	1	; 090
+ExceptionOriginR3		ds.l	1	; 094
+						ds.l	1	; 098
+ExceptionOriginR4		ds.l	1	; 09c
+						ds.l	1	; 0a0
+MSR						ds.l	1	; 0a4
+						ds.l	1	; 0a8
+						ds.l	1	; 0ac
+						ds.l	1	; 0b0
+						ds.l	1	; 0b4
+						ds.l	1	; 0b8
+						ds.l	1	; 0bc
+						ds.l	1	; 0c0
+MQ						ds.l	1	; 0c4 ; 601 only
+						ds.l	1	; 0c8
+						ds.l	1	; 0cc
+						ds.l	1	; 0d0
+XER						ds.l	1	; 0d4
+						ds.l	1	; 0d8
+CR						ds.l	1	; 0dc
+						ds.l	1	; 0e0
+						ds.l	1	; 0e4
+						ds.l	1	; 0e8
+LR						ds.l	1	; 0ec
+						ds.l	1	; 0f0
+CTR						ds.l	1	; 0f4
+						ds.l	1	; 0f8
+SRR0					ds.l	1	; 0fc
+						ds.l	1
+r0						ds.l	1	; 104
+						ds.l	1
+r1						ds.l	1	; 10c
+						ds.l	1
+r2						ds.l	1	; 114
+						ds.l	1
+r3						ds.l	1	; 11c
+						ds.l	1
+r4						ds.l	1	; 124
+						ds.l	1
+r5						ds.l	1	; 12c
+						ds.l	1
+r6						ds.l	1	; 134
+						ds.l	1
+r7						ds.l	1	; 13c
+						ds.l	1
+r8						ds.l	1	; 144
+						ds.l	1
+r9						ds.l	1	; 14c
+						ds.l	1
+r10						ds.l	1	; 154
+						ds.l	1
+r11						ds.l	1	; 15c
+						ds.l	1
+r12						ds.l	1	; 164
+						ds.l	1
+r13						ds.l	1	; 16c
+						ds.l	1
+r14						ds.l	1	; 174
+						ds.l	1
+r15						ds.l	1	; 17c
+						ds.l	1
+r16						ds.l	1	; 184
+						ds.l	1
+r17						ds.l	1	; 18c
+						ds.l	1
+r18						ds.l	1	; 194
+						ds.l	1
+r19						ds.l	1	; 19c
+						ds.l	1
+r20						ds.l	1	; 1a4
+						ds.l	1
+r21						ds.l	1	; 1ac
+						ds.l	1
+r22						ds.l	1	; 1b4
+						ds.l	1
+r23						ds.l	1	; 1bc
+						ds.l	1
+r24						ds.l	1	; 1c4
+						ds.l	1
+r25						ds.l	1	; 1cc
+						ds.l	1
+r26						ds.l	1	; 1d4
+						ds.l	1
+r27						ds.l	1	; 1dc
+						ds.l	1
+r28						ds.l	1	; 1e4
+						ds.l	1
+r29						ds.l	1	; 1ec
+						ds.l	1
+r30						ds.l	1	; 1f4
+						ds.l	1
+r31						ds.l	1	; 1fc
+FloatRegisters			ds.d	32	; 200:300
+						endr

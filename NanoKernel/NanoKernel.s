@@ -1,11 +1,6 @@
-	include		'MacErrors.a'
-	include		'Multiprocessing.a'
-
 	include		'InfoRecords.a'
-	include		'EmulatorPublic.a'
-	include		'NKPublic.a'
-	include		'NKOpaque.a'
 
+	include		'NKStructs.a'
 	include		'NKEquates.s'
 	include		'NKMacros.s'
 
