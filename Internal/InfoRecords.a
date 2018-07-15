@@ -97,7 +97,7 @@ NanodbgrFlagBit			equ		31 - NanodbgrFlagShift
 LogFlagShift			equ		1
 LogFlagBit				equ		31 - LogFlagShift
 
-
+Size					equ		*
 						endr
 
 
@@ -173,6 +173,7 @@ Bank17Start				ds.l	1			; 0b8, irp+e78 ; Starting address of RAM bank 17
 Bank17Size				ds.l	1			; 0bc, irp+e7c ; Number of bytes in  RAM bank 17
 EndOfBanks
 MaxBanks				equ		16			; Pads out to old struct len (cache block), more to come...
+Size					equ		*
 						endr
 
 
@@ -230,6 +231,7 @@ DiagLongBootSig			ds.l	1			; 0f4 ; Burn in restart flag
 DiagWarmStartHigh		ds.l	1			; 0f8 ; First long of native warm start  (WLSC)		<SM44>
 DiagWarmStartLow		ds.l	1			; 0fc ; Second long of native warm start (SamB)		<SM44>
 						align	5			; pad to nice cache block alignment
+Size					equ		*
 						endr
 
 
@@ -263,6 +265,7 @@ ExceptionPropagateCount	ds.l	1			; 0e8, kdp+ea8 ; count of Exceptions propagated
 ExceptionForcedCount	ds.l	1			; 0ec, kdp+eac ; count of Exceptions forced to system
 SysContextCpuTime		ds.l	2			; 0f0, kdp+eb0 ; CPU Time used by System Context
 AltContextCpuTime		ds.l	2			; 0f8, kdp+eb4 ; CPU Time used by Alternate Context
+Size					equ		*
 						endr
 
 
@@ -304,6 +307,7 @@ TransCacheTotalSize		ds.w	1			; 030, kdp+f50 ; number of entries in the Translat
 TransCacheAssociativity	ds.w	1			; 032, kdp+f52 ; Associativity of the Translation Cache
 OvrEnd
 						org		0x40
+Size					equ		*
 						endr
 
 
@@ -396,6 +400,7 @@ HardwareInfoFlags		ds.l	1			; 094, irp+f94 ; 32 bits of flags (see enum above)
 RTAS_Get_PowerOn_Time	ds.l	1			; 098, irp+f98 ; token for RTAS getting time for system startup
 
 						align	5			; pad to nice cache block alignment (did i get this right?)
+Size					equ		*
 						endr
 
 
@@ -452,4 +457,5 @@ saveSDR1				ds.l	1			; 070 ; place to store SDR1
 saveReturnAddr			ds.l	1			; 074 ; place to store the addr to jump to.
 saveKernelDataPtr		ds.l	1			; 078 ; place to store the KernelDataPtr
 saveContextPtr			ds.l	1			; 07c ; place to store the ContextPtr
+Size					equ		*
 						endr
