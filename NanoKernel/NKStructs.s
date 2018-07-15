@@ -358,6 +358,7 @@ LowSave21				ds.l	1	; 02c
 LowSave19				ds.l	1	; 034
 						ds.l	1	; 038
 LowSave18				ds.l	1	; 03c
+
 ExceptionOriginFlags	ds.l	1	; 040 ; from before exception
 ExceptionOriginEnables	ds.l	1	; 044 ; from before exception
 						ds.l	1	; 048
@@ -374,6 +375,7 @@ PropagateR21			ds.l	1	; 06c
 PropagateR19			ds.l	1	; 074
 						ds.l	1	; 078
 PropagateR18			ds.l	1	; 07c
+
 						ds.l	1	; 080
 ExceptionOriginAddr		ds.l	1	; 084
 						ds.l	1	; 088
