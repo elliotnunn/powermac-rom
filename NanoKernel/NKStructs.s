@@ -15,37 +15,37 @@ SyscallVector			ds.l	1	; 30 ; called by    IVT+c00 (system call)
 TraceVector				ds.l	1	; 34 ; called by    IVT+d00 (trace)
 FPAssistVector			ds.l	1	; 38 ; called by    IVT+e00 (FP assist)
 PerfMonitorVector		ds.l	1	; 3c ; called by    IVT+f00 (perf monitor)
-						ds.l	1	; 40 ;
-						ds.l	1	; 44 ;
-						ds.l	1	; 48 ;
+						ds.l	1	; 40
+						ds.l	1	; 44
+						ds.l	1	; 48
 						ds.l	1	; 4c ; Vectors from here downwards are called from
 						ds.l	1	; 50 ; odd places in the IVT????
-						ds.l	1	; 54 ;
+						ds.l	1	; 54
 						ds.l	1	; 58 ; seems AltiVec-related
-ThermalEventVector		ds.l	1	; 5c ;
-						ds.l	1	; 60 ;
-						ds.l	1	; 64 ;
-						ds.l	1	; 68 ;
-						ds.l	1	; 6c ;
-						ds.l	1	; 70 ;
-						ds.l	1	; 74 ;
-						ds.l	1	; 78 ;
-						ds.l	1	; 7c ;
+ThermalEventVector		ds.l	1	; 5c
+						ds.l	1	; 60
+						ds.l	1	; 64
+						ds.l	1	; 68
+						ds.l	1	; 6c
+						ds.l	1	; 70
+						ds.l	1	; 74
+						ds.l	1	; 78
+						ds.l	1	; 7c
 						ds.l	1	; 80 ; shares with TraceVector in Y and G
-						ds.l	1	; 84 ;
-						ds.l	1	; 88 ;
-						ds.l	1	; 8c ;
-						ds.l	1	; 90 ;
-						ds.l	1	; 94 ;
-						ds.l	1	; 98 ;
-						ds.l	1	; 9c ;
-						ds.l	1	; a0 ;
-						ds.l	1	; a4 ;
-						ds.l	1	; a8 ;
-						ds.l	1	; ac ;
-						ds.l	1	; b0 ;
-						ds.l	1	; b4 ;
-						ds.l	1	; b8 ;
+						ds.l	1	; 84
+						ds.l	1	; 88
+						ds.l	1	; 8c
+						ds.l	1	; 90
+						ds.l	1	; 94
+						ds.l	1	; 98
+						ds.l	1	; 9c
+						ds.l	1	; a0
+						ds.l	1	; a4
+						ds.l	1	; a8
+						ds.l	1	; ac
+						ds.l	1	; b0
+						ds.l	1	; b4
+						ds.l	1	; b8
 						ds.l	1	; bc ; called by IVT+0 (reserved)
 Size					equ		*
 	ENDR
