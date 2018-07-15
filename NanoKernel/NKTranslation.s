@@ -2848,9 +2848,9 @@ FDP_18d8
 
 FDP_18ec
 		DIALECT	POWER
-		mfrtcu	r20			; RTCU = 4
-		mfrtcl	r21			; RTCL = 5
-		mfrtcu	r23			; RTCU = 4
+		mfspr	r20, rtcu
+		mfspr	r21, rtcu
+		mfspr	r23, rtcu
 		DIALECT	PowerPC
 
 		xor.	r23, r23, r20

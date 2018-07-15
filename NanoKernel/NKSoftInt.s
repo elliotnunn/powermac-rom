@@ -53,11 +53,9 @@ IllegalInstruction
 	bc		BO_IF_NOT, 15, @FAIL
 
 @retry_rtc
-	DIALECT	POWER
-	mfrtcu	r20
-	mfrtcl	r21
-	mfrtcu	r23
-	DIALECT	POWERPC
+	mfspr	r20, rtcu
+	mfspr	r21, rtcl
+	mfspr	r23, rtcu
 	xor.	r23, r23, r20
 	lis		r23, 1000000000 >> 16
 	rlwinm	r28, r8, 13, 25, 29		; r28 = dest register number * 4
