@@ -145,11 +145,11 @@ DisableFPU
 	if &highest > 0
 		MakeFloatJumpTable &OPCODE, &DEST, highest = (&highest) - 1
 	endif
-	&OPCODE	&highest, KDP.FloatEmScratch(r1)
+	&OPCODE	&highest, KDP.FloatScratch(r1)
 	b		&DEST
 	ENDM
 
 LFDTable
-	MakeFloatJumpTable	lfd, MRExit
+	MakeFloatJumpTable	lfd, MRSecDone
 STFDTable
 	MakeFloatJumpTable	stfd, MRDoneTableSTFD

@@ -136,3 +136,9 @@ ecUnknown24					equ		24
 	_bitEqu	29,	Flag29
 	_bitEqu	30,	Flag30
 	_bitEqu	31,	Flag31
+
+
+mrOpflag1 equ cr3_lt
+mrOpflag2 equ cr3_gt
+mrOpflag3 equ cr3_eq
+mrFlagDidLoad equ cr3_so

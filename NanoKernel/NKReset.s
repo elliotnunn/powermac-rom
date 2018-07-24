@@ -8,7 +8,7 @@ rCI 	set		r26
 		lwz		rCI, KDP.ConfigInfoPtr(r1)
 
 rNK 	set		r25
-		lwz		rNK, KDP.NKCodePtr(r1)
+		lwz		rNK, KDP.CodeBase(r1)
 
 rPgMap 	set		r18
 		lwz		rPgMap, KDP.PageMapStartPtr(r1)
@@ -103,10 +103,10 @@ rAlt set r8
 
 	addi	r8, r1, KDP.VecTblMemRetry
 
-	_kaddr	r23, rNK, MemRetryMachineCheck
+	_kaddr	r23, rNK, MRMachineCheckInt
 	stw		r23, VecTbl.MachineCheck(r8)
 
-	_kaddr	r23, rNK, MemRetryDSI
+	_kaddr	r23, rNK, MRDataStorageInt
 	stw		r23, VecTbl.DSI(r8)
 
 ########################################################################

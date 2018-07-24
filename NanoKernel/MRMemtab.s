@@ -14,10 +14,27 @@
 
     MACRO
     memtabRow &label
-    DC.W (&label-MRTop) - (*-MRMemtab)
+    DC.W (&label-MRBase) - (*-MRMemtab)
     ENDM
 
 MRMemtab
+    memtabRow  MRStore8         ; 8-byte stores
+    memtabRow  MRStore1241      ; mod 1
+    memtabRow  MRStore242       ; mod 2
+    memtabRow  MRStore1421      ; mod 3
+    memtabRow  MRStore44        ; mod 4
+    memtabRow  MRStore1241      ; mod 5
+    memtabRow  MRStore242       ; mod 6
+    memtabRow  MRStore1421      ; mod 7
+    memtabRow  MRLoad8          ; 8-byte loads
+    memtabRow  MRLoad1241       ; mod 1
+    memtabRow  MRLoad242        ; mod 2
+    memtabRow  MRLoad1421       ; mod 3
+    memtabRow  MRLoad44         ; mod 4
+    memtabRow  MRLoad1241       ; mod 5
+    memtabRow  MRLoad242        ; mod 6
+    memtabRow  MRLoad1421       ; mod 7
+
     memtabRow  MRStore1         ; 1-byte stores
     memtabRow  MRStore1         ; mod 1
     memtabRow  MRStore1         ; mod 2
@@ -43,13 +60,13 @@ MRMemtab
     memtabRow  MRStore11        ; mod 5
     memtabRow  MRStore2         ; mod 6
     memtabRow  MRStore11        ; mod 7
-    memtabRow  MRLoad2Fast      ; 2-byte loads
+    memtabRow  MRLoad2          ; 2-byte loads
     memtabRow  MRLoad11         ; mod 1
-    memtabRow  MRLoad2Fast      ; mod 2
+    memtabRow  MRLoad2          ; mod 2
     memtabRow  MRLoad11         ; mod 3
-    memtabRow  MRLoad2Fast      ; mod 4
+    memtabRow  MRLoad2          ; mod 4
     memtabRow  MRLoad11         ; mod 5
-    memtabRow  MRLoad2Fast      ; mod 6
+    memtabRow  MRLoad2          ; mod 6
     memtabRow  MRLoad11         ; mod 7
 
     memtabRow  MRStore12        ; 3-byte stores
@@ -71,28 +88,28 @@ MRMemtab
 
     memtabRow  MRStore4         ; 4-byte stores
     memtabRow  MRStore121       ; mod 1
-    memtabRow  MRStore22Fast    ; mod 2
+    memtabRow  MRStore22        ; mod 2
     memtabRow  MRStore121       ; mod 3
     memtabRow  MRStore4         ; mod 4
     memtabRow  MRStore121       ; mod 5
-    memtabRow  MRStore22Fast    ; mod 6
+    memtabRow  MRStore22        ; mod 6
     memtabRow  MRStore121       ; mod 7
     memtabRow  MRLoad4          ; 4-byte loads
     memtabRow  MRLoad121        ; mod 1
-    memtabRow  MRLoad22Fast     ; mod 2
+    memtabRow  MRLoad22         ; mod 2
     memtabRow  MRLoad121        ; mod 3
     memtabRow  MRLoad4          ; mod 4
     memtabRow  MRLoad121        ; mod 5
-    memtabRow  MRLoad22Fast     ; mod 6
+    memtabRow  MRLoad22         ; mod 6
     memtabRow  MRLoad121        ; mod 7
 
     memtabRow  MRStore14        ; 5-byte stores
     memtabRow  MRStore41        ; mod 1
-    memtabRow  MRStore14        ; mod 2
+    memtabRow  MRStore122       ; mod 2
     memtabRow  MRStore221       ; mod 3
     memtabRow  MRStore14        ; mod 4
     memtabRow  MRStore41        ; mod 5
-    memtabRow  MRStore14        ; mod 6
+    memtabRow  MRStore122       ; mod 6
     memtabRow  MRStore221       ; mod 7
     memtabRow  MRLoad14         ; 5-byte loads
     memtabRow  MRLoad41         ; mod 1
@@ -136,20 +153,3 @@ MRMemtab
     memtabRow  MRLoad241        ; mod 5
     memtabRow  MRLoad142        ; mod 6
     memtabRow  MRLoad421        ; mod 7
-
-    memtabRow  MRStore8         ; 8-byte stores
-    memtabRow  MRStore1241      ; mod 1
-    memtabRow  MRStore242       ; mod 2
-    memtabRow  MRStore1421      ; mod 3
-    memtabRow  MRStore44        ; mod 4
-    memtabRow  MRStore1241      ; mod 5
-    memtabRow  MRStore242       ; mod 6
-    memtabRow  MRStore1421      ; mod 7
-    memtabRow  MRLoad8          ; 8-byte loads
-    memtabRow  MRLoad1241       ; mod 1
-    memtabRow  MRLoad242        ; mod 2
-    memtabRow  MRLoad1421       ; mod 3
-    memtabRow  MRLoad44         ; mod 4
-    memtabRow  MRLoad1241       ; mod 5
-    memtabRow  MRLoad242        ; mod 6
-    memtabRow  MRLoad1421       ; mod 7

@@ -75,9 +75,9 @@ IllegalInstruction
 
 	stwx	r21, r1, r28			; save register into EWA
 	mr		r16, r7
-	beq		cr7, loc_D50			; TBL
+	beq		cr7, MRSecDone      				; TBL
 	stwx	r20, r1, r28
-	b		loc_D50					; TBU
+	b		MRSecDone      					; TBU
 
 
 @STFIWX
@@ -87,7 +87,7 @@ IllegalInstruction
 	stw		r23, KDP.NKInfo.EmulatedUnimpInstCount(r1)
 	mfmsr	r14
 	_bset	r15, r14, bitMsrDR
-	b		loc_A38
+	b		EmulateDataAccess
 
 ########################################################################
 

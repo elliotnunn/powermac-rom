@@ -9,7 +9,7 @@ MRDataStorageInt ; Consult DSISR and the page table to decide what to do
 
     andis.  r28, r31, 0x0800        ; Illegal data access (else crash!)
     addi    r29, r1, 0x320          ; ?bug -> PutPTE used to accept this arg
-    bnel    PutPTE                  ; Read the failing PTE to r30/r31
+    bnel    GetPhysical             ; Read the failing PTE to r30/r31 ; TODO fix!
     li      r28, 0x43               ; Filter Writethru and Protection bits
     and     r28, r31, r28
     cmpwi   cr7, r28, 0x43
@@ -20,10 +20,10 @@ MRDataStorageInt ; Consult DSISR and the page table to decide what to do
 
     mfsrr0  r28                     ; Writethru and Protection bits set => ROM write nop
     addi    r28, r28, 4
-    lwz     r26, KDP.NKInfo.QuietWrite(r1)
+    lwz     r26, KDP.NKInfo.QuietWriteCount(r1)
     mtsrr0  r28
     addi    r26, r26, 1
-    stw     r26, KDP.NKInfo.QuietWrite(r1)
+    stw     r26, KDP.NKInfo.QuietWriteCount(r1)
 
 @return
     extrwi  r26, r25, 8, 22         ; Signal to some MemRetry code?

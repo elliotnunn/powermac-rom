@@ -294,8 +294,8 @@ PutPTE ; EA r27 // PTE r30/r31, EQ=Success, GT=Invalid, LT=Fault
 ########################################################################
 ########################################################################
 
-SetMap ; MapPtrBlk r29
-	lwz		r28, MapPtrBlkSegMapPtr(r29)
+SetMap ; MemMap r29
+	lwz		r28, MemMap.SegMapPtr(r29)
 	stw		r28, KDP.CurMap.SegMapPtr(r1)
 	addi	r28, r28, 16*8 + 4
 	lis		r31, 0
@@ -308,7 +308,7 @@ SetMap ; MapPtrBlk r29
 	bne		@next_seg
 
 	mfpvr	r31
-	lwz		r28, MapPtrBlkBatMap(r29)
+	lwz		r28, MemMap.BatMap(r29)
 	andis.	r31, r31, 0xFFFE
 	addi	r29, r1, 0
 	stw		r28, KDP.CurMap.BatMap(r1)

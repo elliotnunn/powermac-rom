@@ -167,11 +167,8 @@ Bank14Start				ds.l	1			; 0a0, irp+e60 ; Starting address of RAM bank 14
 Bank14Size				ds.l	1			; 0a4, irp+e64 ; Number of bytes in  RAM bank 14
 Bank15Start				ds.l	1			; 0a8, irp+e68 ; Starting address of RAM bank 15
 Bank15Size				ds.l	1			; 0ac, irp+e6c ; Number of bytes in  RAM bank 15
-Bank16Start				ds.l	1			; 0b0, irp+e70 ; Starting address of RAM bank 16
-Bank16Size				ds.l	1			; 0b4, irp+e74 ; Number of bytes in  RAM bank 16
-Bank17Start				ds.l	1			; 0b8, irp+e78 ; Starting address of RAM bank 17
-Bank17Size				ds.l	1			; 0bc, irp+e7c ; Number of bytes in  RAM bank 17
 EndOfBanks
+						align	5			; pad to nice cache block alignment
 MaxBanks				equ		16			; Pads out to old struct len (cache block), more to come...
 Size					equ		*
 						endr

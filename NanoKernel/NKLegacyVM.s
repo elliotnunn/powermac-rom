@@ -33,7 +33,7 @@ MaxVMCallCount		equ		26
 KCallVMDispatch	;	OUTSIDE REFERER
 
 	stw		r7, KDP.Flags(r1)
-	lwz		r7, KDP.NKCodePtr(r1)
+	lwz		r7, KDP.CodeBase(r1)
 	cmplwi	r3, MaxVMCallCount
 	insrwi	r7, r3, 7, 24
 	lhz		r8, VMDispatchTable - NKTop(r7)

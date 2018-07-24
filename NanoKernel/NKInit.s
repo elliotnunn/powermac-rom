@@ -169,10 +169,10 @@ InitKernelGlobals
 	bl		* + 4
 	mflr	r12
 	addi	r12, r12, 4 - *
-	stw		r12, KDP.NKCodePtr(r1)
+	stw		r12, KDP.CodeBase(r1)
 
-	_kaddr	r12, r12, FDP
-	stw		r12, KDP.RetryCodePtr(r1)
+	_kaddr	r12, r12, MRBase
+	stw		r12, KDP.MRBase(r1)
 
 	lwz		r12, NKConfigurationInfo.LA_EmulatorData(rCI)
 	lwz		r11, NKConfigurationInfo.ECBOffset(rCI)
@@ -265,7 +265,7 @@ InitProcessorInfo
 	mfpvr	r12
 	stw		r12, KDP.ProcInfo.ProcessorVersionReg(r1)
 	srwi	r12, r12, 16
-	lwz		r11, KDP.NKCodePtr(r1)
+	lwz		r11, KDP.CodeBase(r1)
 	addi	r10, r1, KDP.ProcInfo.Ovr
 	li		r9, NKProcessorInfo.OvrEnd - NKProcessorInfo.Ovr
 

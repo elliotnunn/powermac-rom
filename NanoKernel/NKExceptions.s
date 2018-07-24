@@ -367,45 +367,42 @@ SwitchContext ; OldCB *r6, NewCB *r9
 ########################################################################
 
 IntReturn
-	andi.	r8, r7, (1 << (31 - 26)) | (1 << (31 - 27))
-	bnel	@do_trace			; Keep single-step code out of hot path
+	andi.	r8, r7, FlagTrace | FlagLowSaves
+	bnel	@do_trace
 
-	stw		r7, KDP.Flags(r1)
-
-	mtlr	r12					; restore user SPRs from kernel GPRs
+	stw		r7, KDP.Flags(r1)	; Save kernel flags for next interrupt
+	mtlr	r12					; Restore user SPRs from kernel GPRs
 	mtsrr0	r10
 	mtsrr1	r11
 	mtcr	r13
-
-	lwz		r10, CB.r10(r6)		; restore user GPRs from ContextBlock
+	lwz		r10, CB.r10(r6)		; Restore user GPRs from ContextBlock
 	lwz		r11, CB.r11(r6)
 	lwz		r12, CB.r12(r6)
 	lwz		r13, CB.r13(r6)
 	lwz		r7, CB.r7(r6)
 	lwz		r8, CB.r8(r6)
 	lwz		r9, CB.r9(r6)
-
-	lwz		r6, KDP.r6(r1)		; restore last two registers from EWA
+	lwz		r6, KDP.r6(r1)		; Restore last two registers from EWA
 	lwz		r1, KDP.r1(r1)
 
-	rfi
+	rfi							; Return from interrupt
 
 
 @do_trace
 	mtcrf	0x3f, r7
 
-	bc		BO_IF_NOT, bitFlagLowSaves, @Trace_0x18
-	_bclr	r7, r7, bitFlagLowSaves
+	bc		BO_IF_NOT, bitFlagLowSaves, @no_low_saves
 
-	bc		BO_IF, bitFlag31, Trace_0x30
-	_bclr	r7, r7, bitFlagTrace
+	_bclr	r7, r7, bitFlagLowSaves			; LowSaves set with flag 31 -> unset and do some emulation
+	bc		BO_IF, bitFlag31, @last_minute_memretry
 
+	_bclr	r7, r7, bitFlagTrace			; But if flag 31 is unset, disable tracing and go home
 	b		@return
-@Trace_0x18
 
+@no_low_saves
 	bc		BO_IF_NOT, bitFlagTrace, @return
-	_bclr	r7, r7, bitFlagTrace
 
+	_bclr	r7, r7, bitFlagTrace			; Trace flag set with no LowSaves -> unset that flag, and do Trace Exception
 	stw		r7, KDP.Flags(r1)
 	li		r8, ecInstTrace
 	b		Exception
@@ -413,9 +410,7 @@ IntReturn
 @return
 	blr
 
-Trace_0x30
-	; according to my counter, this point is never reached
-
+@last_minute_memretry
 	stw		r7, KDP.Flags(r1)
 	stw		r0, 0x0000(r1)
 	stw		r2, 0x0008(r1)
@@ -436,35 +431,40 @@ Trace_0x30
 	stw		r8, 0x0030(r1)
 	lwz		r8, 0x016c(r6)
 	stw		r8, 0x0034(r1)
-	stmw	r14, 0x0038(r1)
-	lwz		r17, 0x0024(r9)
-	lwz		r20, 0x0028(r9)
-	lwz		r21, 0x002c(r9)
-	lwz		r19, 0x0034(r9)
-	lwz		r18, 0x003c(r9)
+
+	stmw	r14, KDP.r14(r1)
+
+	lwz		r17, CB.LowSave17(r9)		; LowSave means "MemRetry in ContextBlock"
+	lwz		r20, CB.LowSave20(r9)
+	lwz		r21, CB.LowSave21(r9)
+	lwz		r19, CB.LowSave19(r9)
+	lwz		r18, CB.LowSave18(r9)
 	_bclr	r16, r7, bitFlagLowSaves
-	lwz		r25, 0x0650(r1)
-	extrwi.	r22, r17, 4, 27
-	add		r19, r19, r22
-	rlwimi	r25, r17, 7, 25, 30
-	lhz		r26, 0x0d20(r25) ; leaving this incorrect as a reminder!
-	insrwi	r25, r19, 3, 28
+
+	lwz		r25, KDP.MRBase(r1)			; MRUnknown is indexed by the first arg of MROptab?
+	extrwi.	r22, r17, 4, 27				; 
+	add		r19, r19, r22				; Correct r19 (EA) by adding byteCount from r17
+	rlwimi	r25, r17, 7, 25, 30			; The top of MRUnknown is... mysterious!
+	lhz		r26, MRUnknown-MRBase(r25)	; leaving this incorrect as a reminder!
+
+	insrwi	r25, r19, 3, 28				; Set Memtab alignment modulus
 	stw		r16, KDP.Flags(r1)
-	rlwimi	r26, r26, 8, 8, 15		; copy hi byte of entry to second byte of word
-	insrwi	r25, r17, 4, 24
-	mtcrf	 0x10, r26					; so the second nybble of the entry is copied to cr3
-	lha		r22, 0x0c00(r25)
+	rlwimi	r26, r26, 8, 8, 15			; First byte of MRUnknown is for cr3/cr4
+	insrwi	r25, r17, 4, 24				; byteCount and load/store from second arg of MROptab?
+	mtcrf	0x10, r26					; Set CR3
+	lha		r22, MRMemtab-MRBase(r25)	; Jump to MRMemtab...
+
 	addi	r23, r1, KDP.VecTblMemRetry
 	add		r22, r22, r25
 	mfsprg	r24, 3
 	mtlr	r22
 	mtsprg	3, r23
 	mfmsr	r14
-	ori		r15, r14, 0x10
+	_bset	r15, r14, bitMsrDR
 	mtmsr	r15
-	rlwimi	r25, r26, 2, 22, 29		; apparently the lower byte of the entry is an FDP (code?) offset, /4!
+	rlwimi	r25, r26, 2, 22, 29			; Second byte of MRUnknown is 
 	bnelr
-	b		FDP_011c
+	b		MRDoSecondary
 
 ########################################################################
 

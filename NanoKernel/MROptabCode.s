@@ -1,31 +1,31 @@
-MRCrash ; C00
+MRPriCrash ; C00
     bl      SystemCrash
-MRSecFail ; C04
-    b       MRIOInstFail
+MRSecException ; C04
+    b       MRSecIOInstFail
 
 ########################################################################
 
-MRPrimSTFSx ; C08
+MRPriSTFSx ; C08
     rlwinm  r17, r17, 0,16,10
 
-MRPrimSTFSUx ; C0C
+MRPriSTFSUx ; C0C
     crclr   cr7_so
     b       MRDoTableSTFD
 
-MRPrimSTFDx ; C14
+MRPriSTFDx ; C14
     rlwinm  r17, r17, 0,16,10
 
-MRPrimSTFDUx ; C18
+MRPriSTFDUx ; C18
     crset   cr7_so
 
 MRDoTableSTFD ; C1C
 ; This table is of the form:
-;   stfd <reg>, KDP.FloatEmScratch(r1)
+;   stfd <reg>, KDP.FloatScratch(r1)
 ;   b 
 
     clrrwi  r19, r25, 10
     rlwimi  r19, r17, 14,24,28
-    addi    r19, r19, STFDTable-MRTop
+    addi    r19, r19, STFDTable-MRBase
     mtlr    r19
     rlwimi  r14, r11, 0,18,18
     mtmsr   r14
@@ -33,63 +33,63 @@ MRDoTableSTFD ; C1C
 
 MRDoneTableSTFD ; c38
     ori     r11, r11, 0x2000
-    lwz     r20, KDP.FloatEmScratch(r1)
-    lwz     r21, KDP.FloatEmScratch+4(r1)
-    bso     cr7, MRPrimUpdLoad
+    lwz     r20, KDP.FloatScratch(r1)
+    lwz     r21, KDP.FloatScratch+4(r1)
+    bso     cr7, MRPriUpdLoad
     extrwi  r23, r20, 11,1
     cmpwi   r23, 0x380
     insrwi  r20, r20, 27,2
     inslwi  r20, r21, 3,29
     mr      r21, r20
-    bgt     MRPrimUpdLoad
+    bgt     MRPriUpdLoad
     cmpwi   r23, 0x36A
     clrrwi  r21, r20, 31
-    blt     MRPrimUpdLoad
+    blt     MRPriUpdLoad
     oris    r20, r20, 0x80
     neg     r23, r23
     clrlwi  r20, r20, 8
     srw     r20, r20, r23
     rlwimi  r21, r20, 31,9,31
-    b       MRPrimUpdLoad
+    b       MRPriUpdLoad
 
 ########################################################################
 
-MRPrimSTWBRX ; C84
+MRPriSTWBRX ; C84
     rlwinm  r28, r17, 13,25,29
     lwbrx   r21, r1, r28
-    b       MRPrimPlainLoad
+    b       MRPriPlainLoad
 
-MRPrimSTHBRX ; C90
+MRPriSTHBRX ; C90
     rlwinm  r28, r17, 13,25,29
     addi    r21, r1, 2
     lhbrx   r21, r21, r28
-    b       MRPrimPlainLoad
+    b       MRPriPlainLoad
 
 ########################################################################
 
-MRPrimUpdStore ; CA0
+MRPriUpdStore ; CA0
     rlwinm  r28, r17, 13,25,29
     lwzx    r21, r1, r28
-    b       MRPrimUpdLoad
+    b       MRPriUpdLoad
 
-MRPrimPlainStore ; CAC
+MRPriPlainStore ; CAC
     rlwinm  r28, r17, 13,25,29
     lwzx    r21, r1, r28
 
-MRPrimPlainLoad ; CB4
+MRPriPlainLoad ; CB4
     rlwinm  r17, r17, 0,16,10
 
-MRPrimUpdLoad ; CB8
+MRPriUpdLoad ; CB8
     extrwi. r22, r17, 4,27
     add     r19, r18, r22
 
 ########################################################################
 
-MRDoMemAccess ; CC0
+MRPriDone ; CC0
     clrrwi  r25, r25, 10
     insrwi  r25, r19, 3,28
     insrwi  r25, r17, 4,24
-    lha     r22, MRMemtab-MRTop(r25)
+    lha     r22, MRMemtab-MRBase(r25)
     addi    r23, r1, KDP.VecTblMemRetry
     add     r22, r22, r25
     mtlr    r22
@@ -97,31 +97,33 @@ MRDoMemAccess ; CC0
     mtmsr   r15
     insrwi  r25, r26, 8,22
     bnelr
-    b       MRDoneMemAccess
+    b       MRDoSecondary
 
-MRStore22Fast ; Fast return paths from MemAccess code
+########################################################################
+
+MRStore22 ; Fast return paths from MemAccess code
     srwi    r23, r21, 16
     sth     r23, -4(r19)
     addi    r17, r17, -4
     sth     r21, -2(r19)
-    b       MRDoneMemAccess
-MRLoad22Fast
+    b       MRDoSecondary
+MRLoad22
     lhz     r23, -4(r19)
     addi    r17, r17, -4
     insrwi  r21, r23, 16,0
-MRLoad2Fast
+MRLoad2
     lhz     r23, -2(r19)
     insrwi  r21, r23, 16,16
 
-MRDoneMemAccess ; D18
+MRDoSecondary ; D18
     sync
     rlwinm. r28, r17, 18,25,29
     mtlr    r25
-    cror    cr0_eq, cr0_eq, cr3_eq
+    cror    cr0_eq, cr0_eq, mrOpflag3
     mtmsr   r14
     mtsprg  3, r24
     beqlr
-    crset   cr3_so
+    crset   mrFlagDidLoad
     stwx    r18, r1, r28
     blr
 
@@ -132,27 +134,25 @@ MRSecLoadExt ; D40
 
 MRSecLoad ; D44
     rlwinm  r28, r17, 13,25,29
-    crset   cr3_so
+    crset   mrFlagDidLoad
     stwx    r21, r1, r28
 
 ########################################################################
 
-MRExit ; D50
-    andi.   r23, r16, 0x20
+MRSecDone       ; D50
+    andi.   r23, r16, FlagTrace
     addi    r10, r10, 4
     mtsrr0  r10
     mtsrr1  r11
     bne     @trace
     mtlr    r12
 
-    bns     cr3, @otherway
-
+    bc      BO_IF_NOT, mrFlagDidLoad, @otherway
     mtcr    r13
     lmw     r2, KDP.r2(r1)
     lwz     r0, KDP.r0(r1)
     lwz     r1, KDP.r1(r1)
     rfi
-
 @otherway
     mtcr    r13
     lmw     r10, KDP.r10(r1)
@@ -162,7 +162,7 @@ MRExit ; D50
 @trace
     mfsprg  r24, 3
     mtsprg  2, r12
-    rlwinm  r16, r16, 0,27,25
+    _bclr   r16, r16, bitFlagTrace
     lwz     r12, VecTbl.Trace(r24)
     stw     r16, KDP.Flags(r1)
     mtcr    r13
@@ -180,9 +180,9 @@ MRSecLHBRX ; DC0
 
 MRSecLWBRX ; DC4
     rlwinm  r28, r17, 13,25,29
-    crset   cr3_so
+    crset   mrFlagDidLoad
     stwbrx  r21, r1, r28
-    b       MRExit
+    b       MRSecDone
 
 ########################################################################
 
@@ -211,13 +211,14 @@ MRSecLFSu ; DD4
 
 MRSecLFDu ; E28
 ; This table is of the form:
-;    lfd <reg>, KDP.FloatEmScratch(r1)
-;    b MRExit
+;    lfd <reg>, KDP.FloatScratch(r1)
+;    b MRSecDone
+    clrrwi  r23, r25, 10
     rlwimi  r23, r17, 14,24,28
-    addi    r23, r23, LFDTable-MRTop
+    addi    r23, r23, LFDTable-MRBase
     mtlr    r23
-    stw     r20, KDP.FloatEmScratch(r1)
-    stw     r21, KDP.FloatEmScratch+4(r1)
+    stw     r20, KDP.FloatScratch(r1)
+    stw     r21, KDP.FloatScratch+4(r1)
     rlwimi  r14, r11, 0,18,18
     mtmsr   r14
     ori     r11, r11, 0x2000
@@ -241,29 +242,29 @@ loc_E6C ; E6C
     li      r22, 9
     insrwi  r17, r22, 6,26
     addi    r19, r19, 4
-    bne     MRDoMemAccess
-    b       MRExit
+    bne     MRPriDone
+    b       MRSecDone
 
 MRSecSTMW ; E84
     addis   r17, r17, 0x20
     rlwinm. r28, r17, 13,25,29
-    beq     MRExit
+    beq     MRSecDone
     lwzx    r21, r1, r28
     li      r22, 8
     insrwi  r17, r22, 6,26
     addi    r19, r19, 4
-    b       MRDoMemAccess
+    b       MRPriDone
 
 ########################################################################
 
-MRPrimDCBZ                      ; Zero four 8b chunks of the cache blk
+MRPriDCBZ                      ; Zero four 8b chunks of the cache blk
     clrrwi  r19, r18, 5         ; r19 = address of chunk to zero
     b       MRComDCBZ           ; (for use by this code only)
 
 MRSecDCBZ ; EAC
     andi.   r22, r19, 0x18
     clrrwi  r19, r19, 3         ; MemAccess code decrements this reg
-    beq     MRExit            ; Zeroed all foun chunks -> done!
+    beq     MRSecDone           ; Zeroed all foun chunks -> done!
 
 MRComDCBZ ; EB8
     li      r22, 0x10           ; Set 8 bytes (? set bit 27)
@@ -271,50 +272,50 @@ MRComDCBZ ; EB8
     addi    r19, r19, 8         ; Align ptr to right hand size of chunk
     li      r20, 0              ; Contents = zeros
     li      r21, 0
-    b       MRDoMemAccess       ; Go, then come back to MRSecDCBZ
+    b       MRPriDone       ; Go, then come back to MRSecDCBZ
 
 ########################################################################
 
 MRSecLWARX ; ED0
     rlwinm  r28, r17, 13,25,29
-    crset   cr3_so
+    crset   mrFlagDidLoad
     stwx    r21, r1, r28
     stwcx.  r21, r1, r28
-    b       MRExit
+    b       MRSecDone
 
 MRSecSTWCX ; EE4
     stwcx.  r0, 0, r1
     mfcr    r23
     rlwinm  r23, r23, 0,3,1
     rlwimi  r13, r23, 0,0,3
-    b       MRExit
+    b       MRSecDone
 
 ########################################################################
 
 MRSecCacheWang ; EF8
-    rlwinm  r16, r16, 0,28,25
+    rlwinm  r16, r16, 0, ~(FlagTrace | FlagLowSaves)
     addi    r10, r10, -4
     stw     r16, KDP.Flags(r1)
-    b       MRExit
+    b       MRSecDone
 
 ########################################################################
 
-MRIOInstFail ; F08
+MRSecIOInstFail ; F08
     li      r8, ecDataInvalidAddress
-    b       ExceptionMemRetried
+    b       ExceptionAfterRetry
 
 ########################################################################
 
-MRPrimSTSWI ; F10
+MRPriSTSWI ; F10
     addi    r22, r27, -0x800
     extrwi  r22, r22, 5,16
     b       loc_F2C
 
-MRPrimSTSWX ; F1C
+MRPriSTSWX ; F1C
     mfxer   r22
     andi.   r22, r22, 0x7F
     addi    r22, r22, -1
-    beq     MRExit
+    beq     MRSecDone
 
 loc_F2C ; F2C
     rlwimi  r17, r22, 4,21,25
@@ -329,23 +330,23 @@ MRSecStrStore ; F40
     rlwimi  r17, r28, 0,6,10
     addi    r17, r17, -0x40
     bne     loc_1008
-    b       MRExit
+    b       MRSecDone
 
 ########################################################################
 
-MRPrimLSWI ; F58
+MRPriLSWI ; F58
     addi    r22, r27, -0x800
     extrwi  r22, r22, 5,16
     addis   r28, r27, 0x3E0
     rlwimi  r17, r28, 22,16,20
     b       loc_F80
 
-MRPrimLSWX ; F6C
+MRPriLSWX ; F6C
     mfxer   r22
     andi.   r22, r22, 0x7F
     rlwimi  r17, r27, 0,16,20
     addi    r22, r22, -1
-    beq     MRExit
+    beq     MRSecDone
 
 loc_F80 ; F80
     andis.  r23, r17, 0x1F
@@ -367,13 +368,13 @@ MRSecLSWix ; FA0
 
 ########################################################################
 
-MRPrimUnknown ; FB8
+MRPriUnknown ; FB8
     mfxer   r22
     andi.   r22, r22, 0x7F
     rlwimi  r17, r27, 0,16,20
     insrwi  r17, r27, 1,3
     addi    r22, r22, -1
-    beq     MRExit
+    beq     MRSecDone
     andis.  r23, r17, 0x1F
     rlwimi  r17, r22, 4,21,25
     not     r22, r22
@@ -400,7 +401,7 @@ loc_1008 ; 1008
     li      r22, 8
     insrwi  r17, r22, 6,26
     addi    r19, r19, 4
-    bne     MRDoMemAccess
+    bne     MRPriDone
     rlwinm  r22, r17, 9,27,28
     srw     r21, r21, r22
     extrwi  r22, r17, 2,4
@@ -408,7 +409,7 @@ loc_1008 ; 1008
     add     r19, r19, r22
     addi    r22, r22, 4
     insrwi. r17, r22, 5,26
-    b       MRDoMemAccess
+    b       MRPriDone
 
 loc_1044 ; 1044
     rlwinm  r23, r17, 18,25,29
@@ -423,20 +424,20 @@ loc_1060 ; 1060
     addis   r28, r17, 0x20
     rlwimi  r17, r28, 0,6,10
     addi    r17, r17, -0x40
-    beq     MRExit
+    beq     MRSecDone
 
 loc_1070 ; 1070
     andi.   r23, r17, 0x7C0
     li      r22, 9
     insrwi  r17, r22, 6,26
     addi    r19, r19, 4
-    bne     MRDoMemAccess
+    bne     MRPriDone
     extrwi  r22, r17, 2,4
     neg     r22, r22
     add     r19, r19, r22
     addi    r22, r22, 4
     insrwi. r17, r22, 5,26
-    b       MRDoMemAccess
+    b       MRPriDone
 
 loc_109C ; 109C
     rlwinm  r23, r17, 18,25,29
@@ -451,7 +452,7 @@ loc_10B8 ; 10B8
     addis   r28, r17, 0x20
     rlwimi  r17, r28, 0,6,10
     addi    r17, r17, -0x40
-    beq     MRExit
+    beq     MRSecDone
 
 loc_10C8 ; 10C8
     not     r22, r22
@@ -486,8 +487,8 @@ loc_112C ; 112C
     add     r22, r22, r23
     insrwi  r23, r22, 7,25
     mtxer   r23
-    beq     MRExit
+    beq     MRSecDone
     mfcr    r23
     clrlwi  r23, r23, 30
     insrwi  r13, r23, 4,0
-    b       MRExit
+    b       MRSecDone

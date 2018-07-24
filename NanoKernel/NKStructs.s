@@ -102,7 +102,7 @@ L			ds.l 1
 
 ########################################################################
 
-MapPtrBlk	RECORD 0, INCR
+MemMap		RECORD 0, INCR
 SegMapPtr	ds.l 1
 BatMap		ds.l 1 ; packed array of 4-bit indices into BATs
 	ENDR
@@ -175,18 +175,18 @@ VecTblSystem			ds	VecTbl	; 360:420 ; when 68k emulator is running, *or* any MTas
 VecTblAlternate			ds	VecTbl	; 420:4e0 ; native PowerPC in blue task
 VecTblMemRetry			ds	VecTbl	; 4e0:5a0 ; "FDP" instruction emulation
 
-FloatEmScratch			ds.d	1	; 5a0:5a8
+FloatScratch			ds.d	1	; 5a0:5a8
 TopOfFreePages			ds.l	1	; 5a8 ; gotten from the old SPRG0
 						ds.l	1	; 5ac
 PARPerSegmentPLEPtrs	ds.l	4	; 5b0:5c0 ; for each PAR segment, a ptr into the PAR PageList
 FloatingPtTemp1			ds.l	1	; 5c0
 FloatingPtTemp2			ds.l	1	; 5c4
 
-SupervisorMap			ds	MapPtrBlk	; 5c8:5d0
-UserMap					ds	MapPtrBlk	; 5d0:5d8
-CpuMap					ds	MapPtrBlk	; 5d8:5e0
-OverlayMap				ds	MapPtrBlk	; 5e0:5e8
-CurMap					ds	MapPtrBlk	; 5e8:5f0
+SupervisorMap			ds	MemMap	; 5c8:5d0
+UserMap					ds	MemMap	; 5d0:5d8
+CpuMap					ds	MemMap	; 5d8:5e0
+OverlayMap				ds	MemMap	; 5e0:5e8
+CurMap					ds	MemMap	; 5e8:5f0
 
 KCallTbl				ds	KCallTbl	; 5f0:630
 
@@ -197,8 +197,8 @@ KernelMemoryEnd			ds.l	1	; 63c
 LowMemPtr				ds.l	1	; 640 ; physical address of PAR Low Memory
 SharedMemoryAddr		ds.l	1	; 644 ; debug?
 EmuKCallTblPtrLogical 	ds.l	1	; 648
-NKCodePtr				ds.l	1	; 64c
-RetryCodePtr			ds.l	1	; 650
+CodeBase				ds.l	1	; 64c
+MRBase					ds.l	1	; 650
 ECBPtrLogical			ds.l	1	; 654 ; Emulator/System ContextBlock
 ECBPtr					ds.l	1	; 658
 CurCBPtr				ds.l	1	; 65c ; moved to EWA (per-CPU) in NKv2

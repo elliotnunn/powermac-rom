@@ -3,7 +3,7 @@
 ########################################################################
 
 	_align 6
-IntExternal0
+ExternalInt0
 	mfsprg	r1, 0							; Init regs and increment ctr
 	stw		r0, KDP.r0(r1)
 	stw		r2, KDP.r2(r1)
@@ -70,7 +70,7 @@ IntLookupTable
 	dc.b	7, 7, 7, 7, 7, 7, 7, 7
 
 	_align 6
-IntExternal1
+ExternalInt1
 	mfsprg	r1, 0							; Init regs and increment ctr
 	stw		r0, KDP.r0(r1)
 	stw		r2, KDP.r2(r1)
@@ -97,7 +97,7 @@ IntExternal1
 	lwz		r4, KDP.r4(r1)
 	lwz		r5, KDP.r5(r1)
 
-	lwz		r3, KDP.NKCodePtr(r1)			; Loop that number up in the table
+	lwz		r3, KDP.CodeBase(r1)			; Loop that number up in the table
 	rlwimi	r3, r0, 0, 0x0000003F
 	lbz		r2, IntLookupTable-NKTop(r3)
 	mfcr	r0
@@ -128,7 +128,7 @@ IntExternal1
 ########################################################################
 
 	_align 6
-IntExternal2
+ExternalInt2
 	mfsprg	r1, 0							; Init regs and increment ctr
 	stw		r0, KDP.r0(r1)
 	stw		r2, KDP.r2(r1)
@@ -282,7 +282,7 @@ DataStorageInt
 
 EmulateDataAccess
 	rlwinm.	r18, r27, 18, 25, 29			; r16 = 4 * rA (r0 wired to 0)
-	lwz		r25, KDP.RetryCodePtr(r1)
+	lwz		r25, KDP.MRBase(r1)
 	li		r21, 0
 	beq		@r0
 	lwzx	r18, r1, r18					; r16 = contents of rA
@@ -297,7 +297,7 @@ EmulateDataAccess
 ;dform
 	rlwimi	r25, r27, 7, 26, 29				; opcode >= 32
 	rlwimi	r25, r27, 12, 25, 25
-	lwz		r26, MROptabD - MRTop(r25)	; table of 4b elements, index = major opcode bits 51234 (this is the last quarter of MROptabX)
+	lwz		r26, MROptabD - MRBase(r25)	; table of 4b elements, index = major opcode bits 51234 (this is the last quarter of MROptabX)
 	extsh	r23, r27						; r23 = register offset field, sign-extended
 	rlwimi	r25, r26, 26, 22, 29
 	mtlr	r25								; dest = r25 = first of two function ptrs in table entry
@@ -310,7 +310,7 @@ EmulateDataAccess
 	rlwimi	r25, r27, 27, 26, 29
 	rlwimi	r25, r27, 0, 25, 25
 	rlwimi	r25, r27, 6, 23, 24
-	lwz		r26, MROptabX - MRTop(r25)	; table of 4b elements, index = minor (x-form) opcode bits 8940123
+	lwz		r26, MROptabX - MRBase(r25)	; table of 4b elements, index = minor (x-form) opcode bits 8940123
 	rlwinm	r23, r27, 23, 25, 29			; r23 = 4 * rB
 	rlwimi	r25, r26, 26, 22, 29
 	mtlr	r25								; dest = r25 = first of two function ptrs in table entry
@@ -318,7 +318,7 @@ EmulateDataAccess
 	lwzx	r23, r1, r23					; get rB from saved registers
 	rlwimi	r17, r26, 6, 26, 5				; r17 = pretend X-form inst with: maj opcode (from tbl), rS/D and RA (from inst), min opcode (from tbl)
 	add		r18, r18, r23					; r18 = effective address attempted by instruction
-	bclr	BO_IF_NOT, 13
+	bclr	BO_IF_NOT, mrOpflag2
 	neg		r23, r23
 	add		r18, r18, r23
 	blr
@@ -347,7 +347,7 @@ AlignmentInt
 	mfdar	r18
 
 	extrwi.	r21, r27, 2, 15			; evaluate hi two bits of XO (or 0 for d-form?)
-	lwz		r25, KDP.RetryCodePtr(r1)
+	lwz		r25, KDP.MRBase(r1)
 	rlwinm	r17, r27, 16, 0x03FF0000
 	lwz		r16, KDP.Flags(r1)
 	rlwimi	r25, r27, 24, 23, 29	; add constant fields from dsisr (*4) to FDP
@@ -355,7 +355,7 @@ AlignmentInt
 	bne		@X_form
 
 	;	D- or DS-form (immediate-indexed) instruction
-	lwz		r26, MROptabD - MRTop(r25)	; use upper quarter of table
+	lwz		r26, MROptabD - MRBase(r25)	; use upper quarter of table
 	mfmsr	r14
 	rlwimi	r25, r26, 26, 22, 29	; third byte of lookup value is a /4 code offset in FDP
 	mtlr	r25						; so get ready to go there
@@ -366,14 +366,14 @@ AlignmentInt
 
 @X_form
 	;	X-form (register-indexed) instruction
-	lwz		r26, MROptabX - MRTop(r25)
+	lwz		r26, MROptabX - MRBase(r25)
 	mfmsr	r14
 	rlwimi	r25, r26, 26, 22, 29
 	mtlr	r25
 	_bset	r15, r14, bitMsrDR
 	mtcr	r26
 	rlwimi	r17, r26, 6, 26, 5
-	bclr	BO_IF_NOT, 12
+	bclr	BO_IF_NOT, mrOpflag1
 	mtmsr	r15
 	lwz		r27, 0(r10)
 	mtmsr	r14
@@ -391,7 +391,7 @@ InstStorageInt
 	andis.	r8, r11, 0x4020			; what the hell are these MSR bits?
 	beq		major_0x039dc_0x14
 
-	stmw	r14, KDP.r14(r8)
+	stmw	r14, KDP.r14(r1)
 	mr		r27, r10
 	bl		PutPTE
 	bne		@not_in_htab
