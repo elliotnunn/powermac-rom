@@ -20,8 +20,8 @@
 ;	    Exception
 ;	    ExceptionMemRetried
 ;	  NKFloatInts
-;	    FloatLoadJumpTable
-;	    FloatSaveJumpTable
+;	    LFDTable
+;	    STFDTable
 ;	  NKIntHandlers
 ;	    LoadInterruptRegisters
 ;	    EmulateDataAccess
@@ -76,7 +76,7 @@ FDP_0018	;	stfdu(x)
 FDP_001c	;	called from above
 		clrrwi	r19, r25, 10
 		rlwimi	r19, r17, 14, 24, 28
-		addi	r19, r19, FloatSaveJumpTable - FDP
+		addi	r19, r19, STFDTable - FDP
 		mtlr	r19
 		rlwimi	r14, r11, 0, 18, 18
 		mtmsr	r14
@@ -231,7 +231,7 @@ FDP_0174
 FDP_0178
 		clrrwi	r23, r25, 10
 		rlwimi	r23, r17, 14, 24, 28
-		addi	r23, r23, FloatLoadJumpTable - FDP
+		addi	r23, r23, LFDTable - FDP
 		mtlr	r23
 		stw		r20, -0x02E0(r1)
 		stw		r21, -0x02DC(r1)
@@ -1631,7 +1631,7 @@ FDP_06e4
 
 
 
-
+; This is the traceTable, intimately associated with loc_D18/FDP_011C
 		macro
 		HalfWordTableEntry		&n, &target
 

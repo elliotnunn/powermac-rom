@@ -82,27 +82,25 @@ kSIGP17				equ		17	; r4 = target CPU idx?
 
 ; Exception cause equates
 ; System = FFFFFFFF, Alt = 7DF2F700 (ecInstPageFault and ecDataPageFault disabled), same +/- VM
-ecNoException				equ		0		; Exception
-ecSystemCall				equ		1		; ?
-ecTrapInstr					equ		2		; Exception
-ecFloatException			equ		3		; Exception
-ecInvalidInstr				equ		4		; Exception
-ecPrivilegedInstr			equ		5		; ?
-ecMachineCheck				equ		7		; Exception
-ecInstTrace					equ		8		; Exception
-ecInstInvalidAddress		equ		10		; Exception
-ecInstHardwareFault			equ		11		; Exception
-ecInstPageFault				equ		12		; Exception
-ecInstSupAccessViolation	equ		14		; Exception
-
-;	Usually from MemRetryDSI (also IntAlignment and IntMachineCheck)
-ecDataInvalidAddress		equ		18		; ExceptionMemRetried
-ecDataHardwareFault			equ		19		; ExceptionMemRetried
-ecDataPageFault				equ		20		; ExceptionMemRetried
-ecDataWriteViolation		equ		21		; ExceptionMemRetried
-ecDataSupAccessViolation	equ		22		; ExceptionMemRetried
-ecDataSupWriteViolation		equ		23		; ?
-ecUnknown24					equ		24		; ExceptionMemRetried
+ecNoException				equ		0
+ecSystemCall				equ		1
+ecTrapInstr					equ		2
+ecFloatException			equ		3
+ecInvalidInstr				equ		4
+ecPrivilegedInstr			equ		5
+ecMachineCheck				equ		7
+ecInstTrace					equ		8
+ecInstInvalidAddress		equ		10
+ecInstHardwareFault			equ		11
+ecInstPageFault				equ		12
+ecInstSupAccessViolation	equ		14
+ecDataInvalidAddress		equ		18
+ecDataHardwareFault			equ		19
+ecDataPageFault				equ		20
+ecDataWriteViolation		equ		21
+ecDataSupAccessViolation	equ		22
+ecDataSupWriteViolation		equ		23
+ecUnknown24					equ		24
 
 
 ;	Runtime Flag equates
@@ -132,7 +130,7 @@ ecUnknown24					equ		24		; ExceptionMemRetried
 	_bitEqu	23,	FlagFE1
 	_bitEqu	24,	Flag24
 	_bitEqu	25,	Flag25
-	_bitEqu	26,	Flag26
+	_bitEqu	26,	FlagTrace
 	_bitEqu	27,	FlagLowSaves
 	_bitEqu	28,	Flag28
 	_bitEqu	29,	Flag29

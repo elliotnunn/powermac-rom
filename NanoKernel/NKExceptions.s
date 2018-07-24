@@ -398,13 +398,13 @@ IntReturn
 	_bclr	r7, r7, bitFlagLowSaves
 
 	bc		BO_IF, bitFlag31, Trace_0x30
-	_bclr	r7, r7, bitFlag26
+	_bclr	r7, r7, bitFlagTrace
 
 	b		@return
 @Trace_0x18
 
-	bc		BO_IF_NOT, bitFlag26, @return
-	_bclr	r7, r7, bitFlag26
+	bc		BO_IF_NOT, bitFlagTrace, @return
+	_bclr	r7, r7, bitFlagTrace
 
 	stw		r7, KDP.Flags(r1)
 	li		r8, ecInstTrace

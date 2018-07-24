@@ -147,7 +147,7 @@ KCallRunAlternateContext
 
 	mr		r27, r8
 	addi	r29, r1, KDP.BATs + 0xa0
-	bl		GetPhysicalAddr
+	bl		GetPhysical
 	clrlwi	r23, r8, 20
 	beq		@fail
 
@@ -158,7 +158,7 @@ KCallRunAlternateContext
 
 	addi	r27, r27, 0x1000
 	addi	r29, r1, KDP.BATs + 0xa0
-	bl		GetPhysicalAddr
+	bl		GetPhysical
 	beq		@fail
 
 	subi	r31, r31, 0x1000
@@ -267,7 +267,7 @@ Reset
 	_alignToCacheBlock
 KCallPrioritizeInterrupts
 	;	Left side: roll back the interrupt preparation before the int handler repeats is
-	;	Right side: jump to the external interrupt handler (PIH or IntProgram)
+	;	Right side: jump to the external interrupt handler (PIH or ProgramInt)
 	mtsprg	2, r12
 	mtsrr0	r10
 	mtsrr1	r11
@@ -321,7 +321,7 @@ KCallSystemCrash
 ########################################################################
 
 	_alignToCacheBlock
-IntProgram
+ProgramInt
 ;	(also called when the Alternate Context gets an External Int => Exception)
 
 	;	Standard interrupt palaver
@@ -420,7 +420,7 @@ IntProgram
 ########################################################################
 
 	_alignToCacheBlock
-IntSyscall
+SyscallInt
 	bl		LoadInterruptRegisters
 	mfmsr	r8
 	subi	r10, r10, 4
@@ -431,7 +431,7 @@ IntSyscall
 ########################################################################
 
 	_alignToCacheBlock
-IntTrace
+TraceInt
 	bl		LoadInterruptRegisters
 	li		r8, ecInstTrace
 	b		Exception

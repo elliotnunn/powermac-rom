@@ -102,7 +102,7 @@ L			ds.l 1
 
 ########################################################################
 
-MemLayout	RECORD 0, INCR
+MapPtrBlk	RECORD 0, INCR
 SegMapPtr	ds.l 1
 BatMap		ds.l 1 ; packed array of 4-bit indices into BATs
 	ENDR
@@ -182,11 +182,11 @@ PARPerSegmentPLEPtrs	ds.l	4	; 5b0:5c0 ; for each PAR segment, a ptr into the PAR
 FloatingPtTemp1			ds.l	1	; 5c0
 FloatingPtTemp2			ds.l	1	; 5c4
 
-SupervisorMemLayout		ds	MemLayout	; 5c8:5d0
-UserMemLayout			ds	MemLayout	; 5d0:5d8
-CpuMemLayout			ds	MemLayout	; 5d8:5e0
-OverlayMemLayout		ds	MemLayout	; 5e0:5e8
-CurrentMemLayout		ds	MemLayout	; 5e8:5f0
+SupervisorMap			ds	MapPtrBlk	; 5c8:5d0
+UserMap					ds	MapPtrBlk	; 5d0:5d8
+CpuMap					ds	MapPtrBlk	; 5d8:5e0
+OverlayMap				ds	MapPtrBlk	; 5e0:5e8
+CurMap					ds	MapPtrBlk	; 5e8:5f0
 
 KCallTbl				ds	KCallTbl	; 5f0:630
 
@@ -215,7 +215,7 @@ PageMapStartPtr			ds.l	1	; 684
 PageAttributeInit		ds.l	1	; 688 ; defaults for PLE/PTE?
 HtabTempPage			ds.l	1	; 68c ; a page that lives temporarily in the HTAB (per its PME)
 HtabTempEntryPtr		ds.l	1	; 690 ; ptr to that PME
-NewestPageInHtab		ds.l	1	; 694
+HtabLastEA				ds.l	1	; 694
 ApproxCurrentPTEG		ds.l	1	; 698
 OverflowingPTEG			ds.l	1	; 69c
 PTEGMask				ds.l	1	; 6a0

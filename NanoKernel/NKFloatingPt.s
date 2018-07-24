@@ -3,7 +3,7 @@
 ########################################################################
 
 	_alignToCacheBlock
-IntFPUnavail
+FPUnavailInt
 ;	Reload the FPU
 
 	mfsprg	r1, 0
@@ -149,7 +149,7 @@ DisableFPU
 	b		&DEST
 	ENDM
 
-FloatLoadJumpTable
-	MakeFloatJumpTable	lfd, FDP_0da0
-FloatSaveJumpTable
-	MakeFloatJumpTable	stfd, FDP_003c
+LFDTable
+	MakeFloatJumpTable	lfd, MRExit
+STFDTable
+	MakeFloatJumpTable	stfd, MRDoneTableSTFD

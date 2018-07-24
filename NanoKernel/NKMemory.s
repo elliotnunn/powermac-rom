@@ -3,8 +3,8 @@
 ########################################################################
 ########################################################################
 
-PopulateHTAB ; LogicalAddress r28 // Success cr0.eq
-	lwz		r29, KDP.CurrentMemLayout.SegMapPtr(r1)
+PutPTE ; EA r27 // PTE r30/r31, EQ=Success, GT=Invalid, LT=Fault
+	lwz		r29, KDP.CurMap.SegMapPtr(r1)	; late addition: r29 used to be an argument
 	rlwinm	r28, r27, 7, 0x0000000F << 3	; convert segment of passed ptr to offset into SegMap
 	lwzx	r29, r29, r28					; r29 = ptr to start of segment in PageMap		
 	rlwinm	r28, r27, 20, 0x0000FFFF		; r27 = page index within SegMap
@@ -74,13 +74,13 @@ PopulateHTAB ; LogicalAddress r28 // Success cr0.eq
 	bge		cr6, @found_blank_pte
 	rlwinm	r28, r31, 0, 26, 26				; wImg bit in PTE???
 	addi	r29, r29, 8						; Leave PTE + 24 in r29
-	blt		cr7, @no_blanks_in_pteg			; >>>>> This might cause PopulateHTAB to return an error (BNE)
+	blt		cr7, @no_blanks_in_pteg			; >>>>> This might cause PutPTE to return an error (BNE)
 
 @found_blank_pte					; Take PTE address (plus 24) in r29, draft PTE[lo] in r31
 	cmpwi	r26, 0							; NOTE: top bit of r31 will be set if sec'dary hash func was used
 	mfsrin	r28, r27
 	extrwi	r30, r27, 6, 4					; PTE[API/26-31] taken from upper 6 bits of offset-within-segment
-	stw		r27, KDP.NewestPageInHtab(r1)
+	stw		r27, KDP.HtabLastEA(r1)
 	ori		r31, r31, 0x100					; set PTE[R(eference)]
 	rlwimi	r30, r31, 27, 25, 25			; set PTE[H(ash func ID)] to cheeky topmost bit of the phys addr in r31
 	rlwinm	r31, r31, 0, 21, 19				; unset upper reserved bit in PTE[lo]
@@ -167,8 +167,8 @@ PopulateHTAB ; LogicalAddress r28 // Success cr0.eq
 ; Helpful return code for @daddy_flag
 @return_via_pf2
 	bgtlr
-	addi	r29, r1, KDP.SupervisorMemLayout
-	b		SwitchMemLayout
+	addi	r29, r1, KDP.SupervisorMap
+	b		SetMap
 
 ########################################################################
 ; So try the secondary hashing function, if we haven't already
@@ -235,7 +235,7 @@ PopulateHTAB ; LogicalAddress r28 // Success cr0.eq
 	rlwinm	r31, r31, 6, 10, 19
 	xor		r28, r28, r31
 
-	lwz		r26, KDP.CurrentMemLayout.SegMapPtr(r1)
+	lwz		r26, KDP.CurMap.SegMapPtr(r1)
 	rlwinm	r30, r28, (32-25), 0x00000078
 	lwzx	r26, r26, r30						; r26 pts into PageMap @ current segment
 
@@ -272,7 +272,7 @@ PopulateHTAB ; LogicalAddress r28 // Success cr0.eq
 
 	_InvalNCBPointerCache scratch=r28
 
-	bne		cr7, PopulateHTAB					; not a DaddyFlag + CountingFlag? Retriable...
+	bne		cr7, PutPTE					; not a DaddyFlag + CountingFlag? Retriable...
 
 	rlwinm	r26, r26, 22, 0xFFFFFFFC			; PIRFlag << 31 | BtmBit << 22 | physBase * 4
 	lwzux	r28, r26, r30
@@ -289,14 +289,14 @@ PopulateHTAB ; LogicalAddress r28 // Success cr0.eq
 	rlwimi	r28, r31, 27, 28, 28
 	stw		r28, 0(r26)
 
-	b		PopulateHTAB
+	b		PutPTE
 
 ########################################################################
 ########################################################################
 
-SwitchMemLayout
-	lwz		r28, MemLayout.SegMapPtr(r29)
-	stw		r28, KDP.CurrentMemLayout.SegMapPtr(r1)
+SetMap ; MapPtrBlk r29
+	lwz		r28, MapPtrBlkSegMapPtr(r29)
+	stw		r28, KDP.CurMap.SegMapPtr(r1)
 	addi	r28, r28, 16*8 + 4
 	lis		r31, 0
 
@@ -308,10 +308,10 @@ SwitchMemLayout
 	bne		@next_seg
 
 	mfpvr	r31
-	lwz		r28, MemLayout.BatMap(r29)
+	lwz		r28, MapPtrBlkBatMap(r29)
 	andis.	r31, r31, 0xFFFE
 	addi	r29, r1, 0
-	stw		r28, KDP.CurrentMemLayout.BatMap(r1)
+	stw		r28, KDP.CurMap.BatMap(r1)
 	beq		@601
 
 	rlwimi	r29, r28, 7, 0x00000078		; BATS, non-601
@@ -440,7 +440,7 @@ SwitchMemLayout
 ########################################################################
 ########################################################################
 
-GetPhysicalAddr
+GetPhysical ; EA r27, batPtr r29 // PA r31, EQ=Fail
 	lwz		r30, 0(r29)
 	li		r28, -1
 	rlwimi	r28, r30, 15, 0, 14
@@ -461,7 +461,7 @@ GetPhysicalAddr
 	rlwimi	r28, r30, 15, 0, 14
 	xor		r31, r27, r30
 	andc.	r31, r31, r28
-	bne		nobats
+	bne		GetPhysicalFromHTAB
 
 @_54
 	andi.	r31, r30, 1
@@ -471,7 +471,7 @@ GetPhysicalAddr
 	or		r31, r31, r28
 	bnelr
 
-nobats
+GetPhysicalFromHTAB ; EA r27 // PA r31, EQ=Fail
 	mfsrin	r31, r27
 	rlwinm	r30, r27, 10, 26, 31
 	rlwimi	r30, r31, 7, 1, 24

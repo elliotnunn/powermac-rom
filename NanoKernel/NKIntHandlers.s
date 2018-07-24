@@ -206,7 +206,7 @@ IntExternal2
 
 ;	Increment the Sys/Alt CPU clocks, and the Dec-int counter
 	_align 6
-IntDecrementerSystem
+DecrementerIntSys
 	mfsprg	r1, 0
 	stmw	r2, KDP.r2(r1)
 	mfdec	r31
@@ -252,7 +252,7 @@ DecCommon ; DEC for Alternate=r30, System=r31
 	mfsprg	r1, 1
 	rfi
 
-IntDecrementerAlternate
+DecrementerIntAlt
 	mfsprg	r1, 0
 	stmw	r2, KDP.r2(r1)
 	lwz		r31, KDP.OtherContextDEC(r1)
@@ -262,7 +262,7 @@ IntDecrementerAlternate
 ########################################################################
 
 	_align 6
-IntDSI
+DataStorageInt
 	mfsprg	r1, 0
 	stmw	r2, KDP.r2(r1)
 	mfsprg	r11, 1
@@ -277,7 +277,7 @@ IntDSI
 	mfmsr	r14
 	_bset	r15, r14, bitMsrDR
 	mtmsr	r15
-	lwz		r27, 0(r10)
+	lwz		r27, 0(r10)						; r27 = INSTRUCTION
 	mtmsr	r14
 
 EmulateDataAccess
@@ -285,38 +285,39 @@ EmulateDataAccess
 	lwz		r25, KDP.RetryCodePtr(r1)
 	li		r21, 0
 	beq		@r0
-	lwzx	r18, r1, r18
+	lwzx	r18, r1, r18					; r16 = contents of rA
 @r0
-	andis.	r26, r27, 0xec00
+	andis.	r26, r27, 0xec00				; intended to extract the major opcode? seems wrong though!
 	lwz		r16, KDP.Flags(r1)
 	mfsprg	r24, 3
-	rlwinm	r17, r27, 0, 6, 15
+	rlwinm	r17, r27, 0, 6, 15				; r17 = rS/D and rA fields
 	rlwimi	r16, r16, 27, 26, 26
-	bge		@low_opcode
+	bge		@xform
 
+;dform
 	rlwimi	r25, r27, 7, 26, 29				; opcode >= 32
 	rlwimi	r25, r27, 12, 25, 25
-	lwz		r26, 0xb80(r25)
-	extsh	r23, r27
+	lwz		r26, MROptabD - MRTop(r25)	; table of 4b elements, index = major opcode bits 51234 (this is the last quarter of MROptabX)
+	extsh	r23, r27						; r23 = register offset field, sign-extended
 	rlwimi	r25, r26, 26, 22, 29
-	mtlr	r25
-	mtcr	r26
-	add		r18, r18, r23
-	rlwimi	r17, r26, 6, 26, 5
+	mtlr	r25								; dest = r25 = first of two function ptrs in table entry
+	mtcr	r26								; using the flags in the arbitrary upper 16 bits of the table entry?
+	add		r18, r18, r23					; r18 = effective address attempted by instruction
+	rlwimi	r17, r26, 6, 26, 5				; r17 = pretend X-form inst with: maj opcode (from tbl), rS/D and RA (from inst), min opcode (from tbl)
 	blr
 
-@low_opcode									; opcode <= 31
+@xform										; opcode <= 31
 	rlwimi	r25, r27, 27, 26, 29
 	rlwimi	r25, r27, 0, 25, 25
 	rlwimi	r25, r27, 6, 23, 24
-	lwz		r26, 0x800(r25)
-	rlwinm	r23, r27, 23, 25, 29
+	lwz		r26, MROptabX - MRTop(r25)	; table of 4b elements, index = minor (x-form) opcode bits 8940123
+	rlwinm	r23, r27, 23, 25, 29			; r23 = 4 * rB
 	rlwimi	r25, r26, 26, 22, 29
-	mtlr	r25
+	mtlr	r25								; dest = r25 = first of two function ptrs in table entry
 	mtcr	r26
-	lwzx	r23, r1, r23
-	rlwimi	r17, r26, 6, 26, 5
-	add		r18, r18, r23
+	lwzx	r23, r1, r23					; get rB from saved registers
+	rlwimi	r17, r26, 6, 26, 5				; r17 = pretend X-form inst with: maj opcode (from tbl), rS/D and RA (from inst), min opcode (from tbl)
+	add		r18, r18, r23					; r18 = effective address attempted by instruction
 	bclr	BO_IF_NOT, 13
 	neg		r23, r23
 	add		r18, r18, r23
@@ -325,7 +326,7 @@ EmulateDataAccess
 ########################################################################
 
 	_align 6
-IntAlignment
+AlignmentInt
 	mfsprg	r1, 0
 	stmw	r2, KDP.r2(r1)
 
@@ -350,11 +351,11 @@ IntAlignment
 	rlwinm	r17, r27, 16, 0x03FF0000
 	lwz		r16, KDP.Flags(r1)
 	rlwimi	r25, r27, 24, 23, 29	; add constant fields from dsisr (*4) to FDP
-	rlwimi	r16, r16, 27, 26, 26	; copy FlagSE to Flag26
+	rlwimi	r16, r16, 27, 26, 26	; copy FlagSE to FlagTrace
 	bne		@X_form
 
 	;	D- or DS-form (immediate-indexed) instruction
-	lwz		r26, FDP_TableBase + 4*(0x40 + 0x20)(r25)	; use upper quarter of table
+	lwz		r26, MROptabD - MRTop(r25)	; use upper quarter of table
 	mfmsr	r14
 	rlwimi	r25, r26, 26, 22, 29	; third byte of lookup value is a /4 code offset in FDP
 	mtlr	r25						; so get ready to go there
@@ -365,7 +366,7 @@ IntAlignment
 
 @X_form
 	;	X-form (register-indexed) instruction
-	lwz		r26, FDP_TableBase(r25)
+	lwz		r26, MROptabX - MRTop(r25)
 	mfmsr	r14
 	rlwimi	r25, r26, 26, 22, 29
 	mtlr	r25
@@ -380,15 +381,11 @@ IntAlignment
 
 ########################################################################
 
-; FDP GOES HERE (0xC00)! (just include it as a file?)
-; there are some big mistakes in the labels below!
-	_align 10
-FDP
-	dcb.l	(0x1874-0xC00)/4, 0x46445020 ; 'FDP '
+	INCLUDE 'NKMemRetry.s'
 
 ########################################################################
 
-IntISI
+InstStorageInt
 	bl		LoadInterruptRegisters
 
 	andis.	r8, r11, 0x4020			; what the hell are these MSR bits?
@@ -396,7 +393,7 @@ IntISI
 
 	stmw	r14, KDP.r14(r8)
 	mr		r27, r10
-	bl		PopulateHTAB
+	bl		PutPTE
 	bne		@not_in_htab
 
 	mfsprg	r24, 3
@@ -429,7 +426,7 @@ major_0x039dc_0x14
 
 ########################################################################
 
-IntMachineCheck
+MachineCheckInt
 	bl		LoadInterruptRegisters
 	li		r8, ecMachineCheck
 	b		Exception

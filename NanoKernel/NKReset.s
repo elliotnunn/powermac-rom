@@ -41,58 +41,58 @@ rAlt set r8
 	stw		r23, VecTbl.SystemReset(rSys)
 	stw		r23, VecTbl.SystemReset(rAlt)
 
-	_kaddr	r23, rNK, IntMachineCheck
+	_kaddr	r23, rNK, MachineCheckInt
 	stw		r23, VecTbl.MachineCheck(rSys)
 	stw		r23, VecTbl.MachineCheck(rAlt)
 
-	_kaddr	r23, rNK, IntDSI
+	_kaddr	r23, rNK, DataStorageInt
 	stw		r23, VecTbl.DSI(rSys)
 	stw		r23, VecTbl.DSI(rAlt)
 
-	_kaddr	r23, rNK, IntISI
+	_kaddr	r23, rNK, InstStorageInt
 	stw		r23, VecTbl.ISI(rSys)
 	stw		r23, VecTbl.ISI(rAlt)
 
 	lbz		r22, NKConfigurationInfo.InterruptHandlerKind(rCI)
 
 	cmpwi	r22, 0
-	_kaddr	r23, rNK, IntExternal0
+	_kaddr	r23, rNK, ExternalInt0
 	beq		@chosenIntHandler
 	cmpwi	r22, 1
-	_kaddr	r23, rNK, IntExternal1
+	_kaddr	r23, rNK, ExternalInt1
 	beq		@chosenIntHandler
 	cmpwi	r22, 2
-	_kaddr	r23, rNK, IntExternal2
+	_kaddr	r23, rNK, ExternalInt2
 	beq		@chosenIntHandler
 
 @chosenIntHandler
 	stw		r23, VecTbl.External(rSys)
 
-	_kaddr	r23, rNK, IntProgram
+	_kaddr	r23, rNK, ProgramInt
 	stw		r23, VecTbl.External(rAlt)
 
-	_kaddr	r23, rNK, IntAlignment
+	_kaddr	r23, rNK, AlignmentInt
 	stw		r23, VecTbl.Alignment(rSys)
 	stw		r23, VecTbl.Alignment(rAlt)
 
-	_kaddr	r23, rNK, IntProgram
+	_kaddr	r23, rNK, ProgramInt
 	stw		r23, VecTbl.Program(rSys)
 	stw		r23, VecTbl.Program(rAlt)
 
-	_kaddr	r23, rNK, IntFPUnavail
+	_kaddr	r23, rNK, FPUnavailInt
 	stw		r23, VecTbl.FPUnavail(rSys)
 	stw		r23, VecTbl.FPUnavail(rAlt)
 
-	_kaddr	r23, rNK, IntDecrementerSystem
+	_kaddr	r23, rNK, DecrementerIntSys
 	stw		r23, VecTbl.Decrementer(rSys)
-	_kaddr	r23, rNK, IntDecrementerAlternate
+	_kaddr	r23, rNK, DecrementerIntAlt
 	stw		r23, VecTbl.Decrementer(rAlt)
 
-	_kaddr	r23, rNK, IntSyscall
+	_kaddr	r23, rNK, SyscallInt
 	stw		r23, VecTbl.Syscall(rSys)
 	stw		r23, VecTbl.Syscall(rAlt)
 
-	_kaddr	r23, rNK, IntTrace
+	_kaddr	r23, rNK, TraceInt
 	stw		r23, VecTbl.Trace(rSys)
 	stw		r23, VecTbl.Trace(rAlt)
 	stw		r23, VecTbl.OtherTrace(rSys)
@@ -111,7 +111,7 @@ rAlt set r8
 
 ########################################################################
 
-;	Fill the KCallTbl, the IntProgram interface to the NanoKernel
+;	Fill the KCallTbl, the ProgramInt interface to the NanoKernel
 InitKCalls
 	_kaddr	r23, rNK, KCallSystemCrash		; Uninited call -> crash
 	addi	r8, r1, KDP.KCallTbl
@@ -274,24 +274,24 @@ CopyBATRangeInit
 ;	Save some ptrs that allow us to enable Overlay mode, etc
 
 	addi	r23, r1, KDP.SegMap32SupInit
-	stw		r23, KDP.SupervisorMemLayout.SegMapPtr(r1)
+	stw		r23, KDP.SupervisorMap.SegMapPtr(r1)
 	lwz		r23, NKConfigurationInfo.BatMap32SupInit(rCI)
-	stw		r23, KDP.SupervisorMemLayout.BatMap(r1)
+	stw		r23, KDP.SupervisorMap.BatMap(r1)
 
 	addi	r23, r1, KDP.SegMap32UsrInit
-	stw		r23, KDP.UserMemLayout.SegMapPtr(r1)
+	stw		r23, KDP.UserMap.SegMapPtr(r1)
 	lwz		r23, NKConfigurationInfo.BatMap32UsrInit(rCI)
-	stw		r23, KDP.UserMemLayout.BatMap(r1)
+	stw		r23, KDP.UserMap.BatMap(r1)
 
 	addi	r23, r1, KDP.SegMap32CPUInit
-	stw		r23, KDP.CpuMemLayout.SegMapPtr(r1)
+	stw		r23, KDP.CpuMap.SegMapPtr(r1)
 	lwz		r23, NKConfigurationInfo.BatMap32CPUInit(rCI)
-	stw		r23, KDP.CpuMemLayout.BatMap(r1)
+	stw		r23, KDP.CpuMap.BatMap(r1)
 
 	addi	r23, r1, KDP.SegMap32OvlInit
-	stw		r23, KDP.OverlayMemLayout.SegMapPtr(r1)
+	stw		r23, KDP.OverlayMap.SegMapPtr(r1)
 	lwz		r23, NKConfigurationInfo.BatMap32OvlInit(rCI)
-	stw		r23, KDP.OverlayMemLayout.BatMap(r1)
+	stw		r23, KDP.OverlayMap.BatMap(r1)
 
 ########################################################################
 
@@ -408,8 +408,8 @@ CreatePARInPageMap
 
 ;	Enable the ROM Overlay
 
-	addi	r29, r1, KDP.OverlayMemLayout
-	bl		SwitchMemLayout
+	addi	r29, r1, KDP.OverlayMap
+	bl		SetMap
 
 ########################################################################
 
@@ -417,15 +417,15 @@ CreatePARInPageMap
 
 	lwz		r27, KDP.ConfigInfoPtr(r1)
 	lwz		r27, NKConfigurationInfo.LA_InterruptCtl(r27)
-	bl		PopulateHTAB
+	bl		PutPTE
 
 	lwz		r27, KDP.ConfigInfoPtr(r1)
 	lwz		r27, NKConfigurationInfo.LA_KernelData(r27)
-	bl		PopulateHTAB
+	bl		PutPTE
 
 	lwz		r27, KDP.ConfigInfoPtr(r1)
 	lwz		r27, NKConfigurationInfo.LA_EmulatorData(r27)
-	bl		PopulateHTAB
+	bl		PutPTE
 
 ########################################################################
 
