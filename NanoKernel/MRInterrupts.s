@@ -46,7 +46,7 @@ MRDataStorageInt ; Consult DSISR and the page table to decide what to do
 
     bl      PutPTE                  ; HTAB miss => fill HTAB
     mfsprg  r28, 2                  ; (restore lr)
-    mtlt    r28
+    mtlr    r28
     beq     @return                 ; HTAB success => RFI
     li      r8, ecDataPageFault
     blt     ExceptionAfterRetry     ; Fault => Exception
