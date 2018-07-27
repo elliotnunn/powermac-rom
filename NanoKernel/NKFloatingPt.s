@@ -14,12 +14,12 @@ FPUnavailInt
 	stw		r11, KDP.NKInfo.FPUReloadCount(r1)
 
 	mfsrr1	r11
-	_bset	r11, r11, bitMsrFP
+	_set	r11, r11, bitMsrFP
 	mtsrr1	r11
 
 	mfmsr	r11				; need this to access float registers
-	_bset	r11, r11, bitMsrFP
-	lwz		r6, KDP.CurCBPtr(r1)
+	_set	r11, r11, bitMsrFP
+	lwz		r6, KDP.ContextPtr(r1)
 	mtmsr	r11
 
 	bl		LoadFloats
@@ -40,53 +40,53 @@ EnableFPU
 	bnelr
 
 ReloadFPU
-	lwz		r8, 0xe4(r6)			; ???
+	lwz		r8, CB.FPSCR+4(r6)
 	rlwinm.	r8, r8, 1, 0, 0
 
 	mfmsr	r8
-	_bset	r8, r8, bitMsrFP
+	_set	r8, r8, bitMsrFP
 	beqlr
 	mtmsr	r8
 
-	_bset	r11, r11, bitMsrFP
+	_set	r11, r11, bitMsrFP
 
 ########################################################################
 
 LoadFloats
-	lfd		f31, 0xe0(r6)
-	lfd		f0, 0x200(r6)
-	lfd		f1, 0x208(r6)
-	lfd		f2, 0x210(r6)
-	lfd		f3, 0x218(r6)
-	lfd		f4, 0x220(r6)
-	lfd		f5, 0x228(r6)
-	lfd		f6, 0x230(r6)
-	lfd		f7, 0x238(r6)
-	mtfsf	0xff, f31
-	lfd		f8, 0x240(r6)
-	lfd		f9, 0x248(r6)
-	lfd		f10, 0x250(r6)
-	lfd		f11, 0x258(r6)
-	lfd		f12, 0x260(r6)
-	lfd		f13, 0x268(r6)
-	lfd		f14, 0x270(r6)
-	lfd		f15, 0x278(r6)
-	lfd		f16, 0x280(r6)
-	lfd		f17, 0x288(r6)
-	lfd		f18, 0x290(r6)
-	lfd		f19, 0x298(r6)
-	lfd		f20, 0x2a0(r6)
-	lfd		f21, 0x2a8(r6)
-	lfd		f22, 0x2b0(r6)
-	lfd		f23, 0x2b8(r6)
-	lfd		f24, 0x2c0(r6)
-	lfd		f25, 0x2c8(r6)
-	lfd		f26, 0x2d0(r6)
-	lfd		f27, 0x2d8(r6)
-	lfd		f28, 0x2e0(r6)
-	lfd		f29, 0x2e8(r6)
-	lfd		f30, 0x2f0(r6)
-	lfd		f31, 0x2f8(r6)
+	lfd		f31, CB.FPSCR(r6)
+	lfd		f0, CB.f0(r6)
+	lfd		f1, CB.f1(r6)
+	lfd		f2, CB.f2(r6)
+	lfd		f3, CB.f3(r6)
+	lfd		f4, CB.f4(r6)
+	lfd		f5, CB.f5(r6)
+	lfd		f6, CB.f6(r6)
+	lfd		f7, CB.f7(r6)
+	mtfs	f31
+	lfd		f8, CB.f8(r6)
+	lfd		f9, CB.f9(r6)
+	lfd		f10, CB.f10(r6)
+	lfd		f11, CB.f11(r6)
+	lfd		f12, CB.f12(r6)
+	lfd		f13, CB.f13(r6)
+	lfd		f14, CB.f14(r6)
+	lfd		f15, CB.f15(r6)
+	lfd		f16, CB.f16(r6)
+	lfd		f17, CB.f17(r6)
+	lfd		f18, CB.f18(r6)
+	lfd		f19, CB.f19(r6)
+	lfd		f20, CB.f20(r6)
+	lfd		f21, CB.f21(r6)
+	lfd		f22, CB.f22(r6)
+	lfd		f23, CB.f23(r6)
+	lfd		f24, CB.f24(r6)
+	lfd		f25, CB.f25(r6)
+	lfd		f26, CB.f26(r6)
+	lfd		f27, CB.f27(r6)
+	lfd		f28, CB.f28(r6)
+	lfd		f29, CB.f29(r6)
+	lfd		f30, CB.f30(r6)
+	lfd		f31, CB.f31(r6)
 
 	blr
 
@@ -94,45 +94,45 @@ LoadFloats
 
 DisableFPU
 	mfmsr	r8
-	_bset	r8, r8, bitMsrFP
+	_set	r8, r8, bitMsrFP
 	mtmsr	r8
 
-	_bclr	r11, r11, bitMsrFP
+	_clear	r11, r11, bitMsrFP
 
-	stfd	f0, 0x200(r6)
-	stfd	f1, 0x208(r6)
-	stfd	f2, 0x210(r6)
-	stfd	f3, 0x218(r6)
-	stfd	f4, 0x220(r6)
-	stfd	f5, 0x228(r6)
-	stfd	f6, 0x230(r6)
-	stfd	f7, 0x238(r6)
-	stfd	f8, 0x240(r6)
-	stfd	f9, 0x248(r6)
-	stfd	f10, 0x250(r6)
-	stfd	f11, 0x258(r6)
-	stfd	f12, 0x260(r6)
-	stfd	f13, 0x268(r6)
-	stfd	f14, 0x270(r6)
-	stfd	f15, 0x278(r6)
-	stfd	f16, 0x280(r6)
-	stfd	f17, 0x288(r6)
-	stfd	f18, 0x290(r6)
-	stfd	f19, 0x298(r6)
-	stfd	f20, 0x2a0(r6)
-	stfd	f21, 0x2a8(r6)
-	stfd	f22, 0x2b0(r6)
-	stfd	f23, 0x2b8(r6)
+	stfd	f0, CB.f0(r6)
+	stfd	f1, CB.f1(r6)
+	stfd	f2, CB.f2(r6)
+	stfd	f3, CB.f3(r6)
+	stfd	f4, CB.f4(r6)
+	stfd	f5, CB.f5(r6)
+	stfd	f6, CB.f6(r6)
+	stfd	f7, CB.f7(r6)
+	stfd	f8, CB.f8(r6)
+	stfd	f9, CB.f9(r6)
+	stfd	f10, CB.f10(r6)
+	stfd	f11, CB.f11(r6)
+	stfd	f12, CB.f12(r6)
+	stfd	f13, CB.f13(r6)
+	stfd	f14, CB.f14(r6)
+	stfd	f15, CB.f15(r6)
+	stfd	f16, CB.f16(r6)
+	stfd	f17, CB.f17(r6)
+	stfd	f18, CB.f18(r6)
+	stfd	f19, CB.f19(r6)
+	stfd	f20, CB.f20(r6)
+	stfd	f21, CB.f21(r6)
+	stfd	f22, CB.f22(r6)
+	stfd	f23, CB.f23(r6)
 	mffs	f0
-	stfd	f24, 0x2c0(r6)
-	stfd	f25, 0x2c8(r6)
-	stfd	f26, 0x2d0(r6)
-	stfd	f27, 0x2d8(r6)
-	stfd	f28, 0x2e0(r6)
-	stfd	f29, 0x2e8(r6)
-	stfd	f30, 0x2f0(r6)
-	stfd	f31, 0x2f8(r6)
-	stfd	f0, 0xe0(r6)
+	stfd	f24, CB.f24(r6)
+	stfd	f25, CB.f25(r6)
+	stfd	f26, CB.f26(r6)
+	stfd	f27, CB.f27(r6)
+	stfd	f28, CB.f28(r6)
+	stfd	f29, CB.f29(r6)
+	stfd	f30, CB.f30(r6)
+	stfd	f31, CB.f31(r6)
+	stfd	f0, CB.FPSCR(r6)
 
 	blr
 

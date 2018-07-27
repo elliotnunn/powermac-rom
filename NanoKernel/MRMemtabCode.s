@@ -1,12 +1,12 @@
 ; Each routine accepts:
-;  r17 = pretend inst with (byteCount-1) in bits 28-30 (will be decremented)
+;  r17 = pretend inst with accessLen (range 1-8) in bits 27-30 (will be decremented)
 ;  r19 = address of byte to the right of the string to be loaded/saved
 ;  r23 as a scratch register
 ;  r20/r21 = right-justified data (stores only)
 
 ; Before jumping to MRDoSecondary or one of the MRFast paths, each routine sets:
 ;  r20/r21 = right-justified data (loads only)
-;  r17 has byteCount field decremented
+;  r17 has len field decremented
 ;  r23 = junk, not to be trusted
 
 ########################################################################

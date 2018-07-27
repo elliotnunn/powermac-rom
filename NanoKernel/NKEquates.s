@@ -103,39 +103,33 @@ ecDataSupWriteViolation		equ		23
 ecUnknown24					equ		24
 
 
-;	Runtime Flag equates
-	_bitEqu	0,	Flag0
-	_bitEqu	1,	Flag1
-	_bitEqu	2,	Flag2
-	_bitEqu	3,	Flag3
-	_bitEqu	4,	Flag4
-	_bitEqu	5,	Flag5
-	_bitEqu	6,	Flag6
-	_bitEqu	7,	Flag7
-	_bitEqu	8,	FlagEmu
-	_bitEqu	9,	Flag9
-	_bitEqu	10,	FlagBlue
-	_bitEqu	11,	Flag11
-	_bitEqu	12,	FlagVec
-	_bitEqu	13,	FlagHasMQ
-	_bitEqu	14,	Flag14
-	_bitEqu	15,	Flag15
-	_bitEqu	16,	FlagSIGP
-	_bitEqu	17,	Flag17
-	_bitEqu	18,	Flag18
-	_bitEqu	19,	Flag19
-	_bitEqu	20,	FlagFE0
-	_bitEqu	21,	FlagSE
-	_bitEqu	22,	FlagBE
-	_bitEqu	23,	FlagFE1
-	_bitEqu	24,	Flag24
-	_bitEqu	25,	Flag25
-	_bitEqu	26,	FlagTrace
-	_bitEqu	27,	FlagLowSaves
-	_bitEqu	28,	Flag28
-	_bitEqu	29,	Flag29
-	_bitEqu	30,	Flag30
-	_bitEqu	31,	Flag31
+; FLAGS r7/cr
+
+crMaskAll equ %11111111
+
+; Bits 0-7 (CR0-CR1): Exception Cause Number (see equates)
+crMaskExceptionNum equ %11000000
+maskExceptionNum  equ 0xFF000000
+
+crMaskFlags equ %00111111
+maskFlags  equ 0x00FFFFFF
+
+; Bits 8-15 (CR2-CR3) Global Flags
+crMaskGlobalFlags equ %00110000
+maskGlobalFlags  equ 0x00FF0000
+	_bitEqu	8,	GlobalFlagSystem				; raised when System (Emulator) Context is running
+	_bitEqu	13,	GlobalFlagMQReg					; raised when POWER "Multiply-Quotient" register is present
+
+; Bits 24-31 (CR6-CR7) Context Flags
+crMaskContextFlags equ %00001111
+maskContextFlags  equ 0x0000FFFF
+	; Bits 20-23 (CR5) MSR Flags FE0/SE/BE/FE1:
+crMaskMsrFlags equ %000001000
+maskMsrFlags  equ 0x00000F000
+	; Bits 24-31 (CR6-CR7) Other Context Flags:
+	_bitEqu	26,	ContextFlagTraceWhenDone		; raised when MSR[SE] is up but we get an unrelated interrupt
+	_bitEqu	27,	ContextFlagMemRetryErr			; raised when an exception is raised during MemRetry
+	_bitEqu	31,	ContextFlagResumeMemRetry		; allows MemRetry to be resumed (raised by userspace?)
 
 
 mrOpflag1 equ cr3_lt

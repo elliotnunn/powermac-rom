@@ -86,7 +86,7 @@ SystemCrash
 	stw		r0, KDP.CrashSR15(r1)
 
 	mfmsr	r0
-	_bset	r0, r0, bitMsrFP
+	_set	r0, r0, bitMsrFP
 	mtmsr	r0
 	stfd	f0, KDP.CrashF0(r1)
 	stfd	f1, KDP.CrashF1(r1)

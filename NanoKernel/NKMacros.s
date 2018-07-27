@@ -176,7 +176,7 @@ HalfLoadedReg	set					(&reg)
 	ENDM
 
 	MACRO
-	_bset			&dest, &src, &bit
+	_set		&dest, &src, &bit
 
 	IF &bit < 16
 		oris&dot	&dest, &src, 1 << (15 - (&bit))
@@ -187,19 +187,19 @@ HalfLoadedReg	set					(&reg)
 	ENDM
 
 	MACRO
-	_bclr			&dest, &src, &bit
+	_clear			&dest, &src, &bit
 
-_bclr_rbit set &bit+1
-	if _bclr_rbit > 31
-_bclr_rbit set 0
+_clear_rbit set &bit+1
+	if _clear_rbit > 31
+_clear_rbit set 0
 	endif
 
-_bclr_lbit set &bit-1
-	if _bclr_lbit < 0
-_bclr_lbit set 31
+_clear_lbit set &bit-1
+	if _clear_lbit < 0
+_clear_lbit set 31
 	endif
 
-	rlwinm&dot		&dest, &src, 0, _bclr_rbit, _bclr_lbit
+	rlwinm&dot		&dest, &src, 0, _clear_rbit, _clear_lbit
 
 	ENDM
 

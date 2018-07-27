@@ -259,7 +259,7 @@ CopyBATRangeInit
 	lwzu	r21, 4(r9)		; grab LBAT
 	stwu	r20, 4(r8)		; store UBAT
 
-	_bclr	r23, r21, 22	; if LBAT[22] (reserved) is set:
+	_clear	r23, r21, 22	; if LBAT[22] (reserved) is set:
 	cmpw	r21, r23
 	beq		@bitnotset
 	add		r21, r23, rCI	; then LBAT[BRPN] is relative to ConfigInfo struct

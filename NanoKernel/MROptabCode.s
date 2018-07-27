@@ -1,7 +1,7 @@
 MRPriCrash ; C00
     bl      SystemCrash
 MRSecException ; C04
-    b       MRSecIOInstFail
+    b       MRSecException2
 
 ########################################################################
 
@@ -139,30 +139,30 @@ MRSecLoad ; D44
 
 ########################################################################
 
-MRSecDone       ; D50
-    andi.   r23, r16, FlagTrace
+MRSecDone
+    andi.   r23, r16, ContextFlagTraceWhenDone    ; Time to return from interrupt
     addi    r10, r10, 4
     mtsrr0  r10
     mtsrr1  r11
-    bne     @trace
+    bne     @trace                      ; Is a Trace flagged?
     mtlr    r12
 
-    bc      BO_IF_NOT, mrFlagDidLoad, @otherway
+    bc      BO_IF_NOT, mrFlagDidLoad, @load_ewa_registers
     mtcr    r13
     lmw     r2, KDP.r2(r1)
     lwz     r0, KDP.r0(r1)
     lwz     r1, KDP.r1(r1)
     rfi
-@otherway
+@load_ewa_registers                     ; Only load changed registers
     mtcr    r13
     lmw     r10, KDP.r10(r1)
     lwz     r1, KDP.r1(r1)
     rfi
 
-@trace
+@trace                                  ; Jump to Trace int handler
     mfsprg  r24, 3
     mtsprg  2, r12
-    _bclr   r16, r16, bitFlagTrace
+    _clear  r16, r16, bitContextFlagTraceWhenDone
     lwz     r12, VecTbl.Trace(r24)
     stw     r16, KDP.Flags(r1)
     mtcr    r13
@@ -292,17 +292,17 @@ MRSecSTWCX ; EE4
 
 ########################################################################
 
-MRSecCacheWang ; EF8
-    rlwinm  r16, r16, 0, ~(FlagTrace | FlagLowSaves)
-    addi    r10, r10, -4
+MRSecRedoNoTrace ; Rerun the (cache) instruction, but not its Trace Exception
+    rlwinm  r16, r16, 0, ~(ContextFlagTraceWhenDone | ContextFlagMemRetryErr)
+    subi    r10, r10, 4
     stw     r16, KDP.Flags(r1)
     b       MRSecDone
 
 ########################################################################
 
-MRSecIOInstFail ; F08
+MRSecException2 ; F08
     li      r8, ecDataInvalidAddress
-    b       ExceptionAfterRetry
+    b       MRException
 
 ########################################################################
 
@@ -368,7 +368,7 @@ MRSecLSWix ; FA0
 
 ########################################################################
 
-MRPriUnknown ; FB8
+MRPriLSCBX ; FB8
     mfxer   r22
     andi.   r22, r22, 0x7F
     rlwimi  r17, r27, 0,16,20
@@ -384,15 +384,15 @@ MRPriUnknown ; FB8
     rlwimi  r17, r17, 5,11,15
     b       loc_10C8
 
-MRSecUnknown ; FF0
+MRSecLSCBX ; FF0
     rlwinm. r22, r17, 28,25,29
     rlwinm  r28, r17, 13,25,29
     bne     loc_109C
     rlwinm  r23, r17, 9,27,28
-
-loc_1000 ; 1000
     slw     r21, r21, r23
     b       loc_109C
+
+########################################################################
 
 loc_1008 ; 1008
     andi.   r23, r17, 0x7C0

@@ -32,13 +32,13 @@ MRDataStorageInt ; Consult DSISR and the page table to decide what to do
 @access_exception
     andi.   r28, r31, 3
     li      r8, ecDataSupAccessViolation
-    beq     ExceptionAfterRetry
+    beq     MRException
 
     cmpwi   r28, 3
     li      r8, ecDataWriteViolation
-    beq     ExceptionAfterRetry     ; Nobody allowed to write => Exception
+    beq     MRException             ; Nobody allowed to write => Exception
     li      r8, ecDataSupWriteViolation
-    b       ExceptionAfterRetry     ; Supervisor allowed to write => Exception
+    b       MRException             ; Supervisor allowed to write => Exception
 
 @possible_htab_miss
     andis.  r28, r31, 0x8010        ; Check for DataAccess Interrupt or ec[io]wx
@@ -49,9 +49,9 @@ MRDataStorageInt ; Consult DSISR and the page table to decide what to do
     mtlr    r28
     beq     @return                 ; HTAB success => RFI
     li      r8, ecDataPageFault
-    blt     ExceptionAfterRetry     ; Fault => Exception
+    blt     MRException             ; Fault => Exception
     li      r8, ecDataInvalidAddress
-    b       ExceptionAfterRetry     ; Bad address => Exception
+    b       MRException             ; Bad address => Exception
 
 MRMachineCheckInt                   ; Always gives HW fault
     mfsprg  r1, 1
@@ -77,7 +77,7 @@ MRMachineCheckInt                   ; Always gives HW fault
 MRHardwareFault                     ; Can come from a DSI or a Machine Check
     cmplw   r10, r19
     li      r8, ecDataHardwareFault
-    bne     ExceptionAfterRetry
+    bne     MRException
 
     mtsprg  3, r24
     lmw     r14, KDP.r14(r1)

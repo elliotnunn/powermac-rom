@@ -1,7 +1,7 @@
 ;	AUTO-GENERATED SYMBOL LIST
 ;	IMPORTS:
 ;	  NKExceptions
-;	    IntReturn
+;	    ReturnFromInt
 ;	  NKPaging
 ;	    PutPTE
 ;	EXPORTS:
@@ -114,8 +114,8 @@ VMReturn	;	OUTSIDE REFERER
 	lwz		r15, KDP.r15(r1)
 	lwz		r16, KDP.r16(r1)
 	lwz		r7, KDP.Flags(r1)
-	lwz		r6, KDP.CurCBPtr(r1)
-	b		IntReturn
+	lwz		r6, KDP.ContextPtr(r1)
+	b		ReturnFromInt
 
 
 

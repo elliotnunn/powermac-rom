@@ -4,7 +4,7 @@
 
 IllegalInstruction
 	mfmsr	r9
-	_bset	r8, r9, bitMsrDR
+	_set	r8, r9, bitMsrDR
 	mtmsr	r8
 	lwz		r8, 0(r10)
 	mtmsr	r9
@@ -14,19 +14,19 @@ IllegalInstruction
 	stw		r3, KDP.r3(r1)
 	stw		r4, KDP.r4(r1)
 	stw		r5, KDP.r5(r1)
-	lwz		r9, CB.r7(r6)
+	lwz		r9, CB.r7+4(r6)
 	stw		r9, KDP.r7(r1)
-	lwz		r9, CB.r8(r6)
+	lwz		r9, CB.r8+4(r6)
 	stw		r9, KDP.r8(r1)
-	lwz		r9, CB.r9(r6)
+	lwz		r9, CB.r9+4(r6)
 	stw		r9, KDP.r9(r1)
-	lwz		r9, CB.r10(r6)
+	lwz		r9, CB.r10+4(r6)
 	stw		r9, KDP.r10(r1)
-	lwz		r9, CB.r11(r6)
+	lwz		r9, CB.r11+4(r6)
 	stw		r9, KDP.r11(r1)
-	lwz		r9, CB.r12(r6)
+	lwz		r9, CB.r12+4(r6)
 	stw		r9, KDP.r12(r1)
-	lwz		r9, CB.r13(r6)
+	lwz		r9, CB.r13+4(r6)
 	stw		r9, KDP.r13(r1)
 	stmw	r14, KDP.r14(r1)
 
@@ -69,15 +69,15 @@ IllegalInstruction
 	addze	r20, r20
 	mtxer	r23
 	lwz		r23, KDP.NKInfo.EmulatedUnimpInstCount(r1)
-	rlwimi	r7, r7, 27, 26, 26
+	rlwimi	r7, r7, 27, 26, 26		; ContextFlagTraceWhenDone = MsrSE
 	addi	r23, r23, 1
 	stw		r23, KDP.NKInfo.EmulatedUnimpInstCount(r1)
 
 	stwx	r21, r1, r28			; save register into EWA
 	mr		r16, r7
-	beq		cr7, MRSecDone      				; TBL
+	beq		cr7, MRSecDone      	; TBL
 	stwx	r20, r1, r28
-	b		MRSecDone      					; TBU
+	b		MRSecDone      			; TBU
 
 
 @STFIWX
@@ -86,7 +86,7 @@ IllegalInstruction
 	addi	r23, r23, 1
 	stw		r23, KDP.NKInfo.EmulatedUnimpInstCount(r1)
 	mfmsr	r14
-	_bset	r15, r14, bitMsrDR
+	_set	r15, r14, bitMsrDR
 	b		EmulateDataAccess
 
 ########################################################################
@@ -103,7 +103,7 @@ KCallRunAlternateContext
 	lwz		r9, KDP.NCBCacheLA0(r1)
 	rlwinm	r8, r3, 0, 0, 25
 	cmpw	cr1, r8, r9
-	bne		IntReturn
+	bne		ReturnFromInt
 	lwz		r9, KDP.NCBCachePA0(r1)
 	bne		cr1, @search_cache
 
@@ -114,11 +114,11 @@ KCallRunAlternateContext
 	mtsprg	3, r8
 
 	lwz		r8, KDP.EmuKCallTblPtrLogical(r1)
-	mtcrf	0x3f, r7
+	mtcrf	crMaskFlags, r7
 	clrlwi	r7, r7, 8
-	stw		r8, CB.ExceptionHandlerRetAddr(r9)
+	stw		r8, CB.IntraState.HandlerReturn+4(r9)
 
-	stw		r9, KDP.CurCBPtr(r1)
+	stw		r9, KDP.ContextPtr(r1)
 
 	b		SwitchContext ; OldCB *r6, NewCB *r9
 
@@ -252,9 +252,9 @@ KCallResetSystem
 
 	;	Gary Davidian skeleton key: r5/D0 = MSR bits to unset, r7/D2 = MSR bits to set
 	andc	r11, r11, r5
-	lwz		r8, CB.r7(r6)
+	lwz		r8, CB.r7+4(r6)
 	or		r11, r11, r8
-	b		IntReturn
+	b		ReturnFromInt
 
 Reset
 	include	'NKReset.s'
@@ -272,18 +272,18 @@ KCallPrioritizeInterrupts
 	mtsrr0	r10
 	mtsrr1	r11
 	mtcr	r13
-	lwz		r10, CB.r10(r6)
-	lwz		r11, CB.r11(r6)
-	lwz		r12, CB.r12(r6)
-	lwz		r13, CB.r13(r6)
-	lwz		r7, CB.r7(r6)
+	lwz		r10, CB.r10+4(r6)
+	lwz		r11, CB.r11+4(r6)
+	lwz		r12, CB.r12+4(r6)
+	lwz		r13, CB.r13+4(r6)
+	lwz		r7, CB.r7+4(r6)
 	lwz		r8, KDP.r1(r1)
 										mfsprg	r9, 3
 										lwz		r9, VecTbl.External(r9)
 	mtsprg	1, r8
 										mtlr	r9
-	lwz		r8, CB.r8(r6)
-	lwz		r9, CB.r9(r6)
+	lwz		r8, CB.r8+4(r6)
+	lwz		r9, CB.r9+4(r6)
 	lwz		r6, KDP.r6(r1)
 										blrl ; (could this ever fall though to KCallSystemCrash?)
 
@@ -296,22 +296,22 @@ KCallSystemCrash
 	stw		r4, KDP.r4(r1)
 	stw		r5, KDP.r5(r1)
 
-	lwz		r8, CB.r7(r6)
-	lwz		r9, CB.r8(r6)
+	lwz		r8, CB.r7+4(r6)
+	lwz		r9, CB.r8+4(r6)
 	stw		r8, KDP.r7(r1)
 	stw		r9, KDP.r8(r1)
 
-	lwz		r8, CB.r9(r6)
-	lwz		r9, CB.r10(r6)
+	lwz		r8, CB.r9+4(r6)
+	lwz		r9, CB.r10+4(r6)
 	stw		r8, KDP.r9(r1)
 	stw		r9, KDP.r10(r1)
 
-	lwz		r8, CB.r11(r6)
-	lwz		r9, CB.r12(r6)
+	lwz		r8, CB.r11+4(r6)
+	lwz		r9, CB.r12+4(r6)
 	stw		r8, KDP.r11(r1)
 	stw		r9, KDP.r12(r1)
 
-	lwz		r8, CB.r13(r6)
+	lwz		r8, CB.r13+4(r6)
 	stw		r8, KDP.r13(r1)
 
 	stmw	r14, KDP.r14(r1)
@@ -329,14 +329,14 @@ ProgramInt
 	stw		r6, KDP.r6(r1)
 	mfsprg	r6, 1
 	stw		r6, KDP.r1(r1)
-	lwz		r6, KDP.CurCBPtr(r1)
-	stw		r7, CB.r7(r6)
-	stw		r8, CB.r8(r6)
-	stw		r9, CB.r9(r6)
-	stw		r10, CB.r10(r6)
-	stw		r11, CB.r11(r6)
-	stw		r12, CB.r12(r6)
-	stw		r13, CB.r13(r6)
+	lwz		r6, KDP.ContextPtr(r1)
+	stw		r7, CB.r7+4(r6)
+	stw		r8, CB.r8+4(r6)
+	stw		r9, CB.r9+4(r6)
+	stw		r10, CB.r10+4(r6)
+	stw		r11, CB.r11+4(r6)
+	stw		r12, CB.r12+4(r6)
+	stw		r13, CB.r13+4(r6)
 
 	;	Compare SRR0 with address of Emulator's KCall trap table
 	lwz		r8, KDP.EmuKCallTblPtrLogical(r1)
@@ -346,7 +346,7 @@ ProgramInt
 	lwz		r7, KDP.Flags(r1)
 	mfsprg	r12, 2
 	beq		KCallReturnFromExceptionFastPath	; KCall in Emulator table => fast path
-	rlwimi. r7, r7, bitFlagEmu, 0, 0
+	rlwimi. r7, r7, bitGlobalFlagSystem, 0, 0
 	cmplwi	cr7, r8, 16 * 4
 	bge		cr0, @fromAltContext				; Alt Context cannot make KCalls; this might be an External Int
 	bge		cr7, @notFromEmulatorTrapTable		; from Emulator but not from its KCall table => do more checks
@@ -370,7 +370,7 @@ ProgramInt
 	bc		BO_IF_NOT, 14, @notTrap
 
 	mfmsr	r9						; fetch the instruction to get the "trap number"
-	_bset	r8, r9, bitMsrDR
+	_set	r8, r9, bitMsrDR
 	mtmsr	r8
 	lwz		r8, 0(r10)
 	mtmsr	r9
@@ -431,7 +431,7 @@ SyscallInt
 ########################################################################
 
 	_alignToCacheBlock
-TraceInt
+TraceInt ; here because of MSR[SE/BE], possibly thanks to ContextFlagTraceWhenDone
 	bl		LoadInterruptRegisters
 	li		r8, ecInstTrace
 	b		Exception

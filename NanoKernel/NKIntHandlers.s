@@ -14,7 +14,7 @@ ExternalInt0
 
 	mfmsr	r2								; Save a self-ptr to FF880000... why?
 	lis		r3, 0xFF88
-	_bset	r0, r2, bitMsrDR
+	_set	r0, r2, bitMsrDR
 	stw		r4, KDP.r4(r1)
 	stw		r5, KDP.r5(r1)
 	mfsrr0	r4
@@ -81,7 +81,7 @@ ExternalInt1
 
 	lis		r2, 0x50F3						; Query OpenPIC at 50F2A000
 	mfmsr	r3
-	_bset	r0, r3, bitMsrDR
+	_set	r0, r3, bitMsrDR
 	stw		r4, KDP.r4(r1)
 	stw		r5, KDP.r5(r1)
 	mfsrr0	r4
@@ -139,7 +139,7 @@ ExternalInt2
 
 	lis		r2, 0xF300						; Query OpenPIC at F3000028/C
 	mfmsr	r0
-	_bset	r3, r0, bitMsrDR
+	_set	r3, r0, bitMsrDR
 	stw		r4, KDP.r4(r1)
 	stw		r5, KDP.r5(r1)
 	mfsrr0	r4
@@ -275,7 +275,7 @@ DataStorageInt
 	mfcr	r13
 
 	mfmsr	r14
-	_bset	r15, r14, bitMsrDR
+	_set	r15, r14, bitMsrDR
 	mtmsr	r15
 	lwz		r27, 0(r10)						; r27 = INSTRUCTION
 	mtmsr	r14
@@ -291,7 +291,7 @@ EmulateDataAccess
 	lwz		r16, KDP.Flags(r1)
 	mfsprg	r24, 3
 	rlwinm	r17, r27, 0, 6, 15				; r17 = rS/D and rA fields
-	rlwimi	r16, r16, 27, 26, 26
+	rlwimi	r16, r16, 27, 26, 26			; ContextFlagTraceWhenDone = MsrSE
 	bge		@xform
 
 ;dform
@@ -351,7 +351,7 @@ AlignmentInt
 	rlwinm	r17, r27, 16, 0x03FF0000
 	lwz		r16, KDP.Flags(r1)
 	rlwimi	r25, r27, 24, 23, 29	; add constant fields from dsisr (*4) to FDP
-	rlwimi	r16, r16, 27, 26, 26	; copy FlagSE to FlagTrace
+	rlwimi	r16, r16, 27, 26, 26	; ContextFlagTraceWhenDone = MsrSE
 	bne		@X_form
 
 	;	D- or DS-form (immediate-indexed) instruction
@@ -359,7 +359,7 @@ AlignmentInt
 	mfmsr	r14
 	rlwimi	r25, r26, 26, 22, 29	; third byte of lookup value is a /4 code offset in FDP
 	mtlr	r25						; so get ready to go there
-	_bset	r15, r14, bitMsrDR
+	_set	r15, r14, bitMsrDR
 	mtcr	r26
 	rlwimi	r17, r26, 6, 26, 5		; wrap some shite around the register values
 	blr
@@ -370,7 +370,7 @@ AlignmentInt
 	mfmsr	r14
 	rlwimi	r25, r26, 26, 22, 29
 	mtlr	r25
-	_bset	r15, r14, bitMsrDR
+	_set	r15, r14, bitMsrDR
 	mtcr	r26
 	rlwimi	r17, r26, 6, 26, 5
 	bclr	BO_IF_NOT, mrOpflag1
@@ -398,7 +398,7 @@ InstStorageInt
 
 	mfsprg	r24, 3
 	mfmsr	r14
-	_bset	r15, r14, bitMsrDR
+	_set	r15, r14, bitMsrDR
 	addi	r23, r1, KDP.VecTblMemRetry
 	mtsprg	3, r23
 	mr		r19, r10
@@ -408,7 +408,7 @@ InstStorageInt
 	mtmsr	r14
 	mtsprg	3, r24
 	lmw		r14, KDP.r14(r1)
-	b		IntReturn
+	b		ReturnFromInt
 
 @not_in_htab
 	lmw		r14, KDP.r14(r1)

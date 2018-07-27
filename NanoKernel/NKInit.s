@@ -181,7 +181,7 @@ InitKernelGlobals
 
 	add		r12, rED, r11
 	stw		r12, KDP.ECBPtr(r1)
-	stw		r12, KDP.CurCBPtr(r1)
+	stw		r12, KDP.ContextPtr(r1)
 
 	lwz		r12, NKConfigurationInfo.TestIntMaskInit(rCI)
 	stw		r12, KDP.TestIntMaskInit(r1)
@@ -362,16 +362,16 @@ InitEmulator
 	add		r12, r11, r12
 	lwz		r11, NKConfigurationInfo.ECBOffset(rCI)					; address of declared Emu entry point
 	add		r11, r11, rED
-	stw		r12, CB.ExceptionOriginAddr(r11)
+	stw		r12, CB.FaultSrcPC+4(r11)
 
 	lwz		r12, NKConfigurationInfo.LA_EmulatorData(rCI)			; address of Emu global page
-	stw		r12, CB.ExceptionOriginR3(r11)
+	stw		r12, CB.FaultSrcR3+4(r11)
 
 	lwz		r12, NKConfigurationInfo.LA_DispatchTable(rCI)			; address of 512kb Emu dispatch table
-	stw		r12, CB.ExceptionOriginR4(r11)
+	stw		r12, CB.FaultSrcR4+4(r11)
 
 	lwz		r12, KDP.EmuKCallTblPtrLogical(r1)						; address of KCallReturnFromException trap
-	stw		r12, CB.ExceptionHandlerRetAddr(r11)
+	stw		r12, CB.IntraState.HandlerReturn+4(r11)
 
 
 	lwz		r10, KDP.LowMemPtr(r1)								; Zero out bottom 8k of Low Memory
@@ -398,9 +398,9 @@ InitEmulator
 	mfpvr	r7													; Calculate Flags:
 	srwi	r7, r7, 16
 	cmpwi	r7, 1
-	lis		r7, FlagEmu >> 16										; we will enter System Context (all CPUs)
+	lis		r7, GlobalFlagSystem >> 16								; we will enter System Context (all CPUs)
 	bne		@not_601
-	_bset	r7, r7, bitFlagHasMQ									; but only 601 has MQ register
+	_set	r7, r7, bitGlobalFlagMQReg								; but only 601 has MQ register
 @not_601
 	stw		r7, KDP.Flags(r1)
 

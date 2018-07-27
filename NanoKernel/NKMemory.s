@@ -213,7 +213,7 @@ PutPTE ; EA r27 // PTE r30/r31, EQ=Success, GT=Invalid, LT=Fault
 	cmpwi	cr7, r28, 0
 	clrrwi	r28, r31, 12
 	cmpw	r28, r1
-	lwz		r30, KDP.CurCBPtr(r1)
+	lwz		r30, KDP.ContextPtr(r1)
 
 	beq		cr7, @rethink_pte_search
 	addi	r31, r30, 768-1

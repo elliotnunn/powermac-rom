@@ -201,7 +201,7 @@ CodeBase				ds.l	1	; 64c
 MRBase					ds.l	1	; 650
 ECBPtrLogical			ds.l	1	; 654 ; Emulator/System ContextBlock
 ECBPtr					ds.l	1	; 658
-CurCBPtr				ds.l	1	; 65c ; moved to EWA (per-CPU) in NKv2
+ContextPtr				ds.l	1	; 65c ; moved to EWA (per-CPU) in NKv2
 Flags					ds.l	1	; 660 ; moved to EWA (per-CPU) in NKv2
 Enables					ds.l	1	; 664 ; moved to EWA (per-CPU) in NKv2
 OtherContextDEC			ds.l	1	; 668 ; ticks that the *inactive* context has left out of 1s
@@ -342,136 +342,108 @@ InfoRecBlk				ds.b	64	; fc0:1000 ; Access using ptr equates in InfoRecords
 
 ########################################################################
 
+KernelState				RECORD 0,INCR
+Flags					ds.l	1	; 00
+Enables					ds.l	1	; 04
+
+Handler					ds.d	1	; 08
+HandlerArg				ds.d	1	; 10
+HandlerReturn			ds.d	1	; 18
+
+MemRet17				ds.d	1	; 20 ; MemRetry state
+MemRetData				ds.d	1	; 28
+MemRet19				ds.d	1	; 30
+MemRet18				ds.d	1	; 38
+	ENDR
+
+########################################################################
+
 CB						RECORD 0,INCR ; ContextBlock (Emulator/System or Native/Alternate)
-Flags					ds.l	1	; 000
-Enables					ds.l	1	; 004
-						ds.l	1	; 008
-						ds.l	1	; 00c
-						ds.l	1	; 010
-						ds.l	1	; 014
-						ds.l	1	; 018
-						ds.l	1	; 01c
-						ds.l	1	; 020
-LowSave17				ds.l	1	; 024
-LowSave20				ds.l	1	; 028
-LowSave21				ds.l	1	; 02c
-						ds.l	1	; 030
-LowSave19				ds.l	1	; 034
-						ds.l	1	; 038
-LowSave18				ds.l	1	; 03c
 
-ExceptionOriginFlags	ds.l	1	; 040 ; from before exception
-ExceptionOriginEnables	ds.l	1	; 044 ; from before exception
-						ds.l	1	; 048
-ExceptionHandler		ds.l	1	; 04c
-						ds.l	1	; 050
-ExceptionHandlerR4		ds.l	1	; 054
-						ds.l	1	; 058
-ExceptionHandlerRetAddr ds.l	1	; 05c
-						ds.l	1	; 060
-PropagateR17			ds.l	1	; 064
-PropagateR20			ds.l	1	; 068
-PropagateR21			ds.l	1	; 06c
-						ds.l	1	; 070
-PropagateR19			ds.l	1	; 074
-						ds.l	1	; 078
-PropagateR18			ds.l	1	; 07c
+InterState				ds	KernelState	; 000:040 ; for switching between contexts
+IntraState				ds	KernelState	; 040:080 ; for raising/disposing exceptions within a context
 
-						ds.l	1	; 080
-ExceptionOriginAddr		ds.l	1	; 084
-						ds.l	1	; 088
-ExceptionOriginLR		ds.l	1	; 08c
-						ds.l	1	; 090
-ExceptionOriginR3		ds.l	1	; 094
-						ds.l	1	; 098
-ExceptionOriginR4		ds.l	1	; 09c
-						ds.l	1	; 0a0
-MSR						ds.l	1	; 0a4
-						ds.l	1	; 0a8
-						ds.l	1	; 0ac
-						ds.l	1	; 0b0
-						ds.l	1	; 0b4
-						ds.l	1	; 0b8
-						ds.l	1	; 0bc
-						ds.l	1	; 0c0
-MQ						ds.l	1	; 0c4 ; 601 only
-						ds.l	1	; 0c8
-						ds.l	1	; 0cc
-						ds.l	1	; 0d0
-XER						ds.l	1	; 0d4
-						ds.l	1	; 0d8
-CR						ds.l	1	; 0dc
-						ds.l	1	; 0e0
-						ds.l	1	; 0e4
-						ds.l	1	; 0e8
-LR						ds.l	1	; 0ec
-						ds.l	1	; 0f0
-CTR						ds.l	1	; 0f4
-						ds.l	1	; 0f8
-SRR0					ds.l	1	; 0fc
-						ds.l	1
-r0						ds.l	1	; 104
-						ds.l	1
-r1						ds.l	1	; 10c
-						ds.l	1
-r2						ds.l	1	; 114
-						ds.l	1
-r3						ds.l	1	; 11c
-						ds.l	1
-r4						ds.l	1	; 124
-						ds.l	1
-r5						ds.l	1	; 12c
-						ds.l	1
-r6						ds.l	1	; 134
-						ds.l	1
-r7						ds.l	1	; 13c
-						ds.l	1
-r8						ds.l	1	; 144
-						ds.l	1
-r9						ds.l	1	; 14c
-						ds.l	1
-r10						ds.l	1	; 154
-						ds.l	1
-r11						ds.l	1	; 15c
-						ds.l	1
-r12						ds.l	1	; 164
-						ds.l	1
-r13						ds.l	1	; 16c
-						ds.l	1
-r14						ds.l	1	; 174
-						ds.l	1
-r15						ds.l	1	; 17c
-						ds.l	1
-r16						ds.l	1	; 184
-						ds.l	1
-r17						ds.l	1	; 18c
-						ds.l	1
-r18						ds.l	1	; 194
-						ds.l	1
-r19						ds.l	1	; 19c
-						ds.l	1
-r20						ds.l	1	; 1a4
-						ds.l	1
-r21						ds.l	1	; 1ac
-						ds.l	1
-r22						ds.l	1	; 1b4
-						ds.l	1
-r23						ds.l	1	; 1bc
-						ds.l	1
-r24						ds.l	1	; 1c4
-						ds.l	1
-r25						ds.l	1	; 1cc
-						ds.l	1
-r26						ds.l	1	; 1d4
-						ds.l	1
-r27						ds.l	1	; 1dc
-						ds.l	1
-r28						ds.l	1	; 1e4
-						ds.l	1
-r29						ds.l	1	; 1ec
-						ds.l	1
-r30						ds.l	1	; 1f4
-						ds.l	1
-r31						ds.l	1	; 1fc
-FloatRegisters			ds.d	32	; 200:300
+FaultSrcPC				ds.d	1	; 080 ; saved when starting an exception handler
+FaultSrcLR				ds.d	1	; 088
+FaultSrcR3				ds.d	1	; 090
+FaultSrcR4				ds.d	1	; 098
+
+MSR						ds.d	1	; 0a0
+						ds.d	1	; 0a8
+						ds.d	1	; 0b0
+						ds.d	1	; 0b8
+MQ						ds.d	1	; 0c0 ; 601 only
+						ds.d	1	; 0c8
+XER						ds.d	1	; 0d0
+CR						ds.d	1	; 0d8
+FPSCR					ds.d	1	; 0e0 ; unsure, mffs/mtfs?
+LR						ds.d	1	; 0e8
+CTR						ds.d	1	; 0f0
+PC						ds.d	1	; 0f8
+
+r0						ds.d	1	; 100 ; big-endian, so 32-bit value stored in second word
+r1						ds.d	1	; 108
+r2						ds.d	1	; 110
+r3						ds.d	1	; 118
+r4						ds.d	1	; 120
+r5						ds.d	1	; 128
+r6						ds.d	1	; 130
+r7						ds.d	1	; 138
+r8						ds.d	1	; 140
+r9						ds.d	1	; 148
+r10						ds.d	1	; 150
+r11						ds.d	1	; 158
+r12						ds.d	1	; 160
+r13						ds.d	1	; 168
+r14						ds.d	1	; 170
+r15						ds.d	1	; 178
+r16						ds.d	1	; 180
+r17						ds.d	1	; 188
+r18						ds.d	1	; 190
+r19						ds.d	1	; 198
+r20						ds.d	1	; 1a0
+r21						ds.d	1	; 1a8
+r22						ds.d	1	; 1b0
+r23						ds.d	1	; 1b8
+r24						ds.d	1	; 1c0
+r25						ds.d	1	; 1c8
+r26						ds.d	1	; 1d0
+r27						ds.d	1	; 1d8
+r28						ds.d	1	; 1e0
+r29						ds.d	1	; 1e8
+r30						ds.d	1	; 1f0
+r31						ds.d	1	; 1f8
+
+f0						ds.d	1	; 200
+f1						ds.d	1	; 208
+f2						ds.d	1	; 210
+f3						ds.d	1	; 218
+f4						ds.d	1	; 220
+f5						ds.d	1	; 228
+f6						ds.d	1	; 230
+f7						ds.d	1	; 238
+f8						ds.d	1	; 240
+f9						ds.d	1	; 248
+f10						ds.d	1	; 250
+f11						ds.d	1	; 258
+f12						ds.d	1	; 260
+f13						ds.d	1	; 268
+f14						ds.d	1	; 270
+f15						ds.d	1	; 278
+f16						ds.d	1	; 280
+f17						ds.d	1	; 288
+f18						ds.d	1	; 290
+f19						ds.d	1	; 298
+f20						ds.d	1	; 2a0
+f21						ds.d	1	; 2a8
+f22						ds.d	1	; 2b0
+f23						ds.d	1	; 2b8
+f24						ds.d	1	; 2c0
+f25						ds.d	1	; 2c8
+f26						ds.d	1	; 2d0
+f27						ds.d	1	; 2d8
+f28						ds.d	1	; 2e0
+f29						ds.d	1	; 2e8
+f30						ds.d	1	; 2f0
+f31						ds.d	1	; 2f8
 	ENDR
