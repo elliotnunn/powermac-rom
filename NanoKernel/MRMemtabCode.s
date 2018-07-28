@@ -1,3 +1,5 @@
+;   AUTO-GENERATED SYMBOL LIST
+
 ; Each routine accepts:
 ;  r17 = pretend inst with accessLen (range 1-8) in bits 27-30 (will be decremented)
 ;  r19 = address of byte to the right of the string to be loaded/saved

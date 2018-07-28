@@ -124,8 +124,8 @@ maskGlobalFlags  equ 0x00FF0000
 crMaskContextFlags equ %00001111
 maskContextFlags  equ 0x0000FFFF
 	; Bits 20-23 (CR5) MSR Flags FE0/SE/BE/FE1:
-crMaskMsrFlags equ %000001000
-maskMsrFlags  equ 0x00000F000
+crMaskMsrFlags equ %00000100
+maskMsrFlags  equ 0x00000F00
 	; Bits 24-31 (CR6-CR7) Other Context Flags:
 	_bitEqu	26,	ContextFlagTraceWhenDone		; raised when MSR[SE] is up but we get an unrelated interrupt
 	_bitEqu	27,	ContextFlagMemRetryErr			; raised when an exception is raised during MemRetry

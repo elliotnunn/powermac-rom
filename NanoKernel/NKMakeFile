@@ -8,11 +8,18 @@ NKFiles = ¶
 	{NKDir}NKMacros.s						¶
 	{NKDir}NKInit.s							¶
 	{NKDir}NKSystemCrash.s					¶
-	{NKDir}NKIntHandlers.s					¶
+	{NKDir}NKHotInts.s						¶
+	{NKDir}NKColdInts.s						¶
+	{NKDir}MROptabCode.s					¶
+	{NKDir}MRMemtabCode.s					¶
+	{NKDir}MRInterrupts.s					¶
+	{NKDir}MROptab.s						¶
+	{NKDir}MRMemtab.s						¶
+	{NKDir}MRRestab.s						¶
 	{NKDir}NKMemory.s						¶
 	{NKDir}NKExceptions.s					¶
 	{NKDir}NKFloatingPt.s					¶
-	{NKDir}NKSoftInt.s						¶
+	{NKDir}NKSoftInts.s						¶
 	{NKDir}NKReset.s						¶
 	{NKDir}NKLegacyVM.s						¶
 

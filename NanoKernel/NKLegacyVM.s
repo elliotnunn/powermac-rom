@@ -10,6 +10,7 @@
 ;	  VMSecondLastExportedFunc (=> NKMPCalls)
 ;	  kcVMDispatch (=> NKInit)
 
+########################################################################
 
 MaxVMCallCount		equ		26
 
@@ -20,7 +21,7 @@ MaxVMCallCount		equ		26
 
 @h
 	org				VMDispatchTable + &n * 2
-	dc.w			&code - NKTop - &n * 2
+	dc.w			&code - CodeBase - &n * 2
 
 	org				@h
 
@@ -36,7 +37,7 @@ KCallVMDispatch	;	OUTSIDE REFERER
 	lwz		r7, KDP.CodeBase(r1)
 	cmplwi	r3, MaxVMCallCount
 	insrwi	r7, r3, 7, 24
-	lhz		r8, VMDispatchTable - NKTop(r7)
+	lhz		r8, VMDispatchTable - CodeBase(r7)
 	lwz		r9, KDP.VMLogicalPages(r1)
 	add		r8, r8, r7
 	mtlr	r8

@@ -1,4 +1,8 @@
+;   AUTO-GENERATED SYMBOL LIST
+
 ; Special MR registers to investigate: r19 (inst addr), r26 (error)
+
+########################################################################
 
 MRDataStorageInt ; Consult DSISR and the page table to decide what to do
     mfdsisr r31                     ; Check DSISR for simple HTAB miss

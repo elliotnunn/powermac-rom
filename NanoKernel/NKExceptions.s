@@ -1,12 +1,12 @@
 ;	AUTO-GENERATED SYMBOL LIST
 
 ########################################################################
-
+; MemRetry error
 MRException
 	mtsprg	3, r24
 
 	lwz		r9, KDP.Enables(r1)
-	extrwi	r23, r17, 5, 25					; extract accessLen field
+	extrwi	r23, r17, 5, 26					; extract accessLen field
 	rlwnm.	r9, r9, r8, 0, 0				; BGE taken if exception disabled
 
 	bcl		BO_IF, mrFlagDidLoad, LoadExtraMRRegs
@@ -45,8 +45,8 @@ MRException
 	;fall through							; exception enabled => run userspace handler
 
 ########################################################################
-
-RunExceptionHandler
+; Exception or MRException that is Enabled (i.e. not being auto-forced to System)
+ExceptionCommon
 	stw		r10, CB.FaultSrcPC+4(r6)			; Save r10/SRR0, r12/LR, r3, r4
 	stw		r12, CB.FaultSrcLR+4(r6)
 	stw		r3, CB.FaultSrcR3+4(r6)
@@ -56,10 +56,10 @@ RunExceptionHandler
 	stw		r7, CB.IntraState.Flags(r6)
 	stw		r8, CB.IntraState.Enables(r6)
 
-													; Set up the Exception Handler context
-	li		r8, 0									; r8/Enables = 0 (handler must not throw exception)
-	lwz		r10, CB.IntraState.Handler+4(r6)		; r10/SRR0 = handler addr
-	lwz		r4, CB.IntraState.HandlerArg+4(r6)	; r4 = arbitrary second argument
+													; Use IntraState because context handles its own error
+	li		r8, 0									; Enables=0 (any exceptions in handler go to System)
+	lwz		r10, CB.IntraState.Handler+4(r6)		; SRR0 = handler addr
+	lwz		r4, CB.IntraState.HandlerArg+4(r6)		; r4 = arbitrary second argument
 	lwz		r3, KDP.ECBPtrLogical(r1)				; r3 = ContextBlock ptr
 	bc		BO_IF, bitGlobalFlagSystem, @sys
 	lwz		r3, KDP.NCBCacheLA0(r1)
@@ -229,7 +229,7 @@ Exception
 	addi	r9, r9, 1
 	stw		r9, KDP.NKInfo.ExceptionCauseCounts(r8)
 
-	blt		RunExceptionHandler				; exception enabled => run userspace handler
+	blt		ExceptionCommon				; exception enabled => run userspace handler
 	;fall through							; Alt Context has left exception disabled => Sys Context
 
 ########################################################################
@@ -413,19 +413,19 @@ ReturnFromInt ; If ContextFlagMemRetryErr && ContextFlagResumeMemRetry, please p
 	stw		r4, KDP.r4(r1)
 	stw		r5, KDP.r5(r1)
 
-	lwz		r8, CB.r7+7(r6)
+	lwz		r8, CB.r7+4(r6)
 	stw		r8, KDP.r7(r1)
-	lwz		r8, CB.r8+7(r6)
+	lwz		r8, CB.r8+4(r6)
 	stw		r8, KDP.r8(r1)
-	lwz		r8, CB.r9+7(r6)
+	lwz		r8, CB.r9+4(r6)
 	stw		r8, KDP.r9(r1)
-	lwz		r8, CB.r10+7(r6)
+	lwz		r8, CB.r10+4(r6)
 	stw		r8, KDP.r10(r1)
-	lwz		r8, CB.r11+7(r6)
+	lwz		r8, CB.r11+4(r6)
 	stw		r8, KDP.r11(r1)
-	lwz		r8, CB.r12+7(r6)
+	lwz		r8, CB.r12+4(r6)
 	stw		r8, KDP.r12(r1)
-	lwz		r8, CB.r13+7(r6)
+	lwz		r8, CB.r13+4(r6)
 	stw		r8, KDP.r13(r1)
 
 	stmw	r14, KDP.r14(r1)
@@ -437,15 +437,15 @@ ReturnFromInt ; If ContextFlagMemRetryErr && ContextFlagResumeMemRetry, please p
 	lwz		r18, KernelState.MemRet18+4(r9)
 	_clear	r16, r7, bitContextFlagMemRetryErr
 
-	lwz		r25, KDP.MRBase(r1)			; MRUnknown is indexed by the first arg of MROptab?
+	lwz		r25, KDP.MRBase(r1)			; MRRestab is indexed by the first arg of MROptab?
 	extrwi.	r22, r17, 4, 27				; 
 	add		r19, r19, r22				; Correct r19 (EA) by adding len from r17
-	rlwimi	r25, r17, 7, 25, 30			; The top of MRUnknown is... mysterious!
-	lhz		r26, MRUnknown-MRBase(r25)	; leaving this incorrect as a reminder!
+	rlwimi	r25, r17, 7, 25, 30
+	lhz		r26, MRRestab-MRBase(r25)
 
 	insrwi	r25, r19, 3, 28				; Set Memtab alignment modulus
 	stw		r16, KDP.Flags(r1)
-	rlwimi	r26, r26, 8, 8, 15			; First byte of MRUnknown is for cr3/cr4
+	rlwimi	r26, r26, 8, 8, 15			; First byte of MRRestab is for cr3/cr4
 	insrwi	r25, r17, 4, 24				; len and load/store from second arg of MROptab?
 	mtcrf	0x10, r26					; Set CR3
 	lha		r22, MRMemtab-MRBase(r25)	; Jump to MRMemtab...
@@ -458,7 +458,7 @@ ReturnFromInt ; If ContextFlagMemRetryErr && ContextFlagResumeMemRetry, please p
 	mfmsr	r14
 	_set	r15, r14, bitMsrDR
 	mtmsr	r15
-	rlwimi	r25, r26, 2, 22, 29			; Second byte of MRUnknown is a secondary routine
+	rlwimi	r25, r26, 2, 22, 29			; Second byte of MRRestab is a secondary routine
 	bnelr
 	b		MRDoSecondary
 

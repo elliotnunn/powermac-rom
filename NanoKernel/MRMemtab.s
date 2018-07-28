@@ -1,16 +1,19 @@
-; Indexing this table:
-;  bits 0-23 MRCode
-;  bits 24-26 number of bytes to access minus one
-;  bit 27 one for load, zero for store
-;  bits 28-30 alignment modulus
-;  bit 31 zero (entries are 2b)
+;   AUTO-GENERATED SYMBOL LIST
 
-; "Alignment modulus":
-;  If the "string" to be accessed is right-aligned to an 8b boundary, modulus is 0.
-;  Modulus then increases by 1 for every increase in the address of the "string".
+; Indexing this table:
+;  bits  0-23  MRCode
+;  bits 24-26  number of bytes to access minus one
+;  bit     27  one for load, zero for store
+;  bits 28-30  bottom three bits of adjusted EA
+;  bit     31  zero (entries are 2b)
+
+; "adjusted EA": address of the byte immediately to the right of the "string"
 
 ; Interpreting this table:
-;  Each entry refers to a routine 
+;  Entries refer to routines in MRMemtabCode, all
+;  of which eventually jump to MRDoSecondary.
+
+########################################################################
 
     MACRO
     memtabRow &label

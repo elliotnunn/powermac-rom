@@ -1,3 +1,7 @@
+;   AUTO-GENERATED SYMBOL LIST
+
+########################################################################
+
 MRPriCrash ; C00
     bl      SystemCrash
 MRSecException ; C04

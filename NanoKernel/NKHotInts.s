@@ -99,7 +99,7 @@ ExternalInt1
 
 	lwz		r3, KDP.CodeBase(r1)			; Loop that number up in the table
 	rlwimi	r3, r0, 0, 0x0000003F
-	lbz		r2, IntLookupTable-NKTop(r3)
+	lbz		r2, IntLookupTable-CodeBase(r3)
 	mfcr	r0
 	lwz		r3, KDP.EmuIntLevelPtr(r1)
 	clrlwi.	r2, r2, 29
@@ -295,9 +295,9 @@ EmulateDataAccess
 	bge		@xform
 
 ;dform
-	rlwimi	r25, r27, 7, 26, 29				; opcode >= 32
+	rlwimi	r25, r27, 7, 26, 29
 	rlwimi	r25, r27, 12, 25, 25
-	lwz		r26, MROptabD - MRBase(r25)	; table of 4b elements, index = major opcode bits 51234 (this is the last quarter of MROptabX)
+	lwz		r26, MROptabD - MRBase(r25)		; table of 4b elements, index = major opcode bits 51234 (this is the last quarter of MROptabX)
 	extsh	r23, r27						; r23 = register offset field, sign-extended
 	rlwimi	r25, r26, 26, 22, 29
 	mtlr	r25								; dest = r25 = first of two function ptrs in table entry
@@ -306,11 +306,11 @@ EmulateDataAccess
 	rlwimi	r17, r26, 6, 26, 5				; r17 = pretend X-form inst with: maj opcode (from tbl), rS/D and RA (from inst), min opcode (from tbl)
 	blr
 
-@xform										; opcode <= 31
+@xform
 	rlwimi	r25, r27, 27, 26, 29
 	rlwimi	r25, r27, 0, 25, 25
 	rlwimi	r25, r27, 6, 23, 24
-	lwz		r26, MROptabX - MRBase(r25)	; table of 4b elements, index = minor (x-form) opcode bits 8940123
+	lwz		r26, MROptabX - MRBase(r25)		; table of 4b elements, index = minor (x-form) opcode bits 8940123
 	rlwinm	r23, r27, 23, 25, 29			; r23 = 4 * rB
 	rlwimi	r25, r26, 26, 22, 29
 	mtlr	r25								; dest = r25 = first of two function ptrs in table entry
@@ -352,9 +352,9 @@ AlignmentInt
 	lwz		r16, KDP.Flags(r1)
 	rlwimi	r25, r27, 24, 23, 29	; add constant fields from dsisr (*4) to FDP
 	rlwimi	r16, r16, 27, 26, 26	; ContextFlagTraceWhenDone = MsrSE
-	bne		@X_form
+	bne		@xform
 
-	;	D- or DS-form (immediate-indexed) instruction
+;dform
 	lwz		r26, MROptabD - MRBase(r25)	; use upper quarter of table
 	mfmsr	r14
 	rlwimi	r25, r26, 26, 22, 29	; third byte of lookup value is a /4 code offset in FDP
@@ -364,8 +364,7 @@ AlignmentInt
 	rlwimi	r17, r26, 6, 26, 5		; wrap some shite around the register values
 	blr
 
-@X_form
-	;	X-form (register-indexed) instruction
+@xform
 	lwz		r26, MROptabX - MRBase(r25)
 	mfmsr	r14
 	rlwimi	r25, r26, 26, 22, 29
@@ -378,55 +377,3 @@ AlignmentInt
 	lwz		r27, 0(r10)
 	mtmsr	r14
 	blr
-
-########################################################################
-
-	INCLUDE 'NKMemRetry.s'
-
-########################################################################
-
-InstStorageInt
-	bl		LoadInterruptRegisters
-
-	andis.	r8, r11, 0x4020			; what the hell are these MSR bits?
-	beq		major_0x039dc_0x14
-
-	stmw	r14, KDP.r14(r1)
-	mr		r27, r10
-	bl		PutPTE
-	bne		@not_in_htab
-
-	mfsprg	r24, 3
-	mfmsr	r14
-	_set	r15, r14, bitMsrDR
-	addi	r23, r1, KDP.VecTblMemRetry
-	mtsprg	3, r23
-	mr		r19, r10
-	mtmsr	r15
-	lbz		r23, 0(r19)
-	sync
-	mtmsr	r14
-	mtsprg	3, r24
-	lmw		r14, KDP.r14(r1)
-	b		ReturnFromInt
-
-@not_in_htab
-	lmw		r14, KDP.r14(r1)
-	li		r8, ecInstPageFault
-	blt		Exception
-	li		r8, ecInstInvalidAddress
-	b		Exception
-
-major_0x039dc_0x14
-	andis.	r8, r11, 0x800
-	li		r8, ecInstSupAccessViolation
-	bne		Exception
-	li		r8, ecInstHardwareFault
-	b		Exception
-
-########################################################################
-
-MachineCheckInt
-	bl		LoadInterruptRegisters
-	li		r8, ecMachineCheck
-	b		Exception

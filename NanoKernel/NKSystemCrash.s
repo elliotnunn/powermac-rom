@@ -1,3 +1,7 @@
+;	AUTO-GENERATED SYMBOL LIST
+
+########################################################################
+
 SystemCrash
 	mfsprg	r1, 0
 

@@ -80,7 +80,7 @@
 
 	MACRO
 	llabel	&reg, &val
-	lisori	&reg, &val - NKTop
+	lisori	&reg, &val - CodeBase
 	ENDM
 
 
@@ -307,7 +307,7 @@ _clear_lbit set 31
 	MACRO
 	_kaddr &rd, &rs, &label
 
-	addi	&rd, &rs, (&label-NKTop)
+	addi	&rd, &rs, (&label-CodeBase)
 
 	ENDM
 
@@ -315,7 +315,7 @@ _clear_lbit set 31
 	MACRO
 	_alignToCacheBlock
 
-	IF (*-NKTop) & 0x1f
+	IF (*-CodeBase) & 0x1f
 	b * + 4
 	_alignToCacheBlock
 	ENDIF
@@ -328,7 +328,7 @@ _clear_lbit set 31
 
 my_align set 1 << (&arg)
 my_mask set my_align - 1
-my_offset set * - NKTop
+my_offset set * - CodeBase
 my_pad set (my_align - (my_offset & my_mask)) & my_mask
 	IF my_pad
 	dcb.l	my_pad>>2, 0x48000004
