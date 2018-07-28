@@ -8,7 +8,6 @@ CodeBase
 	include 'NKInit.s'
 	include 'NKSystemCrash.s'
 	include 'NKHotInts.s'
-	include 'NKColdInts.s'
 
     _align 10
 MRBase
@@ -19,6 +18,7 @@ MRBase
     include 'MRMemtab.s' ; 16f4:17f4
     include 'MRRestab.s' ; 17f4:1874
 
+	include 'NKColdInts.s'
 	include 'NKMemory.s'
 	include 'NKExceptions.s'
 	include 'NKFloatingPt.s'
