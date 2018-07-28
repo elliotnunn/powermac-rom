@@ -1,4 +1,74 @@
-;   AUTO-GENERATED SYMBOL LIST
+; AUTO-GENERATED SYMBOL LIST
+; IMPORTS:
+;   MROptabCode
+;     MRPriCrash
+;     MRPriDCBZ
+;     MRPriLSCBX
+;     MRPriLSWI
+;     MRPriLSWX
+;     MRPriPlainLoad
+;     MRPriPlainStore
+;     MRPriSTFDUx
+;     MRPriSTFDx
+;     MRPriSTFSUx
+;     MRPriSTFSx
+;     MRPriSTHBRX
+;     MRPriSTSWI
+;     MRPriSTSWX
+;     MRPriSTWBRX
+;     MRPriUpdLoad
+;     MRPriUpdStore
+;     MRSecDCBZ
+;     MRSecDone
+;     MRSecException
+;     MRSecException2
+;     MRSecLFDu
+;     MRSecLFSu
+;     MRSecLHBRX
+;     MRSecLMW
+;     MRSecLSCBX
+;     MRSecLSWix
+;     MRSecLWARX
+;     MRSecLWBRX
+;     MRSecLoad
+;     MRSecLoadExt
+;     MRSecRedoNoTrace
+;     MRSecSTMW
+;     MRSecSTWCX
+;     MRSecStrStore
+;   MRRestab
+;     MRResBlank
+;     MRResDCBZ
+;     MRResLBZux
+;     MRResLDARX
+;     MRResLDux
+;     MRResLFDux
+;     MRResLFSux
+;     MRResLHAux
+;     MRResLHBRX
+;     MRResLHZux
+;     MRResLMW
+;     MRResLSCBX
+;     MRResLSWix
+;     MRResLWARX
+;     MRResLWAux
+;     MRResLWBRX
+;     MRResLWZux
+;     MRResRedoNoTrace
+;     MRResST1ux
+;     MRResST2ux
+;     MRResST4ux
+;     MRResST8ux
+;     MRResSTDCX
+;     MRResSTMW
+;     MRResSTSWix
+;     MRResSTWCX
+;     MRResX1012
+;     MRResX884
+;     MRRestab
+; EXPORTS:
+;   MROptabD (=> NKHotInts)
+;   MROptabX (=> NKHotInts)
 
 ########################################################################
 
@@ -7,8 +77,8 @@
 _L set 1
 _S set 0
     DC.W (&myAccLen << 11) | (&myLoadStore << 10) | (((&resLabel - MRResTab) >> 1) << 4) | &myFlags
-    DC.B (&primLabel - MRBase) >> 2
-    DC.B (&secLabel - MRBase) >> 2
+    DC.B (&primLabel-MRBase) >> 2
+    DC.B (&secLabel-MRBase) >> 2
     ENDM
 
 ; LEGEND       .... access size (r17 bits 27-30) and 0=Store/1=Load (r17 bit 31)

@@ -1,31 +1,82 @@
-;   AUTO-GENERATED SYMBOL LIST
+; AUTO-GENERATED SYMBOL LIST
+; IMPORTS:
+;   MRMemtab
+;     MRMemtab
+;   NKExceptions
+;     MRException
+;   NKFloatingPt
+;     LFDTable
+;     STFDTable
+;   NKSystemCrash
+;     SystemCrash
+; EXPORTS:
+;   MRDoSecondary (=> MRMemtabCode, NKExceptions)
+;   MRDoneTableSTFD (=> NKFloatingPt)
+;   MRLoad2 (=> MRMemtab, MRMemtabCode)
+;   MRLoad22 (=> MRMemtab, MRMemtabCode)
+;   MRPriCrash (=> MROptab)
+;   MRPriDCBZ (=> MROptab)
+;   MRPriLSCBX (=> MROptab)
+;   MRPriLSWI (=> MROptab)
+;   MRPriLSWX (=> MROptab)
+;   MRPriPlainLoad (=> MROptab)
+;   MRPriPlainStore (=> MROptab)
+;   MRPriSTFDUx (=> MROptab)
+;   MRPriSTFDx (=> MROptab)
+;   MRPriSTFSUx (=> MROptab)
+;   MRPriSTFSx (=> MROptab)
+;   MRPriSTHBRX (=> MROptab)
+;   MRPriSTSWI (=> MROptab)
+;   MRPriSTSWX (=> MROptab)
+;   MRPriSTWBRX (=> MROptab)
+;   MRPriUpdLoad (=> MROptab)
+;   MRPriUpdStore (=> MROptab)
+;   MRSecDCBZ (=> MROptab, MRRestab)
+;   MRSecDone (=> MROptab, MRRestab, NKFloatingPt, NKSoftInts)
+;   MRSecException (=> MROptab, MRRestab)
+;   MRSecException2 (=> MROptab, MRRestab)
+;   MRSecLFDu (=> MROptab, MRRestab)
+;   MRSecLFSu (=> MROptab, MRRestab)
+;   MRSecLHBRX (=> MROptab, MRRestab)
+;   MRSecLMW (=> MROptab, MRRestab)
+;   MRSecLSCBX (=> MROptab, MRRestab)
+;   MRSecLSWix (=> MROptab, MRRestab)
+;   MRSecLWARX (=> MROptab, MRRestab)
+;   MRSecLWBRX (=> MROptab, MRRestab)
+;   MRSecLoad (=> MROptab, MRRestab)
+;   MRSecLoadExt (=> MROptab, MRRestab)
+;   MRSecRedoNoTrace (=> MROptab, MRRestab)
+;   MRSecSTMW (=> MROptab, MRRestab)
+;   MRSecSTWCX (=> MROptab, MRRestab)
+;   MRSecStrStore (=> MROptab, MRRestab)
+;   MRStore22 (=> MRMemtab, MRMemtabCode)
 
 ########################################################################
 
-MRPriCrash ; C00
+MRPriCrash
     bl      SystemCrash
-MRSecException ; C04
+MRSecException
     b       MRSecException2
 
 ########################################################################
 
-MRPriSTFSx ; C08
+MRPriSTFSx
     rlwinm  r17, r17, 0,16,10
 
-MRPriSTFSUx ; C0C
+MRPriSTFSUx
     crclr   cr7_so
     b       MRDoTableSTFD
 
-MRPriSTFDx ; C14
+MRPriSTFDx
     rlwinm  r17, r17, 0,16,10
 
-MRPriSTFDUx ; C18
+MRPriSTFDUx
     crset   cr7_so
 
-MRDoTableSTFD ; C1C
+MRDoTableSTFD
 ; This table is of the form:
 ;   stfd <reg>, KDP.FloatScratch(r1)
-;   b 
+;   b MRDoneTableSTFD
 
     clrrwi  r19, r25, 10
     rlwimi  r19, r17, 14,24,28
@@ -35,7 +86,7 @@ MRDoTableSTFD ; C1C
     mtmsr   r14
     blr
 
-MRDoneTableSTFD ; c38
+MRDoneTableSTFD
     ori     r11, r11, 0x2000
     lwz     r20, KDP.FloatScratch(r1)
     lwz     r21, KDP.FloatScratch+4(r1)
@@ -58,12 +109,12 @@ MRDoneTableSTFD ; c38
 
 ########################################################################
 
-MRPriSTWBRX ; C84
+MRPriSTWBRX
     rlwinm  r28, r17, 13,25,29
     lwbrx   r21, r1, r28
     b       MRPriPlainLoad
 
-MRPriSTHBRX ; C90
+MRPriSTHBRX
     rlwinm  r28, r17, 13,25,29
     addi    r21, r1, 2
     lhbrx   r21, r21, r28
@@ -71,25 +122,25 @@ MRPriSTHBRX ; C90
 
 ########################################################################
 
-MRPriUpdStore ; CA0
+MRPriUpdStore
     rlwinm  r28, r17, 13,25,29
     lwzx    r21, r1, r28
     b       MRPriUpdLoad
 
-MRPriPlainStore ; CAC
+MRPriPlainStore
     rlwinm  r28, r17, 13,25,29
     lwzx    r21, r1, r28
 
-MRPriPlainLoad ; CB4
+MRPriPlainLoad
     rlwinm  r17, r17, 0,16,10
 
-MRPriUpdLoad ; CB8
+MRPriUpdLoad
     extrwi. r22, r17, 4,27
     add     r19, r18, r22
 
 ########################################################################
 
-MRPriDone ; CC0
+MRPriDone
     clrrwi  r25, r25, 10
     insrwi  r25, r19, 3,28
     insrwi  r25, r17, 4,24
@@ -119,7 +170,7 @@ MRLoad2
     lhz     r23, -2(r19)
     insrwi  r21, r23, 16,16
 
-MRDoSecondary ; D18
+MRDoSecondary
     sync
     rlwinm. r28, r17, 18,25,29
     mtlr    r25
@@ -133,10 +184,10 @@ MRDoSecondary ; D18
 
 ########################################################################
 
-MRSecLoadExt ; D40
+MRSecLoadExt
     extsh   r21, r21
 
-MRSecLoad ; D44
+MRSecLoad
     rlwinm  r28, r17, 13,25,29
     crset   mrFlagDidLoad
     stwx    r21, r1, r28
@@ -179,10 +230,10 @@ MRSecDone
 
 ########################################################################
 
-MRSecLHBRX ; DC0
+MRSecLHBRX
     slwi    r21, r21, 16
 
-MRSecLWBRX ; DC4
+MRSecLWBRX
     rlwinm  r28, r17, 13,25,29
     crset   mrFlagDidLoad
     stwbrx  r21, r1, r28
@@ -190,7 +241,7 @@ MRSecLWBRX ; DC4
 
 ########################################################################
 
-MRSecLFSu ; DD4
+MRSecLFSu
     clrrwi  r20, r21, 31
     xor.    r21, r20, r21
     beq     MRSecLFDu
@@ -213,7 +264,7 @@ MRSecLFSu ; DD4
     slwi    r21, r21, 21
     insrwi  r20, r23, 11,1
 
-MRSecLFDu ; E28
+MRSecLFDu
 ; This table is of the form:
 ;    lfd <reg>, KDP.FloatScratch(r1)
 ;    b MRSecDone
@@ -230,7 +281,7 @@ MRSecLFDu ; E28
 
 ########################################################################
 
-MRSecLMW ; E50
+MRSecLMW
     rlwinm. r28, r17, 13,25,29
     rlwinm  r23, r17, 18,25,29
     cmpw    cr7, r28, r23
@@ -238,10 +289,10 @@ MRSecLMW ; E50
     beq     loc_E68
     beq     cr7, loc_E6C
 
-loc_E68 ; E68
+loc_E68
     stwx    r21, r1, r28
 
-loc_E6C ; E6C
+loc_E6C
     cmpwi   r28, 0x7C
     li      r22, 9
     insrwi  r17, r22, 6,26
@@ -249,7 +300,7 @@ loc_E6C ; E6C
     bne     MRPriDone
     b       MRSecDone
 
-MRSecSTMW ; E84
+MRSecSTMW
     addis   r17, r17, 0x20
     rlwinm. r28, r17, 13,25,29
     beq     MRSecDone
@@ -265,12 +316,12 @@ MRPriDCBZ                      ; Zero four 8b chunks of the cache blk
     clrrwi  r19, r18, 5         ; r19 = address of chunk to zero
     b       MRComDCBZ           ; (for use by this code only)
 
-MRSecDCBZ ; EAC
+MRSecDCBZ
     andi.   r22, r19, 0x18
     clrrwi  r19, r19, 3         ; MemAccess code decrements this reg
     beq     MRSecDone           ; Zeroed all foun chunks -> done!
 
-MRComDCBZ ; EB8
+MRComDCBZ
     li      r22, 0x10           ; Set 8 bytes (? set bit 27)
     insrwi. r17, r22, 6,26
     addi    r19, r19, 8         ; Align ptr to right hand size of chunk
@@ -280,14 +331,14 @@ MRComDCBZ ; EB8
 
 ########################################################################
 
-MRSecLWARX ; ED0
+MRSecLWARX
     rlwinm  r28, r17, 13,25,29
     crset   mrFlagDidLoad
     stwx    r21, r1, r28
     stwcx.  r21, r1, r28
     b       MRSecDone
 
-MRSecSTWCX ; EE4
+MRSecSTWCX
     stwcx.  r0, 0, r1
     mfcr    r23
     rlwinm  r23, r23, 0,3,1
@@ -304,31 +355,31 @@ MRSecRedoNoTrace ; Rerun the (cache) instruction, but not its Trace Exception
 
 ########################################################################
 
-MRSecException2 ; F08
+MRSecException2
     li      r8, ecDataInvalidAddress
     b       MRException
 
 ########################################################################
 
-MRPriSTSWI ; F10
+MRPriSTSWI
     addi    r22, r27, -0x800
     extrwi  r22, r22, 5,16
     b       loc_F2C
 
-MRPriSTSWX ; F1C
+MRPriSTSWX
     mfxer   r22
     andi.   r22, r22, 0x7F
     addi    r22, r22, -1
     beq     MRSecDone
 
-loc_F2C ; F2C
+loc_F2C
     rlwimi  r17, r22, 4,21,25
     not     r22, r22
     insrwi  r17, r22, 2,4
     mr      r19, r18
     b       loc_1008
 
-MRSecStrStore ; F40
+MRSecStrStore
     andi.   r22, r17, 0x7C0
     addis   r28, r17, 0x20
     rlwimi  r17, r28, 0,6,10
@@ -338,21 +389,21 @@ MRSecStrStore ; F40
 
 ########################################################################
 
-MRPriLSWI ; F58
+MRPriLSWI
     addi    r22, r27, -0x800
     extrwi  r22, r22, 5,16
     addis   r28, r27, 0x3E0
     rlwimi  r17, r28, 22,16,20
     b       loc_F80
 
-MRPriLSWX ; F6C
+MRPriLSWX
     mfxer   r22
     andi.   r22, r22, 0x7F
     rlwimi  r17, r27, 0,16,20
     addi    r22, r22, -1
     beq     MRSecDone
 
-loc_F80 ; F80
+loc_F80
     andis.  r23, r17, 0x1F
     rlwimi  r17, r22, 4,21,25
     not     r22, r22
@@ -362,7 +413,7 @@ loc_F80 ; F80
     rlwimi  r17, r17, 5,11,15
     b       loc_1070
 
-MRSecLSWix ; FA0
+MRSecLSWix
     andi.   r22, r17, 0x7C0
     rlwinm  r28, r17, 13,25,29
     bne     loc_1044
@@ -372,7 +423,7 @@ MRSecLSWix ; FA0
 
 ########################################################################
 
-MRPriLSCBX ; FB8
+MRPriLSCBX
     mfxer   r22
     andi.   r22, r22, 0x7F
     rlwimi  r17, r27, 0,16,20
@@ -388,7 +439,7 @@ MRPriLSCBX ; FB8
     rlwimi  r17, r17, 5,11,15
     b       loc_10C8
 
-MRSecLSCBX ; FF0
+MRSecLSCBX
     rlwinm. r22, r17, 28,25,29
     rlwinm  r28, r17, 13,25,29
     bne     loc_109C
@@ -398,7 +449,7 @@ MRSecLSCBX ; FF0
 
 ########################################################################
 
-loc_1008 ; 1008
+loc_1008
     andi.   r23, r17, 0x7C0
     rlwinm  r28, r17, 13,25,29
     lwzx    r21, r1, r28
@@ -415,7 +466,7 @@ loc_1008 ; 1008
     insrwi. r17, r22, 5,26
     b       MRPriDone
 
-loc_1044 ; 1044
+loc_1044
     rlwinm  r23, r17, 18,25,29
     cmpw    cr7, r28, r23
     rlwinm  r23, r17, 23,25,29
@@ -424,13 +475,13 @@ loc_1044 ; 1044
     beq     cr6, loc_1060
     stwx    r21, r1, r28
 
-loc_1060 ; 1060
+loc_1060
     addis   r28, r17, 0x20
     rlwimi  r17, r28, 0,6,10
     addi    r17, r17, -0x40
     beq     MRSecDone
 
-loc_1070 ; 1070
+loc_1070
     andi.   r23, r17, 0x7C0
     li      r22, 9
     insrwi  r17, r22, 6,26
@@ -443,7 +494,7 @@ loc_1070 ; 1070
     insrwi. r17, r22, 5,26
     b       MRPriDone
 
-loc_109C ; 109C
+loc_109C
     rlwinm  r23, r17, 18,25,29
     cmpw    cr7, r28, r23
     rlwinm  r23, r17, 23,25,29
@@ -452,13 +503,13 @@ loc_109C ; 109C
     beq     cr6, loc_10B8
     stwx    r21, r1, r28
 
-loc_10B8 ; 10B8
+loc_10B8
     addis   r28, r17, 0x20
     rlwimi  r17, r28, 0,6,10
     addi    r17, r17, -0x40
     beq     MRSecDone
 
-loc_10C8 ; 10C8
+loc_10C8
     not     r22, r22
     rlwimi  r22, r17, 6,30,31
     li      r28, 1
@@ -485,7 +536,7 @@ loc_10C8 ; 10C8
     beq     cr7, loc_112C
     bne     loc_1070
 
-loc_112C ; 112C
+loc_112C
     rlwinm. r28, r17, 0,3,3
     mfxer   r23
     add     r22, r22, r23

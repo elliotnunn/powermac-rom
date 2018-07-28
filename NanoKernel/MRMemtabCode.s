@@ -1,4 +1,58 @@
-;   AUTO-GENERATED SYMBOL LIST
+; AUTO-GENERATED SYMBOL LIST
+; IMPORTS:
+;   MROptabCode
+;     MRDoSecondary
+;     MRLoad2
+;     MRLoad22
+;     MRStore22
+; EXPORTS:
+;   MRLoad1 (=> MRMemtab)
+;   MRLoad11 (=> MRMemtab)
+;   MRLoad12 (=> MRMemtab)
+;   MRLoad121 (=> MRMemtab)
+;   MRLoad122 (=> MRMemtab)
+;   MRLoad1221 (=> MRMemtab)
+;   MRLoad124 (=> MRMemtab)
+;   MRLoad1241 (=> MRMemtab)
+;   MRLoad14 (=> MRMemtab)
+;   MRLoad141 (=> MRMemtab)
+;   MRLoad142 (=> MRMemtab)
+;   MRLoad1421 (=> MRMemtab)
+;   MRLoad21 (=> MRMemtab)
+;   MRLoad221 (=> MRMemtab)
+;   MRLoad24 (=> MRMemtab)
+;   MRLoad241 (=> MRMemtab)
+;   MRLoad242 (=> MRMemtab)
+;   MRLoad4 (=> MRMemtab)
+;   MRLoad41 (=> MRMemtab)
+;   MRLoad42 (=> MRMemtab)
+;   MRLoad421 (=> MRMemtab)
+;   MRLoad44 (=> MRMemtab)
+;   MRLoad8 (=> MRMemtab)
+;   MRStore1 (=> MRMemtab)
+;   MRStore11 (=> MRMemtab)
+;   MRStore12 (=> MRMemtab)
+;   MRStore121 (=> MRMemtab)
+;   MRStore122 (=> MRMemtab)
+;   MRStore1221 (=> MRMemtab)
+;   MRStore124 (=> MRMemtab)
+;   MRStore1241 (=> MRMemtab)
+;   MRStore14 (=> MRMemtab)
+;   MRStore141 (=> MRMemtab)
+;   MRStore142 (=> MRMemtab)
+;   MRStore1421 (=> MRMemtab)
+;   MRStore2 (=> MRMemtab)
+;   MRStore21 (=> MRMemtab)
+;   MRStore221 (=> MRMemtab)
+;   MRStore24 (=> MRMemtab)
+;   MRStore241 (=> MRMemtab)
+;   MRStore242 (=> MRMemtab)
+;   MRStore4 (=> MRMemtab)
+;   MRStore41 (=> MRMemtab)
+;   MRStore42 (=> MRMemtab)
+;   MRStore421 (=> MRMemtab)
+;   MRStore44 (=> MRMemtab)
+;   MRStore8 (=> MRMemtab)
 
 ; Each routine accepts:
 ;  r17 = pretend inst with accessLen (range 1-8) in bits 27-30 (will be decremented)

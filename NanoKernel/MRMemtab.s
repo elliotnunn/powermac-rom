@@ -1,4 +1,59 @@
-;   AUTO-GENERATED SYMBOL LIST
+; AUTO-GENERATED SYMBOL LIST
+; IMPORTS:
+;   MRMemtabCode
+;     MRLoad1
+;     MRLoad11
+;     MRLoad12
+;     MRLoad121
+;     MRLoad122
+;     MRLoad1221
+;     MRLoad124
+;     MRLoad1241
+;     MRLoad14
+;     MRLoad141
+;     MRLoad142
+;     MRLoad1421
+;     MRLoad21
+;     MRLoad221
+;     MRLoad24
+;     MRLoad241
+;     MRLoad242
+;     MRLoad4
+;     MRLoad41
+;     MRLoad42
+;     MRLoad421
+;     MRLoad44
+;     MRLoad8
+;     MRStore1
+;     MRStore11
+;     MRStore12
+;     MRStore121
+;     MRStore122
+;     MRStore1221
+;     MRStore124
+;     MRStore1241
+;     MRStore14
+;     MRStore141
+;     MRStore142
+;     MRStore1421
+;     MRStore2
+;     MRStore21
+;     MRStore221
+;     MRStore24
+;     MRStore241
+;     MRStore242
+;     MRStore4
+;     MRStore41
+;     MRStore42
+;     MRStore421
+;     MRStore44
+;     MRStore8
+;   MROptabCode
+;     MRLoad2
+;     MRLoad22
+;     MRStore22
+; EXPORTS:
+;   MRMemtab (=> MROptabCode, NKExceptions)
 
 ; Indexing this table:
 ;  bits  0-23  MRCode

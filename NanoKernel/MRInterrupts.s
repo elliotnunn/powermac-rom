@@ -1,4 +1,16 @@
-;   AUTO-GENERATED SYMBOL LIST
+; AUTO-GENERATED SYMBOL LIST
+; IMPORTS:
+;   NKExceptions
+;     Exception
+;     MRException
+;   NKMemory
+;     GetPhysical
+;     PutPTE
+;   NKSystemCrash
+;     SystemCrash
+; EXPORTS:
+;   MRDataStorageInt (=> NKReset)
+;   MRMachineCheckInt (=> NKReset)
 
 ; Special MR registers to investigate: r19 (inst addr), r26 (error)
 
@@ -12,8 +24,8 @@ MRDataStorageInt ; Consult DSISR and the page table to decide what to do
     bne     @possible_htab_miss
 
     andis.  r28, r31, 0x0800        ; Illegal data access (else crash!)
-    addi    r29, r1, 0x320          ; ?bug -> PutPTE used to accept this arg
-    bnel    GetPhysical             ; Read the failing PTE to r30/r31 ; TODO fix!
+    addi    r29, r1, KDP.CurDBAT0
+    bnel    GetPhysical             ; Get LBAT or lower PTE
     li      r28, 0x43               ; Filter Writethru and Protection bits
     and     r28, r31, r28
     cmpwi   cr7, r28, 0x43
@@ -62,7 +74,7 @@ MRMachineCheckInt                   ; Always gives HW fault
     lwz     r27, KDP.HtabLastEA(r1)
 
     subf    r28, r19, r27           ; Delete last HTAB entry if suspicious
-    cmpwi   r28, -16
+    cmpwi   r28, -16                ; (i.e. within 16b of MemRetried EA)
     blt     @no_htab_del
     cmpwi   r28, 16
     bgt     @no_htab_del
