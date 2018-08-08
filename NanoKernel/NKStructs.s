@@ -74,24 +74,67 @@ Size                    equ     *
 
 ########################################################################
 
-PME                     RECORD 0, INCR ; PageMap Entry
-LBase                   ds.w    1   ; 0 ; (base - segment) >> 12
-PageCount               ds.w    1   ; 2 ; page count MINUS ONE
-PBaseAndFlags           ds.l    1   ; 4 ; PBase page aligned
+; Lower word of Page Table Entry
+; Approximates Page Map Entry and Page List Entry
 
-PBaseBits               equ     20
-FirstFlagBit            equ     20
-FirstFlag               equ     0x800
+;                Page Table           Page Map      Page List
+;                -------------------- ------------- -----------
+;  0-19 FFFFF000 Real Page Number
+;    20 00000800 rsrv                 Daddy         is in htab
+;    21 00000400 rsrv                 Counting
+;    22 00000200 rsrv                 PhysIsRel     set when inserting
+;    23 00000100 Reference
+;    24 00000080 Change
+;    25 00000040 W writethru
+;    26 00000020 I cache-inhibited
+;    27 00000010 M memory coherence                 saved Change?
+;    28 00000008 G guarded writes                   saved Reference?
+;    29 00000004 rsrv
+;    30 00000002 P user
+;    31 00000001 P supervisor                       allows to be in HTAB
 
-DaddyFlag               equ     0x800
-CountingFlag            equ     0x400
-PhysicalIsRelativeFlag  equ     0x200
+; Important consideration: does SegMap get put permanently in HTAB?
 
-; try not to use the equates above; they are dicey
-TopFieldMask            equ     0xe00
 
+    _bitEqu 23, PTFlagReference
+    _bitEqu 24, PTFlagChange
+    _bitEqu 25, PTFlagWritethru
+    _bitEqu 26, PTFlagInhibcache
+    _bitEqu 27, PTFlagMemcoher
+    _bitEqu 28, PTFlagGuardwrite
+    _bitEqu 30, PTFlagP1
+    _bitEqu 31, PTFlagP2
+
+########################################################################
+
+PMDT                    RECORD 0, INCR ; 8-byte PageMap entry (why "PMDT"?)
+PageIdx                 ds.w 1 ; within the segment
+PageCount               ds.w 1 ; minus one
+RPN                     ds.l 1 ; like PTE: RealPgNum (0-19) + Pflags (20-31)
 Size                    equ     *
     ENDR
+
+; The union of every flag below:
+EveryPflag              equ 0xE01
+
+; When Pflag_NotPTE=1, the PMDT is a pageable area or another special value:
+Pflag_NotPTE            equ 0x800 ; Special
+Pflag_NotPTE_PageList   equ 0x400 ; Pageable area (RPN points to PageList)
+
+PMDT_PageList           equ 0xC00 ; Combinations when Pflag_NotPTE=1...
+PMDT_InvalidAddress     equ 0xA00
+PMDT_Available          equ 0xA01
+
+; When Pflag_NotPTE=0, the PMDT describes a non-pageable area, and these apply:
+Pflag_PTE_Single        equ 0x400 ; Only one page
+Pflag_PTE_Rel           equ 0x200 ; RPN is ConfigInfo-relative
+
+PMDT_PTE_Range          equ 0x000 ; Combinations when Pflag_NotPTE=0...
+PMDT_PTE_Range_Rel      equ 0x200
+PMDT_PTE_Single         equ 0x400
+PMDT_PTE_Single_Rel     equ 0x600
+
+
 
 ########################################################################
 
@@ -103,7 +146,7 @@ L           ds.l 1
 ########################################################################
 
 MemMap      RECORD 0, INCR
-SegMapPtr   ds.l 1
+SegMapPtr   ds.l 1 ; ptr to array of sixteen 8-byte (ptr/flags) records; ptr is to first PMDT for seg
 BatMap      ds.l 1 ; packed array of 4-bit indices into BATs
     ENDR
 
@@ -213,16 +256,16 @@ EmuIntLevelPtr          ds.l    1   ; 67c ; physical ptr to an Emulator global
 DebugIntPtr             ds.l    1   ; 680 ; within (debug?) shared memory
 PageMapStartPtr         ds.l    1   ; 684
 PageAttributeInit       ds.l    1   ; 688 ; defaults for PLE/PTE?
-HtabTempPage            ds.l    1   ; 68c ; a page that lives temporarily in the HTAB (per its PME)
-HtabTempEntryPtr        ds.l    1   ; 690 ; ptr to that PME
+HtabSingleEA            ds.l    1   ; 68c ; PMDT_PTE_Single page most recently put into HTAB
+HtabSinglePTE           ds.l    1   ; 690 ; and a ptr to its PTE
 HtabLastEA              ds.l    1   ; 694
-ApproxCurrentPTEG       ds.l    1   ; 698
-OverflowingPTEG         ds.l    1   ; 69c
+HtabLastPTE             ds.l    1   ; 698
+HtabLastOverflow        ds.l    1   ; 69c
 PTEGMask                ds.l    1   ; 6a0
 HTABORG                 ds.l    1   ; 6a4
 VMLogicalPages          ds.l    1   ; 6a8 ; set at init and changed by VMInit
 TotalPhysicalPages      ds.l    1   ; 6ac ; does not take into acct maximum MacOS memory
-PARPageListPtr          ds.l    1   ; 6b0 ; VM puts this in system heap
+PageListPtr             ds.l    1   ; 6b0 ; VM puts this in system heap
 VMMaxVirtualPages       ds.l    1   ; 6b4 ; always 5fffe000, even with VM on
 
                         org     0x700
@@ -446,4 +489,6 @@ f28                     ds.d    1   ; 2e0
 f29                     ds.d    1   ; 2e8
 f30                     ds.d    1   ; 2f0
 f31                     ds.d    1   ; 2f8
+
+Size                    equ     *
     ENDR

@@ -7,38 +7,18 @@
 ;   NKSystemCrash
 ;     SystemCrash
 ; EXPORTS:
-;   KCallVMDispatch (=> NKReset)
+;   KCallVMDispatch: => NKReset
 
 ; This file is a horrible mess. It needs a do-over.
 
 ########################################################################
 
-MaxVMCallCount      equ     26
-
-
-
-    MACRO
-    DeclareVMCall   &n, &code
-
-@h
-    org             VMDispatchTable + &n * 2
-    dc.w            &code - CodeBase - &n * 2
-
-    org             @h
-
-    ENDM
-
-
-
-;   Accessed ONLY via Sup table
-
-KCallVMDispatch ;   OUTSIDE REFERER
-
+KCallVMDispatch
     stw     r7, KDP.Flags(r1)
     lwz     r7, KDP.CodeBase(r1)
     cmplwi  r3, MaxVMCallCount
     insrwi  r7, r3, 7, 24
-    lhz     r8, VMDispatchTable - CodeBase(r7)
+    lhz     r8, VMTab-CodeBase(r7)
     lwz     r9, KDP.VMLogicalPages(r1)
     add     r8, r8, r7
     mtlr    r8
@@ -49,69 +29,52 @@ KCallVMDispatch ;   OUTSIDE REFERER
     stw     r16, KDP.r16(r1)
 
     bltlr
-    b       VMReturnMinus1
+    b       vmReturnMinus1
 
-VMDispatchTable
-    dcb.w   MaxVMCallCount, 0
+VMTab ; Placeholders indented
+    MACRO
+    vmtabLine &label
+    DC.W (&label-CodeBase) - (* - VMtab)
+    ENDM
 
+    vmtabLine   VMInit                  ;  0 VMInit: init the MMU virtual space
+    vmtabLine       vmReturn            ;  1 VMUnInit: un-init the MMU virtual space
+    vmtabLine       vmReturn            ;  2 VMFinalInit: last chance to init after new memory dispatch is installed
+    vmtabLine   VMIsResident            ;  3 VMIsResident: ask about page status
+    vmtabLine   VMIsUnmodified          ;  4 VMIsUnmodified: ask about page status
+    vmtabLine   VMIsInited              ;  5 VMIsInited: ask about page status
+    vmtabLine   VMShouldClean           ;  6 VMShouldClean: ask about page status
+    vmtabLine   VMMarkResident          ;  7 VMMarkResident: set page status
+    vmtabLine   VMMarkBacking           ;  8 VMMarkBacking: set page status
+    vmtabLine   VMMarkCleanUnused       ;  9 VMMarkCleanUnused: set page status
+    vmtabLine   VMGetPhysicalPage       ; 10 VMGetPhysicalPage: return phys page given log page
+    vmtabLine       vmReturnMinus1      ; 11 VMGetPhysicalAddress: return phys address given log page (can be different from above!)
+    vmtabLine   VMExchangePages         ; 12 VMExchangePages: exchange physical page contents
+    vmtabLine       vmReturn            ; 13 VMReload: reload the ATC with specified page
+    vmtabLine       vmReturn            ; 14 VMFlushAddressTranslationCache: just do it
+    vmtabLine       vmReturn            ; 15 VMFlushDataCache: wack the data cache
+    vmtabLine       vmReturn            ; 16 VMFlushCodeCache: wack the code cache
+    vmtabLine   VMMakePageCacheable     ; 17 VMMakePageCacheable: make it so...
+    vmtabLine   VMMakePageNonCacheable  ; 18 VMMakePageNonCacheable: make it so...
+    vmtabLine   getPTEntryGivenPage     ; 19 getPTEntryGivenPage: given a page, get its 68K PTE
+    vmtabLine   setPTEntryGivenPage     ; 20 setPTEntryGivenPage: given a page & 68K pte, set the real PTE
+    vmtabLine   VMPTest                 ; 21 VMPTest: ask why we got this page fault
+    vmtabLine   VMLRU                   ; 22 VMLRU: least recently used?
+    vmtabLine   VMMarkUndefined         ; 23 VMMarkUndefined
+    vmtabLine   VMMakePageWriteThrough  ; 24 VMMakePageWriteThrough
+    vmtabLine   VMAllocateMemory        ; 25 VMAllocateMemory: Page:A0, Count:A1, BusAlignMask:D1
 
+########################################################################
 
-;   UNIMPLEMENTED kcVMDispatch selectors:
-
-;   VMUnInit: 'un-init the MMU virtual space'
-
-    DeclareVMCall           1, VMReturn
-
-
-;   VMFinalInit: 'last chance to init after new memory dispatch is installed'
-
-    DeclareVMCall           2, VMReturn
-
-
-;   VMGetPhysicaless: 'return phys address given log page (can be different from above!)'
-;   ('above' means VMGetPhysicalPage)
-
-    DeclareVMCall           11, VMReturnMinus1
-
-
-;   VMReload: 'reload the ATC with specified page'
-
-    DeclareVMCall           13, VMReturn
-
-
-;   VMFlushAddressTranslationCache: 'just do it'
-
-    DeclareVMCall           14, VMReturn
-
-
-;   VMFlushDataCache: 'wack the data cache'
-
-    DeclareVMCall           15, VMReturn
-
-
-;   VMFlushCodeCache: 'wack the code cache'
-
-    DeclareVMCall           16, VMReturn
-
-
-
-
-;                           VMReturn                        
-
-;   VMGetPhysicaless_one
-
-VMReturnMinus1  ;   OUTSIDE REFERER
-    li      r3, -0x01
-    b       VMReturn
-
-VMReturn0   ;   OUTSIDE REFERER
-    li      r3,  0x00
-    b       VMReturn
-
-VMReturn1   ;   OUTSIDE REFERER
-    li      r3,  0x01
-
-VMReturn    ;   OUTSIDE REFERER
+vmReturnMinus1
+    li      r3, -1
+    b       vmReturn
+vmNoErr
+    li      r3, 0
+    b       vmReturn
+vmReturn1
+    li      r3, 1
+vmReturn
     lwz     r14, KDP.r14(r1)
     lwz     r15, KDP.r15(r1)
     lwz     r16, KDP.r16(r1)
@@ -119,21 +82,17 @@ VMReturn    ;   OUTSIDE REFERER
     lwz     r6, KDP.ContextPtr(r1)
     b       ReturnFromInt
 
+########################################################################
 
-
-;   'init the MMU virtual space'
-
-    DeclareVMCall   0, VMInit
-
-VMInit  ;   OUTSIDE REFERER
-    lwz     r7, KDP.PARPageListPtr(r1)          ; check that zero seg isn't empty
+VMInit
+    lwz     r7, KDP.PageListPtr(r1)          ; check that zero seg isn't empty
     lwz     r8, KDP.PARPerSegmentPLEPtrs + 0(r1)
     cmpw    r7, r8
-    bne     VMReturn1
+    bne     vmReturn1
 
     stw     r4, KDP.VMLogicalPages(r1)          ; resize PAR
 
-    stw     r5, KDP.PARPageListPtr(r1)          ; where did NK find this???
+    stw     r5, KDP.PageListPtr(r1)          ; where did NK find this???
 
     lwz     r6, KDP.CurMap.SegMapPtr(r1)
     li      r5,  0x00
@@ -165,7 +124,7 @@ VMInit_0xa8
     andi.   r3, r16,  0x01
     beql    SystemCrash
     andi.   r3, r16,  0x800
-    beq     VMInit_0x100
+    beq     VMInitple_or_pte0
     lwz     r14, KDP.HTABORG(r1)
     rlwinm  r3, r16, 23,  9, 28
     lwzux   r8, r14, r3
@@ -183,7 +142,7 @@ VMInit_0xa8
 ;   bl      RemovePageFromTLB
     bl      RemovePTEFromHTAB
 
-VMInit_0x100
+VMInitple_or_pte0
     cmpwi   r7,  0x00
     addi    r15, r15,  0x04
     addi    r4, r4,  0x01
@@ -199,7 +158,7 @@ VMInit_0x110
     lwz     r7, KDP.TotalPhysicalPages(r1)
     cmpw    r4, r7
     bnel    SystemCrash
-    lwz     r5,  KDP.PARPageListPtr(r1)
+    lwz     r5,  KDP.PageListPtr(r1)
     lwz     r4, KDP.VMLogicalPages(r1)
     andi.   r7, r5,  0xfff
 
@@ -229,7 +188,7 @@ VMInit_0x110
 
     srwi    r7, r5, 12
     bl      major_0x09c9c
-    stw     r9,  KDP.PARPageListPtr(r1)
+    stw     r9,  KDP.PageListPtr(r1)
     mr      r15, r9
     srwi    r7, r5, 12
     add     r7, r7, r6
@@ -265,7 +224,7 @@ VMInit_0x1ec
     ori     r16, r9,  0x21
     stwx    r16, r15, r6
     bne     VMInit_0x1ec
-    lwz     r15,  KDP.PARPageListPtr(r1)
+    lwz     r15,  KDP.PageListPtr(r1)
     srwi    r7, r5, 10
     add     r15, r15, r7
     lwz     r5, KDP.VMLogicalPages(r1)
@@ -297,7 +256,7 @@ VMInit_0x250
     ble     VMInit_0x250
     lwz     r6, KDP.CurMap.SegMapPtr(r1)
     lwz     r9, KDP.VMLogicalPages(r1)
-    lwz     r15,  KDP.PARPageListPtr(r1)
+    lwz     r15,  KDP.PageListPtr(r1)
 
 VMInit_0x288
     lwz     r8,  0x0000(r6)
@@ -317,43 +276,37 @@ VMInit_0x29c
     addi    r6, r6,  0x08
     bne     VMInit_0x288
 
-    b       VMReturn0
+    b       vmNoErr
 
 VMInit_Fail
     lwz     r7, KDP.TotalPhysicalPages(r1)
     lwz     r8, KDP.PARPerSegmentPLEPtrs + 0(r1)
     stw     r7, KDP.VMLogicalPages(r1)
-    stw     r8, KDP.PARPageListPtr(r1)
+    stw     r8, KDP.PageListPtr(r1)
 
-    b       VMReturn
+    b       vmReturn
 
+########################################################################
 
-
-;   'exchange physical page contents'
-
-    DeclareVMCall   12, VMExchangePages
-
-VMExchangePages ;   OUTSIDE REFERER
-    bl      GetPARPageInfo
-    bge     cr4, VMReturnMinus1
-    bgt     cr5, VMReturnMinus1
-    bns     cr7, VMReturnMinus1
-    bgt     cr6, VMReturnMinus1
-    bne     cr6, VMReturnMinus1
-;   bltl    cr5, RemovePageFromTLB
-    bltl    cr5, RemovePTEFromHTAB
+VMExchangePages
+    bl      PageInfo ; pgidx r4, pgcnt r9 // flags CR, PTE r9/r9, PLE r16, PTE *r14, PLE *r15
+    bc      BO_IF_NOT, 16, vmReturnMinus1
+    bc      BO_IF, 21, vmReturnMinus1
+    bc      BO_IF_NOT, 31, vmReturnMinus1
+    bc      BO_IF, 25, vmReturnMinus1
+    bc      BO_IF_NOT, 26, vmReturnMinus1
+    bcl     BO_IF, 20, RemovePTEFromHTAB
     mr      r6, r15
     mr      r4, r5
     mr      r5, r16
     lwz     r9, KDP.VMLogicalPages(r1)
-    bl      GetPARPageInfo
-    bge     cr4, VMReturnMinus1
-    bgt     cr5, VMReturnMinus1
-    bns     cr7, VMReturnMinus1
-    bgt     cr6, VMReturnMinus1
-    bne     cr6, VMReturnMinus1
-;   bltl    cr5, RemovePageFromTLB
-    bltl    cr5, RemovePTEFromHTAB
+    bl      PageInfo ; pgidx r4, pgcnt r9 // flags CR, PTE r9/r9, PLE r16, PTE *r14, PLE *r15
+    bc      BO_IF_NOT, 16, vmReturnMinus1
+    bc      BO_IF, 21, vmReturnMinus1
+    bc      BO_IF_NOT, 31, vmReturnMinus1
+    bc      BO_IF, 25, vmReturnMinus1
+    bc      BO_IF_NOT, 26, vmReturnMinus1
+    bcl     BO_IF, 20, RemovePTEFromHTAB
     stw     r5,  0x0000(r15)
     stw     r16,  0x0000(r6)
     rlwinm  r4, r5,  0,  0, 19
@@ -368,77 +321,53 @@ VMExchangePages_0x68
     stwx    r7, r5, r9
     stwx    r8, r4, r9
     bne     VMExchangePages_0x68
-    b       VMReturn
+    b       vmReturn
 
+########################################################################
 
-
-;   'return phys page given log page'
-
-    DeclareVMCall   10, VMGetPhysicalPage
-
-VMGetPhysicalPage   ;   OUTSIDE REFERER
-    bl      GetPARPageInfo
-    bns     cr7, VMReturnMinus1
+VMGetPhysicalPage
+    bl      PageInfo ; pgidx r4, pgcnt r9 // flags CR, PTE r9/r9, PLE r16, PTE *r14, PLE *r15
+    bc      BO_IF_NOT, 31, vmReturnMinus1
     srwi    r3, r9, 12
-    b       VMReturn
+    b       vmReturn
 
+########################################################################
 
-
-;   'given a page, get its 68K PTE'
-
-    DeclareVMCall   19, getPTEntryGivenPage
-
-getPTEntryGivenPage ;   OUTSIDE REFERER
-    bl      GetPARPageInfo
+getPTEntryGivenPage
+    bl      PageInfo ; pgidx r4, pgcnt r9 // flags CR, PTE r9/r9, PLE r16, PTE *r14, PLE *r15
     mr      r3, r16
-    bns     cr7, VMReturn
+    bc      BO_IF_NOT, 31, vmReturn
     rlwimi  r3, r9,  0,  0, 19
-    b       VMReturn
+    b       vmReturn
 
+########################################################################
 
-
-;   'ask about page status' (typo?)
-
-    DeclareVMCall   5, VMIsInited
-
-VMIsInited  ;   OUTSIDE REFERER
-    bl      GetPARPageInfo
-    bso     cr7, VMReturn1
+VMIsInited
+    bl      PageInfo ; pgidx r4, pgcnt r9 // flags CR, PTE r9/r9, PLE r16, PTE *r14, PLE *r15
+    bc      BO_IF, 31, vmReturn1
     rlwinm  r3, r16, 16, 31, 31
-    b       VMReturn
+    b       vmReturn
 
+########################################################################
 
-
-;   'ask about page status' (typo?)
-
-    DeclareVMCall   3, VMIsResident
-
-VMIsResident    ;   OUTSIDE REFERER
-    bl      GetPARPageInfo
+VMIsResident
+    bl      PageInfo ; pgidx r4, pgcnt r9 // flags CR, PTE r9/r9, PLE r16, PTE *r14, PLE *r15
     clrlwi  r3, r16,  0x1f
-    b       VMReturn
+    b       vmReturn
 
+########################################################################
 
-
-;   'ask about page status' (typo?)
-
-    DeclareVMCall   4, VMIsUnmodified
-
-VMIsUnmodified  ;   OUTSIDE REFERER
-    bl      GetPARPageInfo
+VMIsUnmodified
+    bl      PageInfo ; pgidx r4, pgcnt r9 // flags CR, PTE r9/r9, PLE r16, PTE *r14, PLE *r15
     rlwinm  r3, r16, 28, 31, 31
     xori    r3, r3,  0x01
-    b       VMReturn
+    b       vmReturn
 
+########################################################################
 
-
-;   Cube-E has no comment
-
-    DeclareVMCall   22, VMLRU
-
-VMLRU   ;   OUTSIDE REFERER
+VMLRU
     rlwinm. r9, r9,  2,  0, 29
-    lwz     r15,  KDP.PARPageListPtr(r1)
+    lwz     r15,  KDP.PageListPtr(r1)
     lwz     r14, KDP.HTABORG(r1)
     add     r15, r15, r9
     srwi    r4, r9,  2
@@ -451,8 +380,8 @@ VMLRU_0x1c
     mtcr     r16
     cmpwi   r4,  0x00
     rlwinm  r7, r16, 23,  9, 28
-    bns     cr7, VMLRU_0x5c
-    bge     cr5, VMLRU_0x50
+    bc      BO_IF_NOT, 31, VMLRU_0x5c
+    bc      BO_IF_NOT, 20, VMLRU_0x50
     add     r14, r14, r7
     lwz     r9, 4(r14)
     rlwimi  r16, r9, 27, 28, 28
@@ -467,41 +396,33 @@ VMLRU_0x50
 
 VMLRU_0x5c
     bne     VMLRU_0x1c
-    b       VMReturn
+    b       vmReturn
 
+########################################################################
 
-
-;   'make it so'
-
-    DeclareVMCall   17, VMMakePageCacheable
-
-VMMakePageCacheable ;   OUTSIDE REFERER
-    bl      GetPARPageInfo
+VMMakePageCacheable
+    bl      PageInfo ; pgidx r4, pgcnt r9 // flags CR, PTE r9/r9, PLE r16, PTE *r14, PLE *r15
     rlwinm  r7, r16,  0, 25, 26
     cmpwi   r7,  0x20
-    bns     cr7, VMReturnMinus1
-    beq     VMReturn
-    bge     cr4, VMReturnMinus1
-    bgel    cr5, VMSecondLastExportedFunc
+    bc      BO_IF_NOT, 31, vmReturnMinus1
+    beq     vmReturn
+    bc      BO_IF_NOT, 16, vmReturnMinus1
+    bcl     BO_IF_NOT, 20, VMSecondLastExportedFunc
     rlwinm  r16, r16,  0, 27, 24
     rlwinm  r9, r9,  0, 27, 24
     ori     r16, r16,  0x20
     bl      EditPTEInHTAB
-    b       VMReturn
+    b       vmReturn
 
+########################################################################
 
-
-;   Cube-E has no comment
-
-    DeclareVMCall   24, VMMakePageWriteThrough
-
-VMMakePageWriteThrough  ;   OUTSIDE REFERER
-    bl      GetPARPageInfo
+VMMakePageWriteThrough
+    bl      PageInfo ; pgidx r4, pgcnt r9 // flags CR, PTE r9/r9, PLE r16, PTE *r14, PLE *r15
     rlwinm. r7, r16,  0, 25, 26
-    bns     cr7, VMReturnMinus1
-    beq     VMReturn
-    bge     cr4, VMMakePageWriteThrough_0x3c
-    bgel    cr5, VMSecondLastExportedFunc
+    bc      BO_IF_NOT, 31, vmReturnMinus1
+    beq     vmReturn
+    bc      BO_IF_NOT, 16, VMMakePageWriteThrough_0x3c
+    bcl     BO_IF_NOT, 20, VMSecondLastExportedFunc
     rlwinm  r16, r16,  0, 27, 24
     rlwinm  r9, r9,  0, 27, 24
     ori     r9, r9,  0x40
@@ -511,8 +432,8 @@ VMMakePageWriteThrough  ;   OUTSIDE REFERER
 VMMakePageWriteThrough_0x3c
     rlwinm  r7, r4, 16, 28, 31
     cmpwi   r7,  0x09
-    blt     VMReturnMinus1
-    ble     cr6, VMReturnMinus1
+    blt     vmReturnMinus1
+    bc		BO_IF_NOT, 25, vmReturnMinus1
     lwz     r5,  0x000c(r15)
     andi.   r6, r5,  0xe01
     cmpwi   r6,  0xa01
@@ -522,12 +443,12 @@ VMMakePageWriteThrough_0x3c
     lhz     r6,  0x0000(r15)
     andi.   r5, r5,  0xc00
     lhz     r5,  0x0002(r15)
-    bne     VMReturnMinus1
+    bne     vmReturnMinus1
     addi    r5, r5,  0x01
     add     r6, r6, r5
     xor     r6, r6, r4
     andi.   r6, r6,  0xffff
-    bne     VMReturnMinus1
+    bne     vmReturnMinus1
     sth     r5,  0x0002(r15)
     b       PageSetCommon
 
@@ -542,11 +463,9 @@ VMMakePageWriteThrough_0xec
     ori     r5, r5,  0x42
     stw     r5,  0x0004(r15)
 
+########################################################################
 
-
-;                        PageSetCommon                      
-
-PageSetCommon   ;   OUTSIDE REFERER
+PageSetCommon
     lwz     r15, KDP.PTEGMask(r1)
     lwz     r14, KDP.HTABORG(r1)
     slwi    r6, r4, 12
@@ -595,7 +514,7 @@ PageSetCommon_0x2c
     and     r15, r15, r7
     xori    r8, r8,  0x40
     bne     PageSetCommon_0x2c
-    b       VMReturn
+    b       vmReturn
 
 PageSetCommon_0xbc
     addi    r14, r14,  0x08
@@ -611,28 +530,24 @@ PageSetCommon_0xc8
     li      r8,  0x00
     li      r9,  0x00
     bl      EditLowerPTEOnlyInHTAB
-    b       VMReturn
+    b       vmReturn
 
+########################################################################
 
-
-;   'make it so'
-
-    DeclareVMCall   18, VMMakePageNonCacheable
-
-VMMakePageNonCacheable  ;   OUTSIDE REFERER
-    bl      GetPARPageInfo
+VMMakePageNonCacheable
+    bl      PageInfo ; pgidx r4, pgcnt r9 // flags CR, PTE r9/r9, PLE r16, PTE *r14, PLE *r15
     rlwinm  r7, r16,  0, 25, 26
     cmpwi   r7,  0x60
-    bns     cr7, VMReturnMinus1
-    beq     VMReturn
-    bge     cr4, VMReturnMinus1
-    bgel    cr5, VMSecondLastExportedFunc
+    bc      BO_IF_NOT, 31, vmReturnMinus1
+    beq     vmReturn
+    bc      BO_IF_NOT, 16, vmReturnMinus1
+    bl		BO_IF_NOT, 20, VMSecondLastExportedFunc
     rlwinm  r9, r9,  0, 27, 24
     ori     r16, r16,  0x60
     ori     r9, r9,  0x20
     bl      EditPTEInHTAB
 
-VMMakePageNonCacheable_0x3c ;   OUTSIDE REFERER
+VMMakePageNonCacheable_0x3c
     rlwinm  r4, r9,  0,  0, 19
     addi    r5, r4, 0x20
     li      r7,  0x1000
@@ -643,57 +558,45 @@ VMMakePageNonCacheable_0x50
     dcbf    r7, r4
     dcbf    r7, r5
     bne     VMMakePageNonCacheable_0x50
-    b       VMReturn
+    b       vmReturn
 
+########################################################################
 
-
-;   'set page status'
-
-    DeclareVMCall   8, VMMarkBacking
-
-VMMarkBacking   ;   OUTSIDE REFERER
-    bl      GetPARPageInfo
-    bge     cr4, VMReturnMinus1
-    bgt     cr5, VMReturnMinus1
-    bltl    cr5, RemovePTEFromHTAB
+VMMarkBacking
+    bl      PageInfo ; pgidx r4, pgcnt r9 // flags CR, PTE r9/r9, PLE r16, PTE *r14, PLE *r15
+    bc      BO_IF_NOT, 16, vmReturnMinus1
+    bc      BO_IF, 21, vmReturnMinus1
+    bcl     BO_IF, 20, RemovePTEFromHTAB
     rlwimi  r16, r5, 16, 15, 15
     li      r7,  0x01
     andc    r16, r16, r7
     stw     r16,  0x0000(r15)
-    b       VMReturn
+    b       vmReturn
 
+########################################################################
 
-
-;   'ask about page status' (typo?)
-
-    DeclareVMCall   9, VMMarkCleanUnused
-
-VMMarkCleanUnused   ;   OUTSIDE REFERER
-    bl      GetPARPageInfo
-    bge     cr4, VMReturnMinus1
-    bns     cr7, VMReturnMinus1
-    bgel    cr5, VMSecondLastExportedFunc
+VMMarkCleanUnused
+    bl      PageInfo ; pgidx r4, pgcnt r9 // flags CR, PTE r9/r9, PLE r16, PTE *r14, PLE *r15
+    bc      BO_IF_NOT, 16, vmReturnMinus1
+    bc      BO_IF_NOT, 31, vmReturnMinus1
+    bl		BO_IF_NOT, 20, VMSecondLastExportedFunc
     li      r7,  0x180
     andc    r9, r9, r7
     ori     r16, r16,  0x100
     bl      EditPTEInHTAB
-    b       VMReturn
+    b       vmReturn
 
+########################################################################
 
-
-;   Cube-E has no comment
-
-    DeclareVMCall   23, VMMarkUndefined
-
-VMMarkUndefined ;   OUTSIDE REFERER
+VMMarkUndefined
     cmplw   r4, r9
     cmplw   cr1, r5, r9
     add     r7, r4, r5
     cmplw   cr2, r7, r9
-    bge     VMReturnMinus1
-    bgt     cr1, VMReturnMinus1
-    bgt     cr2, VMReturnMinus1
-    lwz     r15,  KDP.PARPageListPtr(r1)
+    bge     vmReturnMinus1
+    bgt     cr1, vmReturnMinus1
+    bgt     cr2, vmReturnMinus1
+    lwz     r15,  KDP.PageListPtr(r1)
     slwi    r8, r7,  2
     li      r7,  0x01
 
@@ -701,123 +604,103 @@ VMMarkUndefined_0x28
     subi    r8, r8, 4
     subf.   r5, r7, r5
     lwzx    r16, r15, r8
-    blt     VMReturn
+    blt     vmReturn
     rlwimi  r16, r6,  7, 24, 24
     stwx    r16, r15, r8
     b       VMMarkUndefined_0x28
 
+########################################################################
 
-
-;   'set page status'
-
-    DeclareVMCall   7, VMMarkResident
-
-VMMarkResident  ;   OUTSIDE REFERER
-    bl      GetPARPageInfo
-    bge     cr4, VMReturnMinus1
-    bso     cr7, VMReturnMinus1
-    bltl    cr5, SystemCrash
+VMMarkResident
+    bl      PageInfo ; pgidx r4, pgcnt r9 // flags CR, PTE r9/r9, PLE r16, PTE *r14, PLE *r15
+    bc      BO_IF_NOT, 16, vmReturnMinus1
+    bc      BO_IF, 31, vmReturnMinus1
+    bcl     BO_IF, 20, SystemCrash
     rlwimi  r16, r5, 12,  0, 19
     ori     r16, r16,  0x01
     stw     r16,  0x0000(r15)
     bl      VMSecondLastExportedFunc
     bl      EditPTEInHTAB
-    b       VMReturn
+    b       vmReturn
 
+########################################################################
 
-
-;   'ask why we got this page fault'
-
-    DeclareVMCall   21, VMPTest
-
-VMPTest ;   OUTSIDE REFERER
+VMPTest
     srwi    r4, r4, 12
     cmplw   r4, r9
     li      r3,  0x4000
-    bge     VMReturn
-    bl      GetPARPageInfo
+    bge     vmReturn
+    bl      PageInfo ; pgidx r4, pgcnt r9 // flags CR, PTE r9/r9, PLE r16, PTE *r14, PLE *r15
     li      r3,  0x400
-    bns     cr7, VMReturn
+    bc      BO_IF_NOT, 31, vmReturn
     li      r3,  0x00
     ori     r3, r3,  0x8000
-    ble     cr7, VMReturn
+    bc      BO_IF_NOT, 29, vmReturn
     cmpwi   r6,  0x00
-    beq     VMReturn
+    beq     vmReturn
     li      r3,  0x800
-    b       VMReturn
+    b       vmReturn
 
+########################################################################
 
-
-;   'given a page & 68K pte, set the real PTE'
-
-    DeclareVMCall   20, setPTEntryGivenPage
-
-setPTEntryGivenPage ;   OUTSIDE REFERER
+setPTEntryGivenPage
     mr      r6, r4
     mr      r4, r5
-    bl      GetPARPageInfo
-    bge     cr4, VMReturnMinus1
+    bl      PageInfo ; pgidx r4, pgcnt r9 // flags CR, PTE r9/r9, PLE r16, PTE *r14, PLE *r15
+    bc      BO_IF_NOT, 16, vmReturnMinus1
     xor     r7, r16, r6
     li      r3,  0x461
     rlwimi  r3, r16, 24, 29, 29
     and.    r3, r3, r7
-    bne     VMReturnMinus1
+    bne     vmReturnMinus1
     andi.   r7, r7,  0x11c
     xor     r16, r16, r7
     stw     r16,  0x0000(r15)
-    bge     cr5, VMReturn
+    bc      BO_IF_NOT, 20, vmReturn
     rlwimi  r9, r16,  5, 23, 23
     rlwimi  r9, r16,  3, 24, 24
     rlwimi  r9, r16, 30, 31, 31
     bl      EditPTEOnlyInHTAB
-    b       VMReturn
+    b       vmReturn
 
+########################################################################
 
-
-;   'ask about page status' (typo?)
-
-    DeclareVMCall   6, VMShouldClean
-
-VMShouldClean   ;   OUTSIDE REFERER
-    bl      GetPARPageInfo
-    bns     cr7, VMReturn0
-    blt     cr7, VMReturn0
-    bns     cr6, VMReturn0
-    bge     cr4, VMReturnMinus1
+VMShouldClean
+    bl      PageInfo ; pgidx r4, pgcnt r9 // flags CR, PTE r9/r9, PLE r16, PTE *r14, PLE *r15
+    bc      BO_IF_NOT, 31, vmNoErr
+    bc      BO_IF, 28, vmNoErr
+    bc      BO_IF_NOT, 27, vmNoErr
+    bc      BO_IF_NOT, 16, vmReturnMinus1
     xori    r16, r16,  0x10
     ori     r16, r16,  0x100
     stw     r16,  0x0000(r15)
-    bge     cr5, VMReturn1
+    bc      BO_IF_NOT, 20, vmReturn1
     xori    r9, r9,  0x80
     bl      EditPTEOnlyInHTAB
-    b       VMReturn1
+    b       vmReturn1
 
+########################################################################
 
-
-;   Cube-E has no comment
-
-    DeclareVMCall   25, VMAllocateMemory
-
-VMAllocateMemory    ;   OUTSIDE REFERER
-    lwz     r7,  KDP.PARPageListPtr(r1)
+VMAllocateMemory
+    lwz     r7,  KDP.PageListPtr(r1)
     lwz     r8, KDP.PARPerSegmentPLEPtrs + 0(r1)
     cmpwi   cr6, r5,  0x00
     cmpw    cr7, r7, r8
     or      r7, r4, r6
     rlwinm. r7, r7,  0,  0, 11
-    ble     cr6, VMReturnMinus1
+    bc		BO_IF_NOT, 25, vmReturnMinus1
     lwz     r9, KDP.VMLogicalPages(r1)
-    bne     cr7, VMReturnMinus1
+    bne     cr7, vmReturnMinus1
     mr      r7, r4
-    bne     VMReturnMinus1
+    bne     vmReturnMinus1
     mr      r4, r9
     slwi    r6, r6, 12
     addi    r5, r5, -0x01
 
 VMAllocateMemory_0x74
     addi    r4, r4, -0x01
-    bl      GetPARPageInfo
-    bltl    cr5, RemovePTEFromHTAB
+    bl      PageInfo ; pgidx r4, pgcnt r9 // flags CR, PTE r9/r9, PLE r16, PTE *r14, PLE *r15
+    bcl     BO_IF, 20, RemovePTEFromHTAB
     lwz     r9, KDP.VMLogicalPages(r1)
     subf    r8, r4, r9
     cmplw   cr7, r5, r8
@@ -838,8 +721,8 @@ VMAllocateMemory_0xc0
     lis     r9, 4
     cmplw   cr7, r7, r9
     rlwinm. r9, r7,  0,  0, 11
-    blt     cr7, VMReturnMinus1
-    bne     VMReturnMinus1
+    bge     cr7, vmReturnMinus1
+    bne     vmReturnMinus1
     lwz     r14, KDP.CurMap.SegMapPtr(r1)
     rlwinm  r9, r7, 19, 25, 28
     lwzx    r14, r14, r9
@@ -854,17 +737,17 @@ VMAllocateMemory_0xf4
     lhz     r16,  0x0002(r14)
     subf    r8, r8, r9
     cmplw   cr7, r8, r16
-    bgt     cr7, VMAllocateMemory_0xf0
+    ble     cr7, VMAllocateMemory_0xf0
     add     r8, r8, r5
     cmplw   cr7, r8, r16
-    bgt     cr7, VMReturnMinus1
+    ble     cr7, vmReturnMinus1
     lwz     r16,  0x0004(r14)
     slwi    r8, r7, 16
     andi.   r16, r16,  0xe01
     cmpwi   r16,  0xa01
     or      r8, r8, r5
     addi    r5, r5,  0x01
-    bne     VMReturnMinus1
+    bne     vmReturnMinus1
     stw     r8,  0x0000(r14)
     bnel    cr6, VMAllocateMemory_0x2e8
     rotlwi  r15, r15,  0x0a
@@ -879,7 +762,7 @@ VMAllocateMemory_0xf4
     stw     r8, KDP.SysInfo.LogicalMemorySize(r1)
 
     addi    r14, r1, 120
-    lwz     r15,  KDP.PARPageListPtr(r1)
+    lwz     r15,  KDP.PageListPtr(r1)
     li      r8, 0
     addi    r7, r7, -0x01
     ori     r8, r8, 0xffff
@@ -895,14 +778,14 @@ VMAllocateMemory_0x34c
     addis   r7, r7, -0x01
     bgt     VMAllocateMemory_0x34c
     sth     r7,  0x0002(r16)
-    b       VMReturn1
+    b       vmReturn1
 
 
 
 VMAllocateMemory_0x2e8
     lwz     r16,  0x0000(r15)
     lwz     r7, KDP.TotalPhysicalPages(r1)
-    lwz     r8,  KDP.PARPageListPtr(r1)
+    lwz     r8,  KDP.PageListPtr(r1)
     slwi    r7, r7,  2
     add     r7, r7, r8
     slwi    r8, r5,  2
@@ -926,77 +809,78 @@ VMAllocateMemory_0x324
     bgt     VMAllocateMemory_0x324
     blr     
 
+########################################################################
 
+; This function gets sent an page for a page in the main mac os memory
+; area and returns a bunch of useful info on it. Return values that
+; mention HTAB are undefined when the PTE is not in the HTAB HTAB
+; residence is determined by bit 20 (value 0x800) of the PTE. This is
+; often checked by a bltl cr5
 
-;This function gets sent an page# for a page in the main mac os memory area and returns a bunch of useful info on it.
-;Return values that mention HTAB are undefined when the PTE is not in the HTAB
-;HTAB residence is determined by bit 20 (value 0x800) of the PTE. This is often checked by a bltl cr5
-
-;   ARG     page# r4, KDP.VMMaxVirtualPages r9,
-;   RET     PTE_flags CR, HTAB_upper r8, HTAB_lower r9, PTE_value r16, HTAB_entry_loc r14, PTE_loc r15, 
-
-
-GetPARPageInfo  ;   OUTSIDE REFERER
-    cmplw   cr4, r4, r9 ;r9 is VMMaxVirtualPages by convention
-    lwz     r15,  KDP.PARPageListPtr(r1)
-    slwi    r8, r4,  2
-    bge     cr4, GetPARPageInfo_0x40
-
-GetPARPageInfo_0x10
-    lwzux   r16, r15, r8    ;get PTE from KDP.FlatPageListPointer
-    lwz     r14,  KDP.HTABORG(r1)
-    mtcrf    0x07, r16  ;copy bits 20-31 to cr
-    rlwinm  r8, r16, 23,  9, 28;convert page# into an index
-    rlwinm  r9, r16,  0,  0, 19;get unshifted page#
-    bgelr   cr5     ;return if PTE is not in HTAB
-    bns     cr7, SystemCrash;panic if the PTE is in the HTAB but isn't mapped to a real page
-    lwzux   r8, r14, r8 ;get first word of PTE from HTAB
-    lwz     r9,  0x0004(r14);get second word of PTE from HTAB
-    mtcrf    0x80, r8
-    rlwimi  r16, r9, 29, 27, 27
-    rlwimi  r16, r9, 27, 28, 28
-    mtcrf   0x07, r16
-    bltlr           ;return if PTE is valid
-    bl      SystemCrash;panic if PTE isn't valid but is in the HTAB
-
-GetPARPageInfo_0x40 ;some kind of little-used code path for when VMMaxVirtualPages is invalid? ROM overlay?
-    lis     r9, 4
+PageInfo ; pgidx r4, pgcnt r9 // flags CR (20-31), PTE r8/r9, PLE r16, PTE *r14, PLE *r15
     cmplw   cr4, r4, r9
-    rlwinm. r9, r4,  0,  0, 11
-    blt     cr4, VMReturnMinus1;return failure if r4<VMMaxVirtualPages
-    bne     VMReturnMinus1  ;return failure if bits 0-11 of r4 are non-zero
-    lwz     r15, KDP.CurMap.SegMapPtr(r1);this appears to be an array of 8-byte structures.
-    rlwinm  r9, r4, 19, 25, 28;copy bits 12-15 or r4 to bits 25-28 of r9
-    lwzx    r15, r15, r9    ;do an index for some reason
-    clrlwi  r9, r4,  0x10   ;copy bits 16-31 to r9
-    lhz     r8,  0x0000(r15)
-    b       GetPARPageInfo_0x70
+    lwz     r15, KDP.PageListPtr(r1)        ; r15 = Page List base
+    slwi    r8, r4, 2                       ; r18 = Page List Entry offset
+    bge     cr4, @not_par
 
-GetPARPageInfo_0x6c
-    lhzu    r8,  0x0008(r15)
+@ple_or_pte ; 
+    lwzux   r16, r15, r8                    ; Get Page List Entry (will return ptr in r15)
+    lwz     r14, KDP.HTABORG(r1)            ; ...which might point to a Page Table Entry
+    mtcrf   %00000111, r16                  ; Set all flags in CR (but not RealPgNum)
+    rlwinm  r8, r16, 23, 9, 28              ; r8 = Page Table Entry offset
+    rlwinm  r9, r16, 0, 0, 19
+    bclr    BO_IF_NOT, 20                   ; Page not in Page Table, so return the Page List Entry.
+    bc      BO_IF_NOT, 31, SystemCrash      ; panic if the PTE is in the HTAB but isn't mapped to a real page??
 
-GetPARPageInfo_0x70
-    lhz     r16,  0x0002(r15)
+    lwzux   r8, r14, r8                     ; r8/r9 = PTE
+    lwz     r9, 4(r14)
+    mtcrf   %10000000, r8                   ; set CR bit 0 to Valid bit
+    rlwimi  r16, r9, 29, 27, 27             ; Memcoher = Change (for return flags)
+    rlwimi  r16, r9, 27, 28, 28             ; Guardwrite = Reference (for return flags)
+    mtcrf   %00000111, r16
+    bclr    BO_IF, 0                        ; Page in Page Table, so return the Page Table Entry.
+    bl      SystemCrash                     ; (Crash if PTE is invalid)
+
+@not_par ; Code outside VM Manager address space
+    lis     r9, 4                           ; Check that page is outside VM Manager's 0-1GB area but
+    cmplw   cr4, r4, r9                     ; still a valid page number (i.e. under 0x100000)
+    rlwinm. r9, r4, 0, 0xFFF00000
+    blt     cr4, vmReturnMinus1             ; (Else return -1)
+    bne     vmReturnMinus1
+
+    lwz     r15, KDP.CurMap.SegMapPtr(r1)   ; r15 = Segment Map base
+    rlwinm  r9, r4, 19, 25, 28              ; r9 = offset into Segment Map = segment number * 8
+    lwzx    r15, r15, r9                    ; Ignore Seg flags, get pointer into Page Map
+    clrlwi  r9, r4, 16                      ; r9 = index of this page within its Segment
+
+    lhz     r8, PMDT.PageIdx(r15)              ; Big ugly loop to find the relevant Page Map Entry
+    b       @pmloop_enter
+@pmloop
+    lhzu    r8, PMDT.Size(r15)               ; PMDT.PageIdx of next entry
+@pmloop_enter
+    lhz     r16, PMDT.PageCount(r15)
     subf    r8, r8, r9
     cmplw   cr4, r8, r16
-    bgt     cr4, GetPARPageInfo_0x6c
-    lwz     r9,  0x0004(r15)
-    andi.   r16, r9,  0xc00
-    cmpwi   cr6, r16,  0x400
-    cmpwi   cr7, r16,  0xc00
-    beq     GetPARPageInfo_0xac
-    beq     cr6, GetPARPageInfo_0xb4
-    bne     cr7, VMReturnMinus1
+    bgt     cr4, @pmloop                    ; Nope, not this entry
+
+    lwz     r9, PMDT.RPN(r15)
+    andi.   r16, r9, Pflag_NotPTE | Pflag_PTE_Single
+    cmpwi   cr6, r16, Pflag_PTE_Single
+    cmpwi   cr7, r16, Pflag_NotPTE | Pflag_PTE_Single
+    beq     @range
+    beq     cr6, @single
+    bne     cr7, vmReturnMinus1
+
     slwi    r8, r8,  2
     rlwinm  r15, r9, 22,  0, 29
     crset   cr4_lt
-    b       GetPARPageInfo_0x10
+    b       @ple_or_pte
 
-GetPARPageInfo_0xac
+@range
     slwi    r8, r8, 12
     add     r9, r9, r8
 
-GetPARPageInfo_0xb4
+@single
     rlwinm  r16, r9,  0,  0, 19
     crclr   cr4_lt
     rlwinm  r9, r9,  0, 22, 19
@@ -1007,10 +891,10 @@ GetPARPageInfo_0xb4
     rlwimi  r16, r9, 28, 28, 28
     rlwimi  r16, r9,  2, 29, 29
     ori     r16, r16,  0x01
-    mtcrf    0x07, r16
+    mtcrf   %00000111, r16
     blr     
 
-
+########################################################################
 
 ;updates stored PTE and HTAB entry for PTE
 ;r16 is PTE value
@@ -1018,12 +902,12 @@ GetPARPageInfo_0xb4
 ;r8 is lower word of HTAB entry
 ;r9 is upper word of HTAB entry
 ;r14 is address of HTAB entry
-EditPTEInHTAB   ;   OUTSIDE REFERER
+EditPTEInHTAB
     stw     r16,  0x0000(r15)
 ;just updates HTAB entry
 EditLowerPTEOnlyInHTAB
     stw     r8,  0x0000(r14)
-EditPTEOnlyInHTAB   ;   OUTSIDE REFERER
+EditPTEOnlyInHTAB
     stw     r9,  0x0004(r14);upper word of HTAB entry contains valid bit
     slwi    r8, r4, 12
     sync
@@ -1031,17 +915,17 @@ EditPTEOnlyInHTAB   ;   OUTSIDE REFERER
     sync    
     blr
 
-
+########################################################################
 
 ;Removes a page from the HTAB.
-;Called right after GetPARPageInfo, with either a bl or a bltl cr5
+;Called right after PageInfo, with either a bl or a bltl cr5
 ;
 ;also updates NK statistics?
 ;r9 is low word of HTAB entry
 ;r14 ia address of HTAB entry
 ;r15 is address of stored PTE
 ;r16 is PTE value
-RemovePTEFromHTAB   ;   OUTSIDE REFERER
+RemovePTEFromHTAB
     lwz     r8, KDP.NKInfo.HashTableDeleteCount(r1);update a value in NanoKernelInfo
     rlwinm  r16, r16,  0, 21, 19    ;update PTE flags to indicate not in HTAB
     addi    r8, r8,  0x01
@@ -1054,14 +938,10 @@ RemovePTEFromHTAB   ;   OUTSIDE REFERER
     li      r9,  0x00   ;0 lower HTAB word
     b       EditPTEInHTAB   ;update stored PTE and invalidate HTAB entry
 
-VMSecondLastExportedFunc    ;   OUTSIDE REFERER
+########################################################################
+
+VMSecondLastExportedFunc
     lwz     r8, KDP.PTEGMask(r1)
-
-
-
-;                      VMLastExportedFunc                   
-
-
 VMLastExportedFunc
     lwz     r14, KDP.HTABORG(r1)
     slwi    r9, r4, 12
@@ -1143,20 +1023,18 @@ VMLastExportedFunc_0xd7
     mr      r26, r14
     mtlr    r6
     lwz     r9, KDP.VMLogicalPages(r1)
-    b       GetPARPageInfo
+    b       PageInfo
 
+########################################################################
 
-
-;                        major_0x09c9c                      
-
-major_0x09c9c   ;   OUTSIDE REFERER
+major_0x09c9c
     addi    r8, r1, KDP.PARPerSegmentPLEPtrs
     lwz     r9, KDP.TotalPhysicalPages(r1)
     rlwimi  r8, r7, 18, 28, 29
     cmplw   r7, r9
     lwz     r8,  0x0000(r8)
     rlwinm  r7, r7,  2, 14, 29
-    bge     VMReturnMinus1
+    bge     vmReturnMinus1
     lwzx    r9, r8, r7
     rlwinm  r9, r9,  0,  0, 19
     blr     

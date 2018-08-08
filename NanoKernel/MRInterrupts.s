@@ -80,7 +80,7 @@ MRMachineCheckInt                   ; Always gives HW fault
     bgt     @no_htab_del
 
     lwz     r28, KDP.NKInfo.HashTableDeleteCount(r1)
-    lwz     r29, KDP.ApproxCurrentPTEG(r1)
+    lwz     r29, KDP.HtabLastPTE(r1)
     addi    r28, r28, 1
     stw     r28, KDP.NKInfo.HashTableDeleteCount(r1)
     li      r28, 0
