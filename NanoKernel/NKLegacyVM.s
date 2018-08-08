@@ -7,7 +7,7 @@
 ;   NKSystemCrash
 ;     SystemCrash
 ; EXPORTS:
-;   KCallVMDispatch: => NKReset
+;   KCallVMDispatch (=> NKReset)
 
 ; This file is a horrible mess. It needs a do-over.
 
