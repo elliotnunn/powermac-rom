@@ -178,7 +178,7 @@ InitKCalls
 
 ; Init the NCB Pointer Cache
 
-    _InvalNCBPointerCache scratch=r23
+    _clrNCBCache scr=r23
 
 ########################################################################
 
@@ -217,10 +217,10 @@ InitPageMap
     subi    r22, r22, 4
 
     lwzx    r21, r9, r22                ; Get RealPgNum/Flags word
-    andi.   r23, r21, Pflag_NotPTE | Pflag_PTE_Rel
-    cmpwi   r23, Pflag_PTE_Rel       ; Change if physical
+    andi.   r23, r21, Pattr_NotPTE | Pattr_PTE_Rel
+    cmpwi   r23, Pattr_PTE_Rel       ; Change if physical
     bne     @notrelative                ; address is relative.
-    rlwinm  r21, r21, 0, ~Pflag_PTE_Rel
+    rlwinm  r21, r21, 0, ~Pattr_PTE_Rel
     add     r21, r21, rCI
 @notrelative
     stwx    r21, rPgMap, r22            ; ...Save
@@ -235,22 +235,22 @@ InitPageMap
 InitSegMaps
     lwz     r8, NKConfigurationInfo.PageMapIRPOffset(rCI)
     add     r8, rPgMap, r8              ; The NK chooses the physical
-    lwz     r23, PMDT.RPN(r8)  ; addresses of these pages
+    lwz     r23, PMDT.Word2(r8)  ; addresses of these pages
     rlwimi  r23, r1, 0, 0xFFFFF000
-    stw     r23, PMDT.RPN(r8)
+    stw     r23, PMDT.Word2(r8)
 
     lwz     r8, NKConfigurationInfo.PageMapKDPOffset(rCI)
     add     r8, rPgMap, r8
-    lwz     r23, PMDT.RPN(r8)
+    lwz     r23, PMDT.Word2(r8)
     rlwimi  r23, r1, 0, 0xFFFFF000
-    stw     r23, PMDT.RPN(r8)
+    stw     r23, PMDT.Word2(r8)
 
     lwz     r19, KDP.EDPPtr(r1)
     lwz     r8, NKConfigurationInfo.PageMapEDPOffset(rCI)
     add     r8, rPgMap, r8
-    lwz     r23, PMDT.RPN(r8)
+    lwz     r23, PMDT.Word2(r8)
     rlwimi  r23, r19, 0, 0xFFFFF000
-    stw     r23, PMDT.RPN(r8)
+    stw     r23, PMDT.Word2(r8)
 
 
     addi    r9, rCI, NKConfigurationInfo.SegMaps-4 ; SegMaps
@@ -278,7 +278,7 @@ CopyBATRangeInit
     lwzu    r21, 4(r9)      ; grab LBAT
     stwu    r20, 4(r8)      ; store UBAT
 
-    rlwinm  r23, r21, 0, ~Pflag_PTE_Rel
+    rlwinm  r23, r21, 0, ~Pattr_PTE_Rel
     cmpw    r21, r23
     beq     @bitnotset
     add     r21, r23, rCI   ; then LBAT[BRPN] is relative to ConfigInfo struct
@@ -313,10 +313,11 @@ CopyBATRangeInit
     stw     r23, KDP.OverlayMap.BatMap(r1)
 
 ########################################################################
-CreatePageList
-; Create a PageList from usable physical pages, i.e. those
-; inside a RAM bank, and
-; outside the kernel's reserved physical memory
+Create68kPTEs
+; Create a 68k PTE for every page in the initial logical area.
+; (The logical area will equal physical RAM size, so make a PTE for
+; every physical page inside a RAM bank but outside kernel memory.
+; Later on, the VM Manager can replace this table with its own.)
     lwz     r21, KDP.KernelMemoryBase(r1)   ; this range is forbidden
     lwz     r20, KDP.KernelMemoryEnd(r1)
     subi    r29, r21, 4                     ; ptr to last added entry
@@ -324,12 +325,13 @@ CreatePageList
     addi    r19, r1, KDP.SysInfo.Bank0Start - 8
 
     lwz     r23, KDP.PageAttributeInit(r1)  ; "default WIMG/PP settings for PTE creation"
-    li      r30, 1
-    rlwimi  r30, r23, 1, 25, 25
-    rlwimi  r30, r23, 31, 26, 26
-    xori    r30, r30, 0x20
-    rlwimi  r30, r23, 29, 27, 27
-    rlwimi  r30, r23, 27, 28, 28            ; r30 = the flags to use for every PLE
+
+    li      r30, M68pteResident
+    _mvbit  r30, bM68pteInhibcache, r23, bLpteInhibcache
+    _mvbit  r30, bM68pteNonwritethru, r23, bLpteWritethru
+    xori    r30, r30, bM68pteNonwritethru
+    _mvbit  r30, bM68pteModified, r23, bLpteChange
+    _mvbit  r30, bM68pteUpdate, r23, bLpteReference
 
     li      r23, NKSystemInfo.MaxBanks
 @next_bank
@@ -357,8 +359,10 @@ CreatePageList
 
 ; Now r21/r29 point to first/last element of PageList
 
-EditPageMap
-; Set up the PMDTs for an initial logical area sized to use up the PageList
+PutLogicalAreaInPageMap
+; Overwrite the dummy PMDT in every logical-area segment (0-3)
+; to point into the logical-area 68k PTE array
+
 ; (Overwrite first PMDT in each segment)
     subf    r22, r21, r29
     li      r30, 0
@@ -372,12 +376,12 @@ EditPageMap
     ;   convert r19 to pages, and save in some places
     srwi    r19, r19, 12
     stw     r19, KDP.VMLogicalPages(r1)
-    stw     r19, KDP.TotalPhysicalPages(r1)
+    stw     r19, KDP.VMPhysicalPages(r1)
 
     addi    r29, r1, KDP.PARPerSegmentPLEPtrs - 4   ; where to save per-segment PLE ptr
     addi    r19, r1, KDP.SegMap32SupInit - 8        ; which part of PageMap to update 
 
-    stw     r21, KDP.PageListPtr(r1)
+    stw     r21, KDP.VMPageArray(r1)
 
 @next_segment
     cmplwi  r22, 0xffff             ; continue (bgt) while there are still pages left
@@ -385,7 +389,7 @@ EditPageMap
     ;   Rewrite the first PMDT in this segment
     lwzu    r8, 8(r19)              ; find PMDT using SegMap32SupInit
     rotlwi  r31, r21, 10
-    ori     r31, r31, Pflag_NotPTE_PageList
+    ori     r31, r31, Pattr_68k
     stw     r30, 0(r8)              ; use entire segment (PageIdx = 0, PageCount = 0xFFFF)
     stw     r31, 4(r8)              ; RPN = PLE ptr | PMDT_NotPTE_PageList
 

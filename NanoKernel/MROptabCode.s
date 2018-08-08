@@ -217,7 +217,7 @@ MRSecDone
 @trace                                  ; Jump to Trace int handler
     mfsprg  r24, 3
     mtsprg  2, r12
-    _clear  r16, r16, bitContextFlagTraceWhenDone
+    rlwinm  r16, r16, 0, ~ContextFlagTraceWhenDone
     lwz     r12, VecTbl.Trace(r24)
     stw     r16, KDP.Flags(r1)
     mtcr    r13

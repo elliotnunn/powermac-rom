@@ -27,7 +27,7 @@
 
 IllegalInstruction
     mfmsr   r9
-    _set    r8, r9, bitMsrDR
+    _ori    r8, r9, MsrDR
     mtmsr   r8
     lwz     r8, 0(r10)
     mtmsr   r9
@@ -109,12 +109,12 @@ IllegalInstruction
     addi    r23, r23, 1
     stw     r23, KDP.NKInfo.EmulatedUnimpInstCount(r1)
     mfmsr   r14
-    _set    r15, r14, bitMsrDR
+    _ori    r15, r14, MsrDR
     b       EmulateDataAccess
 
 ########################################################################
 
-    _alignToCacheBlock
+    _align 5
 KCallRunAlternateContext
 ;   ARG     ContextBlock *r3, flags r4
 
@@ -260,7 +260,7 @@ KCallRunAlternateContext
 
 ########################################################################
 
-    _alignToCacheBlock
+    _align 5
 KCallResetSystem
 ;   PPC trap 1, or indirectly, 68k RESET
 
@@ -287,7 +287,7 @@ Reset
 
 ########################################################################
 
-    _alignToCacheBlock
+    _align 5
 KCallPrioritizeInterrupts
     ;   Left side: roll back the interrupt preparation before the int handler repeats is
     ;   Right side: jump to the external interrupt handler (PIH or ProgramInt)
@@ -343,7 +343,7 @@ KCallSystemCrash
 
 ########################################################################
 
-    _alignToCacheBlock
+    _align 5
 ProgramInt
 ;   (also called when the Alternate Context gets an External Int => Exception)
 
@@ -369,7 +369,7 @@ ProgramInt
     lwz     r7, KDP.Flags(r1)
     mfsprg  r12, 2
     beq     KCallReturnFromExceptionFastPath    ; KCall in Emulator table => fast path
-    rlwimi. r7, r7, bitGlobalFlagSystem, 0, 0
+    rlwimi. r7, r7, bGlobalFlagSystem, 0, 0
     cmplwi  cr7, r8, 16 * 4
     bge     cr0, @fromAltContext                ; Alt Context cannot make KCalls; this might be an External Int
     bge     cr7, @notFromEmulatorTrapTable      ; from Emulator but not from its KCall table => do more checks
@@ -393,7 +393,7 @@ ProgramInt
     bc      BO_IF_NOT, 14, @notTrap
 
     mfmsr   r9                      ; fetch the instruction to get the "trap number"
-    _set    r8, r9, bitMsrDR
+    _ori    r8, r9, MsrDR
     mtmsr   r8
     lwz     r8, 0(r10)
     mtmsr   r9
@@ -442,7 +442,7 @@ ProgramInt
 
 ########################################################################
 
-    _alignToCacheBlock
+    _align 5
 SyscallInt
     bl      LoadInterruptRegisters
     mfmsr   r8
@@ -453,7 +453,7 @@ SyscallInt
 
 ########################################################################
 
-    _alignToCacheBlock
+    _align 5
 TraceInt ; here because of MSR[SE/BE], possibly thanks to ContextFlagTraceWhenDone
     bl      LoadInterruptRegisters
     li      r8, ecInstTrace

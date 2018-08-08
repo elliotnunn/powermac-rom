@@ -1,8 +1,7 @@
     include 'InfoRecords.a'
 
-    include 'NKStructs.s'
-    include 'NKEquates.s'
     include 'NKMacros.s'
+    include 'NKEquates.s'
 
 CodeBase
     include 'NKInit.s'

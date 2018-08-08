@@ -27,7 +27,7 @@ ExternalInt0
 
     mfmsr   r2                              ; Save a self-ptr to FF880000... why?
     lis     r3, 0xFF88
-    _set    r0, r2, bitMsrDR
+    _ori    r0, r2, MsrDR
     stw     r4, KDP.r4(r1)
     stw     r5, KDP.r5(r1)
     mfsrr0  r4
@@ -94,7 +94,7 @@ ExternalInt1
 
     lis     r2, 0x50F3                      ; Query OpenPIC at 50F2A000
     mfmsr   r3
-    _set    r0, r3, bitMsrDR
+    _ori    r0, r3, MsrDR
     stw     r4, KDP.r4(r1)
     stw     r5, KDP.r5(r1)
     mfsrr0  r4
@@ -152,7 +152,7 @@ ExternalInt2
 
     lis     r2, 0xF300                      ; Query OpenPIC at F3000028/C
     mfmsr   r0
-    _set    r3, r0, bitMsrDR
+    _ori    r3, r0, MsrDR
     stw     r4, KDP.r4(r1)
     stw     r5, KDP.r5(r1)
     mfsrr0  r4
@@ -288,7 +288,7 @@ DataStorageInt
     mfcr    r13
 
     mfmsr   r14
-    _set    r15, r14, bitMsrDR
+    _ori    r15, r14, MsrDR
     mtmsr   r15
     lwz     r27, 0(r10)                     ; r27 = INSTRUCTION
     mtmsr   r14
@@ -372,7 +372,7 @@ AlignmentInt
     mfmsr   r14
     rlwimi  r25, r26, 26, 22, 29    ; third byte of lookup value is a /4 code offset in FDP
     mtlr    r25                     ; so get ready to go there
-    _set    r15, r14, bitMsrDR
+    _ori    r15, r14, MsrDR
     mtcr    r26
     rlwimi  r17, r26, 6, 26, 5      ; wrap some shite around the register values
     blr
@@ -382,7 +382,7 @@ AlignmentInt
     mfmsr   r14
     rlwimi  r25, r26, 26, 22, 29
     mtlr    r25
-    _set    r15, r14, bitMsrDR
+    _ori    r15, r14, MsrDR
     mtcr    r26
     rlwimi  r17, r26, 6, 26, 5
     bclr    BO_IF_NOT, mrOpflag1

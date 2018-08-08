@@ -13,7 +13,7 @@
 
 ########################################################################
 
-    _alignToCacheBlock
+    _align 5
 FPUnavailInt
 ;   Reload the FPU
 
@@ -25,11 +25,11 @@ FPUnavailInt
     stw     r11, KDP.NKInfo.FPUReloadCount(r1)
 
     mfsrr1  r11
-    _set    r11, r11, bitMsrFP
+    _ori    r11, r11, MsrFP
     mtsrr1  r11
 
     mfmsr   r11             ; need this to access float registers
-    _set    r11, r11, bitMsrFP
+    _ori    r11, r11, MsrFP
     lwz     r6, KDP.ContextPtr(r1)
     mtmsr   r11
 
@@ -55,11 +55,11 @@ ReloadFPU
     rlwinm. r8, r8, 1, 0, 0
 
     mfmsr   r8
-    _set    r8, r8, bitMsrFP
+    _ori    r8, r8, MsrFP
     beqlr
     mtmsr   r8
 
-    _set    r11, r11, bitMsrFP
+    _ori    r11, r11, MsrFP
 
 ########################################################################
 
@@ -105,10 +105,10 @@ LoadFloats
 
 DisableFPU
     mfmsr   r8
-    _set    r8, r8, bitMsrFP
+    _ori    r8, r8, MsrFP
     mtmsr   r8
 
-    _clear  r11, r11, bitMsrFP
+    rlwinm  r11, r11, 0, ~MsrFP
 
     stfd    f0, CB.f0(r6)
     stfd    f1, CB.f1(r6)

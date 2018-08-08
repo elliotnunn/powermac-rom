@@ -34,7 +34,7 @@ MRException
 
     lwz     r6, KDP.ContextPtr(r1)
 
-    _set    r7, r16, bitContextFlagMemRetryErr
+    _ori    r7, r16, ContextFlagMemRetryErr
     neg     r23, r23
     mtcrf   crMaskFlags, r7
     add     r19, r19, r23                   ; convert r19 from end address back to start address??
@@ -82,12 +82,12 @@ ExceptionCommon
     lwz     r10, CB.IntraState.Handler+4(r6)        ; SRR0 = handler addr
     lwz     r4, CB.IntraState.HandlerArg+4(r6)      ; r4 = arbitrary second argument
     lwz     r3, KDP.ECBPtrLogical(r1)               ; r3 = ContextBlock ptr
-    bc      BO_IF, bitGlobalFlagSystem, @sys
+    bc      BO_IF, bGlobalFlagSystem, @sys
     lwz     r3, KDP.NCBCacheLA0(r1)
 @sys
     lwz     r12, KDP.EmuKCallTblPtrLogical(r1)      ; r12/LR = address of KCallReturnFromException trap
 
-    bcl     BO_IF, bitContextFlagMemRetryErr, SaveFailingMemRetryState
+    bcl     BO_IF, bContextFlagMemRetryErr, SaveFailingMemRetryState
 
     rlwinm  r7, r7, 0, 29, 15                       ; unset flags 16-28
     stw     r8, KDP.Enables(r1)
@@ -116,14 +116,14 @@ SaveFailingMemRetryState
 
 ########################################################################
 
-    _alignToCacheBlock
+    _align 5
 KCallReturnFromExceptionFastPath
     lwz     r11, KDP.NKInfo.NanoKernelCallCounts(r1)
     mr      r10, r12
     addi    r11, r11, 1
     stw     r11, KDP.NKInfo.NanoKernelCallCounts(r1)
     mfsrr1  r11
-    rlwimi  r7, r7, 32+bitMsrSE-bitContextFlagTraceWhenDone, ContextFlagTraceWhenDone
+    rlwimi  r7, r7, 32+bMsrSE-bContextFlagTraceWhenDone, ContextFlagTraceWhenDone
 
 KCallReturnFromException
     cmplwi  cr1, r3, 1                          ; exception handler return value
@@ -180,7 +180,7 @@ KCallReturnFromException
     lwz     r3, CB.FaultSrcR3+4(r6)
     lwz     r4, CB.FaultSrcR4+4(r6)
 
-    bc      BO_IF_NOT, bitContextFlagMemRetryErr, RunSystemContext
+    bc      BO_IF_NOT, bContextFlagMemRetryErr, RunSystemContext
     stmw    r14, KDP.r14(r1)                    ; When we *do* get back to this context,
     lwz     r17, CB.IntraState.MemRet17+4(r6)   ; make sure MemRetry state can be resumed
     lwz     r20, CB.IntraState.MemRetData(r6)   ; from InterState
@@ -261,7 +261,7 @@ RunSystemContext
     addi    r8, r1, KDP.VecTblSystem        ; System VecTbl
     mtsprg  3, r8
 
-    bcl     BO_IF, bitGlobalFlagSystem, SystemCrash ; System Context already running!
+    bcl     BO_IF, bGlobalFlagSystem, SystemCrash ; System Context already running!
 
     ;   Fallthru (new CB in r9, old CB in r6)
 
@@ -273,7 +273,7 @@ SwitchContext ; OldCB *r6, NewCB *r9
     stw     r7, CB.InterState.Flags(r6)
     stw     r8, CB.InterState.Enables(r6)
 
-    bc      BO_IF_NOT, bitContextFlagMemRetryErr, @can_dispose_mr_state
+    bc      BO_IF_NOT, bContextFlagMemRetryErr, @can_dispose_mr_state
     stw     r17, CB.InterState.MemRet17+4(r6)
     stw     r20, CB.InterState.MemRetData(r6)
     stw     r21, CB.InterState.MemRetData+4(r6)
@@ -290,7 +290,7 @@ SwitchContext ; OldCB *r6, NewCB *r9
     stw     r10, CB.PC+4(r6)
     stw     r8, CB.CTR+4(r6)
 
-    bc      BO_IF_NOT, bitGlobalFlagMQReg, @no_mq
+    bc      BO_IF_NOT, bGlobalFlagMQReg, @no_mq
     lwz     r8, CB.MQ+4(r9)
     mfspr   r12, mq
     mtspr   mq, r8
@@ -306,7 +306,7 @@ SwitchContext ; OldCB *r6, NewCB *r9
     lwz     r8, KDP.r6(r1)
     stw     r5, CB.r5+4(r6)
     stw     r8, CB.r6+4(r6)
-    _band.  r8, r11, bitMsrFP
+    andi.   r8, r11, MsrFP
     stw     r14, CB.r14+4(r6)
     stw     r15, CB.r15+4(r6)
     stw     r16, CB.r16+4(r6)
@@ -409,15 +409,15 @@ ReturnFromInt ; If ContextFlagMemRetryErr && ContextFlagResumeMemRetry, please p
 
 @special_cases
     mtcrf   crMaskFlags, r7
-    bc      BO_IF_NOT, bitContextFlagMemRetryErr, @no_memretry          ; If MemRetry had to be paused for an exception
-    _clear  r7, r7, bitContextFlagMemRetryErr                           ; which is now finished, finish MemRetry.
-    bc      BO_IF, bitContextFlagResumeMemRetry, @resume_memretry
-    _clear  r7, r7, bitContextFlagTraceWhenDone
+    bc      BO_IF_NOT, bContextFlagMemRetryErr, @no_memretry            ; If MemRetry had to be paused for an exception
+    rlwinm  r7, r7, 0, ~ContextFlagMemRetryErr                          ; which is now finished, finish MemRetry.
+    bc      BO_IF, bContextFlagResumeMemRetry, @resume_memretry
+    rlwinm  r7, r7, 0, ~ContextFlagTraceWhenDone
     b       @justreturn
 
 @no_memretry
-    bc      BO_IF_NOT, bitContextFlagTraceWhenDone, @justreturn         ; If this current interrupt was raised when
-    _clear  r7, r7, bitContextFlagTraceWhenDone                         ; every instruction should be followed by a
+    bc      BO_IF_NOT, bContextFlagTraceWhenDone, @justreturn           ; If this current interrupt was raised when
+    rlwinm  r7, r7, 0, ~ContextFlagTraceWhenDone                        ; every instruction should be followed by a
     stw     r7, KDP.Flags(r1)                                           ; Trace exception, then raise one.
     li      r8, ecInstTrace
     b       Exception
@@ -456,7 +456,7 @@ ReturnFromInt ; If ContextFlagMemRetryErr && ContextFlagResumeMemRetry, please p
     lwz     r21, KernelState.MemRetData+4(r9)   ; we are now switching back to Alternate Context).
     lwz     r19, KernelState.MemRet19+4(r9)
     lwz     r18, KernelState.MemRet18+4(r9)
-    _clear  r16, r7, bitContextFlagMemRetryErr
+    rlwinm  r16, r7, 0, ~ContextFlagMemRetryErr
 
     lwz     r25, KDP.MRBase(r1)         ; MRRestab is indexed by the first arg of MROptab?
     extrwi. r22, r17, 4, 27             ; 
@@ -477,7 +477,7 @@ ReturnFromInt ; If ContextFlagMemRetryErr && ContextFlagResumeMemRetry, please p
     mtlr    r22
     mtsprg  3, r23
     mfmsr   r14
-    _set    r15, r14, bitMsrDR
+    _ori    r15, r14, MsrDR
     mtmsr   r15
     rlwimi  r25, r26, 2, 22, 29         ; Second byte of MRRestab is a secondary routine
     bnelr

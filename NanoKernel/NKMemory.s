@@ -29,19 +29,19 @@ PutPTE ; EA r27 // PTE r30/r31, EQ=Success, GT=Invalid, LT=Fault
 ########################################################################
 
     lwz     r28, KDP.HtabSinglePTE(r1)      ; 2. Parse the PMDT into a PTE (three major code paths)
-    lwz     r31, PMDT.RPN(r29)
+    lwz     r31, PMDT.Word2(r29)
     cmpwi   cr7, r28, 0                     ; always delete the previous PMDT_PTE_Single entry from the HTAB
-    extlwi. r26, r31, 2, 20                 ; use the Cond Reg to branch on Pflag_NotPTE/Pflag_PTE_Single
+    extlwi. r26, r31, 2, 20                 ; use the Cond Reg to branch on Pattr_NotPTE/Pattr_PTE_Single
     bne     cr7, @del_single_pte
-    blt     @pagelist                       ; PMDT_PageList is the probable meaning of Pflag_NotPTE (will return to @parsed_pmdt)
+    blt     @pagelist                       ; PMDT_68k is the probable meaning of Pattr_NotPTE (will return to @parsed_pmdt)
 @did_del_single_pte                         ; (optimized return: if LT then @del_single_pte falls thru to @pagelist)
-    bgt     @single_pte                     ; PMDT_PTE_Single is the probable meaning of Pflag_PTE_Single (will return to @parsed_pmdt)
+    bgt     @single_pte                     ; PMDT_PTE_Single is the probable meaning of Pattr_PTE_Single (will return to @parsed_pmdt)
     slwi    r28, r30, 12                    ; PMDT_PTE_Range is likely otherwise, requiring us to add an offset to the PMDT
     add     r31, r31, r28
 @parsed_pmdt                                ; Save draft PTE in r31 (points to actual page, has PTE-style flags), and r26 = 
                                             ;   0 (if PMDT_PTE_Range)
                                             ;   0x5A5A (if PMDT_PTE_Single)
-                                            ;   PageListEntry ptr (if PMDT_PageList)
+                                            ;   PageListEntry ptr (if PMDT_68k)
 
 ########################################################################
 
@@ -143,41 +143,41 @@ PutPTE ; EA r27 // PTE r30/r31, EQ=Success, GT=Invalid, LT=Fault
 
 ########################################################################
 ; r30 = page index within area, r31 = RPN
-@pagelist ; Probably PMDT_PageList
+@pagelist ; Probably PMDT_68k
     extlwi. r28, r31, 2, 21                 ; Put remaining two flags into top bits and set Cond Reg
-    bge     @not_actually_pagelist          ; Not PMDT_PageList! (e.g. PMDT_InvalidAddress/PMDT_Available)
+    bge     @not_actually_pagelist          ; Not PMDT_68k! (e.g. PMDT_InvalidAddress/PMDT_Available)
 
     rlwinm  r28, r30, 2, 0xFFFFFFFC         ; page index in segment * 4
     rlwinm  r26, r31, 22, 0xFFFFFFFC        ; ptr to first PLE belonging to this segment
     lwzux   r28, r26, r28                   ; r26 = PLE ptr, r28 = PLE
 
     lwz     r31, KDP.PageAttributeInit(r1)
-    andi.   r30, r28, 0x881                 ; 20(expected), 24/31(unexpected)
+    andi.   r30, r28, M68pteInHTAB | M68pte24 | M68pteResident
     rlwimi  r31, r28, 0, 0xFFFFF000
-    cmplwi  r30, 1
-    cmplwi  cr7, r30, 0x81
+    cmplwi  r30, M68pteResident
+    cmplwi  cr7, r30, M68pte24 | M68pteResident
 
-    ori     r31, r31, 0x100
-    rlwimi  r31, r28, 3, 24, 24
-    rlwimi  r31, r28, 31, 26, 26
-    rlwimi  r31, r28, 1, 25, 25
-    xori    r31, r31, 0x40
-    rlwimi  r31, r28, 30, 31, 31            ; r31 gets "default WIMG/PP settings for PTE creation"
+    ori     r31, r31, LpteReference
+    _mvbit  r31, bLpteChange, r28, bM68pteModified
+    _mvbit  r31, bLpteInhibcache, r28, bM68pteInhibcache
+    _mvbit  r31, bLpteWritethru, r28, bM68pteNonwritethru
+    xori    r31, r31, LpteWritethru
+    _mvbit  r31, bLpteP2, r28, bM68pteWriteProtect
 
-    beq     @parsed_pmdt                    ; if PLE flag 31 only, go ahead and put in HTAB
+    beq     @parsed_pmdt                    ; if resident but outside HTAB, put in HTAB
     bltlr   cr7                             ; if no flags, return invalid (GT)
-    bl      SystemCrash                     ; but if flag 20/24 (i.e. already in HTAB), crash hard!
+    bl      SystemCrash                     ; crash hard in any other case
 
 ########################################################################
 @single_pte ; PMDT_PTE_Single
     ori     r28, r27, 0xfff                 ; r27 = EA, r31 = PMDT (low word, RPN)
     stw     r28, KDP.HtabSingleEA(r1)
-    rlwinm  r31, r31, 0, ~Pflag_PTE_Single  ; clear the flag that got us here, leaving none
+    rlwinm  r31, r31, 0, ~Pattr_PTE_Single  ; clear the flag that got us here, leaving none
     li      r26, 0x5A5A                     ; so that KDP.HtabSinglePTE gets set and we return correctly
     b       @parsed_pmdt                    ; RTS with r26 = 0x5A5A and r31 having flags cleared
 
 ########################################################################
-@not_actually_pagelist ; Pflag_NotPTE set, but not PMDT_PageList
+@not_actually_pagelist ; Pattr_NotPTE set, but not PMDT_68k
     bgtlr                                   ; PMDT_InvalidAddress/PMDT_Available: return invalid (GT)
     addi    r29, r1, KDP.SupervisorMap
     b       SetMap                          ; 800 (unknown) -> SetMap returns success (EQ)
@@ -262,16 +262,16 @@ PutPTE ; EA r27 // PTE r30/r31, EQ=Success, GT=Invalid, LT=Fault
     lhz     r31, PMDT.PageCount(r26)
     addi    r26, r26, 8
     cmplw   cr7, r30, r31
-    lwz     r31, PMDT.RPN - 8(r26)
-    andi.   r31, r31, EveryPflag
+    lwz     r31, PMDT.Word2 - 8(r26)
+    andi.   r31, r31, EveryPattr
     cmpwi   r31, PMDT_Available
     bgt     cr7, @oflow_next_pmdt           ; addr not in this PMDT -> try other PMDT
     beq     @oflow_next_pmdt                ; not PMDT_Available -> try other PMDT
 
-    lwz     r26, PMDT.RPN - PMDT.Size(r26)  ; If PMDT_PageList then we must wang the PLE pre-return
+    lwz     r26, PMDT.Word2 - PMDT.Size(r26)  ; If PMDT_68k then we must wang the PLE pre-return
     slwi    r30, r30, 2                     ; (r30 = PLE offset relative to first PLE in segment)
     extrwi  r31, r26, 2, 20
-    cmpwi   cr7, r31, PMDT_PageList >> 10   ; (save that little tidbit in cr7)
+    cmpwi   cr7, r31, PMDT_68k >> 10   ; (save that little tidbit in cr7)
 
     lwz     r31, KDP.NKInfo.HashTableOverflowCount(r1)
     stw     r29, KDP.HtabLastOverflow(r1)
@@ -286,7 +286,7 @@ PutPTE ; EA r27 // PTE r30/r31, EQ=Success, GT=Invalid, LT=Fault
     tlbie   r28
     sync
 
-    _InvalNCBPointerCache scratch=r28       ; Also clobber NCB cache if page could get moved
+    _clrNCBCache scr=r28       ; Also clobber NCB cache if page could get moved
 
     bne     cr7, PutPTE                     ; Is there a PageListEntry we need to edit?
     rlwinm  r26, r26, 22, 0xFFFFFFFC        ; r26 = RPN * 4
@@ -330,64 +330,64 @@ SetMap ; MemMap r29
     beq     @601
 
     rlwimi  r29, r28, 7, 0x00000078     ; BATS, non-601
-    lwz     r30, KDP.BATs + BAT.U(r29)
-    lwz     r31, KDP.BATs + BAT.L(r29)
+    lwz     r30, KDP.BATs + 0(r29)
+    lwz     r31, KDP.BATs + 4(r29)
     mtspr   ibat0u, r30
     mtspr   ibat0l, r31
     stw     r30, KDP.CurIBAT0.U(r1)
     stw     r31, KDP.CurIBAT0.L(r1)
 
     rlwimi  r29, r28, 11, 0x00000078
-    lwz     r30, KDP.BATs + BAT.U(r29)
-    lwz     r31, KDP.BATs + BAT.L(r29)
+    lwz     r30, KDP.BATs + 0(r29)
+    lwz     r31, KDP.BATs + 4(r29)
     mtspr   ibat1u, r30
     mtspr   ibat1l, r31
     stw     r30, KDP.CurIBAT1.U(r1)
     stw     r31, KDP.CurIBAT1.L(r1)
 
     rlwimi  r29, r28, 15, 0x00000078
-    lwz     r30, KDP.BATs + BAT.U(r29)
-    lwz     r31, KDP.BATs + BAT.L(r29)
+    lwz     r30, KDP.BATs + 0(r29)
+    lwz     r31, KDP.BATs + 4(r29)
     mtspr   ibat2u, r30
     mtspr   ibat2l, r31
     stw     r30, KDP.CurIBAT2.U(r1)
     stw     r31, KDP.CurIBAT2.L(r1)
 
     rlwimi  r29, r28, 19, 0x00000078
-    lwz     r30, KDP.BATs + BAT.U(r29)
-    lwz     r31, KDP.BATs + BAT.L(r29)
+    lwz     r30, KDP.BATs + 0(r29)
+    lwz     r31, KDP.BATs + 4(r29)
     mtspr   ibat3u, r30
     mtspr   ibat3l, r31
     stw     r30, KDP.CurIBAT3.U(r1)
     stw     r31, KDP.CurIBAT3.L(r1)
 
     rlwimi  r29, r28, 23, 0x00000078
-    lwz     r30, KDP.BATs + BAT.U(r29)
-    lwz     r31, KDP.BATs + BAT.L(r29)
+    lwz     r30, KDP.BATs + 0(r29)
+    lwz     r31, KDP.BATs + 4(r29)
     mtspr   dbat0u, r30
     mtspr   dbat0l, r31
     stw     r30, KDP.CurDBAT0.U(r1)
     stw     r31, KDP.CurDBAT0.L(r1)
 
     rlwimi  r29, r28, 27, 0x00000078
-    lwz     r30, KDP.BATs + BAT.U(r29)
-    lwz     r31, KDP.BATs + BAT.L(r29)
+    lwz     r30, KDP.BATs + 0(r29)
+    lwz     r31, KDP.BATs + 4(r29)
     mtspr   dbat1u, r30
     mtspr   dbat1l, r31
     stw     r30, KDP.CurDBAT1.U(r1)
     stw     r31, KDP.CurDBAT1.L(r1)
 
     rlwimi  r29, r28, 31, 0x00000078
-    lwz     r30, KDP.BATs + BAT.U(r29)
-    lwz     r31, KDP.BATs + BAT.L(r29)
+    lwz     r30, KDP.BATs + 0(r29)
+    lwz     r31, KDP.BATs + 4(r29)
     mtspr   dbat2u, r30
     mtspr   dbat2l, r31
     stw     r30, KDP.CurDBAT2.U(r1)
     stw     r31, KDP.CurDBAT2.L(r1)
 
     rlwimi  r29, r28, 3, 0x00000078
-    lwz     r30, KDP.BATs + BAT.U(r29)
-    lwz     r31, KDP.BATs + BAT.L(r29)
+    lwz     r30, KDP.BATs + 0(r29)
+    lwz     r31, KDP.BATs + 4(r29)
     mtspr   dbat3u, r30
     mtspr   dbat3l, r31
     stw     r30, KDP.CurDBAT3.U(r1)

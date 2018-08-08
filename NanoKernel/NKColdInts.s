@@ -25,7 +25,7 @@ InstStorageInt
 
     mfsprg  r24, 3
     mfmsr   r14
-    _set    r15, r14, bitMsrDR
+    _ori    r15, r14, MsrDR
     addi    r23, r1, KDP.VecTblMemRetry
     mtsprg  3, r23
     mr      r19, r10
