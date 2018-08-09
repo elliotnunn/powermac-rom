@@ -37,7 +37,7 @@ my_pad set (my_align - (my_offset & my_mask)) & my_mask
 
     MACRO
     _ori &rd, &rs, &imm
-    IF (&imm) > 0xFFFF
+    IF (&imm) & 0xFFFF0000 THEN
         oris&dot    &rd, &rs, (&imm) >> 16
     ELSE
         ori&dot     &rd, &rs, &imm
@@ -56,8 +56,8 @@ my_pad set (my_align - (my_offset & my_mask)) & my_mask
     MACRO
     _clrNCBCache &scr==r0
     li      &scr, -1
-    stw     &scr, KDP.NCBCacheLA0
-    stw     &scr, KDP.NCBCacheLA1
-    stw     &scr, KDP.NCBCacheLA2
-    stw     &scr, KDP.NCBCacheLA3
+    stw     &scr, KDP.NCBCacheLA0(r1)
+    stw     &scr, KDP.NCBCacheLA1(r1)
+    stw     &scr, KDP.NCBCacheLA2(r1)
+    stw     &scr, KDP.NCBCacheLA3(r1)
     ENDM

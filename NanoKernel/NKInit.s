@@ -398,9 +398,9 @@ InitEmulator
     mfpvr   r7                                                  ; Calculate Flags:
     srwi    r7, r7, 16
     cmpwi   r7, 1
-    lis     r7, GlobalFlagSystem >> 16                              ; we will enter System Context (all CPUs)
+    lis     r7, GlobalFlagSystem >> 16                          ; we will enter System Context (all CPUs)
     bne     @not_601
-    _ori    r7, r7, GlobalFlagMQReg                              ; but only 601 has MQ register
+    _ori    r7, r7, GlobalFlagMQReg                             ; but only 601 has MQ register
 @not_601
     stw     r7, KDP.Flags(r1)
 

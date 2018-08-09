@@ -3,9 +3,8 @@
 
 NKFiles = ¶
     {NKDir}NanoKernel.s                     ¶
-    {NKDir}NKStructs.s                      ¶
-    {NKDir}NKEquates.s                      ¶
     {NKDir}NKMacros.s                       ¶
+    {NKDir}NKEquates.s                      ¶
     {NKDir}NKInit.s                         ¶
     {NKDir}NKSystemCrash.s                  ¶
     {NKDir}NKHotInts.s                      ¶

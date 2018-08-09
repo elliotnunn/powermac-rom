@@ -297,6 +297,13 @@ BatMap      ds.l 1 ; packed array of 4-bit indices into BATs
 
 ########################################################################
 
+BAT         RECORD 0, INCR
+U           ds.l 1
+L           ds.l 1
+    ENDR
+
+########################################################################
+
 KDP                     RECORD 0, INCR ; Kernel Data Page
 r0                      ds.l    1   ; 000 ; used for quick register saves at interrupt time
 r1                      ds.l    1   ; 004

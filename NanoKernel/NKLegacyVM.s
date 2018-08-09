@@ -24,7 +24,7 @@ vmr68Pte        equ r16
 KCallVMDispatch
     stw     r7, KDP.Flags(r1)
     lwz     r7, KDP.CodeBase(r1)
-    cmplwi  r3, MaxVMCallCount
+    cmplwi  r3, (VMTabEnd-VMTab)/4
     insrwi  r7, r3, 7, 24
     lhz     r8, VMTab-CodeBase(r7)
     lwz     r9, KDP.VMLogicalPages(r1)
@@ -74,6 +74,7 @@ VMTab ; Placeholders indented
     vmtabLine   VMMarkUndefined         ; 23 VMMarkUndefined
     vmtabLine   VMMakePageWriteThrough  ; 24 VMMakePageWriteThrough
     vmtabLine   VMAllocateMemory        ; 25 VMAllocateMemory: Page:A0, Count:A1, BusAlignMask:D1
+VMTabEnd
 
 ########################################################################
 
@@ -396,7 +397,7 @@ VMLRU ; For each resident page: save Used bit and clear original
     mtcr    r16
     cmpwi   r4, 0
 
-    rlwinm  r7, r16, 23, 7FFFFFFC       ; r7 = offset of PPC PTE (if any)
+    rlwinm  r7, r16, 23, 0x7FFFFFFC     ; r7 = offset of PPC PTE (if any)
     bc      BO_IF_NOT, bM68pdResident, @nonresident
 
     bc      BO_IF_NOT, bM68pdInHTAB, @not_in_htab
@@ -455,14 +456,14 @@ VMMakePageWriteThrough
     ori     r9, r9, LpteWritethru
     bl      SavePTEAnd68kPD
 
-    b       FlushPageAndReturn
+    b       vmFlushPageAndReturn
 
 @not_paged ; so try to find a free PMDT to use (quite messy)
     rlwinm  r7, r4, 16, 0xF                                 ; address must be in segments 8-F
     cmpwi   r7, 9
     blt     vmRetNeg1
 
-    bc      BO_IF_NOT, M68pdCacheinhib, vmRetNeg1           ; must already be cache-inhibited??
+    bc      BO_IF_NOT, bM68pdCacheinhib, vmRetNeg1          ; must already be cache-inhibited??
 
     lwz     r5, PMDT.Size + PMDT.Word2(r15)                 ; take over the following PMDT if
     andi.   r6, r5, EveryPattr                              ; it is "available"
@@ -507,7 +508,8 @@ VMMakePageWriteThrough
     and     r15, r15, r7
     rlwimi  r8, r4, 22, UpteAPI
     crset   cr0_eq                                          ; clear cr0_eq when trying the secondary hash
-    oris    r8, r8, UpteValid                               ; r8 = the exact upper PTE word to search
+;    _ori    r8, r8, UpteValid                               ; r8 = the exact upper PTE word to search
+    nop
 
 @secondary_hash
     lwzux   r7, r14, r15                                    ; search the primary or secondary PTEG for r8
@@ -577,11 +579,11 @@ VMMakePageNonCacheable ; set WI=01 and CM0/CM1=11
     ori     r9, r9, LpteInhibcache
 
     bl      SavePTEAnd68kPD
-    ; Fall through to FlushPageAndReturn
+    ; Fall through to vmFlushPageAndReturn
 
 ########################################################################
 
-FlushPageAndReturn ; When making page write-though or noncacheable
+vmFlushPageAndReturn ; When making page write-though or noncacheable
     rlwinm  r4, r9, 0, 0xFFFFF000
     addi    r5, r4, 32
     li      r7, 0x1000
@@ -734,40 +736,42 @@ VMShouldClean ; is this page is a good candidate for writing to disk?
 ########################################################################
 
 VMAllocateMemory
-    lwz     r7,  KDP.VMPageArray(r1)
-    lwz     r8, KDP.SegmentPageArrays + 0(r1)
-    cmpwi   cr6, r5,  0x00
+    lwz     r7, KDP.VMPageArray(r1)
+    lwz     r8, KDP.SegmentPageArrays(r1)
+    cmpwi   cr6, r5, 0
     cmpw    cr7, r7, r8
-    or      r7, r4, r6
-    rlwinm. r7, r7,  0,  0, 11
-    bc      BO_IF_NOT, M68pdCacheinhib, vmRetNeg1
+    or      r7, r4, r6                          ; r4/r6 are page numbers?
+    rlwinm. r7, r7, 0, 0xFFF00000
+    ble     cr6, vmRetNeg1
     lwz     r9, KDP.VMLogicalPages(r1)
-    bne     cr7, vmRetNeg1
+    bne     cr7, vmRetNeg1                      ; diff page arrays: already inited?
     mr      r7, r4
     bne     vmRetNeg1
     mr      r4, r9
     slwi    r6, r6, 12
-    addi    r5, r5, -0x01
+    subi    r5, r5, 1
 
-VMAllocateMemory_0x74
-    addi    r4, r4, -0x01
-    bl      PageInfo
-    bcl     BO_IF, bM68pdInHTAB, DeletePTE
+@for_each_logical_page
+    subi    r4, r4, 1
+    bl      PageInfo                            
+    bcl     BO_IF, bM68pdInHTAB, DeletePTE      ; clear from HTAB
+
     lwz     r9, KDP.VMLogicalPages(r1)
     subf    r8, r4, r9
     cmplw   cr7, r5, r8
     and.    r8, r16, r6
-    bge     cr7, VMAllocateMemory_0x74
-    bne     VMAllocateMemory_0x74
-    cmpwi   cr6, r6,  0x00
+    bge     cr7, @for_each_logical_page
+    bne     @for_each_logical_page
+
+    cmpwi   cr6, r6, 0
     beq     cr6, VMAllocateMemory_0xc0
-    slwi    r8, r5,  2
+    slwi    r8, r5, 2
     lwzx    r8, r15, r8
     slwi    r14, r5, 12
     add     r14, r14, r16
     xor     r8, r8, r14
     rlwinm. r8, r8,  0,  0, 19
-    bne     VMAllocateMemory_0x74
+    bne     @for_each_logical_page
 
 VMAllocateMemory_0xc0
     lis     r9, 4
@@ -977,7 +981,7 @@ SaveLowerPTE
 
 DeletePTE
     lwz     r8, KDP.NKInfo.HashTableDeleteCount(r1)
-    rlwinm  r16, r16, 0, 21, 19 ~M68pdInHTAB
+    rlwinm  r16, r16, 0, ~M68pdInHTAB
     addi    r8, r8, 1
     stw     r8, KDP.NKInfo.HashTableDeleteCount(r1)
     rlwimi  r16, r9, 0, 0xFFFFF000      ; edit new 68k PD
@@ -1046,12 +1050,13 @@ QuickCalcPTE
     stw     r9, KDP.NKInfo.HashTableCreateCount(r1)
     rlwimi  r8, r4, 22, UpteAPI
     lwz     r9, KDP.PageAttributeInit(r1)   ; r9 will be new lower PTE
-    oris    r8, r8, UpteValid
+;    _ori    r8, r8, UpteValid
+    nop
     _mvbit  r9, bLpteReference, r16, bM68pdUsed
     _mvbit  r9, bLpteChange, r16, bM68pdModified
     _mvbit  r9, bLpteInhibcache, r16, bM68pdCacheinhib
     _mvbit  r9, bLpteWritethru, r16, bM68pdCacheNotIO
-    xori    r9, M68pdCacheinhib
+    xori    r9, r9, M68pdCacheinhib
     _mvbit  r9, bLpteP1, r16, bM68pdWriteProtect
 
     lwz     r7, KDP.HTABORG(r1)
