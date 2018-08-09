@@ -159,8 +159,8 @@ PutPTE ; EA r27 // PTE r30/r31, EQ=Success, GT=Invalid, LT=Fault
 
     ori     r31, r31, LpteReference
     _mvbit  r31, bLpteChange, r28, bM68pdModified
-    _mvbit  r31, bLpteInhibcache, r28, bM68pdCacheMode1
-    _mvbit  r31, bLpteWritethru, r28, bM68pdCacheMode0
+    _mvbit  r31, bLpteInhibcache, r28, bM68pdCacheinhib
+    _mvbit  r31, bLpteWritethru, r28, bM68pdCacheNotIO
     xori    r31, r31, LpteWritethru
     _mvbit  r31, bLpteP1, r28, bM68pdWriteProtect
 
@@ -286,7 +286,7 @@ PutPTE ; EA r27 // PTE r30/r31, EQ=Success, GT=Invalid, LT=Fault
     tlbie   r28
     sync
 
-    _clrNCBCache scr=r28       ; Also clobber NCB cache if page could get moved
+    _clrNCBCache scr=r28                    ; Also clobber NCB cache if page could get moved
 
     bne     cr7, PutPTE                     ; Is there a PageListEntry we need to edit?
     rlwinm  r26, r26, 22, 0xFFFFFFFC        ; r26 = RPN * 4

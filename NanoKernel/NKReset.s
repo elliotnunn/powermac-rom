@@ -327,9 +327,9 @@ Create68kPTEs
     lwz     r23, KDP.PageAttributeInit(r1)  ; "default WIMG/PP settings for PTE creation"
 
     li      r30, M68pdResident
-    _mvbit  r30, bM68pdCacheMode1, r23, bLpteInhibcache
-    _mvbit  r30, bM68pdCacheMode0, r23, bLpteWritethru
-    xori    r30, r30, bM68pdCacheMode0
+    _mvbit  r30, bM68pdCacheinhib, r23, bLpteInhibcache
+    _mvbit  r30, bM68pdCacheNotIO, r23, bLpteWritethru
+    xori    r30, r30, bM68pdCacheNotIO
     _mvbit  r30, bM68pdModified, r23, bLpteChange
     _mvbit  r30, bM68pdUsed, r23, bLpteReference
 
@@ -378,7 +378,7 @@ PutLogicalAreaInPageMap
     stw     r19, KDP.VMLogicalPages(r1)
     stw     r19, KDP.VMPhysicalPages(r1)
 
-    addi    r29, r1, KDP.PARPerSegmentPLEPtrs - 4   ; where to save per-segment PLE ptr
+    addi    r29, r1, KDP.SegmentPageArrays - 4   ; where to save per-segment PLE ptr
     addi    r19, r1, KDP.SegMap32SupInit - 8        ; which part of PageMap to update 
 
     stw     r21, KDP.VMPageArray(r1)
@@ -393,7 +393,7 @@ PutLogicalAreaInPageMap
     stw     r30, 0(r8)              ; use entire segment (PageIdx = 0, PageCount = 0xFFFF)
     stw     r31, 4(r8)              ; RPN = PLE ptr | PMDT_NotPTE_PageList
 
-    stwu    r21, 4(r29)             ; point PARPerSegmentPLEPtrs to segments's first PLE
+    stwu    r21, 4(r29)             ; point SegmentPageArrays to segments's first PLE
 
     addis   r21, r21, 4             ; increment pointer into PLE (64k pages/segment * 4b/PLE)
     subis   r22, r22, 1             ; decrement number of pending pages (64k pages/segment)

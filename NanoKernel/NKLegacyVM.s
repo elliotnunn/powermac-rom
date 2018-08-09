@@ -11,10 +11,6 @@
 
 ; This file is a horrible mess. It needs a do-over.
 
-ispaged equ cr4_lt
-
-;r4=pg, r9=areapgcnt // cr[16]=ispaged, r16/r15/cr[20-31]=68kPTE/ptr/attrs, r8/r9/r14=PTE-hi/lo/ptr
-
 ; Registers used throughout: (maybe we'll just call these "conventions")
 vmrMisc1        equ r8
 vmrMisc2        equ r9
@@ -71,8 +67,8 @@ VMTab ; Placeholders indented
     vmtabLine       vmRet               ; 16 VMFlushCodeCache: wack the code cache
     vmtabLine   VMMakePageCacheable     ; 17 VMMakePageCacheable: make it so...
     vmtabLine   VMMakePageNonCacheable  ; 18 VMMakePageNonCacheable: make it so...
-    vmtabLine   getPTEntryGivenPage     ; 19 getPTEntryGivenPage: given a page, get its 68K PTE
-    vmtabLine   setPTEntryGivenPage     ; 20 setPTEntryGivenPage: given a page & 68K pte, set the real PTE
+    vmtabLine   VMGetPTEntryGivenPage   ; 19 VMGetPTEntryGivenPage: given a page, get its 68K PTE
+    vmtabLine   VMSetPTEntryGivenPage   ; 20 VMSetPTEntryGivenPage: given a page & 68K pte, set the real PTE
     vmtabLine   VMPTest                 ; 21 VMPTest: ask why we got this page fault
     vmtabLine   VMLRU                   ; 22 VMLRU: least recently used?
     vmtabLine   VMMarkUndefined         ; 23 VMMarkUndefined
@@ -101,7 +97,7 @@ vmRet
 
 VMInit
     lwz     r7, KDP.VMPageArray(r1)          ; check that zero seg isn't empty
-    lwz     r8, KDP.PARPerSegmentPLEPtrs + 0(r1)
+    lwz     r8, KDP.SegmentPageArrays + 0(r1)
     cmpw    r7, r8
     bne     vmRet1
 
@@ -126,7 +122,7 @@ VMInit_BigLoop
     bne     VMInit_0x110
     bnel    cr1, SystemCrash
     rlwinm  r15, r8, 22,  0, 29
-    addi    r3, r1, KDP.PARPerSegmentPLEPtrs
+    addi    r3, r1, KDP.SegmentPageArrays
     rlwimi  r3, r5,  2, 28, 29
     stw     r15,  0x0000(r3)
     slwi    r3, r5, 16
@@ -155,7 +151,7 @@ VMInit_0xa8
     cmpw    r3, r4
     bnel    SystemCrash
 ;   bl      RemovePageFromTLB
-    bl      RemovePTEFromHTAB
+    bl      DeletePTE
 
 VMInitple_or_pte0
     cmpwi   r7,  0x00
@@ -202,13 +198,13 @@ VMInit_0x110
     blt     VMInit_Fail
 
     srwi    r7, r5, 12
-    bl      major_0x09c9c
+    bl      QuickGetPhysical
     stw     r9,  KDP.VMPageArray(r1)
     mr      r15, r9
     srwi    r7, r5, 12
     add     r7, r7, r6
     addi    r7, r7, -0x01
-    bl      major_0x09c9c
+    bl      QuickGetPhysical
     subf    r9, r15, r9
     srwi    r9, r9, 12
     addi    r9, r9,  0x01
@@ -234,7 +230,7 @@ VMInit_0x1d4
 VMInit_0x1ec
     subi    r6, r6, 4
     srwi    r7, r6,  2
-    bl      major_0x09c9c
+    bl      QuickGetPhysical
     cmpwi   r6,  0x00
     ori     r16, r9,  0x21
     stwx    r16, r15, r6
@@ -295,7 +291,7 @@ VMInit_0x29c
 
 VMInit_Fail
     lwz     r7, KDP.VMPhysicalPages(r1)
-    lwz     r8, KDP.PARPerSegmentPLEPtrs + 0(r1)
+    lwz     r8, KDP.SegmentPageArrays + 0(r1)
     stw     r7, KDP.VMLogicalPages(r1)
     stw     r8, KDP.VMPageArray(r1)
 
@@ -305,24 +301,24 @@ VMInit_Fail
 
 VMExchangePages
     bl      PageInfo
-    bc      BO_IF_NOT, ispaged, vmRetNeg1               ; must be in pageable area
+    bc      BO_IF_NOT, cr4_lt, vmRetNeg1                ; not a paged area
     bc      BO_IF, 21, vmRetNeg1
-    bc      BO_IF_NOT, bM68pdResident, vmRetNeg1       ; must be resident
-    bc      BO_IF, bM68pdCacheMode1, vmRetNeg1         ; must not have special properties
-    bc      BO_IF_NOT, bM68pdCacheMode0, vmRetNeg1
-    bcl     BO_IF, M68pdInHTAB, RemovePTEFromHTAB      ; if in HTAB, must be removed
+    bc      BO_IF_NOT, bM68pdResident, vmRetNeg1        ; must be resident
+    bc      BO_IF, bM68pdCacheinhib, vmRetNeg1          ; must not have special properties
+    bc      BO_IF_NOT, bM68pdCacheNotIO, vmRetNeg1
+    bcl     BO_IF, bM68pdInHTAB, DeletePTE       ; if in HTAB, must be removed
     mr      r6, r15                                     ; r6 = src 68k PTE ptr
 
     mr      r4, r5
     mr      r5, r16                                     ; r5 = src 68k PTE
     lwz     r9, KDP.VMLogicalPages(r1)
     bl      PageInfo
-    bc      BO_IF_NOT, ispaged, vmRetNeg1
+    bc      BO_IF_NOT, cr4_lt, vmRetNeg1
     bc      BO_IF, 21, vmRetNeg1
     bc      BO_IF_NOT, bM68pdResident, vmRetNeg1
-    bc      BO_IF, bM68pdCacheMode1, vmRetNeg1
-    bc      BO_IF_NOT, bM68pdCacheMode0, vmRetNeg1
-    bcl     BO_IF, M68pdInHTAB, RemovePTEFromHTAB
+    bc      BO_IF, bM68pdCacheinhib, vmRetNeg1
+    bc      BO_IF_NOT, bM68pdCacheNotIO, vmRetNeg1
+    bcl     BO_IF, bM68pdInHTAB, DeletePTE
 
     stw     r5, 0(r15)                                  ; swap 68k PTEs (in that big flat list)                                  
     stw     r16, 0(r6)
@@ -352,7 +348,7 @@ VMGetPhysicalPage
 
 ########################################################################
 
-getPTEntryGivenPage
+VMGetPTEntryGivenPage
     bl      PageInfo
     mr      r3, r16
     bc      BO_IF_NOT, bM68pdResident, vmRet
@@ -384,14 +380,14 @@ VMIsUnmodified
 
 ########################################################################
 
-VMLRU ; For each resident page: save Update bit and clear original
+VMLRU ; For each resident page: save Used bit and clear original
     slwi    r9, r9, 2                   ; (r9 is VMLogicalPages)
     lwz     r15, KDP.VMPageArray(r1)
     lwz     r14, KDP.HTABORG(r1)
     add     r15, r15, r9                ; r15 = loop PageArray ptr
     srwi    r4, r9, 2                   ; r4 = loop counter
 
-    li      r5, LpteReference           ; for clearing bits with andc
+    li      r5, LpteReference           ; r5/r6 or clearing bits with andc
     li      r6, M68pdUsed
 
 @loop ; over every logical page
@@ -408,12 +404,12 @@ VMLRU ; For each resident page: save Update bit and clear original
     lwz     r9, 4(r14)                  ; bit back to 68k PTE and clear
     _mvbit  r16, bM68pdUsed, r9, bLpteReference
     andc    r9, r9, r5
-    bl      ChangeNativeLowerPTE
+    bl      SaveLowerPTE
     subf    r14, r7, r14
 @not_in_htab
 
     _mvbit  r16, bM68pdFrozenUsed, r16, bM68pdUsed
-    andc    r16, r16, r6                ; save Update and clear original
+    andc    r16, r16, r6                ; save Used and clear original
     stw     r16, 0(r15)                 ; save changed 68k PTE
 @nonresident
 
@@ -423,194 +419,210 @@ VMLRU ; For each resident page: save Update bit and clear original
 ########################################################################
 
 VMMakePageCacheable
-; PPC: W=0, I=0
-; 68k: Nonwritethru=0, Inhibcache=0
+; PPC: LpteWritethru(W)=0, LpteInhibcache(I)=0
+; 68k: M68pdCacheNotIO(CM0)=1, M68pdCacheinhib(CM1)=0 ["Cachable,Copyback"]
     bl      PageInfo
-    rlwinm  r7, r16, 0, M68pdCacheMode1 | M68pdCacheMode0
-    cmpwi   r7, M68pdCacheMode0
-    bc      BO_IF_NOT, bM68pdResident, vmRetNeg1
-    beq     vmRet
-    bc      BO_IF_NOT, ispaged, vmRetNeg1
+    rlwinm  r7, r16, 0, M68pdCacheNotIO | M68pdCacheinhib   ; test CM0/CM1
+    cmpwi   r7, M68pdCacheNotIO
+    bc      BO_IF_NOT, bM68pdResident, vmRetNeg1            ; not resident!
+    beq     vmRet                                           ; already write-through
+    bc      BO_IF_NOT, cr4_lt, vmRetNeg1                    ; not a paged area, so fail!
 
-    bcl     BO_IF_NOT, M68pdInHTAB, VMSecondLastExportedFunc
+    bcl     BO_IF_NOT, bM68pdInHTAB, QuickCalcPTE           ; need to have a PPC PTE
 
-    rlwinm  r16, r16, 0, ~(M68pdCacheMode1 | M68pdCacheMode0)
+    rlwinm  r16, r16, 0, ~(M68pdCacheinhib | M68pdCacheNotIO)
     rlwinm  r9, r9,  0, ~(LpteWritethru | LpteInhibcache)
-    ori     r16, r16, M68pdCacheMode0
-    bl      ChangeNativeAnd68kPTEs
+    ori     r16, r16, M68pdCacheNotIO
+    bl      SavePTEAnd68kPD
 
     b       vmRet
 
 ########################################################################
 
 VMMakePageWriteThrough
+; PPC: LpteWritethru(W)=1, LpteInhibcache(I)=0
+; 68k: M68pdCacheNotIO(CM0)=0, M68pdCacheinhib(CM1)=0 ["Cachable,Write-through"]
     bl      PageInfo
-    rlwinm. r7, r16,  0, 25, 26
-    bc      BO_IF_NOT, bM68pdResident, vmRetNeg1
-    beq     vmRet
-    bc      BO_IF_NOT, ispaged, VMMakePageWriteThrough_0x3c
-    bcl     BO_IF_NOT, M68pdInHTAB, VMSecondLastExportedFunc
-    rlwinm  r16, r16,  0, 27, 24
-    rlwinm  r9, r9,  0, 27, 24
-    ori     r9, r9,  0x40
-    bl      ChangeNativeAnd68kPTEs
-    b       VMMakePageNonCacheable_0x3c
+    rlwinm. r7, r16, 0, M68pdCacheNotIO | M68pdCacheinhib   ; test CM0/CM1
+    bc      BO_IF_NOT, bM68pdResident, vmRetNeg1            ; not resident!
+    beq     vmRet                                           ; already write-through
+    bc      BO_IF_NOT, cr4_lt, @not_paged                   ; not a paged area, so use PMDT!
 
-VMMakePageWriteThrough_0x3c
-    rlwinm  r7, r4, 16, 28, 31
-    cmpwi   r7,  0x09
+    bcl     BO_IF_NOT, bM68pdInHTAB, QuickCalcPTE           ; need to have a PPC PTE
+
+    rlwinm  r16, r16, 0, ~(M68pdCacheNotIO | M68pdCacheinhib)
+    rlwinm  r9, r9, 0, ~(LpteWritethru | LpteInhibcache)
+    ori     r9, r9, LpteWritethru
+    bl      SavePTEAnd68kPD
+
+    b       FlushPageAndReturn
+
+@not_paged ; so try to find a free PMDT to use (quite messy)
+    rlwinm  r7, r4, 16, 0xF                                 ; address must be in segments 8-F
+    cmpwi   r7, 9
     blt     vmRetNeg1
-    bc		BO_IF_NOT, M68pdCacheMode1, vmRetNeg1
-    lwz     r5,  0x000c(r15)
-    andi.   r6, r5,  0xe01
-    cmpwi   r6,  0xa01
-    beq     VMMakePageWriteThrough_0xec
-    addi    r15, r15, -0x08
-    lwz     r5,  0x0004(r15)
-    lhz     r6,  0x0000(r15)
-    andi.   r5, r5,  0xc00
-    lhz     r5,  0x0002(r15)
-    bne     vmRetNeg1
-    addi    r5, r5,  0x01
+
+    bc      BO_IF_NOT, M68pdCacheinhib, vmRetNeg1           ; must already be cache-inhibited??
+
+    lwz     r5, PMDT.Size + PMDT.Word2(r15)                 ; take over the following PMDT if
+    andi.   r6, r5, EveryPattr                              ; it is "available"
+    cmpwi   r6, PMDT_Available
+    beq     @next_pmdt_free
+
+; no free PMDT... hijack the previous one if it is PMDT_PTE_Range
+    subi    r15, r15, PMDT.Size
+    lwz     r5, PMDT.Word2(r15)
+    lhz     r6, PMDT.PageIdx(r15)
+    andi.   r5, r5, Pattr_NotPTE | Pattr_PTE_Single
+    lhz     r5, PMDT.PageCount(r15)
+    bne     vmRetNeg1                                       ; demand PMDT_PTE_Range
+    addi    r5, r5, 1
     add     r6, r6, r5
     xor     r6, r6, r4
-    andi.   r6, r6,  0xffff
+    andi.   r6, r6, 0xffff                                  ; does the previous PMDT abut this one?
     bne     vmRetNeg1
-    sth     r5,  0x0002(r15)
-    b       PageSetCommon
+    sth     r5, PMDT.PageCount(r15)
+    b       @edited_pmdt
 
-VMMakePageWriteThrough_0xec
-    lwz     r5,  0x0000(r15)
-    lwz     r6,  0x0004(r15)
-    stw     r5,  0x0008(r15)
-    stw     r6,  0x000c(r15)
-    slwi    r5, r4, 16
-    stw     r5,  0x0000(r15)
-    slwi    r5, r4, 12
-    ori     r5, r5,  0x42
-    stw     r5,  0x0004(r15)
+@next_pmdt_free ; so replace it with copy of current one, then turn current one into PMDT_PTE_Range
+    lwz     r5, 0(r15)                                      ; copy current PMDT to next
+    lwz     r6, 4(r15)
+    stw     r5, PMDT.Size + 0(r15)
+    stw     r6, PMDT.Size + 4(r15)
 
-########################################################################
+    slwi    r5, r4, 16                                      ; PMDT PageIdx=this, PageCount=single
+    stw     r5, 0(r15)
+    slwi    r5, r4, 12                                      ; PMDT RPN = logical address of page
+    ori     r5, r5, LpteWritethru | LpteP0                  ; and raise these flags too
+    stw     r5, PMDT.Word2(r15)
 
-PageSetCommon
-    lwz     r15, KDP.PTEGMask(r1)
+@edited_pmdt ; now to delete any existing PTE derived from the original PMDT
+    lwz     r15, KDP.PTEGMask(r1)                           ; hash to find the PTEG
     lwz     r14, KDP.HTABORG(r1)
     slwi    r6, r4, 12
     mfsrin  r6, r6
-    rlwinm  r8, r6,  7,  0, 20
+    rlwinm  r8, r6, 7, UpteValid | UpteVSID
     xor     r6, r6, r4
-    slwi    r7, r6,  6
+    slwi    r7, r6, 6
     and     r15, r15, r7
-    rlwimi  r8, r4, 22, 26, 31
-    crset   cr0_eq
-    oris    r8, r8,  0x8000
+    rlwimi  r8, r4, 22, UpteAPI
+    crset   cr0_eq                                          ; clear cr0_eq when trying the secondary hash
+    oris    r8, r8, UpteValid                               ; r8 = the exact upper PTE word to search
 
-PageSetCommon_0x2c
-    lwzux   r7, r14, r15
-    lwz     r15,  0x0008(r14)
-    lwz     r6,  0x0010(r14)
-    lwz     r5,  0x0018(r14)
+@secondary_hash
+    lwzux   r7, r14, r15                                    ; search the primary or secondary PTEG for r8
+    lwz     r15, 8(r14)
+    lwz     r6, 16(r14)
+    lwz     r5, 24(r14)
     cmplw   cr1, r7, r8
     cmplw   cr2, r15, r8
     cmplw   cr3, r6, r8
     cmplw   cr4, r5, r8
-    beq     cr1, PageSetCommon_0xc8
-    beq     cr2, PageSetCommon_0xc4
-    beq     cr3, PageSetCommon_0xc0
-    beq     cr4, PageSetCommon_0xbc
-    lwzu    r7,  0x0020(r14)
-    lwz     r15,  0x0008(r14)
-    lwz     r6,  0x0010(r14)
-    lwz     r5,  0x0018(r14)
+    beq     cr1, @pte_at_r14
+    beq     cr2, @pte_at_r14_plus_8
+    beq     cr3, @pte_at_r14_plus_16
+    beq     cr4, @pte_at_r14_plus_24
+    lwzu    r7, 32(r14)
+    lwz     r15, 8(r14)
+    lwz     r6, 16(r14)
+    lwz     r5, 24(r14)
     cmplw   cr1, r7, r8
     cmplw   cr2, r15, r8
     cmplw   cr3, r6, r8
     cmplw   cr4, r5, r8
-    beq     cr1, PageSetCommon_0xc8
-    beq     cr2, PageSetCommon_0xc4
-    beq     cr3, PageSetCommon_0xc0
-    beq     cr4, PageSetCommon_0xbc
-    crnot   2, 2
+    beq     cr1, @pte_at_r14
+    beq     cr2, @pte_at_r14_plus_8
+    beq     cr3, @pte_at_r14_plus_16
+    beq     cr4, @pte_at_r14_plus_24
+
+    crnot   cr0_eq, cr0_eq                                  ; can't find it => try again with secondary hash
     lwz     r15, KDP.PTEGMask(r1)
     lwz     r14, KDP.HTABORG(r1)
     slwi    r6, r4, 12
     mfsrin  r6, r6
     xor     r6, r6, r4
     not     r6, r6
-    slwi    r7, r6,  6
+    slwi    r7, r6, 6
     and     r15, r15, r7
-    xori    r8, r8,  0x40
-    bne     PageSetCommon_0x2c
+    xori    r8, r8, UpteHash
+    bc      BO_IF_NOT, cr0_eq, @secondary_hash
     b       vmRet
 
-PageSetCommon_0xbc
-    addi    r14, r14,  0x08
-
-PageSetCommon_0xc0
-    addi    r14, r14,  0x08
-
-PageSetCommon_0xc4
-    addi    r14, r14,  0x08
-
-PageSetCommon_0xc8
-;   bl      RemovePageFromTLB
-    li      r8,  0x00
-    li      r9,  0x00
-    bl      ChangeNativePTE
+@pte_at_r14_plus_24
+    addi    r14, r14, 8
+@pte_at_r14_plus_16
+    addi    r14, r14, 8
+@pte_at_r14_plus_8
+    addi    r14, r14, 8
+@pte_at_r14                                                 ; found PTE based on original PMDT => delete it
+    li      r8, 0
+    li      r9, 0
+    bl      SavePTE
     b       vmRet
 
 ########################################################################
 
-VMMakePageNonCacheable
+VMMakePageNonCacheable ; set WI=01 and CM0/CM1=11
     bl      PageInfo
-    rlwinm  r7, r16,  0, 25, 26
-    cmpwi   r7,  0x60
+    rlwinm  r7, r16, 0, M68pdCacheNotIO | M68pdCacheinhib
+    cmpwi   r7, M68pdCacheNotIO | M68pdCacheinhib   ; these should both end up set
     bc      BO_IF_NOT, bM68pdResident, vmRetNeg1
     beq     vmRet
-    bc      BO_IF_NOT, ispaged, vmRetNeg1
-    bl		BO_IF_NOT, 20, VMSecondLastExportedFunc
-    rlwinm  r9, r9,  0, 27, 24
-    ori     r16, r16,  0x60
-    ori     r9, r9,  0x20
-    bl      ChangeNativeAnd68kPTEs
+    bc      BO_IF_NOT, cr4_lt, vmRetNeg1            ; not a paged area
 
-VMMakePageNonCacheable_0x3c
-    rlwinm  r4, r9,  0,  0, 19
-    addi    r5, r4, 0x20
-    li      r7,  0x1000
-    li      r8, 0x40
+    bcl     BO_IF_NOT, bM68pdInHTAB, QuickCalcPTE
 
-VMMakePageNonCacheable_0x50
+    rlwinm  r9, r9,  0, ~(LpteWritethru | LpteInhibcache)
+    ori     r16, r16, M68pdCacheNotIO | M68pdCacheinhib
+    ori     r9, r9, LpteInhibcache
+
+    bl      SavePTEAnd68kPD
+    ; Fall through to FlushPageAndReturn
+
+########################################################################
+
+FlushPageAndReturn ; When making page write-though or noncacheable
+    rlwinm  r4, r9, 0, 0xFFFFF000
+    addi    r5, r4, 32
+    li      r7, 0x1000
+    li      r8, 64
+@loop
     subf.   r7, r8, r7
     dcbf    r7, r4
     dcbf    r7, r5
-    bne     VMMakePageNonCacheable_0x50
+    bne     @loop
     b       vmRet
 
 ########################################################################
 
 VMMarkBacking
     bl      PageInfo
-    bc      BO_IF_NOT, ispaged, vmRetNeg1
-    bc      BO_IF, 21, vmRetNeg1
-    bcl     BO_IF, M68pdInHTAB, RemovePTEFromHTAB
-    rlwimi  r16, r5, 16, 15, 15
-    li      r7,  0x01
+    bc      BO_IF_NOT, cr4_lt, vmRetNeg1    ; not a paged area
+    bc      BO_IF, bM68pdGlobal, vmRetNeg1
+
+    bcl     BO_IF, bM68pdInHTAB, DeletePTE
+
+    _mvbit  r16, 15, r5, 31
+    li      r7, M68pdResident
     andc    r16, r16, r7
-    stw     r16,  0x0000(r15)
+    stw     r16, 0(r15)
+
     b       vmRet
 
 ########################################################################
 
 VMMarkCleanUnused
     bl      PageInfo
-    bc      BO_IF_NOT, ispaged, vmRetNeg1
+    bc      BO_IF_NOT, cr4_lt, vmRetNeg1    ; not a paged area
     bc      BO_IF_NOT, bM68pdResident, vmRetNeg1
-    bl		BO_IF_NOT, 20, VMSecondLastExportedFunc
-    li      r7,  0x180
+
+    bcl     BO_IF_NOT, bM68pdInHTAB, QuickCalcPTE
+
+    li      r7, LpteReference | LpteChange
     andc    r9, r9, r7
-    ori     r16, r16,  0x100
-    bl      ChangeNativeAnd68kPTEs
+    ori     r16, r16, M68pdModified
+    bl      SavePTEAnd68kPD
+
     b       vmRet
 
 ########################################################################
@@ -638,84 +650,97 @@ VMMarkUndefined_0x28
 
 ########################################################################
 
-VMMarkResident
+VMMarkResident ; physical page number in a0/r5
     bl      PageInfo
-    bc      BO_IF_NOT, ispaged, vmRetNeg1
-    bc      BO_IF, bM68pdResident, vmRetNeg1
-    bcl     BO_IF, M68pdInHTAB, SystemCrash
-    rlwimi  r16, r5, 12,  0, 19
-    ori     r16, r16,  0x01
-    stw     r16,  0x0000(r15)
-    bl      VMSecondLastExportedFunc
-    bl      ChangeNativeAnd68kPTEs
+    bc      BO_IF_NOT, cr4_lt, vmRetNeg1        ; not a paged area!
+    bc      BO_IF, bM68pdResident, vmRetNeg1    ; already resident!
+    bcl     BO_IF, bM68pdInHTAB, SystemCrash    ; corrupt 68k PD!
+
+    rlwimi  r16, r5, 12, 0xFFFFF000             ; make up a 68k PD
+    ori     r16, r16, M68pdResident             ; save it
+    stw     r16, 0(r15)
+
+    bl      QuickCalcPTE                        ; make up a PPC PTE
+    bl      SavePTEAnd68kPD                     ; save it
+
     b       vmRet
 
 ########################################################################
 
-VMPTest
-    srwi    r4, r4, 12
+VMPTest ; return reason for fault on page a0/r4, based on action in d1/r6
+    srwi    r4, r4, 12          ; because it was outside a paged area?
     cmplw   r4, r9
-    li      r3,  0x4000
+    li      r3, 1 << 14
     bge     vmRet
-    bl      PageInfo
-    li      r3,  0x400
+
+    bl      PageInfo            ; because the page was non-resident?
+    li      r3, 1 << 10
     bc      BO_IF_NOT, bM68pdResident, vmRet
-    li      r3,  0x00
-    ori     r3, r3,  0x8000
+
+    li      r3, 0               ; unknown!
+    ori     r3, r3, 1 << 15
     bc      BO_IF_NOT, bM68pdWriteProtect, vmRet
-    cmpwi   r6,  0x00
+    cmpwi   r6, 0
     beq     vmRet
-    li      r3,  0x800
-    b       vmRet
+
+    li      r3, 1 << 11         ; because wrote to write-protected page
+    b       vmRet               ; (requires d1/r6 to be non-zero)
 
 ########################################################################
 
-setPTEntryGivenPage
+VMSetPTEntryGivenPage
     mr      r6, r4
     mr      r4, r5
     bl      PageInfo
-    bc      BO_IF_NOT, ispaged, vmRetNeg1
-    xor     r7, r16, r6
-    li      r3,  0x461
-    rlwimi  r3, r16, 24, 29, 29
+    bc      BO_IF_NOT, cr4_lt, vmRetNeg1    ; not a paged area
+
+    xor     r7, r16, r6         ; r17 = bits to be changed
+
+                                ; cannot change G/CM0/CM1/PTD0 with this call
+    li      r3, M68pdGlobal | M68pdCacheinhib | M68pdCacheNotIO | M68pdResident
+    _mvbit  r3, bM68pdWriteProtect, r16, bM68pdGlobal ; cannot change WP if G is set
     and.    r3, r3, r7
-    bne     vmRetNeg1
-    andi.   r7, r7,  0x11c
-    xor     r16, r16, r7
-    stw     r16,  0x0000(r15)
-    bc      BO_IF_NOT, bM68pdInHTAB, vmRet
-    rlwimi  r9, r16,  5, 23, 23
-    rlwimi  r9, r16,  3, 24, 24
-    rlwimi  r9, r16, 30, 31, 31
-    bl      ChangeNativeLowerPTE
+    bne     vmRetNeg1           ; fail if trying to change a forbidden bit
+
+    andi.   r7, r7, M68pdShouldClean | M68pdModified | M68pdUsed | M68pdWriteProtect
+    xor     r16, r16, r7        ; silently refuse to change U0/M/U/WP
+    stw     r16, 0(r15)         ; save new 68k PD
+
+    bc      BO_IF_NOT, bM68pdInHTAB, vmRet          ; edit PPC PTE if applicable
+    _mvbit  r9, bLpteReference, r16, bM68pdUsed
+    _mvbit  r9, bLpteChange, r16, bM68pdModified
+    _mvbit  r9, bLpteP1, r16, bM68pdWriteProtect
+    bl      SaveLowerPTE
     b       vmRet
 
 ########################################################################
 
-VMShouldClean
+VMShouldClean ; is this page is a good candidate for writing to disk?
     bl      PageInfo
-    bc      BO_IF_NOT, bM68pdResident, vmRet0
-    bc      BO_IF, bM68pdUsed, vmRet0
-    bc      BO_IF_NOT, bM68pdModified, vmRet0
-    bc      BO_IF_NOT, ispaged, vmRetNeg1
-    xori    r16, r16,  0x10
-    ori     r16, r16,  0x100
-    stw     r16,  0x0000(r15)
-    bc      BO_IF_NOT, bM68pdInHTAB, vmRet1
-    xori    r9, r9,  0x80
-    bl      ChangeNativeLowerPTE
-    b       vmRet1
+    bc      BO_IF_NOT, bM68pdResident, vmRet0   ; already paged out: no
+    bc      BO_IF, bM68pdUsed, vmRet0           ; been read recently: no
+    bc      BO_IF_NOT, bM68pdModified, vmRet0   ; unwritten ('clean'): no
+    bc      BO_IF_NOT, cr4_lt, vmRetNeg1        ; not a paged area: error
+
+    xori    r16, r16, M68pdModified             ; clear 68k-PD[M]
+    ori     r16, r16, M68pdShouldClean          ; set user-defined bit
+    stw     r16, 0(r15)
+
+    bc      BO_IF_NOT, bM68pdInHTAB, vmRet1     ; clear PPC-PTE[C]
+    xori    r9, r9, LpteChange                  ; (if necessary)
+    bl      SaveLowerPTE
+    b       vmRet1                              ; return yes!
 
 ########################################################################
 
 VMAllocateMemory
     lwz     r7,  KDP.VMPageArray(r1)
-    lwz     r8, KDP.PARPerSegmentPLEPtrs + 0(r1)
+    lwz     r8, KDP.SegmentPageArrays + 0(r1)
     cmpwi   cr6, r5,  0x00
     cmpw    cr7, r7, r8
     or      r7, r4, r6
     rlwinm. r7, r7,  0,  0, 11
-    bc		BO_IF_NOT, M68pdCacheMode1, vmRetNeg1
+    bc      BO_IF_NOT, M68pdCacheinhib, vmRetNeg1
     lwz     r9, KDP.VMLogicalPages(r1)
     bne     cr7, vmRetNeg1
     mr      r7, r4
@@ -727,7 +752,7 @@ VMAllocateMemory
 VMAllocateMemory_0x74
     addi    r4, r4, -0x01
     bl      PageInfo
-    bcl     BO_IF, M68pdInHTAB, RemovePTEFromHTAB
+    bcl     BO_IF, bM68pdInHTAB, DeletePTE
     lwz     r9, KDP.VMLogicalPages(r1)
     subf    r8, r4, r9
     cmplw   cr7, r5, r8
@@ -838,21 +863,30 @@ VMAllocateMemory_0x324
 
 ########################################################################
 
-; This function gets sent an page for a page in the main mac os memory
-; area and returns a bunch of useful info on it. Return values that
-; mention HTAB are undefined when the PTE is not in the HTAB HTAB
-; residence is determined by bit 20 (value 0x800) of the PTE. This is
-; often checked by a bltl cr5
+; Given the index of a page (r4/A0), this function queries its 68k Page
+; Descriptor (PD) and, if it is currently in the HTAB, its PowerPC Page
+; Table Entry (PTE). This information is returned in registers, with the
+; attribute flags of the 68k PD additionally placed in Condition Register
+; bits for easy testing. The page must be within the VM address space
+; (i.e. < VMLogicalPages), or cr4_lt will be cleared to indicate an error.
+; VMLogicalPages must be passed in r9 (as set by VMDispatch).
 
-; Individual VM calls usually BL straight to this function. 
+; Return values:
+;   if in paged area: cr4_lt         =  1
+;                     r16/r15/cr5-7  =  68k Page Descriptor [PD/pointer/attr-bits]
+;                     r8/r9/r14      =  PowerPC Page Table Entry [PTE-high/PTE-low/pointer]
+;
+;   if not paged:     cr4_lt         =  0
+;                     r16/cr5-7      =  fake 68k Page Descriptor [PD/attr-bits]
+;                     r15            =  PMDT pointer
 
-PageInfo ; r4=pg, r9=areapgcnt // cr[16]=ispaged, r16/r15/cr[20-31]=68kPTE/ptr/attrs, r8/r9/r14=PTE-hi/lo/ptr
+PageInfo
     cmplw   cr4, r4, r9
     lwz     r15, KDP.VMPageArray(r1)        ; r15 = Page List base
     slwi    r8, r4, 2                       ; r18 = Page List Entry offset
     bge     cr4, @not_par
 
-@ple_or_pte ; 
+@paged ; 
     lwzux   r16, r15, r8                    ; Get Page List Entry (will return ptr in r15)
     lwz     r14, KDP.HTABORG(r1)            ; ...which might point to a Page Table Entry
     mtcrf   %00000111, r16                  ; Set all flags in CR (but not RealPgNum)
@@ -896,49 +930,43 @@ PageInfo ; r4=pg, r9=areapgcnt // cr[16]=ispaged, r16/r15/cr[20-31]=68kPTE/ptr/a
     andi.   r16, r9, Pattr_NotPTE | Pattr_PTE_Single
     cmpwi   cr6, r16, Pattr_PTE_Single
     cmpwi   cr7, r16, Pattr_NotPTE | Pattr_PTE_Single
-    beq     @range
-    beq     cr6, @single
+    beq     @range_pmdt
+    beq     cr6, @single_pmdt
     bne     cr7, vmRetNeg1
 
     slwi    r8, r8,  2
     rlwinm  r15, r9, 22,  0, 29
-    crset   cr4_lt
-    b       @ple_or_pte
+    crset   cr4_lt                          ; return "is paged"
+    b       @paged
 
-@range
+@range_pmdt
     slwi    r8, r8, 12
     add     r9, r9, r8
+@single_pmdt
+    rlwinm  r16, r9, 0, 0xFFFFF000          ; fabricate a 68k Page Descriptor
+    crclr   cr4_lt                          ; return "is not paged"
+    rlwinm  r9, r9,  0, ~PMDT_68k
+    _mvbit  r16, bM68pdCacheinhib, r9, bLpteInhibcache
+    _mvbit  r16, bM68pdCacheNotIO, r9, bLpteWritethru
+    xori    r16, r16, M68pdCacheNotIO
+    _mvbit  r16, bM68pdModified, r9, bLpteChange
+    _mvbit  r16, bM68pdUsed, r9, bLpteChange
+    _mvbit  r16, bM68pdWriteProtect, r9, bLpteP1
+    ori     r16, r16, M68pdResident
 
-@single
-    rlwinm  r16, r9,  0,  0, 19
-    crclr   cr4_lt
-    rlwinm  r9, r9,  0, 22, 19
-    rlwimi  r16, r9,  1, 25, 25
-    rlwimi  r16, r9, 31, 26, 26
-    xori    r16, r16,  0x20
-    rlwimi  r16, r9, 29, 27, 27
-    rlwimi  r16, r9, 28, 28, 28
-    rlwimi  r16, r9,  2, 29, 29
-    ori     r16, r16,  0x01
-    mtcrf   %00000111, r16
+    mtcrf   %00000111, r16                  ; extract flags from it
     blr     
 
 ########################################################################
 
-;updates stored PTE and HTAB entry for PTE
-;r16 is PTE value
-;r15 is address of stored PTE
-;r8 is lower word of HTAB entry
-;r9 is upper word of HTAB entry
-;r14 is address of HTAB entry
-ChangeNativeAnd68kPTEs
-    stw     r16, 0(r15)
-ChangeNativePTE
-    stw     r8, 0(r14)
-ChangeNativeLowerPTE
-    stw     r9, 4(r14)      ;upper word of HTAB entry contains valid bit
+SavePTEAnd68kPD
+    stw     r16, 0(r15)     ; save r16 (PD) into r15 (PD ptr)
+SavePTE
+    stw     r8, 0(r14)      ; save r8 (upper PTE) into r14 (PTE ptr)
+SaveLowerPTE
+    stw     r9, 4(r14)      ; save r9 (lower PTE) into r14 (PTE ptr) + 4
 
-    slwi    r8, r4, 12
+    slwi    r8, r4, 12      ; trash TLB
     sync
     tlbie   r8
     sync    
@@ -947,95 +975,92 @@ ChangeNativeLowerPTE
 
 ########################################################################
 
-;Removes a page from the HTAB.
-;
-;also updates NK statistics?
-;r9 is low word of HTAB entry
-;r14 ia address of HTAB entry
-;r15 is address of stored PTE
-;r16 is PTE value
-RemovePTEFromHTAB
-    lwz     r8, KDP.NKInfo.HashTableDeleteCount(r1);update a value in NanoKernelInfo
-    rlwinm  r16, r16,  0, 21, 19    ;update PTE flags to indicate not in HTAB
-    addi    r8, r8,  0x01
+DeletePTE
+    lwz     r8, KDP.NKInfo.HashTableDeleteCount(r1)
+    rlwinm  r16, r16, 0, 21, 19 ~M68pdInHTAB
+    addi    r8, r8, 1
     stw     r8, KDP.NKInfo.HashTableDeleteCount(r1)
-    rlwimi  r16, r9,  0,  0, 19 ;move page# back into PTE
+    rlwimi  r16, r9, 0, 0xFFFFF000      ; edit new 68k PD
 
-    _clrNCBCache scr=r8
+    _clrNCBCache scr=r8                 ; page can now move, so clr NCBs
 
-    li      r8,  0x00   ;0 upper HTAB word
-    li      r9,  0x00   ;0 lower HTAB word
-    b       ChangeNativeAnd68kPTEs   ;update stored PTE and invalidate HTAB entry
+    li      r8, 0                       ; zero new PPC PTE
+    li      r9, 0
+
+    b       SavePTEAnd68kPD
 
 ########################################################################
 
-VMSecondLastExportedFunc
-    lwz     r8, KDP.PTEGMask(r1)
-VMLastExportedFunc
+; Calculate a new PowerPC PTE for a page that is not currently in the
+; HTAB. The new PTE (and new ptr) will be in the usual r8/r9 and r14, and
+; the new 68k PD (and unchanged ptr) will be in the usual r16 and r15.
+; Because it tries a quick path but falls back on the big fat PutPTE, this
+; function may or may not actually put the PowerPC and 68k structures into
+; place. The caller must do this.
+
+QuickCalcPTE
+    lwz     r8, KDP.PTEGMask(r1)        ; Calculate hash to find PTEG
     lwz     r14, KDP.HTABORG(r1)
     slwi    r9, r4, 12
     mfsrin  r6, r9
     xor     r9, r6, r4
-    slwi    r7, r9,  6
+    slwi    r7, r9, 6
     and     r8, r8, r7
-    lwzux   r7, r14, r8
-    lwz     r8,  0x0008(r14)
-    lwz     r9,  0x0010(r14)
-    lwz     r5,  0x0018(r14)
-    cmpwi   r7,  0x00
-    cmpwi   cr1, r8,  0x00
-    cmpwi   cr2, r9,  0x00
-    cmpwi   cr3, r5,  0x00
-    bge     VMLastExportedFunc_0x87
-    bge     cr1, VMLastExportedFunc_0x83
-    bge     cr2, VMLastExportedFunc_0x7f
-    bge     cr3, VMLastExportedFunc_0x7b
-    lwzu    r7,  0x0020(r14)
-    lwz     r8,  0x0008(r14)
-    lwz     r9,  0x0010(r14)
-    lwz     r5,  0x0018(r14)
-    cmpwi   r7,  0x00
-    cmpwi   cr1, r8,  0x00
-    cmpwi   cr2, r9,  0x00
-    cmpwi   cr3, r5,  0x00
-    bge     VMLastExportedFunc_0x87
-    bge     cr1, VMLastExportedFunc_0x83
-    bge     cr2, VMLastExportedFunc_0x7f
-    blt     cr3, VMLastExportedFunc_0xd7
 
-VMLastExportedFunc_0x7b
-    addi    r14, r14,  0x08
+    lwzux   r7, r14, r8                 ; Find an invalid PTE in the right PTEG...
+    lwz     r8, 8(r14)
+    lwz     r9, 16(r14)
+    lwz     r5, 24(r14)
+    cmpwi   cr0, r7, 0
+    cmpwi   cr1, r8, 0
+    cmpwi   cr2, r9, 0
+    cmpwi   cr3, r5, 0
+    bge     cr0, @pte_at_r14
+    bge     cr1, @pte_at_r14_plus_8
+    bge     cr2, @pte_at_r14_plus_16
+    bge     cr3, @pte_at_r14_plus_24
+    lwzu    r7, 32(r14)
+    lwz     r8, 8(r14)
+    lwz     r9, 16(r14)
+    lwz     r5, 24(r14)
+    cmpwi   cr0, r7, 0
+    cmpwi   cr1, r8, 0
+    cmpwi   cr2, r9, 0
+    cmpwi   cr3, r5, 0
+    bge     cr0, @pte_at_r14
+    bge     cr1, @pte_at_r14_plus_8
+    bge     cr2, @pte_at_r14_plus_16
+    blt     cr3, @heavyweight           ; (no free slot, so use PutPTE and rerun PageInfo)
+@pte_at_r14_plus_24
+    addi    r14, r14, 8
+@pte_at_r14_plus_16
+    addi    r14, r14, 8
+@pte_at_r14_plus_8
+    addi    r14, r14, 8
+@pte_at_r14                             ; ... and put a pointer in r14.
 
-VMLastExportedFunc_0x7f
-    addi    r14, r14,  0x08
-
-VMLastExportedFunc_0x83
-    addi    r14, r14,  0x08
-
-VMLastExportedFunc_0x87
+; Quick path: there is a PTE slot that the caller can fill
     lwz     r9, KDP.NKInfo.HashTableCreateCount(r1)
-    rlwinm  r8, r6,  7,  1, 24
-    addi    r9, r9,  0x01
+    rlwinm  r8, r6,  7, UpteVSID            ; r8 will be new upper PTE
+    addi    r9, r9, 1
     stw     r9, KDP.NKInfo.HashTableCreateCount(r1)
-    rlwimi  r8, r4, 22, 26, 31
-
-    lwz     r9, KDP.PageAttributeInit(r1)
-    oris    r8, r8,  0x8000
-
+    rlwimi  r8, r4, 22, UpteAPI
+    lwz     r9, KDP.PageAttributeInit(r1)   ; r9 will be new lower PTE
+    oris    r8, r8, UpteValid
     _mvbit  r9, bLpteReference, r16, bM68pdUsed
     _mvbit  r9, bLpteChange, r16, bM68pdModified
-    _mvbit  r9, bLpteInhibcache, r16, bM68pdCacheMode1
-    _mvbit  r9, bLpteWritethru, r16, bM68pdCacheMode0
-    xori    r9, M68pdCacheMode1
+    _mvbit  r9, bLpteInhibcache, r16, bM68pdCacheinhib
+    _mvbit  r9, bLpteWritethru, r16, bM68pdCacheNotIO
+    xori    r9, M68pdCacheinhib
     _mvbit  r9, bLpteP1, r16, bM68pdWriteProtect
 
     lwz     r7, KDP.HTABORG(r1)
     ori     r16, r16, M68pdInHTAB | M68pdResident
     subf    r7, r7, r14
-    rlwimi  r16, r7, 9, 0xFFFFF000
+    rlwimi  r16, r7, 9, 0xFFFFF000      ; put PTE ptr info into 68k PD
     blr     
 
-VMLastExportedFunc_0xd7
+@heavyweight ; Slow path: the full PutPTE, with all its weird registers!
     mr      r7, r27
     mr      r8, r29
     mr      r9, r30
@@ -1053,19 +1078,23 @@ VMLastExportedFunc_0xd7
     mr      r28, r16
     mr      r26, r14
     mtlr    r6
+
     lwz     r9, KDP.VMLogicalPages(r1)
-    b       PageInfo
+    b       PageInfo                    ; <= r4
 
 ########################################################################
 
-major_0x09c9c
-    addi    r8, r1, KDP.PARPerSegmentPLEPtrs
+; Assumes that the page numbered r4 is within the paged area, resident,
+; and not in the HTAB. Returns a physical pointer in r9.
+
+QuickGetPhysical
+    addi    r8, r1, KDP.SegmentPageArrays
     lwz     r9, KDP.VMPhysicalPages(r1)
-    rlwimi  r8, r7, 18, 28, 29
+    rlwimi  r8, r7, 18, 0xF * 4
     cmplw   r7, r9
-    lwz     r8,  0x0000(r8)
-    rlwinm  r7, r7,  2, 14, 29
+    lwz     r8, 0(r8)
+    rlwinm  r7, r7, 2, 0xFFFF * 4
     bge     vmRetNeg1
-    lwzx    r9, r8, r7
-    rlwinm  r9, r9,  0,  0, 19
+    lwzx    r9, r8, r7              ; r9 = 68k PD
+    rlwinm  r9, r9, 0, 0xFFFFF000
     blr     

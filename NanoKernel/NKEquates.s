@@ -93,9 +93,9 @@ mrFlagDidLoad equ cr3_so
 
 ; Upper word of a Page Table Entry (PTE):
     _bitequate 0,  UpteValid    ; [V] if valid then a signed compare will raise the LT bit
-    ; bits 1-24 hold the Virtual Segment ID (VSID, allows one HTAB to hold many addr spaces)
+UpteVSID equ 0x7FFFFF80         ; bits 1-24 = Virtual Segment ID (allows one HTAB to hold many addr spaces)
     _bitequate 25, UpteHash     ; [H] set if this PTE is placed according to secondary hash
-    ; bits 26-31 hold the Abbreviated Page Index (API, the EA bits that aren't implicit in the hash)
+UpteAPI  equ 0x0000003F         ; bits 26-31 = Abbreviated Page Index (the EA bits that aren't implicit in the hash)
 
 ; Lower word of a Page Table Entry (PTE):
     ; bits 0-19 hold the Real Page Number (RPN, the address of the physical page)
@@ -173,30 +173,30 @@ PMDT_PTE_Single_Rel     equ 0x600
 ########################################################################
 
 ; 68k Page Descriptors
-A handful of special PMDTs describe the MacOS "Primary Address Range"
-(the contiguous RAM starting at address 0 and containing the sys and app
-heaps etc). Instead of referring directly to physical pages, each of
-these PMDTs has in its RPN field a pointer to an array of 68k Page
-Descriptors! These are in the 68k 4k-page format, and could also be
-called 68k Page Table Entries. Besides being friendly to old 68k code
-using the VMDispatch trap (FE0A), this provides a convenient way to
-store state for individual logical pages and to allow them to use
-discontiguous physical backing.
+; A handful of special PMDTs describe the MacOS "Primary Address Range"
+; (the contiguous RAM starting at address 0 and containing the sys and app
+; heaps etc). Instead of referring directly to physical pages, each of
+; these PMDTs has in its RPN field a pointer to an array of 68k Page
+; Descriptors! These are in the 68k 4k-page format, and could also be
+; called 68k Page Table Entries. Besides being friendly to old 68k code
+; using the VMDispatch trap (FE0A), this provides a convenient way to
+; store state for individual logical pages and to allow them to use
+; discontiguous physical backing.
 
     ; Bits 0-19:
     ;   if M68pdInHTAB: native PTE index relative to HTABORG
     ;   else:           physical page address
-    _bitequate 20, M68pdInHTAB          ; [11 UR]  user-reserved
+    _bitequate 20, M68pdInHTAB          ; [11 UR]  (reserved bit) page in PowerPC HTAB
     _bitequate 21, M68pdGlobal          ; [10 G]   page immune to PFLUSH (unused?)
     _bitequate 22, M68pdFrozenUsed      ; [9 U1]   copied from Used by VMLRU
-    _bitequate 23, M68pdU0              ; [8 U0]   in 68k arch
+    _bitequate 23, M68pdShouldClean     ; [8 U0]   set whenever VMShouldClean returns 1
     _bitequate 24, M68pdSupProtect      ; [7 S]    supervisor access only
-    _bitequate 25, M68pdCacheMode1      ; [6 CM1]  like PPC Inhibcache
-    _bitequate 26, M68pdCacheMode0      ; [5 CM0]  like inverse of PPC Writethru
+    _bitequate 25, M68pdCacheinhib      ; [6 CM1]  like PPC Inhibcache
+    _bitequate 26, M68pdCacheNotIO      ; [5 CM0]  like inverse of PPC Writethru
     _bitequate 27, M68pdModified        ; [4 M]    like PPC Change
     _bitequate 28, M68pdUsed            ; [3 U]    like PPC Reference
-    _bitequate 29, M68pdWriteProtect    ; [2 WP]   ?unused
-    _bitequate 30, M68pdIndirect        ; [1 PDT1]
+    _bitequate 29, M68pdWriteProtect    ; [2 WP]
+    _bitequate 30, M68pdIndirect        ; [1 PDT1] would make this a ptr to another PD (not used)
     _bitequate 31, M68pdResident        ; [0 PDT0]
 
 ; Cache Mode (CM) bits:
@@ -205,8 +205,8 @@ discontiguous physical backing.
 ;     01     Cachable,Copyback
 ;     10     Noncachable,Serialized
 ;     11     Noncachable
-; Therefore CM1 should match PPC Inhibcache,
-; and CM0 should be inverse of PPC Writethru
+; Therefore CM1 (M68pdCacheinhib) should match PPC Inhibcache,
+; and CM0 (M68pdCacheNotIO) should be inverse of PPC Writethru
 
 ; User Page Attribute (U) bits:
 ;   In the 68k arch these are user-defined, but they are exposed on
@@ -364,9 +364,9 @@ VecTblAlternate         ds  VecTbl  ; 420:4e0 ; native PowerPC in blue task
 VecTblMemRetry          ds  VecTbl  ; 4e0:5a0 ; "FDP" instruction emulation
 
 FloatScratch            ds.d    1   ; 5a0:5a8
-TopOfFreePages          ds.l    1   ; 5a8 ; gotten from the old SPRG0
+                        ds.l    1   ; 5a8
                         ds.l    1   ; 5ac
-PARPerSegmentPLEPtrs    ds.l    4   ; 5b0:5c0 ; for each PAR segment, a ptr into the PAR PageList
+SegmentPageArrays       ds.l    4   ; 5b0:5c0 ; for each PAR segment, a ptr into the PAR PageList
 FloatingPtTemp1         ds.l    1   ; 5c0
 FloatingPtTemp2         ds.l    1   ; 5c4
 
@@ -382,7 +382,7 @@ ConfigInfoPtr           ds.l    1   ; 630
 EDPPtr                  ds.l    1   ; 634
 KernelMemoryBase        ds.l    1   ; 638
 KernelMemoryEnd         ds.l    1   ; 63c
-LowMemPtr               ds.l    1   ; 640 ; physical address of PAR Low Memory
+LowMemPtr               ds.l    1   ; 640 ; physical address of MacOS Low Memory
 SharedMemoryAddr        ds.l    1   ; 644 ; debug?
 EmuKCallTblPtrLogical   ds.l    1   ; 648
 CodeBase                ds.l    1   ; 64c
@@ -410,7 +410,7 @@ PTEGMask                ds.l    1   ; 6a0
 HTABORG                 ds.l    1   ; 6a4
 VMLogicalPages          ds.l    1   ; 6a8 ; size of VM Manager's address space
 VMPhysicalPages         ds.l    1   ; 6ac ; how many pages VM Manager may use
-VMPageArray           ds.l    1   ; 6b0 ; array of 68k Page Table Entries
+VMPageArray             ds.l    1   ; 6b0 ; array of 68k Page Descriptors
 
                         org     0x700
 CrashTop
