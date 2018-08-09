@@ -92,33 +92,33 @@ mrFlagDidLoad equ cr3_so
 ; Entries and Entry Groups are called "PTEs" and "PTEGs".)
 
 ; Upper word of a Page Table Entry (PTE):
-    _bitequate 0,  UpteValid    ; if valid then a signed compare will raise the LT bit
+    _bitequate 0,  UpteValid    ; [V] if valid then a signed compare will raise the LT bit
     ; bits 1-24 hold the Virtual Segment ID (VSID, allows one HTAB to hold many addr spaces)
-    _bitequate 25, UpteHash     ; set if this PTE is placed according to secondary hash
+    _bitequate 25, UpteHash     ; [H] set if this PTE is placed according to secondary hash
     ; bits 26-31 hold the Abbreviated Page Index (API, the EA bits that aren't implicit in the hash)
 
 ; Lower word of a Page Table Entry (PTE):
     ; bits 0-19 hold the Real Page Number (RPN, the address of the physical page)
     ; bits 20-22 are reserved
-    _bitequate 23, LpteReference    ; set by arch when page is read
-    _bitequate 24, LpteChange       ; set by arch when page is written
-    _bitequate 25, LpteWritethru    ; these are the "WIMG" memory access policy bits
-    _bitequate 26, LpteInhibcache
-    _bitequate 27, LpteMemcoher
-    _bitequate 28, LpteGuardwrite
+    _bitequate 23, LpteReference    ; [R] set by arch when page is read
+    _bitequate 24, LpteChange       ; [C] set by arch when page is written
+    _bitequate 25, LpteWritethru    ; [W] these are the "WIMG" memory access policy bits
+    _bitequate 26, LpteInhibcache   ; [I]
+    _bitequate 27, LpteMemcoher     ; [M]
+    _bitequate 28, LpteGuardwrite   ; [G]
     ; bit 29 is reserved
-    _bitequate 30, LpteP1           ; supervisor and user access policy bits (check these)
-    _bitequate 31, LpteP2
+    _bitequate 30, LpteP0           ; [P0] supervisor and user access policy bits (check these)
+    _bitequate 31, LpteP1           ; [P1]
 
 ; Some combinations from the v1 Trampoline:
 ATTR_RW_Locked      equ LpteMemcoher
-ATTR_RW             equ LpteMemcoher | LpteP1
-ATTR_RO             equ LpteMemcoher | LpteP1 | LpteP2
+ATTR_RW             equ LpteMemcoher | LpteP0
+ATTR_RO             equ LpteMemcoher | LpteP0 | LpteP1
 ATTR_IO_Locked      equ LpteInhibcache | LpteGuardwrite
-ATTR_IO             equ LpteInhibcache | LpteGuardwrite | LpteP1
-ATTR_RO_Quiet       equ LpteWritethru | LpteMemcoher | LpteP1 | LpteP2
-ATTR_RO_Locked      equ LpteChange | LpteMemcoher | LpteP1 | LpteP2
-ATTR_RO_LockedQuiet equ LpteWritethru | LpteChange | LpteMemcoher | LpteP1 | LpteP2
+ATTR_IO             equ LpteInhibcache | LpteGuardwrite | LpteP0
+ATTR_RO_Quiet       equ LpteWritethru | LpteMemcoher | LpteP0 | LpteP1
+ATTR_RO_Locked      equ LpteChange | LpteMemcoher | LpteP0 | LpteP1
+ATTR_RO_LockedQuiet equ LpteWritethru | LpteChange | LpteMemcoher | LpteP0 | LpteP1
 
 ; "PMDTs" (described below) imitate the lower word of a PTE.
 
@@ -172,30 +172,45 @@ PMDT_PTE_Single_Rel     equ 0x600
 
 ########################################################################
 
-; 68k Page Table Entries
-; A handful of special PMDTs describe the MacOS "Primary Address Range"
-; (the contiguous RAM starting at address 0 and containing the sys and app
-; heaps etc). Instead of referring directly to physical pages, each of
-; these PMDTs has in its RPN field a pointer to an array of 68k Page Table
-; Entries! Besides being friendly to old Virtual Memory Manger code, this
-; provides a convenient way to store state for individual logical pages
-; and to allow them to use discontiguous physical backing.
+; 68k Page Descriptors
+A handful of special PMDTs describe the MacOS "Primary Address Range"
+(the contiguous RAM starting at address 0 and containing the sys and app
+heaps etc). Instead of referring directly to physical pages, each of
+these PMDTs has in its RPN field a pointer to an array of 68k Page
+Descriptors! These are in the 68k 4k-page format, and could also be
+called 68k Page Table Entries. Besides being friendly to old 68k code
+using the VMDispatch trap (FE0A), this provides a convenient way to
+store state for individual logical pages and to allow them to use
+discontiguous physical backing.
 
-    ; Bits 0-9:
-    ;   if M68pteInHTAB: PTE offset (in 8b increments from HTABORG)
-    ;   else:            Real Page Number (RPN)
-    _bitequate 20, M68pteInHTAB         ; (unlike 68k)
-    _bitequate 21, M68pte21
-    _bitequate 22, M68pteSavedUpdate
-    _bitequate 23, M68pte23
-    _bitequate 24, M68pte24
-    _bitequate 25, M68pteInhibcache     ; (unlike 68k) like PPC Inhibcache
-    _bitequate 26, M68pteNonwritethru   ; (unlike 68k) like inverse of PPC Writethru
-    _bitequate 27, M68pteModified       ; like PPC Change
-    _bitequate 28, M68pteUpdate         ; like PPC Reference
-    _bitequate 29, M68pteWriteProtect
-    _bitequate 30, M68pte30
-    _bitequate 31, M68pteResident       ; (unlike 68k) there is a physical page
+    ; Bits 0-19:
+    ;   if M68pdInHTAB: native PTE index relative to HTABORG
+    ;   else:           physical page address
+    _bitequate 20, M68pdInHTAB          ; [UR]   user-reserved
+    _bitequate 21, M68pdGlobal          ; [G]    page immune to PFLUSH (unused?)
+    _bitequate 22, M68pdFrozenUsed      ; [U1]   copied from Used by VMLRU
+    _bitequate 23, M68pdU0              ; [U0]   in 68k arch
+    _bitequate 24, M68pdSupProtect      ; [S]    supervisor access only
+    _bitequate 25, M68pdCacheMode1      ; [CM1]  like PPC Inhibcache
+    _bitequate 26, M68pdCacheMode0      ; [CM0]  like inverse of PPC Writethru
+    _bitequate 27, M68pdModified        ; [M]    like PPC Change
+    _bitequate 28, M68pdUsed            ; [U]    like PPC Reference
+    _bitequate 29, M68pdWriteProtect    ; [WP]   ?unused
+    _bitequate 30, M68pdIndirect        ; [PDT1]
+    _bitequate 31, M68pdResident        ; [PDT0]
+
+; Cache Mode (CM) bits:
+;   CM1/CM0  Meaning
+;     00     Cachable,Write-through
+;     01     Cachable,Copyback
+;     10     Noncachable,Serialized
+;     11     Noncachable
+; Therefore CM1 should match PPC Inhibcache,
+; and CM0 should be inverse of PPC Writethru
+
+; User Page Attribute (U) bits:
+;   In the 68k arch these are user-defined, but they are exposed on
+;   the external bus when the logical page is accessed.
 
 ########################################################################
 

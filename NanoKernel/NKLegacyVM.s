@@ -307,10 +307,10 @@ VMExchangePages
     bl      PageInfo
     bc      BO_IF_NOT, ispaged, vmRetNeg1               ; must be in pageable area
     bc      BO_IF, 21, vmRetNeg1
-    bc      BO_IF_NOT, bM68pteResident, vmRetNeg1       ; must be resident
-    bc      BO_IF, bM68pteInhibcache, vmRetNeg1         ; must not have special properties
-    bc      BO_IF_NOT, bM68pteNonwritethru, vmRetNeg1
-    bcl     BO_IF, M68pteInHTAB, RemovePTEFromHTAB      ; if in HTAB, must be removed
+    bc      BO_IF_NOT, bM68pdResident, vmRetNeg1       ; must be resident
+    bc      BO_IF, bM68pdCacheMode1, vmRetNeg1         ; must not have special properties
+    bc      BO_IF_NOT, bM68pdCacheMode0, vmRetNeg1
+    bcl     BO_IF, M68pdInHTAB, RemovePTEFromHTAB      ; if in HTAB, must be removed
     mr      r6, r15                                     ; r6 = src 68k PTE ptr
 
     mr      r4, r5
@@ -319,10 +319,10 @@ VMExchangePages
     bl      PageInfo
     bc      BO_IF_NOT, ispaged, vmRetNeg1
     bc      BO_IF, 21, vmRetNeg1
-    bc      BO_IF_NOT, bM68pteResident, vmRetNeg1
-    bc      BO_IF, bM68pteInhibcache, vmRetNeg1
-    bc      BO_IF_NOT, bM68pteNonwritethru, vmRetNeg1
-    bcl     BO_IF, M68pteInHTAB, RemovePTEFromHTAB
+    bc      BO_IF_NOT, bM68pdResident, vmRetNeg1
+    bc      BO_IF, bM68pdCacheMode1, vmRetNeg1
+    bc      BO_IF_NOT, bM68pdCacheMode0, vmRetNeg1
+    bcl     BO_IF, M68pdInHTAB, RemovePTEFromHTAB
 
     stw     r5, 0(r15)                                  ; swap 68k PTEs (in that big flat list)                                  
     stw     r16, 0(r6)
@@ -346,7 +346,7 @@ VMExchangePages
 
 VMGetPhysicalPage
     bl      PageInfo
-    bc      BO_IF_NOT, bM68pteResident, vmRetNeg1
+    bc      BO_IF_NOT, bM68pdResident, vmRetNeg1
     srwi    r3, r9, 12
     b       vmRet
 
@@ -355,7 +355,7 @@ VMGetPhysicalPage
 getPTEntryGivenPage
     bl      PageInfo
     mr      r3, r16
-    bc      BO_IF_NOT, bM68pteResident, vmRet
+    bc      BO_IF_NOT, bM68pdResident, vmRet
     rlwimi  r3, r9, 0, 0xFFFFF000
     b       vmRet
 
@@ -363,7 +363,7 @@ getPTEntryGivenPage
 
 VMIsInited
     bl      PageInfo
-    bc      BO_IF, bM68pteResident, vmRet1
+    bc      BO_IF, bM68pdResident, vmRet1
     rlwinm  r3, r16, 16, 31, 31
     b       vmRet
 
@@ -371,14 +371,14 @@ VMIsInited
 
 VMIsResident
     bl      PageInfo
-    rlwinm  r3, r16, 0, 1 ; M68pteResident
+    rlwinm  r3, r16, 0, 1 ; M68pdResident
     b       vmRet
 
 ########################################################################
 
 VMIsUnmodified
     bl      PageInfo
-    rlwinm  r3, r16, bM68pteModified + 1, 1
+    rlwinm  r3, r16, bM68pdModified + 1, 1
     xori    r3, r3, 1
     b       vmRet
 
@@ -392,7 +392,7 @@ VMLRU ; For each resident page: save Update bit and clear original
     srwi    r4, r9, 2                   ; r4 = loop counter
 
     li      r5, LpteReference           ; for clearing bits with andc
-    li      r6, M68pteUpdate
+    li      r6, M68pdUsed
 
 @loop ; over every logical page
     lwzu    r16, -4(r15)
@@ -400,19 +400,19 @@ VMLRU ; For each resident page: save Update bit and clear original
     mtcr    r16
     cmpwi   r4, 0
 
-    rlwinm  r7, r16, 23, 7FFFFFF8       ; r7 = offset of PPC PTE (if any)
-    bc      BO_IF_NOT, bM68pteResident, @nonresident
+    rlwinm  r7, r16, 23, 7FFFFFFC       ; r7 = offset of PPC PTE (if any)
+    bc      BO_IF_NOT, bM68pdResident, @nonresident
 
-    bc      BO_IF_NOT, bM68pteInHTAB, @not_in_htab
+    bc      BO_IF_NOT, bM68pdInHTAB, @not_in_htab
     add     r14, r14, r7                ; If PPC PTE in HTAB, copy its Ref
     lwz     r9, 4(r14)                  ; bit back to 68k PTE and clear
-    _mvbit  r16, bM68pteUpdate, r9, bLpteReference
+    _mvbit  r16, bM68pdUsed, r9, bLpteReference
     andc    r9, r9, r5
     bl      ChangeNativeLowerPTE
     subf    r14, r7, r14
 @not_in_htab
 
-    _mvbit  r16, bM68pteSavedUpdate, r16, bM68pteUpdate
+    _mvbit  r16, bM68pdFrozenUsed, r16, bM68pdUsed
     andc    r16, r16, r6                ; save Update and clear original
     stw     r16, 0(r15)                 ; save changed 68k PTE
 @nonresident
@@ -426,17 +426,17 @@ VMMakePageCacheable
 ; PPC: W=0, I=0
 ; 68k: Nonwritethru=0, Inhibcache=0
     bl      PageInfo
-    rlwinm  r7, r16, 0, M68pteInhibcache | M68pteNonwritethru
-    cmpwi   r7, M68pteNonwritethru
-    bc      BO_IF_NOT, bM68pteResident, vmRetNeg1
+    rlwinm  r7, r16, 0, M68pdCacheMode1 | M68pdCacheMode0
+    cmpwi   r7, M68pdCacheMode0
+    bc      BO_IF_NOT, bM68pdResident, vmRetNeg1
     beq     vmRet
     bc      BO_IF_NOT, ispaged, vmRetNeg1
 
-    bcl     BO_IF_NOT, M68pteInHTAB, VMSecondLastExportedFunc
+    bcl     BO_IF_NOT, M68pdInHTAB, VMSecondLastExportedFunc
 
-    rlwinm  r16, r16, 0, ~(M68pteInhibcache | M68pteNonwritethru)
+    rlwinm  r16, r16, 0, ~(M68pdCacheMode1 | M68pdCacheMode0)
     rlwinm  r9, r9,  0, ~(LpteWritethru | LpteInhibcache)
-    ori     r16, r16, M68pteNonwritethru
+    ori     r16, r16, M68pdCacheMode0
     bl      ChangeNativeAnd68kPTEs
 
     b       vmRet
@@ -446,10 +446,10 @@ VMMakePageCacheable
 VMMakePageWriteThrough
     bl      PageInfo
     rlwinm. r7, r16,  0, 25, 26
-    bc      BO_IF_NOT, bM68pteResident, vmRetNeg1
+    bc      BO_IF_NOT, bM68pdResident, vmRetNeg1
     beq     vmRet
     bc      BO_IF_NOT, ispaged, VMMakePageWriteThrough_0x3c
-    bcl     BO_IF_NOT, M68pteInHTAB, VMSecondLastExportedFunc
+    bcl     BO_IF_NOT, M68pdInHTAB, VMSecondLastExportedFunc
     rlwinm  r16, r16,  0, 27, 24
     rlwinm  r9, r9,  0, 27, 24
     ori     r9, r9,  0x40
@@ -460,7 +460,7 @@ VMMakePageWriteThrough_0x3c
     rlwinm  r7, r4, 16, 28, 31
     cmpwi   r7,  0x09
     blt     vmRetNeg1
-    bc		BO_IF_NOT, M68pteInhibcache, vmRetNeg1
+    bc		BO_IF_NOT, M68pdCacheMode1, vmRetNeg1
     lwz     r5,  0x000c(r15)
     andi.   r6, r5,  0xe01
     cmpwi   r6,  0xa01
@@ -565,7 +565,7 @@ VMMakePageNonCacheable
     bl      PageInfo
     rlwinm  r7, r16,  0, 25, 26
     cmpwi   r7,  0x60
-    bc      BO_IF_NOT, bM68pteResident, vmRetNeg1
+    bc      BO_IF_NOT, bM68pdResident, vmRetNeg1
     beq     vmRet
     bc      BO_IF_NOT, ispaged, vmRetNeg1
     bl		BO_IF_NOT, 20, VMSecondLastExportedFunc
@@ -593,7 +593,7 @@ VMMarkBacking
     bl      PageInfo
     bc      BO_IF_NOT, ispaged, vmRetNeg1
     bc      BO_IF, 21, vmRetNeg1
-    bcl     BO_IF, M68pteInHTAB, RemovePTEFromHTAB
+    bcl     BO_IF, M68pdInHTAB, RemovePTEFromHTAB
     rlwimi  r16, r5, 16, 15, 15
     li      r7,  0x01
     andc    r16, r16, r7
@@ -605,7 +605,7 @@ VMMarkBacking
 VMMarkCleanUnused
     bl      PageInfo
     bc      BO_IF_NOT, ispaged, vmRetNeg1
-    bc      BO_IF_NOT, bM68pteResident, vmRetNeg1
+    bc      BO_IF_NOT, bM68pdResident, vmRetNeg1
     bl		BO_IF_NOT, 20, VMSecondLastExportedFunc
     li      r7,  0x180
     andc    r9, r9, r7
@@ -641,8 +641,8 @@ VMMarkUndefined_0x28
 VMMarkResident
     bl      PageInfo
     bc      BO_IF_NOT, ispaged, vmRetNeg1
-    bc      BO_IF, bM68pteResident, vmRetNeg1
-    bcl     BO_IF, M68pteInHTAB, SystemCrash
+    bc      BO_IF, bM68pdResident, vmRetNeg1
+    bcl     BO_IF, M68pdInHTAB, SystemCrash
     rlwimi  r16, r5, 12,  0, 19
     ori     r16, r16,  0x01
     stw     r16,  0x0000(r15)
@@ -659,10 +659,10 @@ VMPTest
     bge     vmRet
     bl      PageInfo
     li      r3,  0x400
-    bc      BO_IF_NOT, bM68pteResident, vmRet
+    bc      BO_IF_NOT, bM68pdResident, vmRet
     li      r3,  0x00
     ori     r3, r3,  0x8000
-    bc      BO_IF_NOT, bM68pteWriteProtect, vmRet
+    bc      BO_IF_NOT, bM68pdWriteProtect, vmRet
     cmpwi   r6,  0x00
     beq     vmRet
     li      r3,  0x800
@@ -683,7 +683,7 @@ setPTEntryGivenPage
     andi.   r7, r7,  0x11c
     xor     r16, r16, r7
     stw     r16,  0x0000(r15)
-    bc      BO_IF_NOT, bM68pteInHTAB, vmRet
+    bc      BO_IF_NOT, bM68pdInHTAB, vmRet
     rlwimi  r9, r16,  5, 23, 23
     rlwimi  r9, r16,  3, 24, 24
     rlwimi  r9, r16, 30, 31, 31
@@ -694,14 +694,14 @@ setPTEntryGivenPage
 
 VMShouldClean
     bl      PageInfo
-    bc      BO_IF_NOT, bM68pteResident, vmRet0
-    bc      BO_IF, bM68pteUpdate, vmRet0
-    bc      BO_IF_NOT, bM68pteModified, vmRet0
+    bc      BO_IF_NOT, bM68pdResident, vmRet0
+    bc      BO_IF, bM68pdUsed, vmRet0
+    bc      BO_IF_NOT, bM68pdModified, vmRet0
     bc      BO_IF_NOT, ispaged, vmRetNeg1
     xori    r16, r16,  0x10
     ori     r16, r16,  0x100
     stw     r16,  0x0000(r15)
-    bc      BO_IF_NOT, bM68pteInHTAB, vmRet1
+    bc      BO_IF_NOT, bM68pdInHTAB, vmRet1
     xori    r9, r9,  0x80
     bl      ChangeNativeLowerPTE
     b       vmRet1
@@ -715,7 +715,7 @@ VMAllocateMemory
     cmpw    cr7, r7, r8
     or      r7, r4, r6
     rlwinm. r7, r7,  0,  0, 11
-    bc		BO_IF_NOT, M68pteInhibcache, vmRetNeg1
+    bc		BO_IF_NOT, M68pdCacheMode1, vmRetNeg1
     lwz     r9, KDP.VMLogicalPages(r1)
     bne     cr7, vmRetNeg1
     mr      r7, r4
@@ -727,7 +727,7 @@ VMAllocateMemory
 VMAllocateMemory_0x74
     addi    r4, r4, -0x01
     bl      PageInfo
-    bcl     BO_IF, M68pteInHTAB, RemovePTEFromHTAB
+    bcl     BO_IF, M68pdInHTAB, RemovePTEFromHTAB
     lwz     r9, KDP.VMLogicalPages(r1)
     subf    r8, r4, r9
     cmplw   cr7, r5, r8
@@ -844,6 +844,8 @@ VMAllocateMemory_0x324
 ; residence is determined by bit 20 (value 0x800) of the PTE. This is
 ; often checked by a bltl cr5
 
+; Individual VM calls usually BL straight to this function. 
+
 PageInfo ; r4=pg, r9=areapgcnt // cr[16]=ispaged, r16/r15/cr[20-31]=68kPTE/ptr/attrs, r8/r9/r14=PTE-hi/lo/ptr
     cmplw   cr4, r4, r9
     lwz     r15, KDP.VMPageArray(r1)        ; r15 = Page List base
@@ -856,8 +858,8 @@ PageInfo ; r4=pg, r9=areapgcnt // cr[16]=ispaged, r16/r15/cr[20-31]=68kPTE/ptr/a
     mtcrf   %00000111, r16                  ; Set all flags in CR (but not RealPgNum)
     rlwinm  r8, r16, 23, 9, 28              ; r8 = Page Table Entry offset
     rlwinm  r9, r16, 0, 0, 19
-    bclr    BO_IF_NOT, bM68pteInHTAB                   ; Page not in Page Table, so return the Page List Entry.
-    bc      BO_IF_NOT, bM68pteResident, SystemCrash      ; panic if the PTE is in the HTAB but isn't mapped to a real page??
+    bclr    BO_IF_NOT, bM68pdInHTAB                   ; Page not in Page Table, so return the Page List Entry.
+    bc      BO_IF_NOT, bM68pdResident, SystemCrash      ; panic if the PTE is in the HTAB but isn't mapped to a real page??
 
     lwzux   r8, r14, r8                     ; r8/r9 = PTE
     lwz     r9, 4(r14)

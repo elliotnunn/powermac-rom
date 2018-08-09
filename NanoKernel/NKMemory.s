@@ -152,17 +152,17 @@ PutPTE ; EA r27 // PTE r30/r31, EQ=Success, GT=Invalid, LT=Fault
     lwzux   r28, r26, r28                   ; r26 = PLE ptr, r28 = PLE
 
     lwz     r31, KDP.PageAttributeInit(r1)
-    andi.   r30, r28, M68pteInHTAB | M68pte24 | M68pteResident
+    andi.   r30, r28, M68pdInHTAB | M68pdSupProtect | M68pdResident
     rlwimi  r31, r28, 0, 0xFFFFF000
-    cmplwi  r30, M68pteResident
-    cmplwi  cr7, r30, M68pte24 | M68pteResident
+    cmplwi  r30, M68pdResident
+    cmplwi  cr7, r30, M68pdSupProtect | M68pdResident
 
     ori     r31, r31, LpteReference
-    _mvbit  r31, bLpteChange, r28, bM68pteModified
-    _mvbit  r31, bLpteInhibcache, r28, bM68pteInhibcache
-    _mvbit  r31, bLpteWritethru, r28, bM68pteNonwritethru
+    _mvbit  r31, bLpteChange, r28, bM68pdModified
+    _mvbit  r31, bLpteInhibcache, r28, bM68pdCacheMode1
+    _mvbit  r31, bLpteWritethru, r28, bM68pdCacheMode0
     xori    r31, r31, LpteWritethru
-    _mvbit  r31, bLpteP2, r28, bM68pteWriteProtect
+    _mvbit  r31, bLpteP1, r28, bM68pdWriteProtect
 
     beq     @parsed_pmdt                    ; if resident but outside HTAB, put in HTAB
     bltlr   cr7                             ; if no flags, return invalid (GT)

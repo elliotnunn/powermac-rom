@@ -326,12 +326,12 @@ Create68kPTEs
 
     lwz     r23, KDP.PageAttributeInit(r1)  ; "default WIMG/PP settings for PTE creation"
 
-    li      r30, M68pteResident
-    _mvbit  r30, bM68pteInhibcache, r23, bLpteInhibcache
-    _mvbit  r30, bM68pteNonwritethru, r23, bLpteWritethru
-    xori    r30, r30, bM68pteNonwritethru
-    _mvbit  r30, bM68pteModified, r23, bLpteChange
-    _mvbit  r30, bM68pteUpdate, r23, bLpteReference
+    li      r30, M68pdResident
+    _mvbit  r30, bM68pdCacheMode1, r23, bLpteInhibcache
+    _mvbit  r30, bM68pdCacheMode0, r23, bLpteWritethru
+    xori    r30, r30, bM68pdCacheMode0
+    _mvbit  r30, bM68pdModified, r23, bLpteChange
+    _mvbit  r30, bM68pdUsed, r23, bLpteReference
 
     li      r23, NKSystemInfo.MaxBanks
 @next_bank
