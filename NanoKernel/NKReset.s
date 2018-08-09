@@ -329,7 +329,7 @@ Create68kPTEs
     li      r30, M68pdResident
     _mvbit  r30, bM68pdCacheinhib, r23, bLpteInhibcache
     _mvbit  r30, bM68pdCacheNotIO, r23, bLpteWritethru
-    xori    r30, r30, bM68pdCacheNotIO
+    xori    r30, r30, M68pdCacheNotIO
     _mvbit  r30, bM68pdModified, r23, bLpteChange
     _mvbit  r30, bM68pdUsed, r23, bLpteReference
 
@@ -389,7 +389,7 @@ PutLogicalAreaInPageMap
     ;   Rewrite the first PMDT in this segment
     lwzu    r8, 8(r19)              ; find PMDT using SegMap32SupInit
     rotlwi  r31, r21, 10
-    ori     r31, r31, Pattr_68k
+    ori     r31, r31, PMDT_68k
     stw     r30, 0(r8)              ; use entire segment (PageIdx = 0, PageCount = 0xFFFF)
     stw     r31, 4(r8)              ; RPN = PLE ptr | PMDT_NotPTE_PageList
 

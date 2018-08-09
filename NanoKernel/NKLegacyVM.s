@@ -24,7 +24,7 @@ vmr68Pte        equ r16
 KCallVMDispatch
     stw     r7, KDP.Flags(r1)
     lwz     r7, KDP.CodeBase(r1)
-    cmplwi  r3, (VMTabEnd-VMTab)/4
+    cmplwi  r3, (VMTabEnd-VMTab)/2
     insrwi  r7, r3, 7, 24
     lhz     r8, VMTab-CodeBase(r7)
     lwz     r9, KDP.VMLogicalPages(r1)
@@ -382,7 +382,7 @@ VMIsUnmodified
 ########################################################################
 
 VMLRU ; For each resident page: save Used bit and clear original
-    slwi    r9, r9, 2                   ; (r9 is VMLogicalPages)
+    slwi.   r9, r9, 2                   ; (r9 is VMLogicalPages)
     lwz     r15, KDP.VMPageArray(r1)
     lwz     r14, KDP.HTABORG(r1)
     add     r15, r15, r9                ; r15 = loop PageArray ptr
@@ -397,7 +397,7 @@ VMLRU ; For each resident page: save Used bit and clear original
     mtcr    r16
     cmpwi   r4, 0
 
-    rlwinm  r7, r16, 23, 0x7FFFFFFC     ; r7 = offset of PPC PTE (if any)
+    rlwinm  r7, r16, 23, 0x007FFFF8     ; r7 = offset of PPC PTE (if any)
     bc      BO_IF_NOT, bM68pdResident, @nonresident
 
     bc      BO_IF_NOT, bM68pdInHTAB, @not_in_htab
@@ -502,14 +502,13 @@ VMMakePageWriteThrough
     lwz     r14, KDP.HTABORG(r1)
     slwi    r6, r4, 12
     mfsrin  r6, r6
-    rlwinm  r8, r6, 7, UpteValid | UpteVSID
+    rlwinm  r8, r6, 7, 0xFFFFF800
     xor     r6, r6, r4
     slwi    r7, r6, 6
     and     r15, r15, r7
     rlwimi  r8, r4, 22, UpteAPI
     crset   cr0_eq                                          ; clear cr0_eq when trying the secondary hash
-;    _ori    r8, r8, UpteValid                               ; r8 = the exact upper PTE word to search
-    nop
+    _ori    r8, r8, UpteValid                               ; r8 = the exact upper PTE word to search
 
 @secondary_hash
     lwzux   r7, r14, r15                                    ; search the primary or secondary PTEG for r8
@@ -622,7 +621,7 @@ VMMarkCleanUnused
 
     li      r7, LpteReference | LpteChange
     andc    r9, r9, r7
-    ori     r16, r16, M68pdModified
+    ori     r16, r16, M68pdShouldClean
     bl      SavePTEAnd68kPD
 
     b       vmRet
@@ -777,7 +776,7 @@ VMAllocateMemory_0xc0
     lis     r9, 4
     cmplw   cr7, r7, r9
     rlwinm. r9, r7,  0,  0, 11
-    bge     cr7, vmRetNeg1
+    blt     cr7, vmRetNeg1
     bne     vmRetNeg1
     lwz     r14, KDP.CurMap.SegMapPtr(r1)
     rlwinm  r9, r7, 19, 25, 28
@@ -793,10 +792,10 @@ VMAllocateMemory_0xf4
     lhz     r16,  0x0002(r14)
     subf    r8, r8, r9
     cmplw   cr7, r8, r16
-    ble     cr7, VMAllocateMemory_0xf0
+    bgt     cr7, VMAllocateMemory_0xf0
     add     r8, r8, r5
     cmplw   cr7, r8, r16
-    ble     cr7, vmRetNeg1
+    bgt     cr7, vmRetNeg1
     lwz     r16,  0x0004(r14)
     slwi    r8, r7, 16
     andi.   r16, r16,  0xe01
@@ -1050,8 +1049,8 @@ QuickCalcPTE
     stw     r9, KDP.NKInfo.HashTableCreateCount(r1)
     rlwimi  r8, r4, 22, UpteAPI
     lwz     r9, KDP.PageAttributeInit(r1)   ; r9 will be new lower PTE
-;    _ori    r8, r8, UpteValid
-    nop
+    _ori    r8, r8, UpteValid
+    rlwimi  r9, r16, 0, 0xFFFFF000
     _mvbit  r9, bLpteReference, r16, bM68pdUsed
     _mvbit  r9, bLpteChange, r16, bM68pdModified
     _mvbit  r9, bLpteInhibcache, r16, bM68pdCacheinhib
@@ -1095,7 +1094,7 @@ QuickCalcPTE
 QuickGetPhysical
     addi    r8, r1, KDP.SegmentPageArrays
     lwz     r9, KDP.VMPhysicalPages(r1)
-    rlwimi  r8, r7, 18, 0xF * 4
+    rlwimi  r8, r7, 18, 28, 29
     cmplw   r7, r9
     lwz     r8, 0(r8)
     rlwinm  r7, r7, 2, 0xFFFF * 4

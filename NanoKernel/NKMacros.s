@@ -38,7 +38,7 @@ my_pad set (my_align - (my_offset & my_mask)) & my_mask
     MACRO
     _ori &rd, &rs, &imm
     IF (&imm) & 0xFFFF0000 THEN
-        oris&dot    &rd, &rs, (&imm) >> 16
+        oris&dot    &rd, &rs, ((&imm) >> 16) & 0xFFFF ; beware sign ext!
     ELSE
         ori&dot     &rd, &rs, &imm
     ENDIF

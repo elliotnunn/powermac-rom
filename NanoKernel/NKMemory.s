@@ -172,7 +172,7 @@ PutPTE ; EA r27 // PTE r30/r31, EQ=Success, GT=Invalid, LT=Fault
 @single_pte ; PMDT_PTE_Single
     ori     r28, r27, 0xfff                 ; r27 = EA, r31 = PMDT (low word, RPN)
     stw     r28, KDP.HtabSingleEA(r1)
-    rlwinm  r31, r31, 0, ~Pattr_PTE_Single  ; clear the flag that got us here, leaving none
+    rlwinm  r31, r31, 0, ~(Pattr_NotPTE | Pattr_PTE_Single)  ; clear the flag that got us here, leaving none
     li      r26, 0x5A5A                     ; so that KDP.HtabSinglePTE gets set and we return correctly
     b       @parsed_pmdt                    ; RTS with r26 = 0x5A5A and r31 having flags cleared
 
