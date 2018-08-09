@@ -1018,19 +1018,21 @@ VMLastExportedFunc_0x87
     addi    r9, r9,  0x01
     stw     r9, KDP.NKInfo.HashTableCreateCount(r1)
     rlwimi  r8, r4, 22, 26, 31
+
     lwz     r9, KDP.PageAttributeInit(r1)
     oris    r8, r8,  0x8000
-    rlwimi  r9, r16,  0,  0, 19
-    rlwimi  r9, r16, 5, 23, 23
-    rlwimi  r9, r16,  3, 24, 24
-    rlwimi  r9, r16, 31, 26, 26
-    rlwimi  r9, r16,  1, 25, 25
-    xori    r9, r9,  0x40
-    rlwimi  r9, r16, 30, 31, 31
+
+    _mvbit  r9, bLpteReference, r16, bM68pdUsed
+    _mvbit  r9, bLpteChange, r16, bM68pdModified
+    _mvbit  r9, bLpteInhibcache, r16, bM68pdCacheMode1
+    _mvbit  r9, bLpteWritethru, r16, bM68pdCacheMode0
+    xori    r9, M68pdCacheMode1
+    _mvbit  r9, bLpteP1, r16, bM68pdWriteProtect
+
     lwz     r7, KDP.HTABORG(r1)
-    ori     r16, r16,  0x801
+    ori     r16, r16, M68pdInHTAB | M68pdResident
     subf    r7, r7, r14
-    rlwimi  r16, r7,  9,  0, 19
+    rlwimi  r16, r7, 9, 0xFFFFF000
     blr     
 
 VMLastExportedFunc_0xd7

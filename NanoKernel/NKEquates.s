@@ -186,18 +186,18 @@ discontiguous physical backing.
     ; Bits 0-19:
     ;   if M68pdInHTAB: native PTE index relative to HTABORG
     ;   else:           physical page address
-    _bitequate 20, M68pdInHTAB          ; [UR]   user-reserved
-    _bitequate 21, M68pdGlobal          ; [G]    page immune to PFLUSH (unused?)
-    _bitequate 22, M68pdFrozenUsed      ; [U1]   copied from Used by VMLRU
-    _bitequate 23, M68pdU0              ; [U0]   in 68k arch
-    _bitequate 24, M68pdSupProtect      ; [S]    supervisor access only
-    _bitequate 25, M68pdCacheMode1      ; [CM1]  like PPC Inhibcache
-    _bitequate 26, M68pdCacheMode0      ; [CM0]  like inverse of PPC Writethru
-    _bitequate 27, M68pdModified        ; [M]    like PPC Change
-    _bitequate 28, M68pdUsed            ; [U]    like PPC Reference
-    _bitequate 29, M68pdWriteProtect    ; [WP]   ?unused
-    _bitequate 30, M68pdIndirect        ; [PDT1]
-    _bitequate 31, M68pdResident        ; [PDT0]
+    _bitequate 20, M68pdInHTAB          ; [11 UR]  user-reserved
+    _bitequate 21, M68pdGlobal          ; [10 G]   page immune to PFLUSH (unused?)
+    _bitequate 22, M68pdFrozenUsed      ; [9 U1]   copied from Used by VMLRU
+    _bitequate 23, M68pdU0              ; [8 U0]   in 68k arch
+    _bitequate 24, M68pdSupProtect      ; [7 S]    supervisor access only
+    _bitequate 25, M68pdCacheMode1      ; [6 CM1]  like PPC Inhibcache
+    _bitequate 26, M68pdCacheMode0      ; [5 CM0]  like inverse of PPC Writethru
+    _bitequate 27, M68pdModified        ; [4 M]    like PPC Change
+    _bitequate 28, M68pdUsed            ; [3 U]    like PPC Reference
+    _bitequate 29, M68pdWriteProtect    ; [2 WP]   ?unused
+    _bitequate 30, M68pdIndirect        ; [1 PDT1]
+    _bitequate 31, M68pdResident        ; [0 PDT0]
 
 ; Cache Mode (CM) bits:
 ;   CM1/CM0  Meaning
