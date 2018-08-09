@@ -9,16 +9,6 @@
 ; EXPORTS:
 ;   KCallVMDispatch (=> NKReset)
 
-; This file is a horrible mess. It needs a do-over.
-
-; Registers used throughout: (maybe we'll just call these "conventions")
-vmrMisc1        equ r8
-vmrMisc2        equ r9
-vmrPtePtr       equ r14
-vmr68PtePtr     equ r15
-vmr68Pte        equ r16
-
-
 ########################################################################
 
 KCallVMDispatch
@@ -96,14 +86,13 @@ vmRet
 
 ########################################################################
 
-VMInit
+VMInit ; r4
     lwz     r7, KDP.VMPageArray(r1)          ; check that zero seg isn't empty
-    lwz     r8, KDP.SegmentPageArrays + 0(r1)
+    lwz     r8, KDP.PhysicalPageDescriptors + 0(r1)
     cmpw    r7, r8
     bne     vmRet1
 
     stw     r4, KDP.VMLogicalPages(r1)          ; resize PAR
-
     stw     r5, KDP.VMPageArray(r1)          ; where did NK find this???
 
     lwz     r6, KDP.CurMap.SegMapPtr(r1)
@@ -123,7 +112,7 @@ VMInit_BigLoop
     bne     VMInit_0x110
     bnel    cr1, SystemCrash
     rlwinm  r15, r8, 22,  0, 29
-    addi    r3, r1, KDP.SegmentPageArrays
+    addi    r3, r1, KDP.PhysicalPageDescriptors
     rlwimi  r3, r5,  2, 28, 29
     stw     r15,  0x0000(r3)
     slwi    r3, r5, 16
@@ -292,7 +281,7 @@ VMInit_0x29c
 
 VMInit_Fail
     lwz     r7, KDP.VMPhysicalPages(r1)
-    lwz     r8, KDP.SegmentPageArrays + 0(r1)
+    lwz     r8, KDP.PhysicalPageDescriptors + 0(r1)
     stw     r7, KDP.VMLogicalPages(r1)
     stw     r8, KDP.VMPageArray(r1)
 
@@ -736,7 +725,7 @@ VMShouldClean ; is this page is a good candidate for writing to disk?
 
 VMAllocateMemory
     lwz     r7, KDP.VMPageArray(r1)
-    lwz     r8, KDP.SegmentPageArrays(r1)
+    lwz     r8, KDP.PhysicalPageDescriptors(r1)
     cmpwi   cr6, r5, 0
     cmpw    cr7, r7, r8
     or      r7, r4, r6                          ; r4/r6 are page numbers?
@@ -866,12 +855,13 @@ VMAllocateMemory_0x324
 
 ########################################################################
 
-; Given the index of a page (r4/A0), this function queries its 68k Page
-; Descriptor (PD) and, if it is currently in the HTAB, its PowerPC Page
-; Table Entry (PTE). This information is returned in registers, with the
-; attribute flags of the 68k PD additionally placed in Condition Register
-; bits for easy testing. The page must be within the VM address space
-; (i.e. < VMLogicalPages), or cr4_lt will be cleared to indicate an error.
+; Given the index of a page (a0/r4), this function scrapes together most
+; of the information available. For a page within a paged area (i.e.
+; PMDT_Paged) the 68k Page Descriptor (PD) is returned, as well as the
+; PowerPC Page Table Entry (PTE) if one currently exists in the HTAB. For
+; pages in a non-paged area, a fake 68k PD is constructed, and a pointer
+; to the relevant PMDT is also returned. In both cases, 68k PD attribute
+; bits are placed in the condition registers for easy testing.
 ; VMLogicalPages must be passed in r9 (as set by VMDispatch).
 
 ; Return values:
@@ -887,31 +877,31 @@ PageInfo
     cmplw   cr4, r4, r9
     lwz     r15, KDP.VMPageArray(r1)        ; r15 = Page List base
     slwi    r8, r4, 2                       ; r18 = Page List Entry offset
-    bge     cr4, @not_par
+    bge     cr4, @outside_vm_area
 
-@paged ; 
-    lwzux   r16, r15, r8                    ; Get Page List Entry (will return ptr in r15)
-    lwz     r14, KDP.HTABORG(r1)            ; ...which might point to a Page Table Entry
-    mtcrf   %00000111, r16                  ; Set all flags in CR (but not RealPgNum)
-    rlwinm  r8, r16, 23, 9, 28              ; r8 = Page Table Entry offset
-    rlwinm  r9, r16, 0, 0, 19
-    bclr    BO_IF_NOT, bM68pdInHTAB                   ; Page not in Page Table, so return the Page List Entry.
-    bc      BO_IF_NOT, bM68pdResident, SystemCrash      ; panic if the PTE is in the HTAB but isn't mapped to a real page??
+@paged ; (cr4_lt is always set when we get here)
+    lwzux   r16, r15, r8                    ; Get 68k Page Descriptor (itself to r16, ptr to r15)
+    lwz     r14, KDP.HTABORG(r1)
+    mtcrf   %00000111, r16                  ; Set all attrib bits in CR
+    rlwinm  r8, r16, 23, 0x007FFFF8         ; r8 = Page Table Entry offset
+    rlwinm  r9, r16, 0, 0xFFFFF000          ; failing a real PTE, this will do do
 
-    lwzux   r8, r14, r8                     ; r8/r9 = PTE
+    bclr    BO_IF_NOT, bM68pdInHTAB         ; No PTE? Fine, we have enough info.
+    bc      BO_IF_NOT, bM68pdResident, SystemCrash  ; PD corrupt!
+    lwzux   r8, r14, r8                     ; Get PTE in r8/r9 (the usual registers for this file)
     lwz     r9, 4(r14)
     mtcrf   %10000000, r8                   ; set CR bit 0 to Valid bit
-    rlwimi  r16, r9, 29, 27, 27             ; Memcoher = Change (for return flags)
-    rlwimi  r16, r9, 27, 28, 28             ; Guardwrite = Reference (for return flags)
+    _mvbit  r16, bM68pdModified, r9, bLpteChange        ; take this change to update 68k PD
+    _mvbit  r16, bM68pdUsed, r9, bLpteReference         ; with info from PPC "touch" bits
     mtcrf   %00000111, r16
-    bclr    BO_IF, 0                        ; Page in Page Table, so return the Page Table Entry.
-    bl      SystemCrash                     ; (Crash if PTE is invalid)
+    bclr    BO_IF, bUpteValid               ; Return
+    bl      SystemCrash                     ; (But crash if PTE is invalid)
 
-@not_par ; Code outside VM Manager address space
-    lis     r9, 4                           ; Check that page is outside VM Manager's 0-1GB area but
-    cmplw   cr4, r4, r9                     ; still a valid page number (i.e. under 0x100000)
+@outside_vm_area ; Code outside VM Manager address space
+    lis     r9, 4                           ; Check that page is outside VM Manager's segments (0-4)
+    cmplw   cr4, r4, r9                     ; but still a valid page number (i.e. < 0x100000)
     rlwinm. r9, r4, 0, 0xFFF00000
-    blt     cr4, vmRetNeg1             ; (Else return -1)
+    blt     cr4, vmRetNeg1                  ; (else return -1 from VM call)
     bne     vmRetNeg1
 
     lwz     r15, KDP.CurMap.SegMapPtr(r1)   ; r15 = Segment Map base
@@ -919,36 +909,37 @@ PageInfo
     lwzx    r15, r15, r9                    ; Ignore Seg flags, get pointer into Page Map
     clrlwi  r9, r4, 16                      ; r9 = index of this page within its Segment
 
-    lhz     r8, PMDT.PageIdx(r15)              ; Big ugly loop to find the relevant Page Map Entry
+    lhz     r8, PMDT.PageIdx(r15)           ; Search the PageMap for the right PMDT...
     b       @pmloop_enter
 @pmloop
-    lhzu    r8, PMDT.Size(r15)               ; PMDT.PageIdx of next entry
+    lhzu    r8, PMDT.Size(r15)              ; (PMDT.PageIdx of next entry)
 @pmloop_enter
     lhz     r16, PMDT.PageCount(r15)
     subf    r8, r8, r9
     cmplw   cr4, r8, r16
-    bgt     cr4, @pmloop                    ; Nope, not this entry
+    bgt     cr4, @pmloop
 
     lwz     r9, PMDT.Word2(r15)
     andi.   r16, r9, Pattr_NotPTE | Pattr_PTE_Single
-    cmpwi   cr6, r16, Pattr_PTE_Single
-    cmpwi   cr7, r16, Pattr_NotPTE | Pattr_PTE_Single
+    cmpwi   cr6, r16, PMDT_PTE_Single
+    cmpwi   cr7, r16, PMDT_Paged
     beq     @range_pmdt
     beq     cr6, @single_pmdt
     bne     cr7, vmRetNeg1
 
-    slwi    r8, r8,  2
-    rlwinm  r15, r9, 22,  0, 29
+; paged pmdt
+    slwi    r8, r8, 2                       ; r8 = offset of 68k PD within segment's array
+    rlwinm  r15, r9, 22, 0xFFFFFFFC         ; r15 = ptr to segment's PD array (r8 and r15 to be lwzux'd)
     crset   cr4_lt                          ; return "is paged"
-    b       @paged
+    b       @paged                          ; back to main code path above
 
-@range_pmdt
+@range_pmdt                                 ; But if not a paged area, still return some info
     slwi    r8, r8, 12
     add     r9, r9, r8
 @single_pmdt
     rlwinm  r16, r9, 0, 0xFFFFF000          ; fabricate a 68k Page Descriptor
     crclr   cr4_lt                          ; return "is not paged"
-    rlwinm  r9, r9,  0, ~PMDT_68k
+    rlwinm  r9, r9,  0, ~PMDT_Paged
     _mvbit  r16, bM68pdCacheinhib, r9, bLpteInhibcache
     _mvbit  r16, bM68pdCacheNotIO, r9, bLpteWritethru
     xori    r16, r16, M68pdCacheNotIO
@@ -957,7 +948,7 @@ PageInfo
     _mvbit  r16, bM68pdWriteProtect, r9, bLpteP1
     ori     r16, r16, M68pdResident
 
-    mtcrf   %00000111, r16                  ; extract flags from it
+    mtcrf   %00000111, r16                  ; extract flags and return
     blr     
 
 ########################################################################
@@ -1092,7 +1083,7 @@ QuickCalcPTE
 ; and not in the HTAB. Returns a physical pointer in r9.
 
 QuickGetPhysical
-    addi    r8, r1, KDP.SegmentPageArrays
+    addi    r8, r1, KDP.PhysicalPageDescriptors
     lwz     r9, KDP.VMPhysicalPages(r1)
     rlwimi  r8, r7, 18, 28, 29
     cmplw   r7, r9
@@ -1100,5 +1091,5 @@ QuickGetPhysical
     rlwinm  r7, r7, 2, 0xFFFF * 4
     bge     vmRetNeg1
     lwzx    r9, r8, r7              ; r9 = 68k PD
-    rlwinm  r9, r9, 0, 0xFFFFF000
+    rlwinm  r9, r9, 0, 0xFFFFF000   ; r9 = physical address to return
     blr     

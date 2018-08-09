@@ -152,11 +152,11 @@ EveryPattr              equ 0xE01 ; The union of every bit below (NB: E00 bits a
 
 ; When Pattr_NotPTE=1, the PMDT is a pageable area or another special value:
 Pattr_NotPTE            equ 0x800
-Pattr_68k               equ 0x400 ; Pageable area with RPN pointing to 68k PTE array
+Pattr_Paged             equ 0x400 ; Pageable area with RPN pointing to 68k PTE array
 
 PMDT_InvalidAddress     equ 0xA00 ; Known combinations when Pattr_NotPTE=1...
 PMDT_Available          equ 0xA01
-PMDT_68k                equ 0xC00
+PMDT_Paged              equ 0xC00
 
 ; When Pattr_NotPTE=0, the PMDT describes a non-pageable area, and these apply:
 Pattr_PTE_Single        equ 0x400 ; Only one page
@@ -373,7 +373,7 @@ VecTblMemRetry          ds  VecTbl  ; 4e0:5a0 ; "FDP" instruction emulation
 FloatScratch            ds.d    1   ; 5a0:5a8
                         ds.l    1   ; 5a8
                         ds.l    1   ; 5ac
-SegmentPageArrays       ds.l    4   ; 5b0:5c0 ; for each PAR segment, a ptr into the PAR PageList
+PhysicalPageDescriptors ds.l    4   ; 5b0:5c0 ; pointers to arrays of 68k Page Descriptors
 FloatingPtTemp1         ds.l    1   ; 5c0
 FloatingPtTemp2         ds.l    1   ; 5c4
 

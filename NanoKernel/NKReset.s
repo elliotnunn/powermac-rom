@@ -313,11 +313,13 @@ CopyBATRangeInit
     stw     r23, KDP.OverlayMap.BatMap(r1)
 
 ########################################################################
-Create68kPTEs
+
 ; Create a 68k PTE for every page in the initial logical area.
 ; (The logical area will equal physical RAM size, so make a PTE for
 ; every physical page inside a RAM bank but outside kernel memory.
 ; Later on, the VM Manager can replace this table with its own.)
+
+Create68kPTEs
     lwz     r21, KDP.KernelMemoryBase(r1)   ; this range is forbidden
     lwz     r20, KDP.KernelMemoryEnd(r1)
     subi    r29, r21, 4                     ; ptr to last added entry
@@ -359,11 +361,11 @@ Create68kPTEs
 
 ; Now r21/r29 point to first/last element of PageList
 
-PutLogicalAreaInPageMap
 ; Overwrite the dummy PMDT in every logical-area segment (0-3)
 ; to point into the logical-area 68k PTE array
-
 ; (Overwrite first PMDT in each segment)
+
+PutLogicalAreaInPageMap
     subf    r22, r21, r29
     li      r30, 0
     addi    r19, r22, 4
@@ -378,8 +380,8 @@ PutLogicalAreaInPageMap
     stw     r19, KDP.VMLogicalPages(r1)
     stw     r19, KDP.VMPhysicalPages(r1)
 
-    addi    r29, r1, KDP.SegmentPageArrays - 4   ; where to save per-segment PLE ptr
-    addi    r19, r1, KDP.SegMap32SupInit - 8        ; which part of PageMap to update 
+    addi    r29, r1, KDP.PhysicalPageDescriptors-4 ; where to save per-segment PLE ptr
+    addi    r19, r1, KDP.SegMap32SupInit-8         ; which part of PageMap to update 
 
     stw     r21, KDP.VMPageArray(r1)
 
@@ -389,11 +391,11 @@ PutLogicalAreaInPageMap
     ;   Rewrite the first PMDT in this segment
     lwzu    r8, 8(r19)              ; find PMDT using SegMap32SupInit
     rotlwi  r31, r21, 10
-    ori     r31, r31, PMDT_68k
+    ori     r31, r31, PMDT_Paged
     stw     r30, 0(r8)              ; use entire segment (PageIdx = 0, PageCount = 0xFFFF)
     stw     r31, 4(r8)              ; RPN = PLE ptr | PMDT_NotPTE_PageList
 
-    stwu    r21, 4(r29)             ; point SegmentPageArrays to segments's first PLE
+    stwu    r21, 4(r29)             ; point PhysicalPageDescriptors to segments's first PLE
 
     addis   r21, r21, 4             ; increment pointer into PLE (64k pages/segment * 4b/PLE)
     subis   r22, r22, 1             ; decrement number of pending pages (64k pages/segment)

@@ -33,7 +33,7 @@ PutPTE ; EA r27 // PTE r30/r31, EQ=Success, GT=Invalid, LT=Fault
     cmpwi   cr7, r28, 0                     ; always delete the previous PMDT_PTE_Single entry from the HTAB
     extlwi. r26, r31, 2, 20                 ; use the Cond Reg to branch on Pattr_NotPTE/Pattr_PTE_Single
     bne     cr7, @del_single_pte
-    blt     @pagelist                       ; PMDT_68k is the probable meaning of Pattr_NotPTE (will return to @parsed_pmdt)
+    blt     @pagelist                       ; PMDT_Paged is the probable meaning of Pattr_NotPTE (will return to @parsed_pmdt)
 @did_del_single_pte                         ; (optimized return: if LT then @del_single_pte falls thru to @pagelist)
     bgt     @single_pte                     ; PMDT_PTE_Single is the probable meaning of Pattr_PTE_Single (will return to @parsed_pmdt)
     slwi    r28, r30, 12                    ; PMDT_PTE_Range is likely otherwise, requiring us to add an offset to the PMDT
@@ -41,7 +41,7 @@ PutPTE ; EA r27 // PTE r30/r31, EQ=Success, GT=Invalid, LT=Fault
 @parsed_pmdt                                ; Save draft PTE in r31 (points to actual page, has PTE-style flags), and r26 = 
                                             ;   0 (if PMDT_PTE_Range)
                                             ;   0x5A5A (if PMDT_PTE_Single)
-                                            ;   PageListEntry ptr (if PMDT_68k)
+                                            ;   PageListEntry ptr (if PMDT_Paged)
 
 ########################################################################
 
@@ -143,9 +143,9 @@ PutPTE ; EA r27 // PTE r30/r31, EQ=Success, GT=Invalid, LT=Fault
 
 ########################################################################
 ; r30 = page index within area, r31 = RPN
-@pagelist ; Probably PMDT_68k
+@pagelist ; Probably PMDT_Paged
     extlwi. r28, r31, 2, 21                 ; Put remaining two flags into top bits and set Cond Reg
-    bge     @not_actually_pagelist          ; Not PMDT_68k! (e.g. PMDT_InvalidAddress/PMDT_Available)
+    bge     @not_actually_pagelist          ; Not PMDT_Paged! (e.g. PMDT_InvalidAddress/PMDT_Available)
 
     rlwinm  r28, r30, 2, 0xFFFFFFFC         ; page index in segment * 4
     rlwinm  r26, r31, 22, 0xFFFFFFFC        ; ptr to first PLE belonging to this segment
@@ -177,7 +177,7 @@ PutPTE ; EA r27 // PTE r30/r31, EQ=Success, GT=Invalid, LT=Fault
     b       @parsed_pmdt                    ; RTS with r26 = 0x5A5A and r31 having flags cleared
 
 ########################################################################
-@not_actually_pagelist ; Pattr_NotPTE set, but not PMDT_68k
+@not_actually_pagelist ; Pattr_NotPTE set, but not PMDT_Paged
     bgtlr                                   ; PMDT_InvalidAddress/PMDT_Available: return invalid (GT)
     addi    r29, r1, KDP.SupervisorMap
     b       SetMap                          ; 800 (unknown) -> SetMap returns success (EQ)
@@ -268,10 +268,10 @@ PutPTE ; EA r27 // PTE r30/r31, EQ=Success, GT=Invalid, LT=Fault
     bgt     cr7, @oflow_next_pmdt           ; addr not in this PMDT -> try other PMDT
     beq     @oflow_next_pmdt                ; not PMDT_Available -> try other PMDT
 
-    lwz     r26, PMDT.Word2 - PMDT.Size(r26)  ; If PMDT_68k then we must wang the PLE pre-return
+    lwz     r26, PMDT.Word2 - PMDT.Size(r26)  ; If PMDT_Paged then we must wang the PLE pre-return
     slwi    r30, r30, 2                     ; (r30 = PLE offset relative to first PLE in segment)
     extrwi  r31, r26, 2, 20
-    cmpwi   cr7, r31, PMDT_68k >> 10   ; (save that little tidbit in cr7)
+    cmpwi   cr7, r31, PMDT_Paged >> 10   ; (save that little tidbit in cr7)
 
     lwz     r31, KDP.NKInfo.HashTableOverflowCount(r1)
     stw     r29, KDP.HtabLastOverflow(r1)
