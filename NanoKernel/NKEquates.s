@@ -148,15 +148,15 @@ Size                    equ  8
 ; bits 0-19 of Word2, like a PTE, contain a Real Page Number (RPN) that can actually have several uses
 ; bits 20-31 of Word2 contain bits ("Pattrs") that guide PMDT interpretation (especially of RPN)
 
-EveryPattr              equ 0xE01 ; The union of every bit below (NB: E00 bits are reserved in a PTE)
+EveryPattr              equ 0xE01 ; The union of every bit below (NB: E00 bits are reserved in a PowerPC PTE)
 
 ; When Pattr_NotPTE=1, the PMDT is a pageable area or another special value:
 Pattr_NotPTE            equ 0x800
-Pattr_Paged             equ 0x400 ; Pageable area with RPN pointing to 68k PTE array
+Pattr_Paged             equ 0x400 ; Pageable area with RPN = (68k Page Descriptor array ptr) / 4
 
 PMDT_InvalidAddress     equ 0xA00 ; Known combinations when Pattr_NotPTE=1...
 PMDT_Available          equ 0xA01
-PMDT_Paged              equ 0xC00
+PMDT_Paged              equ 0xC00 ; = Pattr_NotPTE + Pattr_Paged
 
 ; When Pattr_NotPTE=0, the PMDT describes a non-pageable area, and these apply:
 Pattr_PTE_Single        equ 0x400 ; Only one page
@@ -187,7 +187,7 @@ PMDT_PTE_Single_Rel     equ 0x600
     ;   if M68pdInHTAB: native PTE index relative to HTABORG
     ;   else:           physical page address
     _bitequate 20, M68pdInHTAB          ; [11 UR]  (reserved bit) page in PowerPC HTAB
-    _bitequate 21, M68pdGlobal          ; [10 G]   page immune to PFLUSH (unused?)
+    _bitequate 21, M68pdGlobal          ; [10 G]   kernel-held page (page immune to PFLUSH)
     _bitequate 22, M68pdFrozenUsed      ; [9 U1]   copied from Used by VMLRU
     _bitequate 23, M68pdShouldClean     ; [8 U0]   set whenever VMShouldClean returns 1
     _bitequate 24, M68pdSupProtect      ; [7 S]    supervisor access only
@@ -198,6 +198,8 @@ PMDT_PTE_Single_Rel     equ 0x600
     _bitequate 29, M68pdWriteProtect    ; [2 WP]
     _bitequate 30, M68pdIndirect        ; [1 PDT1] would make this a ptr to another PD (not used)
     _bitequate 31, M68pdResident        ; [0 PDT0]
+
+    _bitequate 15, M68pdInited          ; special bit that only applies to non-resident "backing-marked" pages
 
 ; Cache Mode (CM) bits:
 ;   CM1/CM0  Meaning
@@ -346,14 +348,14 @@ SegMap32OvlInit         ds.l    32  ; 200:280
 
 BATs                    ds.l    32  ; 280:300
 
-CurIBAT0                ds      BAT ; 300:308
-CurIBAT1                ds      BAT ; 308:310
-CurIBAT2                ds      BAT ; 310:318
-CurIBAT3                ds      BAT ; 318:320
-CurDBAT0                ds      BAT ; 320:328
-CurDBAT1                ds      BAT ; 328:330
-CurDBAT2                ds      BAT ; 330:338
-CurDBAT3                ds      BAT ; 338:340
+CurIBAT0                ds BAT      ; 300:308
+CurIBAT1                ds BAT      ; 308:310
+CurIBAT2                ds BAT      ; 310:318
+CurIBAT3                ds BAT      ; 318:320
+CurDBAT0                ds BAT      ; 320:328
+CurDBAT1                ds BAT      ; 328:330
+CurDBAT2                ds BAT      ; 330:338
+CurDBAT3                ds BAT      ; 338:340
 
 NCBPointerCache
 NCBCacheLA0             ds.l    1   ; 340
@@ -366,24 +368,24 @@ NCBCacheLA3             ds.l    1   ; 358
 NCBCachePA3             ds.l    1   ; 35c
 NCBPointerCacheEnd
 
-VecTblSystem            ds  VecTbl  ; 360:420 ; when 68k emulator is running, *or* any MTask
-VecTblAlternate         ds  VecTbl  ; 420:4e0 ; native PowerPC in blue task
-VecTblMemRetry          ds  VecTbl  ; 4e0:5a0 ; "FDP" instruction emulation
+VecTblSystem            ds  VecTbl  ; 360:420 ; user-space (system context)
+VecTblAlternate         ds  VecTbl  ; 420:4e0 ; user-space (alternate context)
+VecTblMemRetry          ds  VecTbl  ; 4e0:5a0 ; kernel MemRetry code
 
 FloatScratch            ds.d    1   ; 5a0:5a8
                         ds.l    1   ; 5a8
                         ds.l    1   ; 5ac
-PhysicalPageDescriptors ds.l    4   ; 5b0:5c0 ; pointers to arrays of 68k Page Descriptors
+PhysicalPageArray       ds.l    4   ; 5b0:5c0 ; actually one ptr per segment
 FloatingPtTemp1         ds.l    1   ; 5c0
 FloatingPtTemp2         ds.l    1   ; 5c4
 
-SupervisorMap           ds  MemMap  ; 5c8:5d0
-UserMap                 ds  MemMap  ; 5d0:5d8
-CpuMap                  ds  MemMap  ; 5d8:5e0
-OverlayMap              ds  MemMap  ; 5e0:5e8
-CurMap                  ds  MemMap  ; 5e8:5f0
+SupervisorMap           ds MemMap   ; 5c8:5d0
+UserMap                 ds MemMap   ; 5d0:5d8
+CpuMap                  ds MemMap   ; 5d8:5e0
+OverlayMap              ds MemMap   ; 5e0:5e8
+CurMap                  ds MemMap   ; 5e8:5f0
 
-KCallTbl                ds  KCallTbl    ; 5f0:630
+KCallTbl                ds KCallTbl ; 5f0:630
 
 ConfigInfoPtr           ds.l    1   ; 630
 EDPPtr                  ds.l    1   ; 634

@@ -35,35 +35,32 @@ VMTab ; Placeholders indented
     DC.W (&label-CodeBase) - (* - VMtab)
     ENDM
 
-    vmtabLine   VMInit                  ;  0 VMInit: init the MMU virtual space
-    vmtabLine       vmRet               ;  1 VMUnInit: un-init the MMU virtual space
-    vmtabLine       vmRet               ;  2 VMFinalInit: last chance to init after new memory dispatch is installed
-
-    vmtabLine   VMIsResident            ;  3 VMIsResident: ask about page status
-    vmtabLine   VMIsUnmodified          ;  4 VMIsUnmodified: ask about page status
-    vmtabLine   VMIsInited              ;  5 VMIsInited: ask about page status
-    vmtabLine   VMShouldClean           ;  6 VMShouldClean: ask about page status
-
-    vmtabLine   VMMarkResident          ;  7 VMMarkResident: set page status 
-    vmtabLine   VMMarkBacking           ;  8 VMMarkBacking: set page status
-    vmtabLine   VMMarkCleanUnused       ;  9 VMMarkCleanUnused: set page status
-
-    vmtabLine   VMGetPhysicalPage       ; 10 VMGetPhysicalPage: return phys page given log page
-    vmtabLine       vmRetNeg1           ; 11 VMGetPhysicalAddress: return phys address given log page (can be different from above!)
-    vmtabLine   VMExchangePages         ; 12 VMExchangePages: exchange physical page contents
-    vmtabLine       vmRet               ; 13 VMReload: reload the ATC with specified page
-    vmtabLine       vmRet               ; 14 VMFlushAddressTranslationCache: just do it
-    vmtabLine       vmRet               ; 15 VMFlushDataCache: wack the data cache
-    vmtabLine       vmRet               ; 16 VMFlushCodeCache: wack the code cache
-    vmtabLine   VMMakePageCacheable     ; 17 VMMakePageCacheable: make it so...
-    vmtabLine   VMMakePageNonCacheable  ; 18 VMMakePageNonCacheable: make it so...
-    vmtabLine   VMGetPTEntryGivenPage   ; 19 VMGetPTEntryGivenPage: given a page, get its 68K PTE
-    vmtabLine   VMSetPTEntryGivenPage   ; 20 VMSetPTEntryGivenPage: given a page & 68K pte, set the real PTE
-    vmtabLine   VMPTest                 ; 21 VMPTest: ask why we got this page fault
-    vmtabLine   VMLRU                   ; 22 VMLRU: least recently used?
-    vmtabLine   VMMarkUndefined         ; 23 VMMarkUndefined
-    vmtabLine   VMMakePageWriteThrough  ; 24 VMMakePageWriteThrough
-    vmtabLine   VMAllocateMemory        ; 25 VMAllocateMemory: Page:A0, Count:A1, BusAlignMask:D1
+    vmtabLine   VMInit                              ;  0 init the MMU virtual space
+    vmtabLine   vmRet;VMUnInit                      ;  1 un-init the MMU virtual space
+    vmtabLine   vmRet;VMFinalInit                   ;  2 last chance to init after new memory dispatch is installed
+    vmtabLine   VMIsResident                        ;  3 ask about page status
+    vmtabLine   VMIsUnmodified                      ;  4 ask about page status
+    vmtabLine   VMIsInited                          ;  5 ask about page status
+    vmtabLine   VMShouldClean                       ;  6 ask about page status
+    vmtabLine   VMMarkResident                      ;  7 set page status 
+    vmtabLine   VMMarkBacking                       ;  8 set page status
+    vmtabLine   VMMarkCleanUnused                   ;  9 set page status
+    vmtabLine   VMGetPhysicalPage                   ; 10 return phys page given log page
+    vmtabLine   vmRetNeg1;VMGetPhysicalAddress      ; 11 return phys address given log page (can be different from above!)
+    vmtabLine   VMExchangePages                     ; 12 exchange physical page contents
+    vmtabLine   vmRet;VMReload                      ; 13 reload the ATC with specified page
+    vmtabLine   vmRet;VMFlushAddressTranslationCache; 14 just do it
+    vmtabLine   vmRet;VMFlushDataCache              ; 15 wack the data cache
+    vmtabLine   vmRet;VMFlushCodeCache              ; 16 wack the code cache
+    vmtabLine   VMMakePageCacheable                 ; 17 make it so...
+    vmtabLine   VMMakePageNonCacheable              ; 18 make it so...
+    vmtabLine   VMGetPTEntryGivenPage               ; 19 given a page, get its 68K PTE
+    vmtabLine   VMSetPTEntryGivenPage               ; 20 given a page & 68K pte, set the real PTE
+    vmtabLine   VMPTest                             ; 21 ask why we got this page fault
+    vmtabLine   VMLRU                               ; 22 sweep pages for least recently used ones
+    vmtabLine   VMMarkUndefined                     ; 23
+    vmtabLine   VMMakePageWriteThrough              ; 24
+    vmtabLine   VMAllocateMemory                    ; 25
 VMTabEnd
 
 ########################################################################
@@ -86,217 +83,211 @@ vmRet
 
 ########################################################################
 
-VMInit ; r4
-    lwz     r7, KDP.VMPageArray(r1)          ; check that zero seg isn't empty
-    lwz     r8, KDP.PhysicalPageDescriptors + 0(r1)
+VMInit ; logicalpages a0/r4, pagearray (logical ptr) a1/r5
+; Switch the kernel's internal array of 68k Page Descriptors to the larger one provided.
+    lwz     r7, KDP.VMPageArray(r1)         ; Return failure code if VM is already running
+    lwz     r8, KDP.PhysicalPageArray(r1)
     cmpw    r7, r8
     bne     vmRet1
 
-    stw     r4, KDP.VMLogicalPages(r1)          ; resize PAR
-    stw     r5, KDP.VMPageArray(r1)          ; where did NK find this???
-
+; Edit PMDTs to point to the pre-VM PhysicalPageArray. Also boot every page
+; from the HTAB so we can easily work with 68k Page Descriptors.
+; (many sanity checks!)
+    stw     r4, KDP.VMLogicalPages(r1)      ; Set these globals now, because the loop will
+    stw     r5, KDP.VMPageArray(r1)         ; clobber the registers.
     lwz     r6, KDP.CurMap.SegMapPtr(r1)
-    li      r5,  0x00
-    li      r4,  0x00
+    li      r5, 0                           ; r5 = current segment number
+    li      r4, 0                           ; r4 = current page number
+@segloop
+    lwz     r8, 0(r6)                       ; load this segment's first PMDT and get all its info
+    addi    r6, r6, 8
+    lhz     r3, PMDT.PageIdx(r8)
+    lhz     r7, PMDT.PageCount(r8)
+    lwz     r8, PMDT.Word2(r8)
+    addi    r7, r7, 1
+    cmpwi   cr1, r3, 0
+    andi.   r3, r8, PMDT_Paged
+    cmpwi   r3, PMDT_Paged
+    bne     @skip_segment                   ; (skip segment if not paged!)
+    bnel    cr1, SystemCrash                ; (first PMDT in segment must start at offset 0!)
 
-VMInit_BigLoop
-    lwz     r8,  0x0000(r6)
-    addi    r6, r6,  0x08
-    lhz     r3,  0x0000(r8)
-    lhz     r7,  0x0002(r8)
-    lwz     r8,  0x0004(r8)
-    addi    r7, r7,  0x01
-    cmpwi   cr1, r3,  0x00
-    andi.   r3, r8,  0xc00
-    cmpwi   r3,  0xc00
-    bne     VMInit_0x110
-    bnel    cr1, SystemCrash
-    rlwinm  r15, r8, 22,  0, 29
-    addi    r3, r1, KDP.PhysicalPageDescriptors
-    rlwimi  r3, r5,  2, 28, 29
-    stw     r15,  0x0000(r3)
-    slwi    r3, r5, 16
+    rlwinm  r15, r8, 32-10, ~(PMDT_Paged>>10); seg's PhysicalPageArray ptr := PMDT's RPN, times 4
+    addi    r3, r1, KDP.PhysicalPageArray
+    rlwimi  r3, r5, 2, 0x0000000C
+    stw     r15, 0(r3)
+
+    slwi    r3, r5, 16                      ; (confirm that the inner loop is synced with the outer loop)
     cmpw    r3, r4
     bnel    SystemCrash
 
-VMInit_0xa8
-    lwz     r16,  0x0000(r15)
-    addi    r7, r7, -0x01
-    andi.   r3, r16,  0x01
+@pageloop
+    lwz     r16, 0(r15)
+    subi    r7, r7, 1
+    andi.   r3, r16, M68pdResident          ; all pages must be resident before VM starts
     beql    SystemCrash
-    andi.   r3, r16,  0x800
-    beq     VMInitple_or_pte0
-    lwz     r14, KDP.HTABORG(r1)
-    rlwinm  r3, r16, 23,  9, 28
+    andi.   r3, r16, M68pdInHTAB            ; (if page is in htab, check the pte and remove)
+    beq     @not_in_htab
+
+    lwz     r14, KDP.HTABORG(r1)            ; get pte into the usual r8/r9
+    rlwinm  r3, r16, 23, 9, 28
     lwzux   r8, r14, r3
-    lwz     r9,  0x0004(r14)
-    andis.  r3, r8,  0x8000
+    lwz     r9, 4(r14)
+    andis.  r3, r8, UpteValid >> 16         ; that pte must be valid, and one of P0/P1 must be set!
     beql    SystemCrash
-    andi.   r3, r9,  0x03
-    cmpwi   r3,  0x00
+    andi.   r3, r9, LpteP0 | LpteP1
+    cmpwi   r3, 0
     beql    SystemCrash
-    rlwinm  r3, r16, 17, 22, 31
-    rlwimi  r3, r8, 10, 16, 21
-    rlwimi  r3, r8, 21, 12, 15
-    cmpw    r3, r4
+    rlwinm  r3, r16, 17, 22, 31             ; bits 7-16 of the 68k Page Descriptor (<= MYSTERIOUS)
+    rlwimi  r3, r8, 10, 16, 21              ; API from Upte
+    rlwimi  r3, r8, 21, 12, 15              ; top 4 bits of VSID
+    cmpw    r3, r4                          ; why would we compare this to r4, our inner loop counter?
     bnel    SystemCrash
-;   bl      RemovePageFromTLB
     bl      DeletePTE
+@not_in_htab
+    cmpwi   r7, 0
+    addi    r15, r15, 4
+    addi    r4, r4, 1
+    bne     @pageloop
 
-VMInitple_or_pte0
-    cmpwi   r7,  0x00
-    addi    r15, r15,  0x04
-    addi    r4, r4,  0x01
-    bne     VMInit_0xa8
-
-VMInit_0x110
-    addi    r5, r5,  0x01
+@skip_segment ; because PMDT is not paged
+    addi    r5, r5, 1
     cmpwi   r5, 4
-    bne     VMInit_BigLoop
+    bne     @segloop
 
-
-
-    lwz     r7, KDP.VMPhysicalPages(r1)
+    lwz     r7, KDP.VMPhysicalPages(r1)     ; (final check: did we actually iterate over every page in the VM area?)
     cmpw    r4, r7
     bnel    SystemCrash
-    lwz     r5,  KDP.VMPageArray(r1)
+    lwz     r5, KDP.VMPageArray(r1)         ; Restore the two arguments that this loop clobbered
     lwz     r4, KDP.VMLogicalPages(r1)
-    andi.   r7, r5,  0xfff
 
-    li      r3,  0x02
-    bne     VMInit_Fail
-
-    lis     r7, 4
+; Do some checks. (no need to crash the kernel if these fail)
+    andi.   r7, r5, 0xfff                   ; If new VMPageArray is not page-aligned...
+    li      r3, 2
+    bne     @fail                           ;    ...fail 2
+    lis     r7, 4                           ; If new VM area is bigger than 1 GB...
     cmplw   r7, r4
-
-    li      r3,  0x03
-    blt     VMInit_Fail
-
-    addi    r7, r4,  0x3ff
+    li      r3, 3
+    blt     @fail                           ;    ...fail 3
+    addi    r7, r4, 0x3ff                   ; If (logical pages up to and including the page array) > (physical pages)...
     srwi    r6, r7, 10
     srwi    r8, r5, 12
     add     r8, r8, r6
     lwz     r9, KDP.VMPhysicalPages(r1)
     cmplw   r8, r9
-
-    li      r3,  0x04
-    bgt     VMInit_Fail
-
-    cmplw   r4, r9
-
-    li      r3,  0x05
-    blt     VMInit_Fail
-
-    srwi    r7, r5, 12
-    bl      QuickGetPhysical
-    stw     r9,  KDP.VMPageArray(r1)
-    mr      r15, r9
+    li      r3, 4
+    bgt     @fail                           ;    ...fail 4
+    cmplw   r4, r9                          ; If PHYS > LOG...
+    li      r3, 5
+    blt     @fail                           ;    ...fail 5
+    srwi    r7, r5, 12                      ; *Physicalize VMPageArray*
+    bl      vmInitGetPhysical
+    stw     r9, KDP.VMPageArray(r1)
+    mr      r15, r9                         ; If VMPageArray seems to be discontiguous...
     srwi    r7, r5, 12
     add     r7, r7, r6
-    addi    r7, r7, -0x01
-    bl      QuickGetPhysical
+    subi    r7, r7, 1
+    bl      vmInitGetPhysical
     subf    r9, r15, r9
     srwi    r9, r9, 12
-    addi    r9, r9,  0x01
+    addi    r9, r9, 1
     cmpw    r9, r6
+    li      r3, 6
+    bne     @fail                           ;     ...fail 6
 
-    li      r3,  0x06
-    bne     VMInit_Fail
-
-    stw     r4, KDP.VMLogicalPages(r1)
+; Init the new VMPageArray (userspace just provides the buffer)
+    stw     r4, KDP.VMLogicalPages(r1)      ; (Good time to adjust NKSystemInfo value)
     slwi    r7, r4, 12
-    stw     r7, KDP.SysInfo.LogicalMemorySize(r1) ; bug in NKv2??
-    slwi    r7, r4,  2
-    li      r8,  0x00
+    stw     r7, KDP.SysInfo.LogicalMemorySize(r1)
 
-VMInit_0x1d4
+    slwi    r7, r4, 2                       ; First make every page non-resident (zero)
+    li      r8, 0
+@nonresloop
     subi    r7, r7, 4
-    cmpwi   r7,  0x00
+    cmpwi   r7, 0
     stwx    r8, r15, r7
-    bne     VMInit_0x1d4
-    lwz     r7, KDP.VMPhysicalPages(r1)
-    slwi    r6, r7,  2
-
-VMInit_0x1ec
+    bne     @nonresloop
+    lwz     r7, KDP.VMPhysicalPages(r1)     ; Then make the original logical area resident again
+    slwi    r6, r7, 2                       ; (uses backed-up PhysicalPageArray)
+@resloop
     subi    r6, r6, 4
-    srwi    r7, r6,  2
-    bl      QuickGetPhysical
-    cmpwi   r6,  0x00
-    ori     r16, r9,  0x21
+    srwi    r7, r6, 2
+    bl      vmInitGetPhysical
+    cmpwi   r6, 0
+    ori     r16, r9, M68pdCacheNotIO | M68pdResident
     stwx    r16, r15, r6
-    bne     VMInit_0x1ec
-    lwz     r15,  KDP.VMPageArray(r1)
+    bne     @resloop
+
+; Ensure that VMPageArray is resident, and wire it down
+    lwz     r15, KDP.VMPageArray(r1)
     srwi    r7, r5, 10
     add     r15, r15, r7
     lwz     r5, KDP.VMLogicalPages(r1)
-
-VMInit_0x218
-    lwz     r16,  0x0000(r15)
-    andi.   r7, r16,  0x01
+@checkloop
+    lwz     r16, 0(r15)
+    andi.   r7, r16, M68pdResident
     beql    SystemCrash
-    ori     r16, r16,  0x404
-    stw     r16,  0x0000(r15)
-    addi    r5, r5, -0x400
-    cmpwi   r5,  0x00
-    addi    r15, r15,  0x04
-    bgt     VMInit_0x218
-    lwz     r6, KDP.CurMap.SegMapPtr(r1)
-    li      r9, 0
-    ori     r7, r9,  0xffff
-    li      r8,  0xa00
+    ori     r16, r16, M68pdGlobal | M68pdWriteProtect
+    stw     r16, 0(r15)
+    subi    r5, r5, 1024
+    cmpwi   r5, 0
+    addi    r15, r15, 4
+    bgt     @checkloop
 
-VMInit_0x250
-    lwz     r3,  0x0000(r6)
-    addi    r6, r6,  0x08
-    stw     r7,  0x0000(r3)
-    stw     r8,  0x0004(r3)
-    stw     r7,  0x0008(r3)
-    stw     r8,  0x000c(r3)
+; Point the paged PMDTs in the PageMap to the new VMPageArray
+    lwz     r6, KDP.CurMap.SegMapPtr(r1)    ; Clear the first two PMDTs of segs 0-3
+    li      r9, 0
+    ori     r7, r9, 0xffff                  ; (first word: whole-segment)
+    li      r8, PMDT_InvalidAddress         ; (second word: PMDT_InvalidAddress)
+@pmdtresetloop
+    lwz     r3, 0(r6)
+    addi    r6, r6, 0
+    stw     r7, 0(r3)
+    stw     r8, 4(r3)
+    stw     r7, 8(r3)
+    stw     r8, 12(r3)
     addi    r9, r9, 1
     cmpwi   r9, 3
-    ble     VMInit_0x250
-    lwz     r6, KDP.CurMap.SegMapPtr(r1)
+    ble     @pmdtresetloop
+    lwz     r6, KDP.CurMap.SegMapPtr(r1)    ; Edit PMDTs to point to the new PD Array
     lwz     r9, KDP.VMLogicalPages(r1)
-    lwz     r15,  KDP.VMPageArray(r1)
-
-VMInit_0x288
-    lwz     r8,  0x0000(r6)
-    lis     r7,  0x01
-    rlwinm. r3, r9, 16, 16, 31
-    bne     VMInit_0x29c
-    mr      r7, r9
-
-VMInit_0x29c
+    lwz     r15, KDP.VMPageArray(r1)
+@loop
+    lwz     r8, 0(r6)                       ; r8 = PMDT ptr
+    lis     r7, 1                           ; r9 fallback on 256 MB
+    rlwinm. r3, r9, 16, 0x0000FFFF          ; test VMLogicalPages
+    bne     @on
+    mr      r7, r9                          ; prefer r9 = VMLogicalPages
+@on
     subf.   r9, r7, r9
-    addi    r7, r7, -0x01
-    stw     r7,  0x0000(r8)
-    rlwinm  r7, r15, 10, 22, 19
-    ori     r7, r7,  0xc00
-    stw     r7,  0x0004(r8)
-    addis   r15, r15,  0x04
-    addi    r6, r6,  0x08
-    bne     VMInit_0x288
+    subi    r7, r7, 1
+    stw     r7, 0(r8)
+    rlwinm  r7, r15, 10, ~PMDT_Paged
+    ori     r7, r7, PMDT_Paged
+    stw     r7, 4(r8)
+    addis   r15, r15, 4
+    addi    r6, r6, 8
+    bne     @loop
 
+; Done!
     b       vmRet0
 
-VMInit_Fail
-    lwz     r7, KDP.VMPhysicalPages(r1)
-    lwz     r8, KDP.PhysicalPageDescriptors + 0(r1)
+@fail ; This code path seems to leave the system in a usable state.
+    lwz     r7, KDP.VMPhysicalPages(r1)     
+    lwz     r8, KDP.PhysicalPageArray(r1)
     stw     r7, KDP.VMLogicalPages(r1)
     stw     r8, KDP.VMPageArray(r1)
-
     b       vmRet
 
 ########################################################################
 
-VMExchangePages
+VMExchangePages ; page1 a0/r4, page2 a1/r5
     bl      PageInfo
     bc      BO_IF_NOT, cr4_lt, vmRetNeg1                ; not a paged area
     bc      BO_IF, 21, vmRetNeg1
     bc      BO_IF_NOT, bM68pdResident, vmRetNeg1        ; must be resident
     bc      BO_IF, bM68pdCacheinhib, vmRetNeg1          ; must not have special properties
     bc      BO_IF_NOT, bM68pdCacheNotIO, vmRetNeg1
-    bcl     BO_IF, bM68pdInHTAB, DeletePTE       ; if in HTAB, must be removed
+    bcl     BO_IF, bM68pdInHTAB, DeletePTE              ; if in HTAB, must be removed
     mr      r6, r15                                     ; r6 = src 68k PTE ptr
 
     mr      r4, r5
@@ -330,7 +321,7 @@ VMExchangePages
 
 ########################################################################
 
-VMGetPhysicalPage
+VMGetPhysicalPage ; page a0/r4 // p_page d0/r3
     bl      PageInfo
     bc      BO_IF_NOT, bM68pdResident, vmRetNeg1
     srwi    r3, r9, 12
@@ -338,31 +329,33 @@ VMGetPhysicalPage
 
 ########################################################################
 
-VMGetPTEntryGivenPage
+VMGetPTEntryGivenPage ; page a0/r4 // 68kpte d0/r3
+; Get a page's 68k Page Descriptor
     bl      PageInfo
     mr      r3, r16
     bc      BO_IF_NOT, bM68pdResident, vmRet
-    rlwimi  r3, r9, 0, 0xFFFFF000
+    rlwimi  r3, r9, 0, 0xFFFFF000 ; Insert PowerPC information if needed
     b       vmRet
 
 ########################################################################
 
-VMIsInited
+VMIsInited ; page a0/r4 // bool d0/r3
+; An uninited page is not resident and does not have its Inited bit set
     bl      PageInfo
     bc      BO_IF, bM68pdResident, vmRet1
-    rlwinm  r3, r16, 16, 31, 31
+    _mvbit  r3, 31, r16, bM68pdInited
     b       vmRet
 
 ########################################################################
 
-VMIsResident
+VMIsResident ; page a0/r4 // bool d0/r3
     bl      PageInfo
     rlwinm  r3, r16, 0, 1 ; M68pdResident
     b       vmRet
 
 ########################################################################
 
-VMIsUnmodified
+VMIsUnmodified ; page a0/r4 // bool d0/r3
     bl      PageInfo
     rlwinm  r3, r16, bM68pdModified + 1, 1
     xori    r3, r3, 1
@@ -370,7 +363,7 @@ VMIsUnmodified
 
 ########################################################################
 
-VMLRU ; For each resident page: save Used bit and clear original
+VMLRU ; Save Used bit of every resident page and clear originals
     slwi.   r9, r9, 2                   ; (r9 is VMLogicalPages)
     lwz     r15, KDP.VMPageArray(r1)
     lwz     r14, KDP.HTABORG(r1)
@@ -408,7 +401,7 @@ VMLRU ; For each resident page: save Used bit and clear original
 
 ########################################################################
 
-VMMakePageCacheable
+VMMakePageCacheable ; page a0/r4
 ; PPC: LpteWritethru(W)=0, LpteInhibcache(I)=0
 ; 68k: M68pdCacheNotIO(CM0)=1, M68pdCacheinhib(CM1)=0 ["Cachable,Copyback"]
     bl      PageInfo
@@ -429,7 +422,7 @@ VMMakePageCacheable
 
 ########################################################################
 
-VMMakePageWriteThrough
+VMMakePageWriteThrough ; page a0/r4
 ; PPC: LpteWritethru(W)=1, LpteInhibcache(I)=0
 ; 68k: M68pdCacheNotIO(CM0)=0, M68pdCacheinhib(CM1)=0 ["Cachable,Write-through"]
     bl      PageInfo
@@ -552,7 +545,8 @@ VMMakePageWriteThrough
 
 ########################################################################
 
-VMMakePageNonCacheable ; set WI=01 and CM0/CM1=11
+VMMakePageNonCacheable ; page a0/r4
+ ; set WI=01 and CM0/CM1=11
     bl      PageInfo
     rlwinm  r7, r16, 0, M68pdCacheNotIO | M68pdCacheinhib
     cmpwi   r7, M68pdCacheNotIO | M68pdCacheinhib   ; these should both end up set
@@ -585,14 +579,15 @@ vmFlushPageAndReturn ; When making page write-though or noncacheable
 
 ########################################################################
 
-VMMarkBacking
+VMMarkBacking ; page a0/r4, is_inited a1/r5
+; Opposite of VMMarkResident
     bl      PageInfo
     bc      BO_IF_NOT, cr4_lt, vmRetNeg1    ; not a paged area
     bc      BO_IF, bM68pdGlobal, vmRetNeg1
 
     bcl     BO_IF, bM68pdInHTAB, DeletePTE
 
-    _mvbit  r16, 15, r5, 31
+    _mvbit  r16, bM68pdInited, r5, 31
     li      r7, M68pdResident
     andc    r16, r16, r7
     stw     r16, 0(r15)
@@ -601,7 +596,7 @@ VMMarkBacking
 
 ########################################################################
 
-VMMarkCleanUnused
+VMMarkCleanUnused ; page a0/r4
     bl      PageInfo
     bc      BO_IF_NOT, cr4_lt, vmRetNeg1    ; not a paged area
     bc      BO_IF_NOT, bM68pdResident, vmRetNeg1
@@ -617,30 +612,32 @@ VMMarkCleanUnused
 
 ########################################################################
 
-VMMarkUndefined
+VMMarkUndefined ; first_page a0/r4, page_count a1/r5
+; Not too sure what this does
     cmplw   r4, r9
     cmplw   cr1, r5, r9
     add     r7, r4, r5
     cmplw   cr2, r7, r9
-    bge     vmRetNeg1
+    bge     vmRetNeg1                           ; outside VM area!
     bgt     cr1, vmRetNeg1
     bgt     cr2, vmRetNeg1
-    lwz     r15,  KDP.VMPageArray(r1)
-    slwi    r8, r7,  2
-    li      r7,  0x01
 
-VMMarkUndefined_0x28
+    lwz     r15, KDP.VMPageArray(r1)
+    slwi    r8, r7, 2
+    li      r7, 1
+@loop
     subi    r8, r8, 4
     subf.   r5, r7, r5
     lwzx    r16, r15, r8
     blt     vmRet
-    rlwimi  r16, r6,  7, 24, 24
+    _mvbit  r16, bM68pdSupProtect, r6, 31
     stwx    r16, r15, r8
-    b       VMMarkUndefined_0x28
+    b       @loop
 
 ########################################################################
 
-VMMarkResident ; physical page number in a0/r5
+VMMarkResident ; page a0/r4, p_page a1/r5
+; Opposite of VMMarkBacking
     bl      PageInfo
     bc      BO_IF_NOT, cr4_lt, vmRetNeg1        ; not a paged area!
     bc      BO_IF, bM68pdResident, vmRetNeg1    ; already resident!
@@ -657,7 +654,8 @@ VMMarkResident ; physical page number in a0/r5
 
 ########################################################################
 
-VMPTest ; return reason for fault on page a0/r4, based on action in d1/r6
+VMPTest ; page a0/r4, action d1/r6 // reason d0/r3
+; Return reason we got a page fault
     srwi    r4, r4, 12          ; because it was outside a paged area?
     cmplw   r4, r9
     li      r3, 1 << 14
@@ -678,7 +676,8 @@ VMPTest ; return reason for fault on page a0/r4, based on action in d1/r6
 
 ########################################################################
 
-VMSetPTEntryGivenPage
+VMSetPTEntryGivenPage ; 68kpte a0/r4, page a1/r5
+; Set a page's 68k Page Descriptor (some bits cannot be set)
     mr      r6, r4
     mr      r4, r5
     bl      PageInfo
@@ -705,7 +704,8 @@ VMSetPTEntryGivenPage
 
 ########################################################################
 
-VMShouldClean ; is this page is a good candidate for writing to disk?
+VMShouldClean ; page a0/r4 // bool d0/r3
+; Is this page is a good candidate for writing to disk?
     bl      PageInfo
     bc      BO_IF_NOT, bM68pdResident, vmRet0   ; already paged out: no
     bc      BO_IF, bM68pdUsed, vmRet0           ; been read recently: no
@@ -723,9 +723,9 @@ VMShouldClean ; is this page is a good candidate for writing to disk?
 
 ########################################################################
 
-VMAllocateMemory
+VMAllocateMemory ; first_page a0/r4, page_count a1/r5, align d1/r6
     lwz     r7, KDP.VMPageArray(r1)
-    lwz     r8, KDP.PhysicalPageDescriptors(r1)
+    lwz     r8, KDP.PhysicalPageArray(r1)
     cmpwi   cr6, r5, 0
     cmpw    cr7, r7, r8
     or      r7, r4, r6                          ; r4/r6 are page numbers?
@@ -752,7 +752,7 @@ VMAllocateMemory
     bne     @for_each_logical_page
 
     cmpwi   cr6, r6, 0
-    beq     cr6, VMAllocateMemory_0xc0
+    beq     cr6, @donelogicalpgs
     slwi    r8, r5, 2
     lwzx    r8, r15, r8
     slwi    r14, r5, 12
@@ -760,8 +760,11 @@ VMAllocateMemory
     xor     r8, r8, r14
     rlwinm. r8, r8,  0,  0, 19
     bne     @for_each_logical_page
+@donelogicalpgs
 
-VMAllocateMemory_0xc0
+
+
+
     lis     r9, 4
     cmplw   cr7, r7, r9
     rlwinm. r9, r7,  0,  0, 11
@@ -773,31 +776,38 @@ VMAllocateMemory_0xc0
     clrlwi  r9, r7,  0x10
     lhz     r8,  0x0000(r14)
     b       VMAllocateMemory_0xf4
-
 VMAllocateMemory_0xf0
     lhzu    r8,  0x0008(r14)
-
 VMAllocateMemory_0xf4
     lhz     r16,  0x0002(r14)
     subf    r8, r8, r9
     cmplw   cr7, r8, r16
     bgt     cr7, VMAllocateMemory_0xf0
+
+
+
+
+
     add     r8, r8, r5
     cmplw   cr7, r8, r16
     bgt     cr7, vmRetNeg1
     lwz     r16,  0x0004(r14)
     slwi    r8, r7, 16
-    andi.   r16, r16,  0xe01
+    andi.   r16, r16, EveryPattr
     cmpwi   r16,  0xa01
     or      r8, r8, r5
-    addi    r5, r5,  0x01
+    addi    r5, r5, PMDT_Available
     bne     vmRetNeg1
     stw     r8,  0x0000(r14)
     bnel    cr6, VMAllocateMemory_0x2e8
-    rotlwi  r15, r15,  0x0a
-    ori     r15, r15,  0xc00
-    stw     r15,  0x0004(r14)
-    lwz     r7, KDP.VMPhysicalPages(r1)
+
+
+
+    rotlwi  r15, r15, 10
+    ori     r15, r15, PMDT_Paged
+    stw     r15, PMDT.Word2(r14)
+
+    lwz     r7, KDP.VMPhysicalPages(r1)         ; proof positive that this precedes VMInit!
     subf    r7, r5, r7
     stw     r7, KDP.VMPhysicalPages(r1)
     stw     r7, KDP.VMLogicalPages(r1)
@@ -805,23 +815,24 @@ VMAllocateMemory_0xf4
     stw     r8, KDP.SysInfo.UsableMemorySize(r1)
     stw     r8, KDP.SysInfo.LogicalMemorySize(r1)
 
-    addi    r14, r1, 120
-    lwz     r15,  KDP.VMPageArray(r1)
-    li      r8, 0
-    addi    r7, r7, -0x01
-    ori     r8, r8, 0xffff
 
-VMAllocateMemory_0x34c
+
+    addi    r14, r1, KDP.SegMaps-8              ; Update every PMDT in the VM area
+    lwz     r15, KDP.VMPageArray(r1)
+    li      r8, 0                               ; r8 = upper PMDT denoting whole-segment
+    subi    r7, r7, 1
+    ori     r8, r8, 0xffff
+@nextseg
     cmplwi  r7,  0xffff
-    lwzu    r16,  0x0008(r14)
-    rotlwi  r9, r15,  0x0a
-    ori     r9, r9,  0xc00
-    stw     r8,  0x0000(r16)
-    stw     r9,  0x0004(r16)
-    addis   r15, r15,  0x04
-    addis   r7, r7, -0x01
-    bgt     VMAllocateMemory_0x34c
-    sth     r7,  0x0002(r16)
+    lwzu    r16, 8(r14)
+    rotlwi  r9, r15, 10
+    ori     r9, r9, PMDT_Paged
+    stw     r8, 0(r16)                          ; PMDT.PageIdx/PageCount = whole segment
+    stw     r9, PMDT.Word2(r16)
+    addis   r15, r15, 4
+    subis   r7, r7, 1
+    bgt     @nextseg
+    sth     r7, PMDT.PageCount(r16)             ; (last segment is partial)
     b       vmRet1
 
 
@@ -864,19 +875,18 @@ VMAllocateMemory_0x324
 ; bits are placed in the condition registers for easy testing.
 ; VMLogicalPages must be passed in r9 (as set by VMDispatch).
 
-; Return values:
-;   if in paged area: cr4_lt         =  1
-;                     r16/r15/cr5-7  =  68k Page Descriptor [PD/pointer/attr-bits]
-;                     r8/r9/r14      =  PowerPC Page Table Entry [PTE-high/PTE-low/pointer]
-;
-;   if not paged:     cr4_lt         =  0
-;                     r16/cr5-7      =  fake 68k Page Descriptor [PD/attr-bits]
-;                     r15            =  PMDT pointer
+; Returns:     cr4_lt         =  1
+; (paged area) r16/r15/cr5-7  =  68k Page Descriptor [PD/pointer/attr-bits]
+;              r8/r9/r14      =  PowerPC Page Table Entry [PTE-high/PTE-low/pointer]
+
+; Returns:     cr4_lt         =  0
+; (not paged)  r16/cr5-7      =  fake 68k Page Descriptor [PD/attr-bits]
+;              r15            =  PMDT pointer
 
 PageInfo
     cmplw   cr4, r4, r9
-    lwz     r15, KDP.VMPageArray(r1)        ; r15 = Page List base
-    slwi    r8, r4, 2                       ; r18 = Page List Entry offset
+    lwz     r15, KDP.VMPageArray(r1)        ; r15 = 68k Page Descriptor array base
+    slwi    r8, r4, 2                       ; r18 = 68k Page Descriptor array offset
     bge     cr4, @outside_vm_area
 
 @paged ; (cr4_lt is always set when we get here)
@@ -1079,11 +1089,11 @@ QuickCalcPTE
 
 ########################################################################
 
-; Assumes that the page numbered r4 is within the paged area, resident,
+; Assumes that the page numbered r7 is within the paged area, resident,
 ; and not in the HTAB. Returns a physical pointer in r9.
 
-QuickGetPhysical
-    addi    r8, r1, KDP.PhysicalPageDescriptors
+vmInitGetPhysical
+    addi    r8, r1, KDP.PhysicalPageArray
     lwz     r9, KDP.VMPhysicalPages(r1)
     rlwimi  r8, r7, 18, 28, 29
     cmplw   r7, r9

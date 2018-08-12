@@ -288,21 +288,21 @@ PutPTE ; EA r27 // PTE r30/r31, EQ=Success, GT=Invalid, LT=Fault
 
     _clrNCBCache scr=r28                    ; Also clobber NCB cache if page could get moved
 
-    bne     cr7, PutPTE                     ; Is there a PageListEntry we need to edit?
+    bne     cr7, PutPTE                     ; Is this page in a paged area, with a 68k Page Descriptor?
     rlwinm  r26, r26, 22, 0xFFFFFFFC        ; r26 = RPN * 4
-    lwzux   r28, r26, r30                   ; r28 = PLE, r26 = PLE ptr
-    lwz     r31, 4(r29)
-    andi.   r30, r28, 0x800                 ; Crash if this PLE wasn't marked as HTAB'd
-    rlwinm  r30, r28, (32-9), 0x007FFFF8
-    xor     r30, r30, r29                   ; Crash if this PLE's PTE ptr didn't point to this PTE
+    lwzux   r28, r26, r30                   ; (the 68k-PD to edit)
+    lwz     r31, 4(r29)                     ; (extract some info from the lower PTE before discarding)
+    andi.   r30, r28, M68pdInHTAB           ; Crash if this PLE wasn't marked as HTAB'd!
+    rlwinm  r30, r28, 32-9, 0x007FFFF8
+    xor     r30, r30, r29                   ; Crash if this 68k-PD's pointer didn't match this PTE!
     beq     SystemCrash
     andi.   r30, r30, 0xffff
-    xori    r28, r28, 0x800                 ; Edit PLE: clear the HTAB'd flaf
+    xori    r28, r28, M68pdInHTAB           ; Edit the 68k-PD's HTAB flag, physical ptr, and "usage" flags
     bne     SystemCrash
-    rlwimi  r28, r31, 0, 0, 19              ;           change its RPN to the physical page num
-    rlwimi  r28, r31, 29, 27, 27            ;           PLE[27] = Change bit
-    rlwimi  r28, r31, 27, 28, 28            ;           PLE[28] = Reference bit
-    stw     r28, 0(r26)                     ; Save edited PLE
+    rlwimi  r28, r31, 0, 0xFFFFF000
+    _mvbit  r28, bM68pdModified, r31, bLpteChange
+    _mvbit  r28, bM68pdUsed, r31, bLpteReference
+    stw     r28, 0(r26)                     ; Save edited 68k-PD
 
     b       PutPTE                          ; PTEG overflow complete. Redo PutPTE!
 
