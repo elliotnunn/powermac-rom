@@ -84,10 +84,10 @@ _S set 0
 ; LEGEND       .... access size (r17 bits 27-30) and 0=Store/1=Load (r17 bit 31)
 ;                     ................ MRRestab entry (r17 bits 0-5)
 ;
-;                                       . mrOpflag1        }
-;                                        . mrOpflag2       } cr3 flags
-;                                         . mrOpflag3      }
-;                                          . mrFlagDidLoad }
+;                                        . mrSkipInstLoad       }
+;                                         . mrXformIgnoreIdxReg } cr3 flags
+;                                          . mrSuppressUpdate   }
+;                                           . mrChangedRegInEWA }
 ;
 ;                                               primary routine   secondary routine  X-form extended opcode   D-form opcode
 ;                                               ................  ................   .......................  .................

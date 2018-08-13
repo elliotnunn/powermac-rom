@@ -165,20 +165,20 @@ MRStore22 ; Fast return paths from MemAccess code
 MRLoad22
     lhz     r23, -4(r19)
     addi    r17, r17, -4
-    insrwi  r21, r23, 16,0
+    insrwi  r21, r23, 16, 0
 MRLoad2
     lhz     r23, -2(r19)
-    insrwi  r21, r23, 16,16
+    insrwi  r21, r23, 16, 16
 
 MRDoSecondary
     sync
-    rlwinm. r28, r17, 18,25,29
+    rlwinm. r28, r17, 18,25,29 ; get the block-offset of rA
     mtlr    r25
-    cror    cr0_eq, cr0_eq, mrOpflag3
+    cror    cr0_eq, cr0_eq, mrSuppressUpdate
     mtmsr   r14
     mtsprg  3, r24
     beqlr
-    crset   mrFlagDidLoad
+    crset   mrChangedRegInEWA       ; do this only if it's a non-zero register and we aren't suppressing update
     stwx    r18, r1, r28
     blr
 
@@ -189,7 +189,7 @@ MRSecLoadExt
 
 MRSecLoad
     rlwinm  r28, r17, 13,25,29
-    crset   mrFlagDidLoad
+    crset   mrChangedRegInEWA
     stwx    r21, r1, r28
 
 ########################################################################
@@ -202,7 +202,7 @@ MRSecDone
     bne     @trace                      ; Is a Trace flagged?
     mtlr    r12
 
-    bc      BO_IF_NOT, mrFlagDidLoad, @load_ewa_registers
+    bc      BO_IF_NOT, mrChangedRegInEWA, @load_ewa_registers
     mtcr    r13
     lmw     r2, KDP.r2(r1)
     lwz     r0, KDP.r0(r1)
@@ -235,7 +235,7 @@ MRSecLHBRX
 
 MRSecLWBRX
     rlwinm  r28, r17, 13,25,29
-    crset   mrFlagDidLoad
+    crset   mrChangedRegInEWA
     stwbrx  r21, r1, r28
     b       MRSecDone
 
@@ -333,7 +333,7 @@ MRComDCBZ
 
 MRSecLWARX
     rlwinm  r28, r17, 13,25,29
-    crset   mrFlagDidLoad
+    crset   mrChangedRegInEWA
     stwx    r21, r1, r28
     stwcx.  r21, r1, r28
     b       MRSecDone

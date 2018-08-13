@@ -331,7 +331,7 @@ EmulateDataAccess
     lwzx    r23, r1, r23                    ; get rB from saved registers
     rlwimi  r17, r26, 6, 26, 5              ; r17 = pretend X-form inst with: maj opcode (from tbl), rS/D and RA (from inst), min opcode (from tbl)
     add     r18, r18, r23                   ; r18 = effective address attempted by instruction
-    bclr    BO_IF_NOT, mrOpflag2
+    bclr    BO_IF_NOT, mrXformIgnoreIdxReg
     neg     r23, r23
     add     r18, r18, r23
     blr
@@ -385,7 +385,7 @@ AlignmentInt
     _ori    r15, r14, MsrDR
     mtcr    r26
     rlwimi  r17, r26, 6, 26, 5
-    bclr    BO_IF_NOT, mrOpflag1
+    bclr    BO_IF_NOT, mrSkipInstLoad
     mtmsr   r15
     lwz     r27, 0(r10)
     mtmsr   r14
