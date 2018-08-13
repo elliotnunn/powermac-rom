@@ -1,18 +1,3 @@
-; AUTO-GENERATED SYMBOL LIST
-; IMPORTS:
-;   MROptabCode
-;     MRDoneTableSTFD
-;     MRSecDone
-; EXPORTS:
-;   DisableFPU (=> NKExceptions)
-;   EnableFPU (=> NKExceptions)
-;   FPUnavailInt (=> NKReset)
-;   LFDTable (=> MROptabCode)
-;   ReloadFPU (=> NKExceptions)
-;   STFDTable (=> MROptabCode)
-
-########################################################################
-
     _align 5
 FPUnavailInt
 ;   Reload the FPU

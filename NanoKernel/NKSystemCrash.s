@@ -1,9 +1,3 @@
-; AUTO-GENERATED SYMBOL LIST
-; EXPORTS:
-;   SystemCrash (=> MRInterrupts, MROptabCode, NKExceptions, NKLegacyVM, NKMemory, NKReset, NKSoftInts)
-
-########################################################################
-
 SystemCrash
     mfsprg  r1, 0
 

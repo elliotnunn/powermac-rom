@@ -1,16 +1,3 @@
-; AUTO-GENERATED SYMBOL LIST
-; IMPORTS:
-;   NKSystemCrash
-;     SystemCrash
-; EXPORTS:
-;   FlushTLB (=> NKReset)
-;   GetPhysical (=> MRInterrupts, NKSoftInts)
-;   PutPTE (=> MRInterrupts, NKColdInts, NKLegacyVM, NKReset)
-;   SetMap (=> NKReset)
-
-########################################################################
-########################################################################
-
 PutPTE ; EA r27 // PTE r30/r31, EQ=Success, GT=Invalid, LT=Fault
     lwz     r29, KDP.CurMap.SegMapPtr(r1)   ; 1. Find which Segment and PMDT cover this Effective Address
     rlwinm  r28, r27, 7, 0x0000000F << 3    ; get offset into SegMap based on EA

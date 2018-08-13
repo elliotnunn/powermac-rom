@@ -1,17 +1,3 @@
-; AUTO-GENERATED SYMBOL LIST
-; IMPORTS:
-;   NKExceptions
-;     Exception
-;     LoadInterruptRegisters
-;     ReturnFromInt
-;   NKMemory
-;     PutPTE
-; EXPORTS:
-;   InstStorageInt (=> NKReset)
-;   MachineCheckInt (=> NKReset)
-
-########################################################################
-
 InstStorageInt
     bl      LoadInterruptRegisters
 

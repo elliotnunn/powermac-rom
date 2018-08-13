@@ -1,20 +1,3 @@
-; AUTO-GENERATED SYMBOL LIST
-; IMPORTS:
-;   MROptab
-;     MROptabD
-;     MROptabX
-; EXPORTS:
-;   AlignmentInt (=> NKReset)
-;   DataStorageInt (=> NKReset)
-;   DecrementerIntAlt (=> NKReset)
-;   DecrementerIntSys (=> NKReset)
-;   EmulateDataAccess (=> NKSoftInts)
-;   ExternalInt0 (=> NKReset)
-;   ExternalInt1 (=> NKReset)
-;   ExternalInt2 (=> NKReset)
-
-########################################################################
-
     _align 6
 ExternalInt0
     mfsprg  r1, 0                           ; Init regs and increment ctr

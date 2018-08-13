@@ -1,27 +1,3 @@
-; AUTO-GENERATED SYMBOL LIST
-; IMPORTS:
-;   MRMemtab
-;     MRMemtab
-;   MROptabCode
-;     MRDoSecondary
-;   MRRestab
-;     MRRestab
-;   NKFloatingPt
-;     DisableFPU
-;     EnableFPU
-;     ReloadFPU
-;   NKSystemCrash
-;     SystemCrash
-; EXPORTS:
-;   Exception (=> MRInterrupts, NKColdInts, NKSoftInts)
-;   KCallReturnFromException (=> NKReset)
-;   KCallReturnFromExceptionFastPath (=> NKSoftInts)
-;   LoadInterruptRegisters (=> NKColdInts, NKSoftInts)
-;   MRException (=> MRInterrupts, MROptabCode)
-;   ReturnFromInt (=> NKColdInts, NKLegacyVM, NKSoftInts)
-;   SwitchContext (=> NKSoftInts)
-
-########################################################################
 ; MemRetry error
 MRException
     mtsprg  3, r24

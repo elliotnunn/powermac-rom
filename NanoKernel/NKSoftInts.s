@@ -1,30 +1,3 @@
-; AUTO-GENERATED SYMBOL LIST
-; IMPORTS:
-;   MROptabCode
-;     MRSecDone
-;   NKExceptions
-;     Exception
-;     KCallReturnFromExceptionFastPath
-;     LoadInterruptRegisters
-;     ReturnFromInt
-;     SwitchContext
-;   NKHotInts
-;     EmulateDataAccess
-;   NKMemory
-;     GetPhysical
-;   NKSystemCrash
-;     SystemCrash
-; EXPORTS:
-;   KCallPrioritizeInterrupts (=> NKReset)
-;   KCallResetSystem (=> NKReset)
-;   KCallRunAlternateContext (=> NKReset)
-;   KCallSystemCrash (=> NKReset)
-;   ProgramInt (=> NKReset)
-;   SyscallInt (=> NKReset)
-;   TraceInt (=> NKReset)
-
-########################################################################
-
 IllegalInstruction
     mfmsr   r9
     _ori    r8, r9, MsrDR

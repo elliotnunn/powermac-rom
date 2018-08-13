@@ -1,16 +1,3 @@
-; AUTO-GENERATED SYMBOL LIST
-; IMPORTS:
-;   NKExceptions
-;     ReturnFromInt
-;   NKMemory
-;     PutPTE
-;   NKSystemCrash
-;     SystemCrash
-; EXPORTS:
-;   KCallVMDispatch (=> NKReset)
-
-########################################################################
-
 KCallVMDispatch
     stw     r7, KDP.Flags(r1)
     lwz     r7, KDP.CodeBase(r1)

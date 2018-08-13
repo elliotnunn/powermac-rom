@@ -1,21 +1,3 @@
-; AUTO-GENERATED SYMBOL LIST
-; IMPORTS:
-;   NKExceptions
-;     Exception
-;     MRException
-;   NKMemory
-;     GetPhysical
-;     PutPTE
-;   NKSystemCrash
-;     SystemCrash
-; EXPORTS:
-;   MRDataStorageInt (=> NKReset)
-;   MRMachineCheckInt (=> NKReset)
-
-; Special MR registers to investigate: r19 (inst addr), r26 (error)
-
-########################################################################
-
 MRDataStorageInt ; Consult DSISR and the page table to decide what to do
     mfdsisr r31                     ; Check DSISR for simple HTAB miss
     andis.  r28, r31, 0xC030        ; (bits 0/1/10/11)
