@@ -60,7 +60,7 @@ VMTab ; Placeholders indented
     vmtabLine   VMLRU                               ; 22 sweep pages for least recently used ones
     vmtabLine   VMMarkUndefined                     ; 23
     vmtabLine   VMMakePageWriteThrough              ; 24
-    vmtabLine   VMAllocateMemory                    ; 25
+    vmtabLine   VMAllocateMemory                    ; 25 create logical area by stealing from "high memory"
 VMTabEnd
 
 ########################################################################
@@ -723,91 +723,92 @@ VMShouldClean ; page a0/r4 // bool d0/r3
 
 ########################################################################
 
-VMAllocateMemory ; first_page a0/r4, page_count a1/r5, align d1/r6
-    lwz     r7, KDP.VMPageArray(r1)
+VMAllocateMemory ; first_page a0/r4, page_count a1/r5, align_mask d1/r6
+; Allocate and wire a logical area with the specified physical alignment.
+; The physical RAM is acquired by *shrinking* the VM area (hopefully in early boot).
+    lwz     r7, KDP.VMPageArray(r1)         ; Assert: r5 positive, VM off, r4 and r6 < 0x100000
     lwz     r8, KDP.PhysicalPageArray(r1)
     cmpwi   cr6, r5, 0
     cmpw    cr7, r7, r8
-    or      r7, r4, r6                          ; r4/r6 are page numbers?
+    or      r7, r4, r6
     rlwinm. r7, r7, 0, 0xFFF00000
+
+; Prepare for PageInfo calls (r4 and r9!), saving the first_page arg in r7.
     ble     cr6, vmRetNeg1
     lwz     r9, KDP.VMLogicalPages(r1)
-    bne     cr7, vmRetNeg1                      ; diff page arrays: already inited?
+    bne     cr7, vmRetNeg1
     mr      r7, r4
     bne     vmRetNeg1
     mr      r4, r9
-    slwi    r6, r6, 12
-    subi    r5, r5, 1
 
-@for_each_logical_page
+; Scan the VM area right->left until we have enough (aligned) physical RAM to steal.
+    slwi    r6, r6, 12                      ; r6 = mask of bits that must be zero in phys base
+    subi    r5, r5, 1                       ; r5 = page_count - 1
+@pageloop
     subi    r4, r4, 1
     bl      PageInfo                            
-    bcl     BO_IF, bM68pdInHTAB, DeletePTE      ; clear from HTAB
+    bcl     BO_IF, bM68pdInHTAB, DeletePTE  ; Naturally this RAM should be expunged from the HTAB
 
     lwz     r9, KDP.VMLogicalPages(r1)
     subf    r8, r4, r9
     cmplw   cr7, r5, r8
     and.    r8, r16, r6
-    bge     cr7, @for_each_logical_page
-    bne     @for_each_logical_page
+    bge     cr7, @pageloop                  ; Don't yet have enough pages: next!
+    bne     @pageloop                       ; This page is not aligned: next!
 
-    cmpwi   cr6, r6, 0
-    beq     cr6, @donelogicalpgs
+    cmpwi   cr6, r6, 0                      ; If no alignment is required then we can assume
+    beq     cr6, @exitpageloop              ; that discontiguous RAM is okay. (cr6_eq = 1)
+
     slwi    r8, r5, 2
     lwzx    r8, r15, r8
     slwi    r14, r5, 12
     add     r14, r14, r16
     xor     r8, r8, r14
-    rlwinm. r8, r8,  0,  0, 19
-    bne     @for_each_logical_page
-@donelogicalpgs
+    rlwinm. r8, r8, 0, 0xFFFFF000
+    bne     @pageloop                       ; Physical RAM discontiguous: next!
+@exitpageloop ; cr6_eq = !(can be discontiguous)
 
-
-
-
+; Fail if the requested area is in seg 0-3, or sized > 4 GB
     lis     r9, 4
     cmplw   cr7, r7, r9
-    rlwinm. r9, r7,  0,  0, 11
+    rlwinm. r9, r7, 0, 0xFFF00000
     blt     cr7, vmRetNeg1
     bne     vmRetNeg1
+
+; Find the PMDT containing the new area.
     lwz     r14, KDP.CurMap.SegMapPtr(r1)
     rlwinm  r9, r7, 19, 25, 28
     lwzx    r14, r14, r9
-    clrlwi  r9, r7,  0x10
-    lhz     r8,  0x0000(r14)
-    b       VMAllocateMemory_0xf4
-VMAllocateMemory_0xf0
-    lhzu    r8,  0x0008(r14)
-VMAllocateMemory_0xf4
-    lhz     r16,  0x0002(r14)
+    clrlwi  r9, r7, 16
+    lhz     r8, PMDT.PageIdx(r14)
+    b       @enterpmdtloop
+@pmdtloop
+    lhzu    r8, PMDT.Size + PMDT.PageIdx(r14)
+@enterpmdtloop
+    lhz     r16, PMDT.PageCount(r14)
     subf    r8, r8, r9
     cmplw   cr7, r8, r16
-    bgt     cr7, VMAllocateMemory_0xf0
-
-
-
-
-
-    add     r8, r8, r5
+    bgt     cr7, @pmdtloop
+    add     r8, r8, r5                      ; if PMDT does not fully enclose the area, fail!
     cmplw   cr7, r8, r16
     bgt     cr7, vmRetNeg1
-    lwz     r16,  0x0004(r14)
+
+; That PMDT had better be Available, because we're replacing it with one for our area.
+    lwz     r16, PMDT.Word2(r14)
     slwi    r8, r7, 16
     andi.   r16, r16, EveryPattr
-    cmpwi   r16,  0xa01
+    cmpwi   r16, PMDT_Available
     or      r8, r8, r5
-    addi    r5, r5, PMDT_Available
+    addi    r5, r5, 1
     bne     vmRetNeg1
-    stw     r8,  0x0000(r14)
-    bnel    cr6, VMAllocateMemory_0x2e8
-
-
-
+    stw     r8, 0(r14) ; PMDT.PageIdx/PageCount
+    bnel    cr6, ReclaimLeftoverFromVMAlloc ; Move our area to the very end of VMPageArray
     rotlwi  r15, r15, 10
     ori     r15, r15, PMDT_Paged
     stw     r15, PMDT.Word2(r14)
 
-    lwz     r7, KDP.VMPhysicalPages(r1)         ; proof positive that this precedes VMInit!
+; Disappear the RAM we stole. We've always been at war with Eastasia.
+    lwz     r7, KDP.VMPhysicalPages(r1)
     subf    r7, r5, r7
     stw     r7, KDP.VMPhysicalPages(r1)
     stw     r7, KDP.VMLogicalPages(r1)
@@ -815,53 +816,56 @@ VMAllocateMemory_0xf4
     stw     r8, KDP.SysInfo.UsableMemorySize(r1)
     stw     r8, KDP.SysInfo.LogicalMemorySize(r1)
 
-
-
-    addi    r14, r1, KDP.SegMaps-8              ; Update every PMDT in the VM area
+; Because we rearranged the VMPageArray, rewrite the VM area PMDTs
+    addi    r14, r1, KDP.SegMaps-8
     lwz     r15, KDP.VMPageArray(r1)
-    li      r8, 0                               ; r8 = upper PMDT denoting whole-segment
+    li      r8, 0                           ; r8 = upper PMDT denoting whole-segment
     subi    r7, r7, 1
     ori     r8, r8, 0xffff
 @nextseg
-    cmplwi  r7,  0xffff
+    cmplwi  r7, 0xffff
     lwzu    r16, 8(r14)
     rotlwi  r9, r15, 10
     ori     r9, r9, PMDT_Paged
-    stw     r8, 0(r16)                          ; PMDT.PageIdx/PageCount = whole segment
+    stw     r8, 0(r16)                      ; PMDT.PageIdx/PageCount = whole segment
     stw     r9, PMDT.Word2(r16)
     addis   r15, r15, 4
     subis   r7, r7, 1
     bgt     @nextseg
-    sth     r7, PMDT.PageCount(r16)             ; (last segment is partial)
+    sth     r7, PMDT.PageCount(r16)         ; (last segment is partial)
     b       vmRet1
 
 
+ReclaimLeftoverFromVMAlloc ; 68kpds_to_steal r15 // 68kpds_to_steal r15
+; We had to steal extra pages to ensure physically aligned backing. Return
+; the "tail" pages that we won't use to the "body" of the VM area. Do this
+; by exchanging the stolen 68k-PDs for the tail ones, then changing r15.
+    lwz     r16, 0(r15)                     ; r16 = first stolen 68k-PD
 
-VMAllocateMemory_0x2e8
-    lwz     r16,  0x0000(r15)
-    lwz     r7, KDP.VMPhysicalPages(r1)
-    lwz     r8,  KDP.VMPageArray(r1)
-    slwi    r7, r7,  2
+    lwz     r7, KDP.VMPhysicalPages(r1)     ; r7 = where to move stolen 68k-PDs
+    lwz     r8, KDP.VMPageArray(r1)         ; r8 = last 68k-PD to overwrite
+    slwi    r7, r7, 2
     add     r7, r7, r8
-    slwi    r8, r5,  2
+    slwi    r8, r5, 2
     subf    r7, r8, r7
-    cmplw   r15, r7
-    beqlr   
-    subi    r7, r7, 4
 
-VMAllocateMemory_0x310
+    cmplw   r15, r7                         ; Return early if there is no tail.
+    beqlr
+
+    subi    r7, r7, 4                       ; Carefully move "tail" 68k-PDs down
+@tailmoveloop                               ; to the end of the VM area "body"
     lwzx    r9, r15, r8
     cmplw   r15, r7
-    stw     r9,  0x0000(r15)
-    addi    r15, r15,  0x04
-    blt     VMAllocateMemory_0x310
+    stw     r9, 0(r15)
+    addi    r15, r15, 4
+    blt     @tailmoveloop
 
-VMAllocateMemory_0x324
-    cmpwi   r8,  0x04
-    subi    r8, r8, 4
-    stwu    r16,  0x0004(r7)
-    addi    r16, r16,  0x1000
-    bgt     VMAllocateMemory_0x324
+@stolenfillloop                             ; Then carelessly reconstitute the
+    cmpwi   r8, 4                           ; stolen 68k-PDs that we just over-
+    subi    r8, r8, 4                       ; wrote. We can be careless because
+    stwu    r16, 4(r7)                      ; we know that the physical pages
+    addi    r16, r16, 0x1000                ; are contiguous.
+    bgt     @stolenfillloop
     blr     
 
 ########################################################################

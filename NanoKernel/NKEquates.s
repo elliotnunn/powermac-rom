@@ -156,7 +156,7 @@ Pattr_Paged             equ 0x400 ; Pageable area with RPN = (68k Page Descripto
 
 PMDT_InvalidAddress     equ 0xA00 ; Known combinations when Pattr_NotPTE=1...
 PMDT_Available          equ 0xA01
-PMDT_Paged              equ 0xC00 ; = Pattr_NotPTE + Pattr_Paged
+PMDT_Paged              equ 0xC00 ; = Pattr_NotPTE + Pattr_Paged (can be created by VMAllocateMemory)
 
 ; When Pattr_NotPTE=0, the PMDT describes a non-pageable area, and these apply:
 Pattr_PTE_Single        equ 0x400 ; Only one page
