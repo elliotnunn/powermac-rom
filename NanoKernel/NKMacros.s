@@ -54,6 +54,13 @@ my_pad set (my_align - (my_offset & my_mask)) & my_mask
 ########################################################################
 
     MACRO
+    _mvbit0 &rd, &bd, &rs, &bs
+    rlwinm &rd, &rs, (32 + &bs - &bd) % 32, &bd, &bd
+    ENDM
+
+########################################################################
+
+    MACRO
     _clrNCBCache &scr==r0
     li      &scr, -1
     stw     &scr, KDP.NCBCacheLA0(r1)

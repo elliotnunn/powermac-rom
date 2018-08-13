@@ -80,10 +80,10 @@ maskMsrFlags  equ 0x00000F00
 ########################################################################
 
 ; MemRetry flags in CR3
-    _bitequate cr3_lt, mrSkipInstLoad       ; misalignment handler need not read the instruction
-    _bitequate cr3_gt, mrXformIgnoreIdxReg  ; instruction is X-form but without an rB field
-    _bitequate cr3_eq, mrSuppressUpdate     ; instruction may not update base reg in-place
-    _bitequate cr3_so, mrChangedRegInEWA    ; have "loaded" a new reg value (i.e. saved into EWA)
+mrSkipInstLoad      equ cr3_lt ; misalignment handler need not read the instruction
+mrXformIgnoreIdxReg equ cr3_gt ; instruction is X-form but without an rB field
+mrSuppressUpdate    equ cr3_eq ; instruction may not update base reg in-place
+mrChangedRegInEWA   equ cr3_so ; have "loaded" a new reg value (i.e. saved into EWA)
 
 ########################################################################
 

@@ -132,7 +132,7 @@ VMInit ; logicalpages a0/r4, pagearray (logical ptr) a1/r5
     rlwinm  r3, r16, 23, 9, 28
     lwzux   r8, r14, r3
     lwz     r9, 4(r14)
-    andis.  r3, r8, UpteValid >> 16         ; that pte must be valid, and one of P0/P1 must be set!
+    andis.  r3, r8, 0x8000;UpteValid        ; that pte must be valid, and one of P0/P1 must be set!
     beql    SystemCrash
     andi.   r3, r9, LpteP0 | LpteP1
     cmpwi   r3, 0
@@ -240,7 +240,7 @@ VMInit ; logicalpages a0/r4, pagearray (logical ptr) a1/r5
     li      r8, PMDT_InvalidAddress         ; (second word: PMDT_InvalidAddress)
 @pmdtresetloop
     lwz     r3, 0(r6)
-    addi    r6, r6, 0
+    addi    r6, r6, 8
     stw     r7, 0(r3)
     stw     r8, 4(r3)
     stw     r7, 8(r3)
@@ -343,7 +343,7 @@ VMIsInited ; page a0/r4 // bool d0/r3
 ; An uninited page is not resident and does not have its Inited bit set
     bl      PageInfo
     bc      BO_IF, bM68pdResident, vmRet1
-    _mvbit  r3, 31, r16, bM68pdInited
+    _mvbit0 r3, 31, r16, bM68pdInited
     b       vmRet
 
 ########################################################################
@@ -357,7 +357,7 @@ VMIsResident ; page a0/r4 // bool d0/r3
 
 VMIsUnmodified ; page a0/r4 // bool d0/r3
     bl      PageInfo
-    rlwinm  r3, r16, bM68pdModified + 1, 1
+    _mvbit0 r3, 31, r16, bM68pdModified
     xori    r3, r3, 1
     b       vmRet
 
