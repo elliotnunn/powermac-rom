@@ -30,7 +30,7 @@ MRException
     extrwi  r23, r17, 5, 26                 ; extract accessLen field
     rlwnm.  r9, r9, r8, 0, 0                ; BGE taken if exception disabled
 
-    bcl     BO_IF, mrFlagDidLoad, LoadExtraMRRegs
+    bcl     BO_IF, mrChangedRegInEWA, ReloadChangedMemRetryRegs
 
     lwz     r6, KDP.ContextPtr(r1)
 
@@ -97,7 +97,7 @@ ExceptionCommon
 
 ########################################################################
 
-LoadExtraMRRegs
+ReloadChangedMemRetryRegs
     lwz     r0, KDP.r0(r1)
     lwz     r2, KDP.r2(r1)
     lwz     r3, KDP.r3(r1)
