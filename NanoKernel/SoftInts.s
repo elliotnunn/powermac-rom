@@ -1,3 +1,9 @@
+; "Program" and related interrupts
+
+kSoftIntAlign equ 5
+
+########################################################################
+
 IllegalInstruction
     mfmsr   r9
     _ori    r8, r9, MsrDR
@@ -87,7 +93,7 @@ IllegalInstruction
 
 ########################################################################
 
-    _align 5
+    _align kSoftIntAlign
 KCallRunAlternateContext
 ;   ARG     ContextBlock *r3, flags r4
 
@@ -233,7 +239,7 @@ KCallRunAlternateContext
 
 ########################################################################
 
-    _align 5
+    _align kSoftIntAlign
 KCallResetSystem
 ;   PPC trap 1, or indirectly, 68k RESET
 
@@ -253,14 +259,14 @@ KCallResetSystem
     b       ReturnFromInt
 
 Reset
-    include 'NKReset.s'
+    include 'Reset.s'
 
     lmw     r14, KDP.r14(r1)
     b       KCallPrioritizeInterrupts
 
 ########################################################################
 
-    _align 5
+    _align kSoftIntAlign
 KCallPrioritizeInterrupts
     ;   Left side: roll back the interrupt preparation before the int handler repeats is
     ;   Right side: jump to the external interrupt handler (PIH or ProgramInt)
@@ -312,11 +318,11 @@ KCallSystemCrash
 
     stmw    r14, KDP.r14(r1)
 
-    bl      SystemCrash
+    bl      Crash
 
 ########################################################################
 
-    _align 5
+    _align kSoftIntAlign
 ProgramInt
 ;   (also called when the Alternate Context gets an External Int => Exception)
 
@@ -415,7 +421,7 @@ ProgramInt
 
 ########################################################################
 
-    _align 5
+    _align kSoftIntAlign
 SyscallInt
     bl      LoadInterruptRegisters
     mfmsr   r8
@@ -426,7 +432,7 @@ SyscallInt
 
 ########################################################################
 
-    _align 5
+    _align kSoftIntAlign
 TraceInt ; here because of MSR[SE/BE], possibly thanks to ContextFlagTraceWhenDone
     bl      LoadInterruptRegisters
     li      r8, ecInstTrace

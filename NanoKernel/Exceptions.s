@@ -1,5 +1,9 @@
-; MemRetry error
 MRException
+; Exception was mid-MemRetry, so save MemRetry state to resume later
+; MR registers to save: r17 (MR status)
+;                       r18 (EA)
+;                       r19 (EA of byte after memory)
+;                       r20/r21 (loaded data/data to store)
     mtsprg  3, r24
 
     lwz     r9, KDP.Enables(r1)
@@ -42,8 +46,9 @@ MRException
     ;fall through                           ; exception enabled => run userspace handler
 
 ########################################################################
-; Exception or MRException that is Enabled (i.e. not being auto-forced to System)
+
 ExceptionCommon
+; (MR)Exception that is Enabled (i.e. not being auto-forced to System)
     stw     r10, CB.FaultSrcPC+4(r6)            ; Save r10/SRR0, r12/LR, r3, r4
     stw     r12, CB.FaultSrcLR+4(r6)
     stw     r3, CB.FaultSrcR3+4(r6)
@@ -232,19 +237,20 @@ Exception
 ########################################################################
 
 RunSystemContext
+; Switch back from the Alternate context to the 68k Emulator
     lwz     r9, KDP.ECBPtr(r1)              ; System ("Emulator") ContextBlock
 
     addi    r8, r1, KDP.VecTblSystem        ; System VecTbl
     mtsprg  3, r8
 
-    bcl     BO_IF, bGlobalFlagSystem, SystemCrash ; System Context already running!
+    bcl     BO_IF, bGlobalFlagSystem, CrashExceptions ; System Context already running!
 
     ;   Fallthru (new CB in r9, old CB in r6)
 
 ########################################################################
 
 SwitchContext ; OldCB *r6, NewCB *r9
-;   Run the System or Alternate Context
+; Run the System or Alternate Context
     lwz     r8, KDP.Enables(r1)
     stw     r7, CB.InterState.Flags(r6)
     stw     r8, CB.InterState.Enables(r6)
@@ -363,7 +369,8 @@ SwitchContext ; OldCB *r6, NewCB *r9
 
 ########################################################################
 
-ReturnFromInt ; If ContextFlagMemRetryErr && ContextFlagResumeMemRetry, please pass KernelState ptr in r9
+ReturnFromInt
+; (if ContextFlagMemRetryErr && ContextFlagResumeMemRetry, pass KernelState ptr in r9)
     andi.   r8, r7, ContextFlagTraceWhenDone | ContextFlagMemRetryErr
     bnel    @special_cases          ; Keep rare cases out of the hot path
 

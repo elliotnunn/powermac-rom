@@ -1,4 +1,10 @@
-    _align 6
+; Frequently-used interrupt handlers
+
+kHotIntAlign equ 6
+
+########################################################################
+
+    _align kHotIntAlign
 ExternalInt0
     mfsprg  r1, 0                           ; Init regs and increment ctr
     stw     r0, KDP.r0(r1)
@@ -54,7 +60,7 @@ ExternalInt0
 
 ########################################################################
 
-    _align 6
+    _align kHotIntAlign
 IntLookupTable
     dc.b    0, 1, 2, 2, 4, 4, 4, 4
     dc.b    3, 3, 3, 3, 4, 4, 4, 4
@@ -65,7 +71,7 @@ IntLookupTable
     dc.b    7, 7, 7, 7, 7, 7, 7, 7
     dc.b    7, 7, 7, 7, 7, 7, 7, 7
 
-    _align 6
+    _align kHotIntAlign
 ExternalInt1
     mfsprg  r1, 0                           ; Init regs and increment ctr
     stw     r0, KDP.r0(r1)
@@ -123,7 +129,7 @@ ExternalInt1
 
 ########################################################################
 
-    _align 6
+    _align kHotIntAlign
 ExternalInt2
     mfsprg  r1, 0                           ; Init regs and increment ctr
     stw     r0, KDP.r0(r1)
@@ -200,9 +206,9 @@ ExternalInt2
 
 ########################################################################
 
-;   Increment the Sys/Alt CPU clocks, and the Dec-int counter
-    _align 6
+    _align kHotIntAlign
 DecrementerIntSys
+; Increment the Sys/Alt CPU clocks, and the Dec-int counter
     mfsprg  r1, 0
     stmw    r2, KDP.r2(r1)
     mfdec   r31
@@ -257,8 +263,8 @@ DecrementerIntAlt
 
 ########################################################################
 
-    _align 6
-DataStorageInt
+    _align kHotIntAlign
+DataStorageInt ; to MemRetry! (see MROptab.s for register info)
     mfsprg  r1, 0
     stmw    r2, KDP.r2(r1)
     mfsprg  r11, 1
@@ -273,47 +279,47 @@ DataStorageInt
     mfmsr   r14
     _ori    r15, r14, MsrDR
     mtmsr   r15
-    lwz     r27, 0(r10)                     ; r27 = INSTRUCTION
+    lwz     r27, 0(r10)                 ; r27 = instruction
     mtmsr   r14
 
 EmulateDataAccess
-    rlwinm. r18, r27, 18, 25, 29            ; r16 = 4 * rA (r0 wired to 0)
+    rlwinm. r18, r27, 18, 25, 29        ; r16 = 4 * rA (r0 wired to 0)
     lwz     r25, KDP.MRBase(r1)
     li      r21, 0
     beq     @r0
-    lwzx    r18, r1, r18                    ; r16 = contents of rA
+    lwzx    r18, r1, r18                ; r16 = contents of rA
 @r0
-    andis.  r26, r27, 0xec00                ; intended to extract the major opcode? seems wrong though!
+    andis.  r26, r27, 0xec00            ; determine instruction form
     lwz     r16, KDP.Flags(r1)
     mfsprg  r24, 3
-    rlwinm  r17, r27, 0, 6, 15              ; r17 = rS/D and rA fields
-    rlwimi  r16, r16, 27, 26, 26            ; ContextFlagTraceWhenDone = MsrSE
+    rlwinm  r17, r27, 0, 6, 15          ; set MR status reg
+    _mvbit  r16, bContextFlagTraceWhenDone, r16, bMsrSE
     bge     @xform
 
 ;dform
     rlwimi  r25, r27, 7, 26, 29
     rlwimi  r25, r27, 12, 25, 25
-    lwz     r26, MROptabD-MRBase(r25)       ; table of 4b elements, index = major opcode bits 51234 (this is the last quarter of MROptabX)
-    extsh   r23, r27                        ; r23 = register offset field, sign-extended
+    lwz     r26, MROptabD-MRBase(r25)   ; last quarter of the X-form table, index = major opcode bits 51234
+    extsh   r23, r27                    ; r23 = register offset field, sign-extended
     rlwimi  r25, r26, 26, 22, 29
-    mtlr    r25                             ; dest = r25 = first of two function ptrs in table entry
-    mtcr    r26                             ; using the flags in the arbitrary upper 16 bits of the table entry?
-    add     r18, r18, r23                   ; r18 = effective address attempted by instruction
-    rlwimi  r17, r26, 6, 26, 5              ; r17 = pretend X-form inst with: maj opcode (from tbl), rS/D and RA (from inst), min opcode (from tbl)
+    mtlr    r25                         ; dest = r25 = first of two function ptrs in table entry
+    mtcr    r26                         ; using the flags in the arbitrary upper 16 bits of the table entry?
+    add     r18, r18, r23               ; r18 = EA
+    rlwimi  r17, r26, 6, 26, 5          ; set MR status reg
     blr
 
 @xform
     rlwimi  r25, r27, 27, 26, 29
     rlwimi  r25, r27, 0, 25, 25
     rlwimi  r25, r27, 6, 23, 24
-    lwz     r26, MROptabX-MRBase(r25)       ; table of 4b elements, index = minor (x-form) opcode bits 8940123
-    rlwinm  r23, r27, 23, 25, 29            ; r23 = 4 * rB
-    rlwimi  r25, r26, 26, 22, 29
-    mtlr    r25                             ; dest = r25 = first of two function ptrs in table entry
+    lwz     r26, MROptabX-MRBase(r25)   ; index = extended opcode bits 8940123
+    rlwinm  r23, r27, 23, 25, 29        ; need to calculate EA (this part gets rB)
+    rlwimi  r25, r26, 26, 22, 29        ; prepare to jump to the primary routine
+    mtlr    r25
     mtcr    r26
-    lwzx    r23, r1, r23                    ; get rB from saved registers
-    rlwimi  r17, r26, 6, 26, 5              ; r17 = pretend X-form inst with: maj opcode (from tbl), rS/D and RA (from inst), min opcode (from tbl)
-    add     r18, r18, r23                   ; r18 = effective address attempted by instruction
+    lwzx    r23, r1, r23                ; get rB from saved registers
+    rlwimi  r17, r26, 6, 26, 5          ; set MR status reg)
+    add     r18, r18, r23               ; r18 = EA
     bclr    BO_IF_NOT, mrXformIgnoreIdxReg
     neg     r23, r23
     add     r18, r18, r23
@@ -321,8 +327,8 @@ EmulateDataAccess
 
 ########################################################################
 
-    _align 6
-AlignmentInt
+    _align kHotIntAlign
+AlignmentInt ; to MemRetry! (see MROptab.s for register info)
     mfsprg  r1, 0
     stmw    r2, KDP.r2(r1)
 
@@ -342,28 +348,28 @@ AlignmentInt
     mfdsisr r27
     mfdar   r18
 
-    extrwi. r21, r27, 2, 15         ; evaluate hi two bits of XO (or 0 for d-form?)
+    extrwi. r21, r27, 2, 15             ; determine instruction form using DSISR
     lwz     r25, KDP.MRBase(r1)
-    rlwinm  r17, r27, 16, 0x03FF0000
+    rlwinm  r17, r27, 16, 0x03FF0000    ; insert rS/rD field from DSISR into MR status reg
     lwz     r16, KDP.Flags(r1)
-    rlwimi  r25, r27, 24, 23, 29    ; add constant fields from dsisr (*4) to FDP
-    rlwimi  r16, r16, 27, 26, 26    ; ContextFlagTraceWhenDone = MsrSE
+    rlwimi  r25, r27, 24, 23, 29        ; look up DSISR opcode field in MROptab
+    _mvbit  r16, bContextFlagTraceWhenDone, r16, bMsrSE
     bne     @xform
 
 ;dform
-    lwz     r26, MROptabD-MRBase(r25)   ; use upper quarter of table
+    lwz     r26, MROptabD-MRBase(r25)   ; last quarter of the X-form table, index = major opcode bits 51234
     mfmsr   r14
-    rlwimi  r25, r26, 26, 22, 29    ; third byte of lookup value is a /4 code offset in FDP
-    mtlr    r25                     ; so get ready to go there
+    rlwimi  r25, r26, 26, 22, 29        ; prepare to jump to the primary routine
+    mtlr    r25
     _ori    r15, r14, MsrDR
     mtcr    r26
-    rlwimi  r17, r26, 6, 26, 5      ; wrap some shite around the register values
+    rlwimi  r17, r26, 6, 26, 5          ; set the rest of the MR status register
     blr
 
 @xform
-    lwz     r26, MROptabX-MRBase(r25)
+    lwz     r26, MROptabX-MRBase(r25)   ; index = extended opcode bits 8940123
     mfmsr   r14
-    rlwimi  r25, r26, 26, 22, 29
+    rlwimi  r25, r26, 26, 22, 29        ; prepare to jump to the primary routine
     mtlr    r25
     _ori    r15, r14, MsrDR
     mtcr    r26

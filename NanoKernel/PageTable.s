@@ -1,5 +1,10 @@
+; Code to populate the PowerPC "HTAB"/"Hash Table"
+
+########################################################################
+
 PutPTE ; EA r27 // PTE r30/r31, EQ=Success, GT=Invalid, LT=Fault
-    lwz     r29, KDP.CurMap.SegMapPtr(r1)   ; 1. Find which Segment and PMDT cover this Effective Address
+; 1. Find which Segment and PMDT cover this Effective Address
+    lwz     r29, KDP.CurMap.SegMapPtr(r1)
     rlwinm  r28, r27, 7, 0x0000000F << 3    ; get offset into SegMap based on EA
     lwzx    r29, r29, r28                   ; r29 is now our iterating PMDT ptr
     rlwinm  r28, r27, 20, 0x0000FFFF        ; r27 = page index within Segment
@@ -13,15 +18,14 @@ PutPTE ; EA r27 // PTE r30/r31, EQ=Success, GT=Invalid, LT=Fault
     cmplw   cr7, r30, r31
     bgt     cr7, @next_pmdt                 ; Save "found PMDT pointer" in r29, "page index within PMDT" in r30
 
-########################################################################
-
-    lwz     r28, KDP.HtabSinglePTE(r1)      ; 2. Parse the PMDT into a PTE (three major code paths)
+; 2. Parse the PMDT into a PTE (three major code paths)
+    lwz     r28, KDP.HtabSinglePTE(r1)
     lwz     r31, PMDT.Word2(r29)
     cmpwi   cr7, r28, 0                     ; always delete the previous PMDT_PTE_Single entry from the HTAB
     extlwi. r26, r31, 2, 20                 ; use the Cond Reg to branch on Pattr_NotPTE/Pattr_PTE_Single
     bne     cr7, @del_single_pte
-    blt     @pagelist                       ; PMDT_Paged is the probable meaning of Pattr_NotPTE (will return to @parsed_pmdt)
-@did_del_single_pte                         ; (optimized return: if LT then @del_single_pte falls thru to @pagelist)
+    blt     @paged                          ; PMDT_Paged is the probable meaning of Pattr_NotPTE (will return to @parsed_pmdt)
+@did_del_single_pte                         ; (optimized return: if LT then @del_single_pte falls thru to @paged)
     bgt     @single_pte                     ; PMDT_PTE_Single is the probable meaning of Pattr_PTE_Single (will return to @parsed_pmdt)
     slwi    r28, r30, 12                    ; PMDT_PTE_Range is likely otherwise, requiring us to add an offset to the PMDT
     add     r31, r31, r28
@@ -30,9 +34,8 @@ PutPTE ; EA r27 // PTE r30/r31, EQ=Success, GT=Invalid, LT=Fault
                                             ;   0x5A5A (if PMDT_PTE_Single)
                                             ;   PageListEntry ptr (if PMDT_Paged)
 
-########################################################################
-
-    mfsrin  r30, r27                        ; 3. Find free slot in HTAB for new entry
+; 3. Find free slot in HTAB for new entry
+    mfsrin  r30, r27
     rlwinm  r28, r27, 26, 10, 25            ; r28 = (1st arg of XOR) * 64b
     rlwinm  r30, r30, 6, 7, 25              ; r30 = (2nd arg of XOR) * 64b
     xor     r28, r28, r30                   ; r28 = (hash output) * 64b = r28 ^ r30
@@ -72,9 +75,8 @@ PutPTE ; EA r27 // PTE r30/r31, EQ=Success, GT=Invalid, LT=Fault
     blt     cr7, @pteg_full                 ; @pteg_full *may* return to @try_secondary_pteg
 @found_free_pte                             ; Save PTE ptr + 24 in r29
 
-########################################################################
-
-    cmpwi   r26, 0                          ; 4. Save the new PTE and return
+; 4. Save the new PTE and return
+    cmpwi   r26, 0                          
     mfsrin  r28, r27
     extrwi  r30, r27, 6, 4                  ; PTE[26-31=API] = high 6 bits of offset-within-segment
     stw     r27, KDP.HtabLastEA(r1)
@@ -110,10 +112,7 @@ PutPTE ; EA r27 // PTE r30/r31, EQ=Success, GT=Invalid, LT=Fault
     stw     r28, 0(r26)
     blr                                     ; return success (EQ)
 
-########################################################################
-; Delete the PTE most recently created from a PMDT_PTE_Single entry,
-; then jump back up to our caller (but see the optimization below).
-@del_single_pte
+@del_single_pte ; Delete the PTE most recently created from a PMDT_PTE_Single entry.
     lwz     r28, KDP.NKInfo.HashTableDeleteCount(r1)
     lwz     r29, KDP.HtabSinglePTE(r1)
     addi    r28, r28, 1
@@ -128,9 +127,8 @@ PutPTE ; EA r27 // PTE r30/r31, EQ=Success, GT=Invalid, LT=Fault
     sync
     bge     @did_del_single_pte            ; Optimization: would otherwise branch to a "blt @par"
 
-########################################################################
+@paged ; Probably PMDT_Paged
 ; r30 = page index within area, r31 = RPN
-@pagelist ; Probably PMDT_Paged
     extlwi. r28, r31, 2, 21                 ; Put remaining two flags into top bits and set Cond Reg
     bge     @not_actually_pagelist          ; Not PMDT_Paged! (e.g. PMDT_InvalidAddress/PMDT_Available)
 
@@ -153,9 +151,8 @@ PutPTE ; EA r27 // PTE r30/r31, EQ=Success, GT=Invalid, LT=Fault
 
     beq     @parsed_pmdt                    ; if resident but outside HTAB, put in HTAB
     bltlr   cr7                             ; if no flags, return invalid (GT)
-    bl      SystemCrash                     ; crash hard in any other case
+    bl      CrashPageTable                  ; crash hard in any other case
 
-########################################################################
 @single_pte ; PMDT_PTE_Single
     ori     r28, r27, 0xfff                 ; r27 = EA, r31 = PMDT (low word, RPN)
     stw     r28, KDP.HtabSingleEA(r1)
@@ -163,14 +160,12 @@ PutPTE ; EA r27 // PTE r30/r31, EQ=Success, GT=Invalid, LT=Fault
     li      r26, 0x5A5A                     ; so that KDP.HtabSinglePTE gets set and we return correctly
     b       @parsed_pmdt                    ; RTS with r26 = 0x5A5A and r31 having flags cleared
 
-########################################################################
 @not_actually_pagelist ; Pattr_NotPTE set, but not PMDT_Paged
     bgtlr                                   ; PMDT_InvalidAddress/PMDT_Available: return invalid (GT)
     addi    r29, r1, KDP.SupervisorMap
     b       SetMap                          ; 800 (unknown) -> SetMap returns success (EQ)
 
-########################################################################
-@pteg_full ; So try the secondary hashing function, if we haven't already
+@pteg_full ; Try the secondary hashing function, if we haven't already
     cmplw   cr6, r28, r26                   ; r26 is as set by PMDT interpretation, r28 = bit 26 of draft PTE r31
     subi    r29, r29, 64 + 16               ; Make r29 the actual PTEG ptr (PTE search code is very tight)
     ble     cr6, @both_ptegs_full           ; Not sure why r26/r28 could force the sec hash to be skipped...
@@ -182,19 +177,16 @@ PutPTE ; EA r27 // PTE r30/r31, EQ=Success, GT=Invalid, LT=Fault
     beq     @try_secondary_pteg             ; Go back in with CR0.EQ set this time (or fall through...)
                                             ; On fallthru, r29 = prim PTEG ptr
 
-########################################################################
 @both_ptegs_full ; So choose a slot in this PTEG to overflow
     lwz     r26, KDP.HtabLastOverflow(r1)   ; this could be zero
     crclr   cr6_eq                          ; cr6.eq means "hell, we're desperate"
     rlwimi  r26, r29, 0, 0xFFFFFFC0         ; r26 points to the PTE we should try to protext from overflow
     addi    r29, r26, 8                     ; r29 points to the following PTE (gets clobbered straight away)
     b       @first_pte
-
 @redo_search                                
     bne     cr6, @nomr
     mr      r26, r29
 @nomr
-
 @next_pte
     cmpw    cr6, r29, r26
     addi    r29, r29, 8
@@ -228,7 +220,6 @@ PutPTE ; EA r27 // PTE r30/r31, EQ=Success, GT=Invalid, LT=Fault
     extlwi  r28, r30, 4, 1
     beq     @redo_search
 
-########################################################################
 ; Okay... now do the dirty job of actually overflowing a PTEG (the one at r29)
 ; (this may well mean tweaking a PLE or even a PMDT)
     neg     r31, r31                        ; Inscrutable... extracting PMDT offset?
@@ -282,10 +273,10 @@ PutPTE ; EA r27 // PTE r30/r31, EQ=Success, GT=Invalid, LT=Fault
     andi.   r30, r28, M68pdInHTAB           ; Crash if this PLE wasn't marked as HTAB'd!
     rlwinm  r30, r28, 32-9, 0x007FFFF8
     xor     r30, r30, r29                   ; Crash if this 68k-PD's pointer didn't match this PTE!
-    beq     SystemCrash
+    beq     CrashPageTable
     andi.   r30, r30, 0xffff
     xori    r28, r28, M68pdInHTAB           ; Edit the 68k-PD's HTAB flag, physical ptr, and "usage" flags
-    bne     SystemCrash
+    bne     CrashPageTable
     rlwimi  r28, r31, 0, 0xFFFFF000
     _mvbit  r28, bM68pdModified, r31, bLpteChange
     _mvbit  r28, bM68pdUsed, r31, bLpteReference
@@ -293,7 +284,6 @@ PutPTE ; EA r27 // PTE r30/r31, EQ=Success, GT=Invalid, LT=Fault
 
     b       PutPTE                          ; PTEG overflow complete. Redo PutPTE!
 
-########################################################################
 ########################################################################
 
 SetMap ; MemMap r29
@@ -440,7 +430,6 @@ SetMap ; MemMap r29
     blr
 
 ########################################################################
-########################################################################
 
 GetPhysical ; EA r27, batPtr r29 // PA r31, EQ=Fail
     lwz     r30, 0(r29)
@@ -528,7 +517,6 @@ GetPhysicalFromHTAB ; EA r27 // PA r31, EQ=Fail
     bne     @_2c
     blr
 
-########################################################################
 ########################################################################
 
 FlushTLB

@@ -1,7 +1,6 @@
     _align 5
 FPUnavailInt
-;   Reload the FPU
-
+; Reload the FPU
     mfsprg  r1, 0
     stw     r11, KDP.FloatingPtTemp1(r1)
     lwz     r11, KDP.NKInfo.FPUReloadCount(r1)
@@ -134,7 +133,7 @@ DisableFPU
 
 ########################################################################
 
-;   This is used by MemRetry
+; Interface between MemRetry integer and float code
 
     MACRO
     MakeFloatJumpTable &OPCODE, &DEST, &highest==31

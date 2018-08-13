@@ -1,14 +1,13 @@
-; These registers will be used throughout
+; Code that inits the NanoKernel after Init.s runs,
+; or re-inits the NanoKernel after a 68k RESET trap
 
+; These registers will be used throughout:
 rCI     set     r26
         lwz     rCI, KDP.ConfigInfoPtr(r1)
-
 rNK     set     r25
         lwz     rNK, KDP.CodeBase(r1)
-
 rPgMap  set     r18
         lwz     rPgMap, KDP.PageMapStartPtr(r1)
-
 rXER    set     r17
         mfxer   rXER
 
@@ -17,7 +16,7 @@ rXER    set     r17
 InitVectorTables
     ;   System/Alternate Context tables
 
-    _kaddr  r23, rNK, SystemCrash
+    _kaddr  r23, rNK, Crash
     addi    r8, r1, KDP.VecTblSystem
     li      r22, 3 * VecTbl.Size
 @vectab_initnext_segment
@@ -33,7 +32,7 @@ rAlt set r8
 
     addi    rAlt, r1, KDP.VecTblAlternate
 
-    _kaddr  r23, rNK, SystemCrash
+    _kaddr  r23, rNK, Crash
     stw     r23, VecTbl.SystemReset(rSys)
     stw     r23, VecTbl.SystemReset(rAlt)
 

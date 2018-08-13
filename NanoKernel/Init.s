@@ -1,4 +1,4 @@
-;   Registers passed in by HardwareInit
+; Entry point of kernel. Registers on entry:
 rCI set r3 ; NKConfigurationInfo
 rPI set r4 ; NKProcessorInfo
 rSI set r5 ; NKSystemInfo

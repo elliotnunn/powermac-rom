@@ -80,7 +80,7 @@ maskMsrFlags  equ 0x00000F00
 ########################################################################
 
 ; MemRetry flags in CR3
-mrSkipInstLoad      equ cr3_lt ; misalignment handler need not read the instruction
+mrSkipInstLoad      equ cr3_lt ; misalignment handler can get what it needs from DSISR
 mrXformIgnoreIdxReg equ cr3_gt ; instruction is X-form but without an rB field
 mrSuppressUpdate    equ cr3_eq ; instruction may not update base reg in-place
 mrChangedRegInEWA   equ cr3_so ; have "loaded" a new reg value (i.e. saved into EWA)

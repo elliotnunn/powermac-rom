@@ -1,5 +1,5 @@
 MRPriCrash
-    bl      SystemCrash
+    bl      Crash
 MRSecException
     b       MRSecException2
 

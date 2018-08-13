@@ -1,5 +1,5 @@
 ; Indexing this table:
-;  bits  0-23  MRCode
+;  bits  0-23  MRBase
 ;  bits 24-26  number of bytes to access minus one
 ;  bit     27  one for load, zero for store
 ;  bits 28-30  bottom three bits of adjusted EA

@@ -1,3 +1,5 @@
+; Legacy 68k Virtual Memory interface, accessed via 68k FE0A trap
+
 KCallVMDispatch
     stw     r7, KDP.Flags(r1)
     lwz     r7, KDP.CodeBase(r1)
@@ -16,7 +18,7 @@ KCallVMDispatch
     bltlr
     b       vmRetNeg1
 
-VMTab ; Placeholders indented
+VMTab
     MACRO
     vmtabLine &label
     DC.W (&label-CodeBase) - (* - VMtab)
@@ -96,7 +98,7 @@ VMInit ; logicalpages a0/r4, pagearray (logical ptr) a1/r5
     andi.   r3, r8, PMDT_Paged
     cmpwi   r3, PMDT_Paged
     bne     @skip_segment                   ; (skip segment if not paged!)
-    bnel    cr1, SystemCrash                ; (first PMDT in segment must start at offset 0!)
+    bnel    cr1, CrashVirtualMem            ; (first PMDT in segment must start at offset 0!)
 
     rlwinm  r15, r8, 32-10, ~(PMDT_Paged>>10); seg's PhysicalPageArray ptr := PMDT's RPN, times 4
     addi    r3, r1, KDP.PhysicalPageArray
@@ -105,13 +107,13 @@ VMInit ; logicalpages a0/r4, pagearray (logical ptr) a1/r5
 
     slwi    r3, r5, 16                      ; (confirm that the inner loop is synced with the outer loop)
     cmpw    r3, r4
-    bnel    SystemCrash
+    bnel    CrashVirtualMem
 
 @pageloop
     lwz     r16, 0(r15)
     subi    r7, r7, 1
     andi.   r3, r16, M68pdResident          ; all pages must be resident before VM starts
-    beql    SystemCrash
+    beql    CrashVirtualMem
     andi.   r3, r16, M68pdInHTAB            ; (if page is in htab, check the pte and remove)
     beq     @not_in_htab
 
@@ -120,15 +122,15 @@ VMInit ; logicalpages a0/r4, pagearray (logical ptr) a1/r5
     lwzux   r8, r14, r3
     lwz     r9, 4(r14)
     andis.  r3, r8, 0x8000;UpteValid        ; that pte must be valid, and one of P0/P1 must be set!
-    beql    SystemCrash
+    beql    CrashVirtualMem
     andi.   r3, r9, LpteP0 | LpteP1
     cmpwi   r3, 0
-    beql    SystemCrash
+    beql    CrashVirtualMem
     rlwinm  r3, r16, 17, 22, 31             ; bits 7-16 of the 68k Page Descriptor (<= MYSTERIOUS)
     rlwimi  r3, r8, 10, 16, 21              ; API from Upte
     rlwimi  r3, r8, 21, 12, 15              ; top 4 bits of VSID
     cmpw    r3, r4                          ; why would we compare this to r4, our inner loop counter?
-    bnel    SystemCrash
+    bnel    CrashVirtualMem
     bl      DeletePTE
 @not_in_htab
     cmpwi   r7, 0
@@ -143,7 +145,7 @@ VMInit ; logicalpages a0/r4, pagearray (logical ptr) a1/r5
 
     lwz     r7, KDP.VMPhysicalPages(r1)     ; (final check: did we actually iterate over every page in the VM area?)
     cmpw    r4, r7
-    bnel    SystemCrash
+    bnel    CrashVirtualMem
     lwz     r5, KDP.VMPageArray(r1)         ; Restore the two arguments that this loop clobbered
     lwz     r4, KDP.VMLogicalPages(r1)
 
@@ -212,7 +214,7 @@ VMInit ; logicalpages a0/r4, pagearray (logical ptr) a1/r5
 @checkloop
     lwz     r16, 0(r15)
     andi.   r7, r16, M68pdResident
-    beql    SystemCrash
+    beql    CrashVirtualMem
     ori     r16, r16, M68pdGlobal | M68pdWriteProtect
     stw     r16, 0(r15)
     subi    r5, r5, 1024
@@ -628,7 +630,7 @@ VMMarkResident ; page a0/r4, p_page a1/r5
     bl      PageInfo
     bc      BO_IF_NOT, cr4_lt, vmRetNeg1        ; not a paged area!
     bc      BO_IF, bM68pdResident, vmRetNeg1    ; already resident!
-    bcl     BO_IF, bM68pdInHTAB, SystemCrash    ; corrupt 68k PD!
+    bcl     BO_IF, bM68pdInHTAB, CrashVirtualMem; corrupt 68k PD!
 
     rlwimi  r16, r5, 12, 0xFFFFF000             ; make up a 68k PD
     ori     r16, r16, M68pdResident             ; save it
@@ -888,7 +890,7 @@ PageInfo
     rlwinm  r9, r16, 0, 0xFFFFF000          ; failing a real PTE, this will do do
 
     bclr    BO_IF_NOT, bM68pdInHTAB         ; No PTE? Fine, we have enough info.
-    bc      BO_IF_NOT, bM68pdResident, SystemCrash  ; PD corrupt!
+    bc      BO_IF_NOT, bM68pdResident, CrashVirtualMem  ; PD corrupt!
     lwzux   r8, r14, r8                     ; Get PTE in r8/r9 (the usual registers for this file)
     lwz     r9, 4(r14)
     mtcrf   %10000000, r8                   ; set CR bit 0 to Valid bit
@@ -896,7 +898,7 @@ PageInfo
     _mvbit  r16, bM68pdUsed, r9, bLpteReference         ; with info from PPC "touch" bits
     mtcrf   %00000111, r16
     bclr    BO_IF, bUpteValid               ; Return
-    bl      SystemCrash                     ; (But crash if PTE is invalid)
+    bl      CrashVirtualMem                 ; (But crash if PTE is invalid)
 
 @outside_vm_area ; Code outside VM Manager address space
     lis     r9, 4                           ; Check that page is outside VM Manager's segments (0-4)
@@ -1066,7 +1068,7 @@ QuickCalcPTE
     mflr    r6
     slwi    r27, r4, 12
     bl      PutPTE
-    bnel    SystemCrash
+    bnel    CrashVirtualMem
     mr      r27, r7
     mr      r29, r8
     mr      r30, r9

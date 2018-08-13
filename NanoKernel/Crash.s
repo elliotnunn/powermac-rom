@@ -1,4 +1,4 @@
-SystemCrash
+Crash
     mfsprg  r1, 0
 
     stw     r0, KDP.CrashR0(r1)
@@ -128,8 +128,7 @@ SystemCrash
     mflr    r0
     stw     r0, KDP.CrashKernReturn(r1)
 
-########################################################################
-
+; Now spin
     lis     r2, 2           ; Count down from 64k to find a zero
 @nonzero
     lwzu    r0, -4(r2)

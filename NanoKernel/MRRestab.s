@@ -1,3 +1,5 @@
+; Lookup table when resuming MemRetry after an MRException has been handled
+
     MACRO
     restabLine &myFlags, &secLabel
     DC.B &myFlags

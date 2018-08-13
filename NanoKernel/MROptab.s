@@ -1,3 +1,18 @@
+; MemRetry entry point from DSI and Alignment interrupt handlers
+
+; The interrupt handler that calls one of the "primary" routines
+; should store all userspace registers in the EWA and set these:
+;   r14 = saved MSR
+;   r14 = saved MSR + MSR[DR]
+;   r16 = flags
+;   r17 = MR status (0-5 MRRestab entry || 6-10 src/dest register || 11-15 base register || 21-25 ?? || 26-30 access len || 31 0=Store/1=Load)
+;   r18 = EA being accessed
+;   r24 = saved VecBase
+;   r25 = MRCode pointer (lower 10 bits can be "dirty")
+;   r26 = MROptab entry (sec routine ptr in low 8 bits might be set on DSI)
+;   r27 = instruction (optional if mrSkipInstLoad is set below)
+;   r28 = offset of register field in EWA (= reg num * 4)
+
     MACRO
     optabRow &myAccLen, &myLoadStore, &resLabel, &myFlags, &primLabel, &secLabel
 _L set 1

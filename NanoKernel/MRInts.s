@@ -11,7 +11,7 @@ MRDataStorageInt ; Consult DSISR and the page table to decide what to do
     li      r28, 0x43               ; Filter Writethru and Protection bits
     and     r28, r31, r28
     cmpwi   cr7, r28, 0x43
-    beql    SystemCrash             ; Not illegal data access => Crash
+    beql    CrashMRInts             ; Not illegal data access => Crash
     mfsprg  r28, 2
     mtlr    r28
     bne     cr7, @access_exception  ; Any filtered bit unset => Exception
